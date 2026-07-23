@@ -16,8 +16,108 @@
         <p class="eyebrow">Tutor inteligente · Aprendizaje adaptativo</p>
         <h1>AI<span>Teacher</span></h1>
       </div>
+      <button id="authoring-toggle" class="authoring-toggle hidden" type="button">
+        Panel de autoría
+      </button>
       <div class="status"><i></i><span>Aprendizaje adaptativo</span></div>
     </header>
+
+    <section id="authoring-panel" class="authoring-panel panel hidden" aria-labelledby="authoring-title">
+      <div class="explorer-heading">
+        <div>
+          <p class="eyebrow">Currículo versionado</p>
+          <h2 id="authoring-title">Panel de autoría</h2>
+          <p class="muted">Prepara borradores, revisa la vista previa y publica contenido directamente en el MCP.</p>
+        </div>
+        <button id="close-authoring" class="text-button" type="button">Cerrar panel</button>
+      </div>
+
+      <form id="authoring-login" class="authoring-login">
+        <label>
+          <span>Nombre del editor</span>
+          <input id="authoring-author" minlength="1" maxlength="100" autocomplete="name" required />
+        </label>
+        <label>
+          <span>Credencial de acceso</span>
+          <input id="authoring-token" type="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit">Acceder</button>
+        <p id="authoring-login-error" class="error hidden" role="alert"></p>
+      </form>
+
+      <div id="authoring-workspace" class="authoring-workspace hidden">
+        <aside class="lesson-browser">
+          <div class="lesson-browser-heading">
+            <strong>Lecciones</strong>
+            <button id="new-lesson" type="button">Nueva</button>
+          </div>
+          <input id="lesson-search" type="search" placeholder="Filtrar por título o ID…" />
+          <div id="lesson-list" class="lesson-list"></div>
+        </aside>
+
+        <div class="lesson-editor">
+          <form id="lesson-form">
+            <div class="editor-heading">
+              <div>
+                <p class="eyebrow">Borrador estructurado</p>
+                <h3 id="lesson-editor-title">Nueva lección</h3>
+              </div>
+              <span id="lesson-status" class="lesson-status">Sin guardar</span>
+            </div>
+            <div class="lesson-fields">
+              <label>
+                <span>Identificador</span>
+                <input id="lesson-id" pattern="[a-z0-9-]+" minlength="3" maxlength="100" placeholder="rag-ranking-basics" required />
+              </label>
+              <label>
+                <span>Tema</span>
+                <select id="lesson-topic" required></select>
+              </label>
+              <label>
+                <span>Nivel</span>
+                <select id="lesson-level" required>
+                  <option value="beginner">Principiante</option>
+                  <option value="intermediate">Intermedio</option>
+                  <option value="advanced">Avanzado</option>
+                </select>
+              </label>
+              <label class="wide">
+                <span>Título</span>
+                <input id="lesson-title" minlength="3" maxlength="120" required />
+              </label>
+              <label class="wide">
+                <span>Fuente</span>
+                <input id="lesson-source" minlength="3" maxlength="200" placeholder="Documento o URL verificable" required />
+              </label>
+              <label class="wide">
+                <span>Palabras clave</span>
+                <input id="lesson-keywords" placeholder="recuperación, ranking, evidencia" />
+              </label>
+              <label class="wide">
+                <span>Contenido</span>
+                <textarea id="lesson-text" rows="8" minlength="40" maxlength="2000" required></textarea>
+              </label>
+            </div>
+            <p id="lesson-error" class="error hidden" role="alert"></p>
+            <div class="editor-actions">
+              <button id="preview-lesson" type="button">Vista previa</button>
+              <button type="submit">Guardar borrador</button>
+              <button id="publish-lesson" class="primary" type="button" disabled>Publicar</button>
+              <button id="unpublish-lesson" type="button" disabled>Despublicar</button>
+            </div>
+          </form>
+
+          <article id="lesson-preview" class="lesson-preview hidden" aria-live="polite"></article>
+          <section id="lesson-history-panel" class="lesson-history-panel hidden">
+            <div class="lesson-browser-heading">
+              <strong>Historial y reversión</strong>
+              <span id="lesson-version"></span>
+            </div>
+            <div id="lesson-history" class="lesson-history"></div>
+          </section>
+        </div>
+      </div>
+    </section>
 
     <section class="topic-explorer panel" aria-labelledby="topics-title">
       <div class="explorer-heading">

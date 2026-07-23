@@ -32,6 +32,8 @@ frontera de herramientas y recursos deterministas; no se presenta como agente.
 - Fallback determinista y dataset de regresión para respuestas representativas.
 - Feedback con acciones directas y práctica adaptativa separada del hilo principal.
 - Tres proyectos integradores con rúbricas específicas y evaluación estructurada.
+- Panel protegido para crear, previsualizar, publicar y versionar lecciones.
+- Borradores aislados del corpus MCP, con despublicación y reversión trazable.
 - Interfaz para proyección y voz opt-in mediante WebSocket backend.
 - Adaptadores JSON/Firestore y dos servicios preparados para Cloud Run.
 
@@ -114,6 +116,13 @@ sin reemplazar la evaluación principal ni inflar el dominio del tema.
 `GET /api/projects` lista tres retos transversales. Cada entrega se evalúa en
 `POST /api/projects/{project_id}/evaluate` con una rúbrica propia del proyecto.
 
+El panel de autoría se habilita al configurar `APP_AUTHORING_TOKEN`. En Docker
+Compose use `AUTHORING_TOKEN` para proteger tanto Agent App como las rutas
+administrativas del MCP. Las lecciones se guardan en
+`MCP_CONTENT_AUTHORING_PATH`; sólo el snapshot publicado alimenta la búsqueda del
+tutor. Consulte [la guía de Fase 7](docs/phase-7.md) para el flujo y los
+contratos.
+
 ## Ejecutar pruebas
 
 ```bash
@@ -156,4 +165,5 @@ Consulte [la arquitectura](docs/architecture.md), [el guion de demo](docs/demo-s
 [el despliegue](docs/deployment.md), [Foundry](docs/foundry.md),
 [la guía de Fase 1](docs/phase-1.md), [la guía de Fase 2](docs/phase-2.md) y
 [la guía de Fase 3](docs/phase-3.md), [la guía de Fase 4](docs/phase-4.md) y
-[la guía de Fase 5](docs/phase-5.md) y [la guía de Fase 6](docs/phase-6.md).
+[la guía de Fase 5](docs/phase-5.md), [la guía de Fase 6](docs/phase-6.md) y
+[la guía de Fase 7](docs/phase-7.md).

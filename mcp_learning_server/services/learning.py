@@ -30,6 +30,7 @@ from mcp_learning_server.models import (
 from mcp_learning_server.repositories.base import ProgressRepository
 from mcp_learning_server.services.content_store import ContentStore
 from mcp_learning_server.services.retrieval import LexicalRetriever, tokenize
+from mcp_learning_server.services.authoring import ContentAuthoringService
 
 TOPIC_ALIASES: dict[str, Topic] = {
     "artificial intelligence": Topic.ARTIFICIAL_INTELLIGENCE,
@@ -98,10 +99,12 @@ class LearningService:
         progress_repository: ProgressRepository,
         content_store: ContentStore,
         retriever: LexicalRetriever,
+        authoring: ContentAuthoringService | None = None,
     ) -> None:
         self.progress_repository = progress_repository
         self.content_store = content_store
         self.retriever = retriever
+        self.authoring = authoring
 
     def get_student_progress(self, student_id: str) -> StudentProgress:
         return self.progress_repository.get(student_id)

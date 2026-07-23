@@ -5,6 +5,13 @@ from agent_app.api.main import create_app
 from agent_app.config import ModelProviderName, Settings
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.learning_tools import LocalLearningTools
+from agent_app.services.authoring import LocalAuthoringGateway
+from mcp_learning_server.models import LearningContent
+from mcp_learning_server.repositories.content_authoring import (
+    LocalContentAuthoringRepository,
+)
+from mcp_learning_server.services.authoring import ContentAuthoringService
+from mcp_learning_server.services.content_store import InMemoryContentStore
 from agent_app.services.sessions import LocalSessionRepository
 
 
@@ -36,6 +43,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
             "text": True,
             "voice": False,
             "voice_model": None,
+            "authoring": False,
         }
         assert topics.status_code == 200
         catalog = topics.json()
@@ -71,10 +79,12 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert 'id="learning-path-card"' in page.text
         assert 'id="project-grid"' in page.text
         assert 'id="practice-card"' in page.text
+        assert 'id="authoring-panel"' in page.text
         assert styles.status_code == 200
         assert script.status_code == 200
         assert "data-start-topic" in script.text
         assert "/api/practice/start" in script.text
+        assert "/api/authoring/lessons" in script.text
         assert "/api/projects" in script.text
         assert "const totalTopics = 23" not in script.text
         chat = await client.post(
@@ -419,3 +429,71 @@ async def test_practice_and_projects_are_available_without_losing_main_quiz(
     assert "expected_keywords" not in recovered.text
     assert project_evaluation.status_code == 200
     assert len(project_evaluation.json()["rubric"]) == 4
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_authoring_api_is_protected_versioned_and_updates_published_content(
+    learning_service,
+    tmp_path,
+) -> None:
+    store = InMemoryContentStore()
+    authoring_service = ContentAuthoringService(
+        LocalContentAuthoringRepository(tmp_path / "authoring.json", []),
+        store,
+    )
+    app = create_app(
+        Settings(app_authoring_token="panel-secret"),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+        authoring=LocalAuthoringGateway(authoring_service),
+    )
+    content = LearningContent(
+        id="mcp-authoring-test",
+        topic="model-context-protocol",
+        title="MCP desde autoría",
+        level="beginner",
+        text=(
+            "MCP define un protocolo para descubrir recursos y herramientas "
+            "con contratos explícitos entre aplicaciones y servidores."
+        ),
+        source="Equipo curricular AITeacher",
+        keywords=["protocolo", "herramientas"],
+    ).model_dump(mode="json")
+    headers = {"x-authoring-token": "panel-secret"}
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://agent.local",
+    ) as client:
+        unauthorized = await client.get("/api/authoring/lessons")
+        created = await client.post(
+            "/api/authoring/lessons",
+            headers=headers,
+            json={"content": content, "author": "editora"},
+        )
+        preview = await client.get(
+            "/api/authoring/lessons/mcp-authoring-test/preview",
+            headers=headers,
+        )
+        published = await client.post(
+            "/api/authoring/lessons/mcp-authoring-test/publish",
+            headers=headers,
+            json={"author": "editora"},
+        )
+        reverted = await client.post(
+            "/api/authoring/lessons/mcp-authoring-test/revert",
+            headers=headers,
+            json={"author": "revisor", "version": 1},
+        )
+
+    assert unauthorized.status_code == 401
+    assert created.status_code == 201
+    assert created.json()["published"] is False
+    assert preview.json()["title"] == "MCP desde autoría"
+    assert published.json()["published"] is True
+    assert published.json()["version"] == 2
+    assert published.json()["published_content"]["id"] == "mcp-authoring-test"
+    assert reverted.json()["published"] is False
+    assert reverted.json()["version"] == 3
+    assert store.all() == ()

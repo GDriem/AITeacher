@@ -14,7 +14,7 @@ la conversación anterior.
 | 4 | Persistencia completa de sesiones | Completada |
 | 5 | Evaluación híbrida con rúbricas | Completada |
 | 6 | Feedback accionable y modo práctica | Completada |
-| 7 | Panel de autoría de contenido | Pendiente |
+| 7 | Panel de autoría de contenido | Completada |
 | 8 | Accesibilidad, observabilidad y pulido | Pendiente |
 
 ## Fase 1 — Explorador de temas
@@ -284,6 +284,24 @@ aplicación o cambiar de dispositivo.
 - El contenido inválido no puede publicarse.
 - Los cambios tienen trazabilidad y pueden revertirse.
 - El MCP utiliza el contenido publicado.
+
+### Decisiones implementadas
+
+- El MCP conserva borradores, snapshots publicados e historial en un repositorio
+  JSON atómico independiente del corpus fuente. Al primer inicio importa
+  `learning_content.json`; después usa el estado editorial persistido.
+- Agent App ofrece el panel y actúa como proxy. Tanto el proxy como las rutas
+  `/admin` del MCP requieren tokens configurables; las operaciones editoriales
+  no se exponen como herramientas a los agentes.
+- Editar una lección publicada sólo cambia su borrador. La búsqueda del tutor se
+  actualiza al publicar o revertir, y despublicar retira inmediatamente la
+  lección del `ContentStore`.
+- Cada cambio agrega una versión con acción, editor, fecha, borrador y snapshot
+  publicado. Revertir crea una nueva versión que restaura contenido y estado sin
+  borrar la trazabilidad.
+- `LearningContent` valida identificador, tema, nivel, fuente, longitud del texto
+  y palabras clave únicas. Este contrato será también la salida de futuros
+  importadores Markdown o documentales.
 
 ### Prompt para iniciar la sesión
 

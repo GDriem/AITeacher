@@ -23,10 +23,13 @@ class Settings(BaseSettings):
     app_session_retention_days: int = Field(default=365, ge=1, le=3_650)
     app_sessions_backend: str = Field(default="local", pattern="^(local|firestore)$")
     firestore_sessions_collection: str = "learning_sessions"
+    app_authoring_token: str | None = None
     model_provider: ModelProviderName = ModelProviderName.MOCK
     model_timeout_seconds: float = Field(default=20, gt=0, le=120)
     mcp_timeout_seconds: float = Field(default=5, gt=0, le=60)
     mcp_server_url: str = "http://localhost:8001/mcp/"
+    mcp_authoring_url: str = "http://localhost:8001/admin"
+    mcp_authoring_token: str | None = None
     mcp_use_local_adapter: bool = True
     mcp_auth_audience: str | None = None
 

@@ -8,10 +8,13 @@ services:
       APP_SESSIONS_BACKEND: local
       APP_SESSIONS_PATH: /data/sessions.json
       APP_SESSION_RETENTION_DAYS: ${APP_SESSION_RETENTION_DAYS:-365}
+      APP_AUTHORING_TOKEN: ${AUTHORING_TOKEN:-}
       MODEL_PROVIDER: ${MODEL_PROVIDER:-mock}
       MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
       MCP_USE_LOCAL_ADAPTER: "false"
       MCP_SERVER_URL: http://mcp-server:8080/mcp/
+      MCP_AUTHORING_URL: http://mcp-server:8080/admin
+      MCP_AUTHORING_TOKEN: ${AUTHORING_TOKEN:-}
       MCP_TIMEOUT_SECONDS: ${MCP_TIMEOUT_SECONDS:-5}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-3.1-flash-live-preview}
@@ -47,7 +50,9 @@ services:
     environment:
       MCP_PORT: "8080"
       MCP_PROGRESS_PATH: /data/student_progress.json
+      MCP_CONTENT_AUTHORING_PATH: /data/content_authoring.json
       MCP_PROGRESS_BACKEND: local
+      MCP_AUTHORING_TOKEN: ${AUTHORING_TOKEN:-}
       MCP_ALLOWED_HOSTS: "mcp-server:8080"
     ports:
       - "8001:8080"

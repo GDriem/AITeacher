@@ -4,11 +4,20 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import secrets
 import uuid
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -46,6 +55,11 @@ from agent_app.services.learning_tools import (
 from agent_app.services.logging import configure_logging
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
 from agent_app.services.activities import PROJECTS, evaluate_project
+from agent_app.services.authoring import (
+    AuthoringGateway,
+    LocalAuthoringGateway,
+    RemoteAuthoringGateway,
+)
 from agent_app.services.sessions import (
     ConversationDetail,
     ConversationListResponse,
@@ -55,7 +69,14 @@ from agent_app.services.sessions import (
     conversation_detail,
     conversation_summary,
 )
-from mcp_learning_server.models import TopicStatus
+from mcp_learning_server.models import (
+    AuthoredLesson,
+    LearningContent,
+    LessonActionRequest,
+    LessonMutationRequest,
+    LessonRevertRequest,
+    TopicStatus,
+)
 from mcp_learning_server.server import build_learning_service
 
 logger = logging.getLogger(__name__)
@@ -118,19 +139,39 @@ def build_learning_tools(settings: Settings) -> LearningTools:
     )
 
 
+def build_authoring_gateway(
+    settings: Settings,
+    tools: LearningTools,
+) -> AuthoringGateway | None:
+    if isinstance(tools, LocalLearningTools):
+        if tools.service.authoring is None:
+            return None
+        return LocalAuthoringGateway(tools.service.authoring)
+    if not settings.mcp_authoring_token:
+        return None
+    return RemoteAuthoringGateway(
+        settings.mcp_authoring_url,
+        settings.mcp_authoring_token,
+        settings.mcp_timeout_seconds,
+        settings.mcp_auth_audience,
+    )
+
+
 def create_app(
     settings: Settings | None = None,
     tools: LearningTools | None = None,
     provider: ModelProvider | None = None,
     sessions: SessionRepository | None = None,
+    authoring: AuthoringGateway | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     tools = tools or build_learning_tools(settings)
     sessions = sessions or build_session_repository(settings)
+    authoring = authoring or build_authoring_gateway(settings, tools)
     orchestrator = build_orchestrator(settings, tools, provider, sessions)
     app = FastAPI(
         title="AITeacher",
-        version="0.6.0",
+        version="0.7.0",
         description=(
             "Tutor de IA multiagente con aprendizaje adaptativo y herramientas "
             "MCP independientes."
@@ -139,6 +180,7 @@ def create_app(
     app.state.orchestrator = orchestrator
     app.state.learning_tools = tools
     app.state.sessions = sessions
+    app.state.authoring = authoring
     app.state.settings = settings
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -177,7 +219,115 @@ def create_app(
             "text": True,
             "voice": settings.voice_enabled,
             "voice_model": settings.gemini_live_model if settings.voice_enabled else None,
+            "authoring": bool(settings.app_authoring_token and authoring),
         }
+
+    def require_authoring(
+        supplied_token: str | None,
+    ) -> AuthoringGateway:
+        if not settings.app_authoring_token or authoring is None:
+            raise HTTPException(
+                status_code=503,
+                detail="El panel de autoría no está configurado",
+            )
+        if not supplied_token or not secrets.compare_digest(
+            supplied_token,
+            settings.app_authoring_token,
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail="Credencial de autoría inválida",
+            )
+        return authoring
+
+    @app.get("/api/authoring/lessons", response_model=list[AuthoredLesson])
+    async def list_authored_lessons(
+        x_authoring_token: str | None = Header(default=None),
+    ) -> list[AuthoredLesson]:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.list_lessons()
+
+    @app.post(
+        "/api/authoring/lessons",
+        response_model=AuthoredLesson,
+        status_code=201,
+    )
+    async def create_authored_lesson(
+        payload: LessonMutationRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.create_lesson(payload)
+
+    @app.get(
+        "/api/authoring/lessons/{lesson_id}",
+        response_model=AuthoredLesson,
+    )
+    async def get_authored_lesson(
+        lesson_id: str,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.get_lesson(lesson_id)
+
+    @app.put(
+        "/api/authoring/lessons/{lesson_id}",
+        response_model=AuthoredLesson,
+    )
+    async def update_authored_lesson(
+        lesson_id: str,
+        payload: LessonMutationRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.update_lesson(lesson_id, payload)
+
+    @app.get(
+        "/api/authoring/lessons/{lesson_id}/preview",
+        response_model=LearningContent,
+    )
+    async def preview_authored_lesson(
+        lesson_id: str,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> LearningContent:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.preview_lesson(lesson_id)
+
+    @app.post(
+        "/api/authoring/lessons/{lesson_id}/publish",
+        response_model=AuthoredLesson,
+    )
+    async def publish_authored_lesson(
+        lesson_id: str,
+        payload: LessonActionRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.publish_lesson(lesson_id, payload)
+
+    @app.post(
+        "/api/authoring/lessons/{lesson_id}/unpublish",
+        response_model=AuthoredLesson,
+    )
+    async def unpublish_authored_lesson(
+        lesson_id: str,
+        payload: LessonActionRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.unpublish_lesson(lesson_id, payload)
+
+    @app.post(
+        "/api/authoring/lessons/{lesson_id}/revert",
+        response_model=AuthoredLesson,
+    )
+    async def revert_authored_lesson(
+        lesson_id: str,
+        payload: LessonRevertRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.revert_lesson(lesson_id, payload)
 
     @app.get("/api/topics", response_model=TopicCatalogResponse)
     async def topics(student_id: str) -> TopicCatalogResponse:

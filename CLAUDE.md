@@ -27,9 +27,9 @@ mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable H
   server.py             Punto de entrada ASGI, monta /mcp, /healthz, /readyz
   content/learning_content.json  Corpus propio: 23 temas y 46 lecciones
   services/             ingestion.py, content_store.py (in-memory), retrieval.py (TF-IDF),
-                       learning.py (LearningService, caso de uso central)
+                       learning.py (LearningService), authoring.py (versionado editorial)
   repositories/         base.py (puerto), local_progress.py (JSON atómico),
-                       firestore_progress.py (adaptador Firestore)
+                       firestore_progress.py, content_authoring.py (JSON atómico)
   tools/learning_tools.py  Registro de las 6 herramientas MCP validadas con Pydantic
 
 tests/                 unit/ (aislado) e integration/ (API + transporte MCP real)
@@ -137,7 +137,7 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
 
 ## Pruebas
 
-68 pruebas, ninguna llama servicios cloud reales (usan repos temporales, clientes
+90 pruebas, ninguna llama servicios cloud reales (usan repos temporales, clientes
 simulados, y un servidor MCP local real para el transporte). Ver `docs/phase-1.md`
 y sección 13 del PDF para el desglose por área. Marker `integration` en pytest para
 pruebas que combinan componentes sin credenciales cloud.
@@ -176,6 +176,6 @@ servicios corriendo localmente.
 
 `docs/architecture.md`, `docs/demo-script.md`, `docs/deployment.md`,
 `docs/foundry.md`, `docs/phase-1.md`, `docs/phase-2.md`, `docs/phase-3.md`,
-`docs/phase-4.md`, y
+`docs/phase-4.md`, `docs/phase-5.md`, `docs/phase-6.md`, `docs/phase-7.md`, y
 `agent-mcp-run-guia-completa.pdf`
 (guía técnica de 18 secciones con diagramas, decisiones y trade-offs).
