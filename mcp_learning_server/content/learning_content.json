@@ -1,0 +1,416 @@
+[
+  {
+    "id": "ai-beginner-overview",
+    "topic": "artificial-intelligence",
+    "title": "Qué es la inteligencia artificial",
+    "level": "beginner",
+    "text": "La inteligencia artificial es el campo que construye sistemas capaces de realizar tareas asociadas con percepción, lenguaje, predicción o decisión. Un sistema de IA no necesariamente piensa como una persona: aplica reglas o patrones aprendidos para transformar una entrada en un resultado.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["IA", "sistemas", "predicción", "decisión"]
+  },
+  {
+    "id": "ml-beginner-learning",
+    "topic": "machine-learning",
+    "title": "Aprender a partir de datos",
+    "level": "beginner",
+    "text": "Machine Learning es una rama de la inteligencia artificial donde un modelo ajusta parámetros usando ejemplos. Durante el entrenamiento busca reducir un error; durante la inferencia usa lo aprendido para producir una predicción sobre datos nuevos.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["entrenamiento", "inferencia", "datos", "modelo"]
+  },
+  {
+    "id": "nlp-beginner-language",
+    "topic": "nlp",
+    "title": "Procesamiento de lenguaje natural",
+    "level": "beginner",
+    "text": "El procesamiento de lenguaje natural, o NLP, estudia cómo representar y procesar lenguaje humano con computadoras. Incluye tareas como clasificación de texto, traducción, extracción de información, resumen y conversación.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["NLP", "texto", "lenguaje", "clasificación"]
+  },
+  {
+    "id": "language-models-beginner",
+    "topic": "language-models",
+    "title": "Modelos que estiman secuencias",
+    "level": "beginner",
+    "text": "Un modelo de lenguaje estima qué unidades de texto son probables dado un contexto. Esa capacidad permite completar, clasificar o transformar texto. La salida es probabilística: una misma entrada puede admitir varias continuaciones válidas.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["probabilidad", "secuencia", "contexto", "texto"]
+  },
+  {
+    "id": "llm-beginner-scale",
+    "topic": "llm",
+    "title": "Qué distingue a un LLM",
+    "level": "beginner",
+    "text": "Un LLM es un modelo de lenguaje con gran cantidad de parámetros y entrenamiento sobre colecciones amplias de datos. Puede seguir instrucciones y generar texto, pero no garantiza hechos correctos ni reemplaza la validación de una aplicación.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["LLM", "parámetros", "instrucciones", "generación"]
+  },
+  {
+    "id": "tokens-beginner-pieces",
+    "topic": "tokens",
+    "title": "Texto convertido en tokens",
+    "level": "beginner",
+    "text": "Antes de procesar texto, un modelo lo divide en tokens: unidades que pueden ser palabras, partes de palabras o signos. El número de tokens afecta el costo, la latencia y cuánto contenido cabe en la ventana de contexto.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["tokenización", "costo", "latencia", "texto"]
+  },
+  {
+    "id": "embeddings-beginner-map",
+    "topic": "embeddings",
+    "title": "Un mapa numérico del significado",
+    "level": "beginner",
+    "text": "Un embedding representa un elemento, como una frase, mediante una lista de números. Elementos con usos o significados parecidos suelen quedar cerca en ese espacio vectorial. Esto permite búsqueda semántica sin exigir coincidencia exacta de palabras.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["vector", "similitud", "búsqueda semántica", "representación"]
+  },
+  {
+    "id": "embeddings-intermediate-similarity",
+    "topic": "embeddings",
+    "title": "Similitud y límites de los embeddings",
+    "level": "intermediate",
+    "text": "La similitud coseno compara la dirección de dos embeddings y suele utilizarse para ordenar resultados. La calidad depende del modelo, del dominio y de cómo se dividen los documentos. Un valor cercano no demuestra por sí solo que una fuente responda la pregunta.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["coseno", "ranking", "chunking", "dominio"]
+  },
+  {
+    "id": "context-window-beginner",
+    "topic": "context-window",
+    "title": "La memoria de trabajo del modelo",
+    "level": "beginner",
+    "text": "La ventana de contexto es el límite de tokens que el modelo puede considerar en una interacción. Incluye instrucciones, conversación, resultados de herramientas y respuesta. No equivale a memoria permanente; la aplicación debe persistir lo que necesite conservar.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["contexto", "tokens", "memoria", "límite"]
+  },
+  {
+    "id": "rag-beginner-grounding",
+    "topic": "rag",
+    "title": "Recuperar antes de generar",
+    "level": "beginner",
+    "text": "RAG combina recuperación y generación. Primero busca fragmentos relevantes en fuentes controladas; luego entrega esos fragmentos al modelo para elaborar una respuesta. La respuesta debe reconocer cuando la recuperación no aporta evidencia suficiente.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["RAG", "recuperación", "generación", "fuentes"]
+  },
+  {
+    "id": "rag-intermediate-pipeline",
+    "topic": "rag",
+    "title": "Etapas y evaluación de un RAG",
+    "level": "intermediate",
+    "text": "Un RAG separa ingestión, almacenamiento, recuperación y generación. Se evalúa si recupera evidencia relevante y si la respuesta permanece fiel a ella. Cambiar el índice no debería obligar a reescribir el agente cuando existe una interfaz de recuperación estable.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["ingestión", "índice", "recall", "fidelidad"]
+  },
+  {
+    "id": "tool-calling-beginner",
+    "topic": "tool-calling",
+    "title": "Del texto a una operación validada",
+    "level": "beginner",
+    "text": "En tool calling, el modelo propone una herramienta y argumentos estructurados. La aplicación valida permisos y datos, ejecuta código determinista y devuelve el resultado al modelo. El modelo decide solicitarla; la herramienta no decide el objetivo.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["herramienta", "función", "validación", "argumentos"]
+  },
+  {
+    "id": "agents-beginner-loop",
+    "topic": "agents",
+    "title": "Un modelo dentro de un ciclo de acción",
+    "level": "beginner",
+    "text": "Un agente combina un modelo, instrucciones, estado y herramientas dentro de un ciclo orientado a objetivos. Puede decidir el siguiente paso y observar resultados. Un flujo fijo o una función aislada no se convierte en agente solamente por usar un LLM.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["agente", "objetivo", "estado", "herramientas"]
+  },
+  {
+    "id": "mcp-beginner-boundary",
+    "topic": "model-context-protocol",
+    "title": "MCP es un protocolo, no un agente",
+    "level": "beginner",
+    "text": "Model Context Protocol estandariza cómo una aplicación descubre y utiliza herramientas, recursos y prompts ofrecidos por un servidor. El servidor MCP ejecuta operaciones definidas; no tiene que razonar ni tomar el papel de un subagente.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["MCP", "protocolo", "servidor", "recursos"]
+  },
+  {
+    "id": "mcp-intermediate-transport",
+    "topic": "model-context-protocol",
+    "title": "Frontera remota con Streamable HTTP",
+    "level": "intermediate",
+    "text": "Un servidor MCP remoto puede usar Streamable HTTP para transportar mensajes del protocolo. En un servicio sin estado, cada instancia puede atender solicitudes equivalentes, mientras la persistencia durable se mantiene fuera del proceso.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["Streamable HTTP", "transporte", "stateless", "escalado"]
+  },
+  {
+    "id": "multi-agent-beginner-delegation",
+    "topic": "multi-agent-systems",
+    "title": "Especialización y delegación",
+    "level": "beginner",
+    "text": "Un sistema multiagente distribuye responsabilidades entre agentes con objetivos o instrucciones distintos. La separación aporta valor cuando cada especialista toma decisiones propias. Consultar una base de datos, validar datos o guardar progreso suele ser una herramienta, no otro agente.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["multiagente", "delegación", "especialista", "orquestador"]
+  },
+  {
+    "id": "prompt-engineering-beginner-instructions",
+    "topic": "prompt-engineering",
+    "title": "Instrucciones claras para un modelo",
+    "level": "beginner",
+    "text": "La ingeniería de prompts consiste en expresar con claridad el objetivo, el contexto, las restricciones y el formato esperado. Separar instrucciones de datos y aportar ejemplos reduce ambigüedad, aunque no garantiza que todas las respuestas sean correctas.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["prompt", "instrucciones", "contexto", "formato"]
+  },
+  {
+    "id": "prompt-engineering-intermediate-roles",
+    "topic": "prompt-engineering",
+    "title": "Roles, ejemplos y salidas estructuradas",
+    "level": "intermediate",
+    "text": "Los mensajes de sistema, usuario y herramienta cumplen funciones distintas dentro de una conversación. Los ejemplos few-shot y los esquemas estructurados ayudan a obtener respuestas consistentes, que la aplicación todavía debe validar antes de utilizar.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["system", "user", "few-shot", "JSON", "validación"]
+  },
+  {
+    "id": "prompt-engineering-advanced-design",
+    "topic": "prompt-engineering",
+    "title": "Diseñar prompts como componentes evaluables",
+    "level": "advanced",
+    "text": "Un prompt de producción debe versionarse, probarse con casos representativos y observarse mediante métricas. Conviene separar reglas estables, contexto recuperado y datos del usuario para modificar cada parte sin perder trazabilidad.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["versionado", "evaluación", "plantillas", "trazabilidad"]
+  },
+  {
+    "id": "hallucinations-evaluation-beginner",
+    "topic": "hallucinations-evaluation",
+    "title": "Cuando una respuesta plausible no es verdadera",
+    "level": "beginner",
+    "text": "Una alucinación es una afirmación generada con apariencia convincente pero sin respaldo suficiente. Pedir fuentes, recuperar evidencia y permitir que el modelo reconozca incertidumbre ayuda a reducir el riesgo, pero la verificación sigue siendo necesaria.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["alucinación", "evidencia", "incertidumbre", "verificación"]
+  },
+  {
+    "id": "hallucinations-evaluation-intermediate-metrics",
+    "topic": "hallucinations-evaluation",
+    "title": "Evaluar exactitud, relevancia y fidelidad",
+    "level": "intermediate",
+    "text": "Evaluar una aplicación con LLM requiere casos de prueba y criterios separados: exactitud, relevancia, fidelidad a las fuentes y seguridad. Una sola puntuación puede ocultar fallos, por lo que se combinan evaluadores automáticos con revisión humana.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["evaluación", "exactitud", "relevancia", "fidelidad", "dataset"]
+  },
+  {
+    "id": "hallucinations-evaluation-advanced-pipeline",
+    "topic": "hallucinations-evaluation",
+    "title": "Evaluación continua antes y después del despliegue",
+    "level": "advanced",
+    "text": "Una canalización de evaluación ejecuta datasets versionados ante cambios de modelo, prompt o recuperación y compara resultados contra umbrales. En producción también analiza trazas y retroalimentación real para detectar regresiones que las pruebas previas no cubrieron.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["regresión", "umbrales", "evaluación continua", "trazas"]
+  },
+  {
+    "id": "agent-memory-beginner-state",
+    "topic": "agent-memory",
+    "title": "Historial, contexto y memoria no son lo mismo",
+    "level": "beginner",
+    "text": "El historial conserva mensajes, la ventana de contexto contiene lo que el modelo puede ver ahora y la memoria persistente guarda información para sesiones futuras. Una aplicación decide qué recordar, durante cuánto tiempo y con qué permiso.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["memoria", "historial", "contexto", "persistencia"]
+  },
+  {
+    "id": "agent-memory-intermediate-strategies",
+    "topic": "agent-memory",
+    "title": "Resumir, recuperar y olvidar",
+    "level": "intermediate",
+    "text": "Una estrategia de memoria puede resumir conversaciones, almacenar hechos estructurados y recuperar sólo lo relevante para la tarea actual. También necesita políticas de actualización, caducidad y eliminación para evitar contradicciones o acumulación innecesaria.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["resumen", "recuperación", "caducidad", "olvido"]
+  },
+  {
+    "id": "agent-memory-advanced-architecture",
+    "topic": "agent-memory",
+    "title": "Arquitectura de memoria verificable",
+    "level": "advanced",
+    "text": "La memoria durable debe mantenerse fuera del proceso del agente, con identidad, procedencia y controles de acceso. Los hechos recuperados se tratan como contexto potencialmente desactualizado y no como instrucciones con autoridad.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["procedencia", "identidad", "autorización", "memoria durable"]
+  },
+  {
+    "id": "advanced-rag-beginner-chunking",
+    "topic": "advanced-rag",
+    "title": "Más allá de buscar vectores",
+    "level": "beginner",
+    "text": "La calidad de un RAG depende de cómo se dividen los documentos, qué metadatos se conservan y qué consulta se envía al buscador. Fragmentos demasiado pequeños pierden contexto y fragmentos demasiado grandes introducen información irrelevante.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["RAG", "chunking", "metadatos", "consulta"]
+  },
+  {
+    "id": "advanced-rag-intermediate-hybrid",
+    "topic": "advanced-rag",
+    "title": "Búsqueda híbrida y reranking",
+    "level": "intermediate",
+    "text": "La búsqueda híbrida combina coincidencia léxica con similitud semántica para cubrir distintos tipos de consultas. Un reranker vuelve a ordenar los candidatos con una evaluación más precisa antes de entregar la evidencia al modelo.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["búsqueda híbrida", "semántica", "BM25", "reranking"]
+  },
+  {
+    "id": "advanced-rag-advanced-evaluation",
+    "topic": "advanced-rag",
+    "title": "Diseñar y medir una recuperación robusta",
+    "level": "advanced",
+    "text": "Un RAG avanzado separa métricas de recuperación y generación: recall de evidencia, precisión de contexto y fidelidad de respuesta. Filtros, expansión de consultas y recuperación en varias etapas se justifican con mejoras medibles, no sólo por complejidad técnica.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["recall", "precisión", "fidelidad", "multiquery"]
+  },
+  {
+    "id": "ai-security-beginner-boundaries",
+    "topic": "ai-security",
+    "title": "El modelo no es una frontera de seguridad",
+    "level": "beginner",
+    "text": "Un modelo puede proponer acciones, pero la aplicación debe validar identidad, permisos, argumentos y consecuencias. Las instrucciones del usuario o de documentos externos nunca deben sustituir controles deterministas de autorización.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["seguridad", "permisos", "validación", "autorización"]
+  },
+  {
+    "id": "ai-security-intermediate-injection",
+    "topic": "ai-security",
+    "title": "Prompt injection y uso seguro de herramientas",
+    "level": "intermediate",
+    "text": "Un ataque de prompt injection intenta convertir datos no confiables en instrucciones para el modelo. Se mitiga aislando contenido, limitando herramientas, validando cada operación y solicitando confirmación humana para acciones sensibles.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["prompt injection", "herramientas", "mínimo privilegio", "confirmación"]
+  },
+  {
+    "id": "ai-security-advanced-threat-model",
+    "topic": "ai-security",
+    "title": "Modelar amenazas en sistemas con agentes",
+    "level": "advanced",
+    "text": "El diseño seguro identifica activos, límites de confianza, capacidades del atacante y rutas de abuso entre modelo, herramientas y datos. La defensa combina controles preventivos, registros auditables, límites de impacto y recuperación ante incidentes.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["amenazas", "límites de confianza", "auditoría", "defensa"]
+  },
+  {
+    "id": "observability-costs-beginner-signals",
+    "topic": "observability-costs",
+    "title": "Medir calidad, latencia y consumo",
+    "level": "beginner",
+    "text": "La observabilidad permite entender qué hizo una aplicación mediante registros, métricas y trazas. En IA conviene medir también tokens, costo, latencia del modelo, uso de herramientas y calidad de la respuesta.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["observabilidad", "tokens", "latencia", "costo", "trazas"]
+  },
+  {
+    "id": "observability-costs-intermediate-tracing",
+    "topic": "observability-costs",
+    "title": "Trazar una solicitud de extremo a extremo",
+    "level": "intermediate",
+    "text": "Una traza conecta la solicitud del usuario con recuperación, llamadas al modelo y herramientas mediante un identificador de correlación. Así se localizan cuellos de botella y errores sin exponer razonamiento interno ni datos sensibles.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["correlación", "traza", "métricas", "privacidad"]
+  },
+  {
+    "id": "observability-costs-advanced-optimization",
+    "topic": "observability-costs",
+    "title": "Optimizar con presupuestos y objetivos de servicio",
+    "level": "advanced",
+    "text": "Los límites de tokens, caché, selección dinámica de modelos y concurrencia reducen costo cuando se aplican con métricas de calidad. Presupuestos y objetivos de servicio permiten decidir qué degradaciones son aceptables bajo carga.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["presupuesto", "caché", "SLO", "optimización"]
+  },
+  {
+    "id": "fine-tuning-beginner-choice",
+    "topic": "fine-tuning",
+    "title": "Prompt, RAG o fine-tuning",
+    "level": "beginner",
+    "text": "El prompting cambia instrucciones, RAG aporta conocimiento recuperado y fine-tuning modifica el comportamiento aprendido mediante ejemplos. El ajuste fino no es la primera opción para incorporar hechos que cambian con frecuencia.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["fine-tuning", "prompt", "RAG", "comportamiento"]
+  },
+  {
+    "id": "fine-tuning-intermediate-dataset",
+    "topic": "fine-tuning",
+    "title": "Datos de entrenamiento y evaluación separada",
+    "level": "intermediate",
+    "text": "Un dataset de ajuste fino necesita ejemplos consistentes, representativos y revisados. Los datos de evaluación se mantienen separados para comprobar generalización y comparar el modelo ajustado contra una línea base.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["dataset", "entrenamiento", "evaluación", "generalización"]
+  },
+  {
+    "id": "fine-tuning-advanced-lifecycle",
+    "topic": "fine-tuning",
+    "title": "Ciclo de vida de un modelo adaptado",
+    "level": "advanced",
+    "text": "Un modelo ajustado requiere versionado de datos, parámetros, artefactos y resultados de evaluación. El despliegue gradual y el monitoreo permiten detectar deriva, regresiones o comportamientos inesperados antes de ampliar el tráfico.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["versionado", "deriva", "despliegue gradual", "monitoreo"]
+  },
+  {
+    "id": "multimodal-ai-beginner-modalities",
+    "topic": "multimodal-ai",
+    "title": "Texto, imágenes y audio en un mismo sistema",
+    "level": "beginner",
+    "text": "Un modelo multimodal procesa o genera más de un tipo de información, como texto, imágenes y audio. Cada modalidad necesita entradas adecuadas y puede introducir errores distintos, por ejemplo OCR incorrecto o transcripción incompleta.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["multimodal", "imagen", "audio", "texto"]
+  },
+  {
+    "id": "multimodal-ai-intermediate-pipeline",
+    "topic": "multimodal-ai",
+    "title": "Construir flujos multimodales",
+    "level": "intermediate",
+    "text": "Una aplicación multimodal puede combinar OCR, transcripción, visión y generación dentro de una canalización. Debe preservar la relación entre la evidencia original y el texto derivado para que una respuesta pueda verificarse.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["OCR", "transcripción", "visión", "evidencia"]
+  },
+  {
+    "id": "multimodal-ai-advanced-evaluation",
+    "topic": "multimodal-ai",
+    "title": "Evaluar calidad entre modalidades",
+    "level": "advanced",
+    "text": "La evaluación multimodal mide por separado percepción, razonamiento y generación para localizar el origen de un fallo. También considera accesibilidad, formatos, tamaño de archivos, latencia y manejo seguro de contenido.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["percepción", "evaluación", "accesibilidad", "latencia"]
+  },
+  {
+    "id": "responsible-ai-beginner-principles",
+    "topic": "responsible-ai",
+    "title": "Principios para un uso responsable",
+    "level": "beginner",
+    "text": "La IA responsable considera equidad, privacidad, transparencia, seguridad y supervisión humana durante todo el ciclo de vida. No se limita a filtrar respuestas: también cuestiona los datos, el objetivo y las personas afectadas.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["equidad", "privacidad", "transparencia", "supervisión"]
+  },
+  {
+    "id": "responsible-ai-intermediate-impact",
+    "topic": "responsible-ai",
+    "title": "Evaluar impacto y sesgos",
+    "level": "intermediate",
+    "text": "Una evaluación de impacto identifica usuarios, posibles daños y grupos que podrían recibir resultados distintos. Las métricas de sesgo se complementan con revisión contextual, mecanismos de apelación y participación de las personas afectadas.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["impacto", "sesgo", "daño", "apelación"]
+  },
+  {
+    "id": "responsible-ai-advanced-governance",
+    "topic": "responsible-ai",
+    "title": "Gobernanza y responsabilidad operativa",
+    "level": "advanced",
+    "text": "La gobernanza asigna responsables, criterios de aprobación, documentación y monitoreo para cada sistema de IA. Los registros de decisiones y planes de respuesta permiten demostrar cómo se gestionaron riesgos y cambios.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["gobernanza", "responsabilidad", "documentación", "riesgo"]
+  },
+  {
+    "id": "ai-production-beginner-runtime",
+    "topic": "ai-production",
+    "title": "Del prototipo a un servicio confiable",
+    "level": "beginner",
+    "text": "Una aplicación de IA en producción necesita configuración segura, manejo de errores, persistencia y monitoreo además de un buen prompt. El modelo es una dependencia externa con límites de capacidad, costo y disponibilidad.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["producción", "API", "errores", "persistencia"]
+  },
+  {
+    "id": "ai-production-intermediate-resilience",
+    "topic": "ai-production",
+    "title": "Resiliencia, streaming y control de carga",
+    "level": "intermediate",
+    "text": "Timeouts, reintentos con límites, circuit breakers y rate limiting protegen al servicio ante fallos o saturación. El streaming mejora la percepción de velocidad, pero exige manejar cancelaciones y respuestas parciales.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["timeout", "reintentos", "rate limiting", "streaming"]
+  },
+  {
+    "id": "ai-production-advanced-architecture",
+    "topic": "ai-production",
+    "title": "Arquitectura escalable y fallback de modelos",
+    "level": "advanced",
+    "text": "Una arquitectura de producción separa APIs, orquestación, herramientas y estado para escalar y desplegar cada componente con independencia. El fallback entre modelos debe respetar requisitos de calidad, seguridad, residencia de datos y presupuesto.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["escalabilidad", "fallback", "orquestación", "residencia de datos"]
+  }
+]

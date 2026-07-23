@@ -1,0 +1,8 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "mcp_learning_server/Dockerfile", "-t", "${_MCP_IMAGE}", "."]
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "agent_app/Dockerfile", "-t", "${_AGENT_IMAGE}", "."]
+images:
+  - "${_MCP_IMAGE}"
+  - "${_AGENT_IMAGE}"

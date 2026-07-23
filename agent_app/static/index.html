@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#07111f" />
+    <title>AITeacher</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div>
+        <p class="eyebrow">Tutor inteligente · Aprendizaje adaptativo</p>
+        <h1>AI<span>Teacher</span></h1>
+      </div>
+      <div class="status"><i></i><span>Aprendizaje adaptativo</span></div>
+    </header>
+
+    <section class="topic-explorer panel" aria-labelledby="topics-title">
+      <div class="explorer-heading">
+        <div>
+          <p class="eyebrow">Explora el currículo</p>
+          <h2 id="topics-title">Elige qué quieres aprender</h2>
+          <p class="muted">Descubre los temas disponibles y comienza una explicación guiada con un clic.</p>
+        </div>
+        <strong id="topics-count" class="catalog-count">Cargando…</strong>
+      </div>
+      <article id="learning-path-card" class="learning-path-card hidden">
+        <div class="path-icon" aria-hidden="true">→</div>
+        <div>
+          <p class="eyebrow">Continuar aprendiendo</p>
+          <h3 id="recommended-topic"></h3>
+          <p id="recommendation-reason" class="muted"></p>
+        </div>
+        <button id="start-recommended" type="button">
+          Continuar <b>→</b>
+        </button>
+      </article>
+      <div class="catalog-filters" aria-label="Filtros del catálogo">
+        <label>
+          <span>Categoría</span>
+          <select id="category-filter">
+            <option value="">Todas las categorías</option>
+          </select>
+        </label>
+        <label>
+          <span>Nivel disponible</span>
+          <select id="level-filter">
+            <option value="">Todos los niveles</option>
+          </select>
+        </label>
+      </div>
+      <div id="topic-grid" class="topic-grid" aria-live="polite">
+        <p class="catalog-message">Consultando el catálogo del MCP…</p>
+      </div>
+    </section>
+
+    <main class="layout">
+      <section class="conversation panel">
+        <div class="panel-title">
+          <div>
+            <p class="eyebrow">Tutor multiagente</p>
+            <h2>Construyamos tu comprensión</h2>
+          </div>
+          <div id="detected" class="detected hidden">
+            <span id="topic-badge" class="badge blue"></span>
+            <span id="level-badge" class="badge green"></span>
+          </div>
+        </div>
+
+        <div id="conversation-feed" class="conversation-feed" aria-live="polite">
+          <div id="welcome" class="welcome-card">
+            <div class="spark">✦</div>
+            <div>
+              <strong>Aprende explicando, no memorizando</strong>
+              <p>Haz una pregunta, responde con tus palabras y recibirás feedback para reforzar o profundizar según tu avance.</p>
+            </div>
+          </div>
+        </div>
+
+        <form id="chat-form" class="composer">
+          <label class="sr-only" for="message">Mensaje</label>
+          <textarea id="message" rows="2" maxlength="4000" placeholder="Ejemplo: Explícame qué son los embeddings">Explícame qué son los embeddings</textarea>
+          <div class="composer-actions">
+            <button id="mic" class="icon-button" type="button" disabled title="Comprobando disponibilidad de voz" aria-label="Activar micrófono">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v4M9 21h6"></path>
+              </svg>
+            </button>
+            <button id="send" class="send-button" type="submit">
+              <span>Enviar</span><b>→</b>
+            </button>
+          </div>
+        </form>
+        <p id="voice-status" class="voice-status hidden" aria-live="polite"></p>
+        <p id="error" class="error hidden" role="alert"></p>
+
+        <section id="quiz-card" class="quiz-card hidden">
+          <div class="quiz-heading">
+            <span id="quiz-kicker">Comprueba tu comprensión</span>
+            <div><b id="quiz-topic"></b><em id="quiz-step">Ronda 1</em></div>
+          </div>
+          <p id="question"></p>
+          <form id="quiz-form">
+            <label class="sr-only" for="quiz-answer">Tu explicación</label>
+            <textarea id="quiz-answer" rows="3" maxlength="2000" placeholder="Explícalo con tus propias palabras…" required></textarea>
+            <button type="submit"><span>Recibir feedback</span><b>→</b></button>
+          </form>
+          <div id="feedback" class="feedback hidden" aria-live="polite">
+            <div class="feedback-summary">
+              <div id="feedback-score" class="feedback-score">—</div>
+              <div>
+                <span id="feedback-status" class="feedback-status"></span>
+                <h3 id="feedback-title"></h3>
+                <p id="feedback-copy"></p>
+              </div>
+            </div>
+            <div class="feedback-grid">
+              <section>
+                <h4><span class="feedback-dot success"></span>Lo que ya comprendiste</h4>
+                <ul id="strengths"></ul>
+              </section>
+              <section>
+                <h4><span class="feedback-dot growth"></span>Tu siguiente mejora</h4>
+                <ul id="improvements"></ul>
+              </section>
+            </div>
+            <div class="learning-context">
+              <span>Contexto para avanzar</span>
+              <p id="learning-context"></p>
+            </div>
+            <button id="continue-learning" class="continue-button" type="button">
+              Continuar con el siguiente reto <b>→</b>
+            </button>
+          </div>
+        </section>
+      </section>
+
+      <aside class="sidebar">
+        <section class="panel progress-panel">
+          <div class="panel-title compact">
+            <div><p class="eyebrow">Estudiante</p><h2>Dominio por tema</h2></div>
+            <span id="score-orb" class="score-orb" title="Promedio de los mejores puntajes por tema">—</span>
+          </div>
+          <div class="progress-track"><span id="progress-bar"></span></div>
+          <p id="progress-copy" class="muted">Inicia una conversación para construir tu ruta.</p>
+          <div id="studied-topics" class="topic-mastery-list"></div>
+        </section>
+
+        <section class="panel trace-panel">
+          <div class="panel-title compact">
+            <div><p class="eyebrow">Ejecución observable</p><h2>Agentes y herramientas</h2></div>
+            <button id="clear-trace" class="text-button" type="button">Limpiar</button>
+          </div>
+          <div id="trace" class="trace empty">
+            <p>Los eventos aparecerán aquí. No se muestra razonamiento interno.</p>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <footer>
+      <span>Explica · recibe feedback · vuelve a intentar</span>
+      <span>MCP es una frontera de herramientas, no un agente</span>
+    </footer>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
