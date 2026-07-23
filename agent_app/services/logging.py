@@ -14,6 +14,17 @@ class JsonFormatter(logging.Formatter):
         correlation_id = getattr(record, "correlation_id", None)
         if correlation_id:
             payload["correlation_id"] = correlation_id
+        for field in (
+            "method",
+            "route",
+            "status_code",
+            "duration_ms",
+            "provider",
+            "activity",
+        ):
+            value = getattr(record, field, None)
+            if value is not None:
+                payload[field] = value
         return json.dumps(payload, ensure_ascii=False)
 
 

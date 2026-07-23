@@ -353,6 +353,21 @@
           <div id="studied-topics" class="topic-mastery-list"></div>
         </section>
 
+        <section class="panel health-panel" aria-labelledby="health-title">
+          <div class="panel-title compact">
+            <div>
+              <p class="eyebrow">Salud y uso agregados</p>
+              <h2 id="health-title">Operación</h2>
+            </div>
+            <button id="refresh-health" class="text-button" type="button">Actualizar</button>
+          </div>
+          <div id="health-summary" class="health-summary" aria-live="polite" aria-busy="true">
+            <p class="catalog-message loading-message">
+              <span class="spinner" aria-hidden="true"></span>Cargando señales…
+            </p>
+          </div>
+        </section>
+
         <section class="panel trace-panel">
           <div class="panel-title compact">
             <div><p class="eyebrow">Ejecución observable</p><h2>Agentes y herramientas</h2></div>

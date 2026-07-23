@@ -342,8 +342,8 @@ button, input, select, textarea, a { -webkit-tap-highlight-color: transparent; }
 .practice-result p { margin: 4px 0 0; color: var(--muted); font-size: .78rem; }
 .practice-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
-.sidebar { display: grid; gap: 22px; grid-template-rows: auto minmax(0, 1fr); }
-.progress-panel, .trace-panel { padding: 22px; }
+.sidebar { display: grid; gap: 22px; grid-template-rows: auto auto minmax(0, 1fr); }
+.progress-panel, .health-panel, .trace-panel { padding: 22px; }
 .score-orb { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(98,217,162,.3); color: var(--green); background: rgba(98,217,162,.08); font-weight: 850; }
 .progress-track { height: 7px; margin: 22px 0 11px; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,.07); }
 .progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--green)); transition: width .5s ease; }
@@ -365,6 +365,29 @@ button, input, select, textarea, a { -webkit-tap-highlight-color: transparent; }
 .legacy-progress, .empty-progress { margin: 9px 0 0; color: var(--muted); font-size: .68rem; line-height: 1.45; }
 .empty-progress { margin: 3px 0 0; }
 .text-button { border: 0; color: var(--muted); background: transparent; font-size: .75rem; }
+.text-button:disabled { opacity: .5; cursor: wait; }
+.health-summary { display: grid; gap: 13px; margin-top: 17px; }
+.health-state { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 8px; }
+.health-state small { grid-column: 2; color: var(--muted); font-size: .66rem; }
+.health-dot {
+  grid-row: 1 / 3;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 12px rgba(98,217,162,.75);
+}
+.health-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+.health-metrics article { display: grid; gap: 3px; padding: 9px; border-radius: 9px; background: rgba(255,255,255,.035); }
+.health-metrics span { color: var(--muted); font-size: .62rem; }
+.health-metrics strong { font-size: .78rem; }
+.activity-completion { padding-top: 3px; }
+.activity-completion > strong { font-size: .72rem; }
+.activity-completion ul { display: grid; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
+.activity-completion li { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: .68rem; }
+.activity-completion li strong { color: var(--text); }
+.activity-completion .empty-health { justify-content: flex-start; }
+.metrics-note { margin: 0; color: var(--muted); font-size: .63rem; line-height: 1.45; }
 .trace { position: relative; margin-top: 22px; max-height: 485px; overflow: auto; padding-right: 5px; }
 .trace.empty { color: var(--muted); font-size: .84rem; line-height: 1.5; }
 .trace-event { position: relative; display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; padding: 0 0 19px; }

@@ -225,6 +225,7 @@ async function sendChat(message, { appendUser = true } = {}) {
     state.nextQuiz = null;
     renderChat(data);
     await loadSessions();
+    loadObservability();
   } catch (error) {
     showError(
       error.message,
@@ -270,6 +271,7 @@ quizForm.addEventListener("submit", async (event) => {
     renderTrace();
     await loadTopicCatalog();
     await loadSessions();
+    loadObservability();
   } catch (error) {
     showError(error.message);
   } finally {
@@ -295,6 +297,8 @@ $("clear-trace").addEventListener("click", () => {
   state.trace = [];
   renderTrace();
 });
+
+$("refresh-health").addEventListener("click", loadObservability);
 
 practiceForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -324,6 +328,7 @@ practiceForm.addEventListener("submit", async (event) => {
     $("next-practice").classList.remove("hidden");
     renderProgress(data.progress);
     await loadTopicCatalog();
+    loadObservability();
   } catch (error) {
     showError(error.message);
   } finally {
@@ -380,6 +385,7 @@ projectForm.addEventListener("submit", async (event) => {
     );
     const data = await readResponse(response);
     renderProjectResult(data);
+    loadObservability();
   } catch (error) {
     showError(error.message);
   } finally {
@@ -426,6 +432,10 @@ updateConnectionStatus();
 loadTopicCatalog();
 loadSessions({ restore: true });
 loadProjects();
+loadObservability();
+window.setInterval(() => {
+  if (!document.hidden && navigator.onLine) loadObservability();
+}, 30_000);
 
 async function initializeCapabilities() {
   try {
@@ -1394,6 +1404,66 @@ function renderTrace() {
     </article>`).join("");
 }
 
+async function loadObservability() {
+  const container = $("health-summary");
+  const refresh = $("refresh-health");
+  container.setAttribute("aria-busy", "true");
+  refresh.disabled = true;
+  try {
+    const data = await fetch("/api/observability").then(readResponse);
+    const activityLabels = {
+      guided_explanation: "Explicaciones",
+      topic_evaluation: "Evaluaciones",
+      practice_evaluation: "Prácticas",
+      project_evaluation: "Proyectos",
+    };
+    const activities = data.activities.length
+      ? data.activities
+          .map(
+            (activity) => `
+              <li>
+                <span>${escapeHtml(activityLabels[activity.name] || pretty(activity.name))}</span>
+                <strong>${activity.completed}/${activity.started}</strong>
+              </li>`,
+          )
+          .join("")
+      : '<li class="empty-health">Aún no hay actividades registradas.</li>';
+    const pricing = data.model.pricing_configured
+      ? `$${Number(data.model.estimated_cost_usd).toFixed(4)}`
+      : "Sin tarifa";
+    container.innerHTML = `
+      <div class="health-state">
+        <span class="health-dot" aria-hidden="true"></span>
+        <strong>Servicio disponible</strong>
+        <small>${formatDuration(data.uptime_seconds)} activo</small>
+      </div>
+      <div class="health-metrics">
+        <article><span>Peticiones</span><strong>${data.http.requests}</strong></article>
+        <article><span>Errores</span><strong>${formatPercentage(data.http.error_rate)}</strong></article>
+        <article><span>Latencia p95</span><strong>${Math.round(data.http.latency_ms.p95)} ms</strong></article>
+        <article><span>Llamadas IA</span><strong>${data.model.calls}</strong></article>
+        <article><span>Tokens estimados</span><strong>${formatNumber(data.model.input_tokens + data.model.output_tokens)}</strong></article>
+        <article><span>Costo estimado</span><strong>${pricing}</strong></article>
+      </div>
+      <div class="activity-completion">
+        <strong>Actividades completadas</strong>
+        <ul>${activities}</ul>
+      </div>
+      <p class="metrics-note">Tokens aproximados por longitud. El costo requiere tarifas configuradas por entorno.</p>`;
+  } catch (error) {
+    container.innerHTML = `
+      <div class="empty-state error">
+        <strong>No pudimos consultar las señales.</strong>
+        <span>${escapeHtml(error.message)}</span>
+        <button id="retry-health" type="button">Reintentar</button>
+      </div>`;
+    $("retry-health").addEventListener("click", loadObservability);
+  } finally {
+    container.setAttribute("aria-busy", "false");
+    refresh.disabled = false;
+  }
+}
+
 function setBusy(busy) {
   $("send").disabled = busy;
   $("send").querySelector("span").textContent = busy ? "Coordinando…" : "Enviar";
@@ -1483,6 +1553,23 @@ function topicStatusLabel(status) {
     in_progress: "En progreso",
     completed: "✓ Completado",
   }[status] || status;
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("es-GT", { maximumFractionDigits: 0 }).format(value);
+}
+
+function formatPercentage(value) {
+  return new Intl.NumberFormat("es-GT", {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function formatDuration(seconds) {
+  if (seconds < 60) return `${Math.max(0, Math.round(seconds))} s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
+  return `${Math.round(seconds / 3600)} h`;
 }
 
 function statusLabel(status) {

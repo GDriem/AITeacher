@@ -30,6 +30,27 @@ tokens que un proveedor no reporte se identificarán explícitamente como
 estimados; el costo se calculará con precios configurados por entorno, nunca con
 tarifas codificadas que puedan quedar obsoletas.
 
+La implementación usa `ObservabilityRegistry`, un registro en memoria con una
+ventana acotada de muestras de latencia. `ObservableModelProvider` decora el
+puerto ya existente sin acoplar los agentes a Gemini o Foundry. El resumen se
+consulta en:
+
+| Método | Ruta | Uso |
+| --- | --- | --- |
+| `GET` | `/healthz` | Vida del proceso y configuración básica |
+| `GET` | `/readyz` | Proceso inicializado y listo para tráfico |
+| `GET` | `/api/observability` | Salud, uso, latencia y actividades agregadas |
+
+Las tarifas se configuran con
+`MODEL_INPUT_COST_PER_MILLION_USD` y
+`MODEL_OUTPUT_COST_PER_MILLION_USD`. Un valor `0` mantiene la medición de tokens
+sin atribuir un costo potencialmente incorrecto. La cantidad de muestras se
+limita con `OBSERVABILITY_MAX_LATENCY_SAMPLES`.
+
+El resumen no conserva rutas concretas desconocidas, parámetros, cuerpos ni
+resultados del modelo. Para evitar cardinalidad y filtraciones, usa plantillas de
+ruta de FastAPI y agrupa las rutas no reconocidas como `<unmatched>`.
+
 ### 3. Responsive, rendimiento y cierre
 
 - pruebas de contrato accesible y de layouts móvil/escritorio;

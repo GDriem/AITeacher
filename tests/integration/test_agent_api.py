@@ -15,6 +15,36 @@ from mcp_learning_server.services.content_store import InMemoryContentStore
 from agent_app.services.sessions import LocalSessionRepository
 
 
+class UnavailableLearningTools(LocalLearningTools):
+    async def list_available_topics(self):
+        raise RuntimeError("MCP unavailable")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_readiness_reports_unavailable_learning_service(
+    learning_service,
+) -> None:
+    app = create_app(
+        Settings(mcp_use_local_adapter=True),
+        tools=UnavailableLearningTools(learning_service),
+        provider=MockModelProvider(),
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://agent.local",
+    ) as client:
+        response = await client.get("/readyz")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "not_ready",
+        "service": "agent-app",
+        "dependency": "learning-mcp",
+    }
+
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_complete_text_flow_without_cloud_credentials(learning_service) -> None:
@@ -31,6 +61,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
     ) as client:
         health = await client.get("/healthz")
+        readiness = await client.get("/readyz")
         capabilities = await client.get("/api/capabilities")
         topics = await client.get(
             "/api/topics", params={"student_id": "student-1"}
@@ -39,6 +70,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         styles = await client.get("/static/styles.css")
         script = await client.get("/static/app.js")
         assert health.status_code == 200
+        assert readiness.json()["status"] == "ready"
         assert capabilities.json() == {
             "text": True,
             "voice": False,
@@ -134,6 +166,21 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
             "significado",
         ]
         assert mastery["pending_concepts"] == []
+
+        metrics = await client.get("/api/observability")
+        observability = metrics.json()
+        assert metrics.status_code == 200
+        assert observability["status"] == "ok"
+        assert observability["http"]["requests"] >= 7
+        assert observability["model"]["provider"] == "mock"
+        assert observability["model"]["calls"] >= 2
+        assert observability["model"]["input_tokens"] > 0
+        assert observability["model"]["tokens_estimated"] is True
+        assert {
+            item["name"] for item in observability["activities"]
+        } >= {"guided_explanation", "topic_evaluation"}
+        assert "student-1" not in metrics.text
+        assert "embedding es un vector" not in metrics.text
 
         updated_topics = await client.get(
             "/api/topics", params={"student_id": "student-1"}

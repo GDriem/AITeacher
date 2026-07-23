@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import secrets
+import time
 import uuid
 from pathlib import Path
 
@@ -53,6 +54,10 @@ from agent_app.services.learning_tools import (
     RemoteMcpLearningTools,
 )
 from agent_app.services.logging import configure_logging
+from agent_app.services.observability import (
+    ObservableModelProvider,
+    ObservabilityRegistry,
+)
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
 from agent_app.services.activities import PROJECTS, evaluate_project
 from agent_app.services.authoring import (
@@ -163,15 +168,29 @@ def create_app(
     provider: ModelProvider | None = None,
     sessions: SessionRepository | None = None,
     authoring: AuthoringGateway | None = None,
+    observability: ObservabilityRegistry | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     tools = tools or build_learning_tools(settings)
     sessions = sessions or build_session_repository(settings)
     authoring = authoring or build_authoring_gateway(settings, tools)
-    orchestrator = build_orchestrator(settings, tools, provider, sessions)
+    provider = provider or create_model_provider(settings)
+    observability = observability or ObservabilityRegistry(
+        provider_name=provider.name,
+        input_cost_per_million_usd=settings.model_input_cost_per_million_usd,
+        output_cost_per_million_usd=settings.model_output_cost_per_million_usd,
+        max_latency_samples=settings.observability_max_latency_samples,
+    )
+    observed_provider = ObservableModelProvider(provider, observability)
+    orchestrator = build_orchestrator(
+        settings,
+        tools,
+        observed_provider,
+        sessions,
+    )
     app = FastAPI(
         title="AITeacher",
-        version="0.7.0",
+        version="0.8.0",
         description=(
             "Tutor de IA multiagente con aprendizaje adaptativo y herramientas "
             "MCP independientes."
@@ -182,13 +201,56 @@ def create_app(
     app.state.sessions = sessions
     app.state.authoring = authoring
     app.state.settings = settings
+    app.state.observability = observability
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.middleware("http")
     async def correlation_middleware(request: Request, call_next):
         correlation_id = request.headers.get("x-correlation-id") or str(uuid.uuid4())
         request.state.correlation_id = correlation_id
-        response = await call_next(request)
+        started = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            duration_ms = (time.perf_counter() - started) * 1_000
+            route = getattr(request.scope.get("route"), "path", "<unmatched>")
+            if not request.url.path.startswith("/static/"):
+                observability.record_http(
+                    method=request.method,
+                    route=route,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                )
+            logger.exception(
+                "http_request_failed",
+                extra={
+                    "correlation_id": correlation_id,
+                    "method": request.method,
+                    "route": route,
+                    "status_code": 500,
+                    "duration_ms": round(duration_ms, 2),
+                },
+            )
+            raise
+        duration_ms = (time.perf_counter() - started) * 1_000
+        route = getattr(request.scope.get("route"), "path", "<unmatched>")
+        if not request.url.path.startswith("/static/"):
+            observability.record_http(
+                method=request.method,
+                route=route,
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+            )
+        logger.info(
+            "http_request_completed",
+            extra={
+                "correlation_id": correlation_id,
+                "method": request.method,
+                "route": route,
+                "status_code": response.status_code,
+                "duration_ms": round(duration_ms, 2),
+            },
+        )
         response.headers["x-correlation-id"] = correlation_id
         return response
 
@@ -212,6 +274,31 @@ def create_app(
             "model_provider": settings.model_provider.value,
             "mcp_mode": "local" if settings.mcp_use_local_adapter else "remote",
         }
+
+    @app.get("/readyz", response_model=None)
+    async def readiness() -> dict | Response:
+        try:
+            async with asyncio.timeout(settings.mcp_timeout_seconds):
+                await tools.list_available_topics()
+        except Exception:
+            logger.exception("readiness_dependency_failed")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "not_ready",
+                    "service": "agent-app",
+                    "dependency": "learning-mcp",
+                },
+            )
+        return {
+            "status": "ready",
+            "service": "agent-app",
+            "mcp_mode": "local" if settings.mcp_use_local_adapter else "remote",
+        }
+
+    @app.get("/api/observability")
+    async def observability_summary() -> dict:
+        return observability.snapshot()
 
     @app.get("/api/capabilities")
     async def capabilities() -> dict:
@@ -447,7 +534,8 @@ def create_app(
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         correlation_id = request.state.correlation_id
         logger.info("chat_started", extra={"correlation_id": correlation_id})
-        result = await orchestrator.chat(payload, correlation_id)
+        with observability.activity("guided_explanation"):
+            result = await orchestrator.chat(payload, correlation_id)
         logger.info("chat_completed", extra={"correlation_id": correlation_id})
         return result
 
@@ -455,7 +543,10 @@ def create_app(
     async def evaluate(
         payload: EvaluationRequest, request: Request
     ) -> EvaluationResponse:
-        return await orchestrator.evaluate(payload, request.state.correlation_id)
+        with observability.activity("topic_evaluation"):
+            return await orchestrator.evaluate(
+                payload, request.state.correlation_id
+            )
 
     @app.post("/api/practice/start", response_model=PracticeStartResponse)
     async def start_practice(
@@ -467,7 +558,8 @@ def create_app(
     async def evaluate_practice(
         payload: PracticeEvaluationRequest,
     ) -> PracticeEvaluationResponse:
-        return await orchestrator.evaluate_practice(payload)
+        with observability.activity("practice_evaluation"):
+            return await orchestrator.evaluate_practice(payload)
 
     @app.get("/api/projects", response_model=ProjectCatalogResponse)
     async def projects() -> ProjectCatalogResponse:
@@ -484,11 +576,12 @@ def create_app(
         project = PROJECTS.get(project_id)
         if project is None:
             raise KeyError("No existe el proyecto solicitado")
-        return await evaluate_project(
-            orchestrator.evaluator.provider,
-            project,
-            payload.submission,
-        )
+        with observability.activity("project_evaluation"):
+            return await evaluate_project(
+                orchestrator.evaluator.provider,
+                project,
+                payload.submission,
+            )
 
     return app
 

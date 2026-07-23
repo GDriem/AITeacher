@@ -83,6 +83,7 @@ def test_page_exposes_keyboard_and_screen_reader_landmarks() -> None:
     assert 'id="error" class="error recovery-message hidden" role="alert"' in html
     assert 'id="retry-action"' in html
     assert 'id="progress-track" class="progress-track" role="progressbar"' in html
+    assert 'id="health-summary" class="health-summary"' in html
 
 
 def test_styles_cover_focus_contrast_motion_and_responsive_layouts() -> None:
@@ -107,3 +108,5 @@ def test_client_manages_focus_loading_retries_and_reconnection() -> None:
     assert "restoreFocus()" in script
     assert "data-retry-topics" in script
     assert "data-retry-projects" in script
+    assert 'fetch("/api/observability")' in script
+    assert "Tokens estimados" in script
