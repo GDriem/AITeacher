@@ -5,6 +5,44 @@ from agent_app.api.main import create_app
 from agent_app.config import ModelProviderName, Settings
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.learning_tools import LocalLearningTools
+from agent_app.services.authoring import LocalAuthoringGateway
+from mcp_learning_server.models import LearningContent
+from mcp_learning_server.repositories.content_authoring import (
+    LocalContentAuthoringRepository,
+)
+from mcp_learning_server.services.authoring import ContentAuthoringService
+from mcp_learning_server.services.content_store import InMemoryContentStore
+from agent_app.services.sessions import LocalSessionRepository
+
+
+class UnavailableLearningTools(LocalLearningTools):
+    async def list_available_topics(self):
+        raise RuntimeError("MCP unavailable")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_readiness_reports_unavailable_learning_service(
+    learning_service,
+) -> None:
+    app = create_app(
+        Settings(mcp_use_local_adapter=True),
+        tools=UnavailableLearningTools(learning_service),
+        provider=MockModelProvider(),
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://agent.local",
+    ) as client:
+        response = await client.get("/readyz")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "not_ready",
+        "service": "agent-app",
+        "dependency": "learning-mcp",
+    }
 
 
 @pytest.mark.integration
@@ -23,6 +61,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
     ) as client:
         health = await client.get("/healthz")
+        readiness = await client.get("/readyz")
         capabilities = await client.get("/api/capabilities")
         topics = await client.get(
             "/api/topics", params={"student_id": "student-1"}
@@ -31,10 +70,12 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         styles = await client.get("/static/styles.css")
         script = await client.get("/static/app.js")
         assert health.status_code == 200
+        assert readiness.json()["status"] == "ready"
         assert capabilities.json() == {
             "text": True,
             "voice": False,
             "voice_model": None,
+            "authoring": False,
         }
         assert topics.status_code == 200
         catalog = topics.json()
@@ -64,13 +105,23 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert embedding["unmet_prerequisites"] == ["tokens"]
         assert embedding["available_levels"] == ["beginner", "intermediate"]
         assert page.status_code == 200
+        assert page.headers["cache-control"] == "no-cache"
         assert "AITeacher" in page.text
         assert 'id="category-filter"' in page.text
         assert 'id="level-filter"' in page.text
         assert 'id="learning-path-card"' in page.text
+        assert 'id="project-grid"' in page.text
+        assert 'id="practice-card"' in page.text
+        assert 'id="authoring-panel"' in page.text
         assert styles.status_code == 200
+        assert styles.headers["content-encoding"] == "gzip"
+        assert styles.headers["cache-control"].startswith("public, max-age=3600")
+        assert styles.headers["x-content-type-options"] == "nosniff"
         assert script.status_code == 200
         assert "data-start-topic" in script.text
+        assert "/api/practice/start" in script.text
+        assert "/api/authoring/lessons" in script.text
+        assert "/api/projects" in script.text
         assert "const totalTopics = 23" not in script.text
         chat = await client.post(
             "/api/chat",
@@ -99,6 +150,10 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert evaluated.status_code == 200, evaluated.text
         assert evaluated.json()["score"] == 100
         assert evaluated.json()["status"] == "mastered"
+        assert evaluated.json()["rubric"]["evaluation_mode"] == (
+            "deterministic_fallback"
+        )
+        assert evaluated.json()["result_explanation"]
         assert evaluated.json()["strengths"]
         assert evaluated.json()["learning_context"]
         assert "expected_keywords" not in evaluated.json()["next_quiz"]
@@ -115,6 +170,21 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
             "significado",
         ]
         assert mastery["pending_concepts"] == []
+
+        metrics = await client.get("/api/observability")
+        observability = metrics.json()
+        assert metrics.status_code == 200
+        assert observability["status"] == "ok"
+        assert observability["http"]["requests"] >= 7
+        assert observability["model"]["provider"] == "mock"
+        assert observability["model"]["calls"] >= 2
+        assert observability["model"]["input_tokens"] > 0
+        assert observability["model"]["tokens_estimated"] is True
+        assert {
+            item["name"] for item in observability["activities"]
+        } >= {"guided_explanation", "topic_evaluation"}
+        assert "student-1" not in metrics.text
+        assert "embedding es un vector" not in metrics.text
 
         updated_topics = await client.get(
             "/api/topics", params={"student_id": "student-1"}
@@ -161,7 +231,10 @@ async def test_recommendation_changes_after_mastering_prerequisite(
             json={
                 "student_id": "adaptive-student",
                 "session_id": chat.json()["session_id"],
-                "answer": "Artificial intelligence",
+                "answer": (
+                    "Artificial intelligence es un sistema que permite realizar "
+                    "tareas que normalmente requieren capacidades humanas."
+                ),
             },
         )
         updated = await client.get(
@@ -196,3 +269,282 @@ async def test_invalid_message_is_handled(learning_service) -> None:
         )
     assert response.status_code == 422
     assert "tema" in response.json()["detail"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_session_recovers_after_restart_and_is_authorized(
+    learning_service, tmp_path
+) -> None:
+    path = tmp_path / "sessions.json"
+    settings = Settings(app_sessions_path=str(path))
+    tools = LocalLearningTools(learning_service)
+    first_app = create_app(
+        settings,
+        tools=tools,
+        provider=MockModelProvider(),
+        sessions=LocalSessionRepository(path),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=first_app),
+        base_url="http://agent.local",
+    ) as client:
+        chat = await client.post(
+            "/api/chat",
+            json={
+                "student_id": "persistent-student",
+                "message": "Explícame embeddings",
+            },
+        )
+        assert chat.status_code == 200
+        session_id = chat.json()["session_id"]
+
+    restarted_app = create_app(
+        settings,
+        tools=tools,
+        provider=MockModelProvider(),
+        sessions=LocalSessionRepository(path),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=restarted_app),
+        base_url="http://agent.local",
+    ) as client:
+        listed = await client.get(
+            "/api/sessions", params={"student_id": "persistent-student"}
+        )
+        recovered = await client.get(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "persistent-student"},
+        )
+        forbidden = await client.get(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "other-student"},
+        )
+        evaluated = await client.post(
+            "/api/evaluate",
+            json={
+                "student_id": "persistent-student",
+                "session_id": session_id,
+                "answer": (
+                    "Es un vector que representa significado y permite comparar "
+                    "elementos por similitud."
+                ),
+            },
+        )
+
+    assert listed.status_code == 200
+    assert listed.json()["retention_days"] == 365
+    assert listed.json()["sessions"][0]["id"] == session_id
+    assert recovered.status_code == 200
+    assert recovered.json()["topic"] == "embeddings"
+    assert recovered.json()["message_count"] == 2
+    assert recovered.json()["pending_quiz"]["attempt"] == 1
+    assert len(recovered.json()["messages"]) == 2
+    assert "expected_keywords" not in recovered.text
+    assert forbidden.status_code == 403
+    assert evaluated.status_code == 200
+    assert evaluated.json()["score"] == 100
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_session_can_be_renamed_archived_restored_and_deleted(
+    learning_service, tmp_path
+) -> None:
+    repository = LocalSessionRepository(tmp_path / "sessions.json")
+    app = create_app(
+        Settings(),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+        sessions=repository,
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+    ) as client:
+        chat = await client.post(
+            "/api/chat",
+            json={"student_id": "student-1", "message": "Explícame embeddings"},
+        )
+        session_id = chat.json()["session_id"]
+        renamed = await client.patch(
+            f"/api/sessions/{session_id}",
+            json={"student_id": "student-1", "title": "Vectores semánticos"},
+        )
+        archived = await client.patch(
+            f"/api/sessions/{session_id}",
+            json={"student_id": "student-1", "archived": True},
+        )
+        active = await client.get(
+            "/api/sessions", params={"student_id": "student-1"}
+        )
+        all_sessions = await client.get(
+            "/api/sessions",
+            params={"student_id": "student-1", "include_archived": True},
+        )
+        blocked_chat = await client.post(
+            "/api/chat",
+            json={
+                "student_id": "student-1",
+                "session_id": session_id,
+                "message": "Explícamelo más fácil",
+            },
+        )
+        restored = await client.patch(
+            f"/api/sessions/{session_id}",
+            json={"student_id": "student-1", "archived": False},
+        )
+        deleted = await client.delete(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "student-1"},
+        )
+        missing = await client.get(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "student-1"},
+        )
+
+    assert renamed.json()["title"] == "Vectores semánticos"
+    assert archived.json()["archived_at"] is not None
+    assert active.json()["sessions"] == []
+    assert len(all_sessions.json()["sessions"]) == 1
+    assert blocked_chat.status_code == 422
+    assert restored.json()["archived_at"] is None
+    assert deleted.status_code == 204
+    assert missing.status_code == 404
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_practice_and_projects_are_available_without_losing_main_quiz(
+    learning_service,
+) -> None:
+    app = create_app(
+        Settings(),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+    ) as client:
+        projects = await client.get("/api/projects")
+        chat = await client.post(
+            "/api/chat",
+            json={"student_id": "practice-api", "message": "Explícame embeddings"},
+        )
+        session_id = chat.json()["session_id"]
+        main_question = chat.json()["quiz"]["question"]
+        practice = await client.post(
+            "/api/practice/start",
+            json={
+                "student_id": "practice-api",
+                "session_id": session_id,
+            },
+        )
+        practice_evaluation = await client.post(
+            "/api/practice/evaluate",
+            json={
+                "student_id": "practice-api",
+                "session_id": session_id,
+                "answer": (
+                    "Un vector representa el significado y la similitud permite "
+                    "comparar elementos relacionados."
+                ),
+            },
+        )
+        recovered = await client.get(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "practice-api"},
+        )
+        project = projects.json()["projects"][0]
+        project_evaluation = await client.post(
+            f"/api/projects/{project['id']}/evaluate",
+            json={
+                "student_id": "practice-api",
+                "submission": (
+                    "Primero recupera evidencia y después genera una respuesta. "
+                    "Cita las fuentes, valida permisos y mide errores y latencia."
+                ),
+            },
+        )
+
+    assert projects.status_code == 200
+    assert len(projects.json()["projects"]) == 3
+    assert all(len(item["topics"]) >= 2 for item in projects.json()["projects"])
+    assert practice.status_code == 200
+    assert practice.json()["main_quiz"]["question"] == main_question
+    assert practice.json()["exercise"]["focus_concepts"]
+    assert practice_evaluation.status_code == 200
+    assert practice_evaluation.json()["main_quiz"]["question"] == main_question
+    assert practice_evaluation.json()["next_exercise"]["round"] == 2
+    assert recovered.json()["pending_quiz"]["question"] == main_question
+    assert recovered.json()["pending_practice"]["exercise"]["round"] == 2
+    assert "expected_keywords" not in recovered.text
+    assert project_evaluation.status_code == 200
+    assert len(project_evaluation.json()["rubric"]) == 4
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_authoring_api_is_protected_versioned_and_updates_published_content(
+    learning_service,
+    tmp_path,
+) -> None:
+    store = InMemoryContentStore()
+    authoring_service = ContentAuthoringService(
+        LocalContentAuthoringRepository(tmp_path / "authoring.json", []),
+        store,
+    )
+    app = create_app(
+        Settings(app_authoring_token="panel-secret"),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+        authoring=LocalAuthoringGateway(authoring_service),
+    )
+    content = LearningContent(
+        id="mcp-authoring-test",
+        topic="model-context-protocol",
+        title="MCP desde autoría",
+        level="beginner",
+        text=(
+            "MCP define un protocolo para descubrir recursos y herramientas "
+            "con contratos explícitos entre aplicaciones y servidores."
+        ),
+        source="Equipo curricular AITeacher",
+        keywords=["protocolo", "herramientas"],
+    ).model_dump(mode="json")
+    headers = {"x-authoring-token": "panel-secret"}
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://agent.local",
+    ) as client:
+        unauthorized = await client.get("/api/authoring/lessons")
+        created = await client.post(
+            "/api/authoring/lessons",
+            headers=headers,
+            json={"content": content, "author": "editora"},
+        )
+        preview = await client.get(
+            "/api/authoring/lessons/mcp-authoring-test/preview",
+            headers=headers,
+        )
+        published = await client.post(
+            "/api/authoring/lessons/mcp-authoring-test/publish",
+            headers=headers,
+            json={"author": "editora"},
+        )
+        reverted = await client.post(
+            "/api/authoring/lessons/mcp-authoring-test/revert",
+            headers=headers,
+            json={"author": "revisor", "version": 1},
+        )
+
+    assert unauthorized.status_code == 401
+    assert created.status_code == 201
+    assert created.json()["published"] is False
+    assert preview.json()["title"] == "MCP desde autoría"
+    assert published.json()["published"] is True
+    assert published.json()["version"] == 2
+    assert published.json()["published_content"]["id"] == "mcp-authoring-test"
+    assert reverted.json()["published"] is False
+    assert reverted.json()["version"] == 3
+    assert store.all() == ()

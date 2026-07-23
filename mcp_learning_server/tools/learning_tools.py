@@ -6,7 +6,7 @@ from typing import Annotated
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 
-from mcp_learning_server.models import LearningLevel
+from mcp_learning_server.models import EvaluationRubric, LearningLevel
 from mcp_learning_server.services.learning import LearningService
 
 StudentId = Annotated[str, Field(min_length=1, max_length=100)]
@@ -51,6 +51,10 @@ def register_learning_tools(mcp: FastMCP, service: LearningService) -> None:
         pending_concepts: Annotated[
             list[str] | None, Field(max_length=30)
         ] = None,
+        rubric: EvaluationRubric | None = None,
+        result_explanation: Annotated[
+            str | None, Field(min_length=1, max_length=500)
+        ] = None,
     ) -> dict:
         """Guarda una evaluación y actualiza de forma determinista el progreso."""
         return service.save_learning_result(
@@ -61,6 +65,8 @@ def register_learning_tools(mcp: FastMCP, service: LearningService) -> None:
             recommendation,
             mastered_concepts,
             pending_concepts,
+            rubric,
+            result_explanation,
         ).model_dump(mode="json")
 
     @mcp.tool()

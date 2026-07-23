@@ -42,6 +42,11 @@ class MasteryStatus(StrEnum):
     MASTERED = "mastered"
 
 
+class RubricEvaluationMode(StrEnum):
+    HYBRID_MODEL = "hybrid_model"
+    DETERMINISTIC_FALLBACK = "deterministic_fallback"
+
+
 class Topic(StrEnum):
     ARTIFICIAL_INTELLIGENCE = "artificial-intelligence"
     MACHINE_LEARNING = "machine-learning"
@@ -77,6 +82,91 @@ class LearningContent(StrictModel):
     source: str = Field(min_length=3, max_length=200)
     keywords: list[str] = Field(default_factory=list, max_length=20)
 
+    @field_validator("source")
+    @classmethod
+    def valid_source(cls, source: str) -> str:
+        if any(ord(character) < 32 for character in source):
+            raise ValueError("la fuente no puede contener caracteres de control")
+        if not any(character.isalnum() for character in source):
+            raise ValueError("la fuente debe identificar un origen verificable")
+        return source
+
+    @field_validator("keywords")
+    @classmethod
+    def valid_keywords(cls, keywords: list[str]) -> list[str]:
+        normalized = [keyword.strip() for keyword in keywords]
+        if any(len(keyword) < 2 or len(keyword) > 60 for keyword in normalized):
+            raise ValueError("cada palabra clave debe contener entre 2 y 60 caracteres")
+        lowered = [keyword.casefold() for keyword in normalized]
+        if len(lowered) != len(set(lowered)):
+            raise ValueError("las palabras clave no pueden repetirse")
+        return normalized
+
+
+class ContentRevisionAction(StrEnum):
+    BOOTSTRAPPED = "bootstrapped"
+    CREATED = "created"
+    UPDATED = "updated"
+    PUBLISHED = "published"
+    UNPUBLISHED = "unpublished"
+    REVERTED = "reverted"
+
+
+class ContentRevision(StrictModel):
+    version: int = Field(ge=1)
+    action: ContentRevisionAction
+    author: str = Field(min_length=1, max_length=100)
+    draft: LearningContent
+    published_content: LearningContent | None = None
+    published: bool
+    created_at: datetime = Field(default_factory=utc_now)
+    reverted_from: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def consistent_published_snapshot(self) -> "ContentRevision":
+        if self.published != (self.published_content is not None):
+            raise ValueError("el snapshot publicado no coincide con su estado")
+        return self
+
+
+class AuthoredLesson(StrictModel):
+    id: str = Field(min_length=3, max_length=100, pattern=r"^[a-z0-9-]+$")
+    draft: LearningContent
+    published_content: LearningContent | None = None
+    published: bool = False
+    version: int = Field(ge=1)
+    revisions: list[ContentRevision] = Field(min_length=1)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def consistent_identity_and_history(self) -> "AuthoredLesson":
+        if self.draft.id != self.id:
+            raise ValueError("el identificador del borrador no coincide con la lección")
+        if self.published and self.published_content is None:
+            raise ValueError("una lección publicada requiere contenido publicado")
+        if not self.published and self.published_content is not None:
+            raise ValueError("una lección despublicada no conserva contenido activo")
+        if self.published_content is not None and self.published_content.id != self.id:
+            raise ValueError("el identificador publicado no coincide con la lección")
+        versions = [revision.version for revision in self.revisions]
+        if versions != list(range(1, self.version + 1)):
+            raise ValueError("el historial de versiones debe ser continuo")
+        return self
+
+
+class LessonMutationRequest(StrictModel):
+    content: LearningContent
+    author: str = Field(min_length=1, max_length=100)
+
+
+class LessonActionRequest(StrictModel):
+    author: str = Field(min_length=1, max_length=100)
+
+
+class LessonRevertRequest(LessonActionRequest):
+    version: int = Field(ge=1)
+
 
 class SearchResult(StrictModel):
     content_id: str
@@ -88,6 +178,19 @@ class SearchResult(StrictModel):
     score: float = Field(ge=0)
 
 
+class RubricCriterion(StrictModel):
+    score: int = Field(ge=0, le=4)
+    explanation: str = Field(min_length=1, max_length=300)
+
+
+class EvaluationRubric(StrictModel):
+    precision: RubricCriterion
+    comprehension: RubricCriterion
+    application: RubricCriterion
+    clarity: RubricCriterion
+    evaluation_mode: RubricEvaluationMode
+
+
 class Assessment(StrictModel):
     topic: Topic
     score: float = Field(ge=0, le=100)
@@ -95,6 +198,8 @@ class Assessment(StrictModel):
     recommendation: str = Field(min_length=1, max_length=500)
     mastered_concepts: list[str] = Field(default_factory=list, max_length=30)
     pending_concepts: list[str] = Field(default_factory=list, max_length=30)
+    rubric: EvaluationRubric | None = None
+    result_explanation: str | None = Field(default=None, min_length=1, max_length=500)
     created_at: datetime = Field(default_factory=utc_now)
 
     @field_validator("mastered_concepts", "pending_concepts")

@@ -13,6 +13,7 @@ from mcp_learning_server.curriculum import (
 )
 from mcp_learning_server.models import (
     Assessment,
+    EvaluationRubric,
     LearningLevel,
     LearningPath,
     LearningPathTopic,
@@ -29,6 +30,7 @@ from mcp_learning_server.models import (
 from mcp_learning_server.repositories.base import ProgressRepository
 from mcp_learning_server.services.content_store import ContentStore
 from mcp_learning_server.services.retrieval import LexicalRetriever, tokenize
+from mcp_learning_server.services.authoring import ContentAuthoringService
 
 TOPIC_ALIASES: dict[str, Topic] = {
     "artificial intelligence": Topic.ARTIFICIAL_INTELLIGENCE,
@@ -97,10 +99,12 @@ class LearningService:
         progress_repository: ProgressRepository,
         content_store: ContentStore,
         retriever: LexicalRetriever,
+        authoring: ContentAuthoringService | None = None,
     ) -> None:
         self.progress_repository = progress_repository
         self.content_store = content_store
         self.retriever = retriever
+        self.authoring = authoring
 
     def get_student_progress(self, student_id: str) -> StudentProgress:
         return self.progress_repository.get(student_id)
@@ -185,6 +189,8 @@ class LearningService:
         recommendation: str | None = None,
         mastered_concepts: list[str] | None = None,
         pending_concepts: list[str] | None = None,
+        rubric: EvaluationRubric | None = None,
+        result_explanation: str | None = None,
     ) -> SaveResultResponse:
         resolved = resolve_topic(topic)
         if not feedback.strip():
@@ -197,6 +203,8 @@ class LearningService:
             recommendation=next_topic,
             mastered_concepts=mastered_concepts or [],
             pending_concepts=pending_concepts or [],
+            rubric=rubric,
+            result_explanation=result_explanation,
         )
         progress = self.progress_repository.save_assessment(student_id, assessment)
         return SaveResultResponse(saved=True, progress=progress)

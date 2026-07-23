@@ -5,25 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#07111f" />
     <title>AITeacher</title>
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=8" />
   </head>
   <body>
-    <div class="ambient ambient-one"></div>
-    <div class="ambient ambient-two"></div>
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div id="connection-status" class="connection-status hidden" role="status" aria-live="polite">
+      <span>Sin conexión. Puedes seguir leyendo; reintentaremos al recuperar la red.</span>
+    </div>
+    <div id="announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
       <div>
         <p class="eyebrow">Tutor inteligente · Aprendizaje adaptativo</p>
         <h1>AI<span>Teacher</span></h1>
       </div>
-      <div class="status"><i></i><span>Aprendizaje adaptativo</span></div>
+      <button id="authoring-toggle" class="authoring-toggle hidden" type="button">
+        Panel de autoría
+      </button>
+      <div class="status" role="status" aria-label="Servicio disponible">
+        <i aria-hidden="true"></i><span>Aprendizaje adaptativo</span>
+      </div>
     </header>
 
+    <section id="authoring-panel" class="authoring-panel panel hidden" aria-labelledby="authoring-title">
+      <div class="explorer-heading">
+        <div>
+          <p class="eyebrow">Currículo versionado</p>
+          <h2 id="authoring-title" tabindex="-1">Panel de autoría</h2>
+          <p class="muted">Prepara borradores, revisa la vista previa y publica contenido directamente en el MCP.</p>
+        </div>
+        <button id="close-authoring" class="text-button" type="button">Cerrar panel</button>
+      </div>
+
+      <form id="authoring-login" class="authoring-login">
+        <label>
+          <span>Nombre del editor</span>
+          <input id="authoring-author" minlength="1" maxlength="100" autocomplete="name" required />
+        </label>
+        <label>
+          <span>Credencial de acceso</span>
+          <input id="authoring-token" type="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit">Acceder</button>
+        <p id="authoring-login-error" class="error hidden" role="alert"></p>
+      </form>
+
+      <div id="authoring-workspace" class="authoring-workspace hidden">
+        <aside class="lesson-browser">
+          <div class="lesson-browser-heading">
+            <strong>Lecciones</strong>
+            <button id="new-lesson" type="button">Nueva</button>
+          </div>
+          <input id="lesson-search" type="search" aria-label="Filtrar lecciones por título o identificador"
+                 placeholder="Filtrar por título o ID…" />
+          <div id="lesson-list" class="lesson-list"></div>
+        </aside>
+
+        <div class="lesson-editor">
+          <form id="lesson-form">
+            <div class="editor-heading">
+              <div>
+                <p class="eyebrow">Borrador estructurado</p>
+                <h3 id="lesson-editor-title">Nueva lección</h3>
+              </div>
+              <span id="lesson-status" class="lesson-status">Sin guardar</span>
+            </div>
+            <div class="lesson-fields">
+              <label>
+                <span>Identificador</span>
+                <input id="lesson-id" pattern="[a-z0-9-]+" minlength="3" maxlength="100" placeholder="rag-ranking-basics" required />
+              </label>
+              <label>
+                <span>Tema</span>
+                <select id="lesson-topic" required></select>
+              </label>
+              <label>
+                <span>Nivel</span>
+                <select id="lesson-level" required>
+                  <option value="beginner">Principiante</option>
+                  <option value="intermediate">Intermedio</option>
+                  <option value="advanced">Avanzado</option>
+                </select>
+              </label>
+              <label class="wide">
+                <span>Título</span>
+                <input id="lesson-title" minlength="3" maxlength="120" required />
+              </label>
+              <label class="wide">
+                <span>Fuente</span>
+                <input id="lesson-source" minlength="3" maxlength="200" placeholder="Documento o URL verificable" required />
+              </label>
+              <label class="wide">
+                <span>Palabras clave</span>
+                <input id="lesson-keywords" placeholder="recuperación, ranking, evidencia" />
+              </label>
+              <label class="wide">
+                <span>Contenido</span>
+                <textarea id="lesson-text" rows="8" minlength="40" maxlength="2000" required></textarea>
+              </label>
+            </div>
+            <p id="lesson-error" class="error hidden" role="alert"></p>
+            <div class="editor-actions">
+              <button id="preview-lesson" type="button">Vista previa</button>
+              <button type="submit">Guardar borrador</button>
+              <button id="publish-lesson" class="primary" type="button" disabled>Publicar</button>
+              <button id="unpublish-lesson" type="button" disabled>Despublicar</button>
+            </div>
+          </form>
+
+          <article id="lesson-preview" class="lesson-preview hidden" aria-live="polite"></article>
+          <section id="lesson-history-panel" class="lesson-history-panel hidden">
+            <div class="lesson-browser-heading">
+              <strong>Historial y reversión</strong>
+              <span id="lesson-version"></span>
+            </div>
+            <div id="lesson-history" class="lesson-history"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <main id="main-content" tabindex="-1">
     <section class="topic-explorer panel" aria-labelledby="topics-title">
       <div class="explorer-heading">
         <div>
           <p class="eyebrow">Explora el currículo</p>
-          <h2 id="topics-title">Elige qué quieres aprender</h2>
+          <h2 id="topics-title" tabindex="-1">Elige qué quieres aprender</h2>
           <p class="muted">Descubre los temas disponibles y comienza una explicación guiada con un clic.</p>
         </div>
         <strong id="topics-count" class="catalog-count">Cargando…</strong>
@@ -53,17 +162,53 @@
           </select>
         </label>
       </div>
-      <div id="topic-grid" class="topic-grid" aria-live="polite">
+      <div id="topic-grid" class="topic-grid" role="list" aria-live="polite" aria-busy="true">
         <p class="catalog-message">Consultando el catálogo del MCP…</p>
       </div>
     </section>
 
-    <main class="layout">
-      <section class="conversation panel">
+    <section class="project-lab panel" aria-labelledby="projects-title">
+      <div class="explorer-heading">
+        <div>
+          <p class="eyebrow">Aprende construyendo</p>
+          <h2 id="projects-title" tabindex="-1">Proyectos integradores</h2>
+          <p class="muted">Combina varios temas en un reto pequeño y recibe una evaluación específica para el proyecto.</p>
+        </div>
+        <strong class="catalog-count">3 proyectos</strong>
+      </div>
+      <div id="project-grid" class="project-grid" role="list" aria-live="polite" aria-busy="true">
+        <p class="catalog-message">Cargando proyectos…</p>
+      </div>
+      <section id="project-workspace" class="project-workspace hidden">
+        <button id="close-project" class="text-button" type="button">Cerrar proyecto</button>
+        <p class="eyebrow">Proyecto seleccionado</p>
+        <h3 id="project-title" tabindex="-1"></h3>
+        <p id="project-challenge" class="muted"></p>
+        <div class="project-details">
+          <section>
+            <h4>Entregables</h4>
+            <ul id="project-deliverables"></ul>
+          </section>
+          <section>
+            <h4>Rúbrica específica</h4>
+            <ul id="project-rubric"></ul>
+          </section>
+        </div>
+        <form id="project-form">
+          <label for="project-submission">Tu propuesta</label>
+          <textarea id="project-submission" rows="7" maxlength="8000" placeholder="Describe arquitectura, decisiones, riesgos y cómo validarías el resultado…" required></textarea>
+          <button type="submit"><span>Evaluar proyecto</span><b>→</b></button>
+        </form>
+        <div id="project-result" class="project-result hidden" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <div class="layout">
+      <section class="conversation panel" aria-labelledby="conversation-title">
         <div class="panel-title">
           <div>
             <p class="eyebrow">Tutor multiagente</p>
-            <h2>Construyamos tu comprensión</h2>
+            <h2 id="conversation-title">Construyamos tu comprensión</h2>
           </div>
           <div id="detected" class="detected hidden">
             <span id="topic-badge" class="badge blue"></span>
@@ -71,7 +216,18 @@
           </div>
         </div>
 
-        <div id="conversation-feed" class="conversation-feed" aria-live="polite">
+        <div class="session-toolbar" aria-label="Conversaciones guardadas">
+          <label for="session-select">Conversación</label>
+          <select id="session-select">
+            <option value="">Nueva conversación</option>
+          </select>
+          <button id="new-session" type="button">Nueva</button>
+          <button id="rename-session" type="button" disabled>Renombrar</button>
+          <button id="archive-session" type="button" disabled>Archivar</button>
+        </div>
+
+        <div id="conversation-feed" class="conversation-feed" role="log"
+             aria-live="polite" aria-relevant="additions" aria-busy="false" tabindex="0">
           <div id="welcome" class="welcome-card">
             <div class="spark">✦</div>
             <div>
@@ -96,13 +252,20 @@
             </button>
           </div>
         </form>
+        <p id="request-status" class="request-status hidden" role="status" aria-live="polite"></p>
         <p id="voice-status" class="voice-status hidden" aria-live="polite"></p>
-        <p id="error" class="error hidden" role="alert"></p>
+        <div id="error" class="error recovery-message hidden" role="alert">
+          <span id="error-message"></span>
+          <button id="retry-action" class="text-button hidden" type="button">Reintentar</button>
+        </div>
 
         <section id="quiz-card" class="quiz-card hidden">
           <div class="quiz-heading">
             <span id="quiz-kicker">Comprueba tu comprensión</span>
-            <div><b id="quiz-topic"></b><em id="quiz-step">Ronda 1</em></div>
+            <div>
+              <button id="resume-practice" class="practice-link hidden" type="button">Continuar práctica</button>
+              <b id="quiz-topic"></b><em id="quiz-step">Ronda 1</em>
+            </div>
           </div>
           <p id="question"></p>
           <form id="quiz-form">
@@ -110,7 +273,7 @@
             <textarea id="quiz-answer" rows="3" maxlength="2000" placeholder="Explícalo con tus propias palabras…" required></textarea>
             <button type="submit"><span>Recibir feedback</span><b>→</b></button>
           </form>
-          <div id="feedback" class="feedback hidden" aria-live="polite">
+          <div id="feedback" class="feedback hidden" aria-live="polite" tabindex="-1">
             <div class="feedback-summary">
               <div id="feedback-score" class="feedback-score">—</div>
               <div>
@@ -129,13 +292,50 @@
                 <ul id="improvements"></ul>
               </section>
             </div>
+            <div class="feedback-actions" aria-label="Acciones para seguir aprendiendo">
+              <button id="another-example" type="button">Ver otro ejemplo</button>
+              <button id="simpler-explanation" type="button">Explícamelo más fácil</button>
+              <button id="start-practice" type="button">Practicar conceptos pendientes</button>
+            </div>
+            <section class="rubric-panel" aria-labelledby="rubric-title">
+              <div class="rubric-heading">
+                <h4 id="rubric-title">Rúbrica de comprensión</h4>
+                <span id="rubric-mode"></span>
+              </div>
+              <div id="rubric-scores" class="rubric-scores"></div>
+            </section>
             <div class="learning-context">
               <span>Contexto para avanzar</span>
               <p id="learning-context"></p>
             </div>
             <button id="continue-learning" class="continue-button" type="button">
-              Continuar con el siguiente reto <b>→</b>
+              Intentar de nuevo <b>→</b>
             </button>
+          </div>
+        </section>
+
+        <section id="practice-card" class="practice-card hidden" aria-live="polite">
+          <div class="practice-heading">
+            <div>
+              <p class="eyebrow">Modo práctica · hilo separado</p>
+              <h3 id="practice-title"></h3>
+            </div>
+            <span id="practice-difficulty"></span>
+          </div>
+          <p id="practice-prompt"></p>
+          <div class="practice-hint">
+            <strong>Pista</strong>
+            <span id="practice-hint"></span>
+          </div>
+          <form id="practice-form">
+            <label class="sr-only" for="practice-answer">Respuesta de práctica</label>
+            <textarea id="practice-answer" rows="4" maxlength="2000" placeholder="Resuelve el ejercicio con tus propias palabras…" required></textarea>
+            <button type="submit"><span>Comprobar práctica</span><b>→</b></button>
+          </form>
+          <div id="practice-result" class="practice-result hidden" role="status" aria-live="polite"></div>
+          <div class="practice-actions">
+            <button id="next-practice" class="hidden" type="button">Siguiente ejercicio</button>
+            <button id="return-main" type="button">Volver a la explicación guiada</button>
           </div>
         </section>
       </section>
@@ -146,9 +346,26 @@
             <div><p class="eyebrow">Estudiante</p><h2>Dominio por tema</h2></div>
             <span id="score-orb" class="score-orb" title="Promedio de los mejores puntajes por tema">—</span>
           </div>
-          <div class="progress-track"><span id="progress-bar"></span></div>
+          <div id="progress-track" class="progress-track" role="progressbar"
+               aria-label="Progreso del currículo" aria-valuemin="0" aria-valuemax="100"
+               aria-valuenow="0"><span id="progress-bar"></span></div>
           <p id="progress-copy" class="muted">Inicia una conversación para construir tu ruta.</p>
           <div id="studied-topics" class="topic-mastery-list"></div>
+        </section>
+
+        <section class="panel health-panel" aria-labelledby="health-title">
+          <div class="panel-title compact">
+            <div>
+              <p class="eyebrow">Salud y uso agregados</p>
+              <h2 id="health-title">Operación</h2>
+            </div>
+            <button id="refresh-health" class="text-button" type="button">Actualizar</button>
+          </div>
+          <div id="health-summary" class="health-summary" aria-live="polite" aria-busy="true">
+            <p class="catalog-message loading-message">
+              <span class="spinner" aria-hidden="true"></span>Cargando señales…
+            </p>
+          </div>
         </section>
 
         <section class="panel trace-panel">
@@ -156,17 +373,18 @@
             <div><p class="eyebrow">Ejecución observable</p><h2>Agentes y herramientas</h2></div>
             <button id="clear-trace" class="text-button" type="button">Limpiar</button>
           </div>
-          <div id="trace" class="trace empty">
+          <div id="trace" class="trace empty" role="log" aria-live="polite" aria-relevant="additions">
             <p>Los eventos aparecerán aquí. No se muestra razonamiento interno.</p>
           </div>
         </section>
       </aside>
+    </div>
     </main>
 
     <footer>
       <span>Explica · recibe feedback · vuelve a intentar</span>
       <span>MCP es una frontera de herramientas, no un agente</span>
     </footer>
-    <script src="/static/app.js" defer></script>
+    <script src="/static/app.js?v=8" defer></script>
   </body>
 </html>

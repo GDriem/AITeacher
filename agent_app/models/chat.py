@@ -5,9 +5,10 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from mcp_learning_server.models import (
+    EvaluationRubric,
     LearningLevel,
     LearningRecommendation,
     StudentProgress,
@@ -111,6 +112,18 @@ class EvaluationRequest(AppModel):
     answer: str = Field(min_length=1, max_length=2_000)
 
 
+class SessionUpdateRequest(AppModel):
+    student_id: str = Field(min_length=1, max_length=100)
+    title: str | None = Field(default=None, min_length=1, max_length=100)
+    archived: bool | None = None
+
+    @model_validator(mode="after")
+    def has_update(self) -> "SessionUpdateRequest":
+        if self.title is None and self.archived is None:
+            raise ValueError("Debe indicar title o archived")
+        return self
+
+
 class EvaluationResponse(AppModel):
     correlation_id: str
     session_id: str
@@ -119,8 +132,11 @@ class EvaluationResponse(AppModel):
     status: EvaluationStatus
     attempt: int = Field(ge=1)
     feedback: str
+    rubric: EvaluationRubric
+    result_explanation: str
     strengths: list[str]
     improvements: list[str]
+    practice_concepts: list[str]
     learning_context: str
     recommendation: str
     next_quiz: Quiz

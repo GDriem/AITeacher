@@ -12,6 +12,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
 from mcp_learning_server.models import (
+    EvaluationRubric,
     LearningLevel,
     LearningPath,
     SaveResultResponse,
@@ -40,6 +41,8 @@ class LearningTools(Protocol):
         recommendation: str,
         mastered_concepts: list[str] | None = None,
         pending_concepts: list[str] | None = None,
+        rubric: EvaluationRubric | None = None,
+        result_explanation: str | None = None,
     ) -> SaveResultResponse: ...
 
     async def list_available_topics(self) -> list[TopicSummary]: ...
@@ -71,6 +74,8 @@ class LocalLearningTools:
         recommendation: str,
         mastered_concepts: list[str] | None = None,
         pending_concepts: list[str] | None = None,
+        rubric: EvaluationRubric | None = None,
+        result_explanation: str | None = None,
     ) -> SaveResultResponse:
         return self.service.save_learning_result(
             student_id,
@@ -80,6 +85,8 @@ class LocalLearningTools:
             recommendation,
             mastered_concepts,
             pending_concepts,
+            rubric,
+            result_explanation,
         )
 
     async def list_available_topics(self) -> list[TopicSummary]:
@@ -160,6 +167,8 @@ class RemoteMcpLearningTools:
         recommendation: str,
         mastered_concepts: list[str] | None = None,
         pending_concepts: list[str] | None = None,
+        rubric: EvaluationRubric | None = None,
+        result_explanation: str | None = None,
     ) -> SaveResultResponse:
         data = await self._call(
             "save_learning_result",
@@ -171,6 +180,8 @@ class RemoteMcpLearningTools:
                 "recommendation": recommendation,
                 "mastered_concepts": mastered_concepts or [],
                 "pending_concepts": pending_concepts or [],
+                "rubric": rubric.model_dump(mode="json") if rubric else None,
+                "result_explanation": result_explanation,
             },
         )
         return SaveResultResponse.model_validate(data)

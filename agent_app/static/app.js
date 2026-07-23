@@ -8,6 +8,18 @@ const state = {
   catalogTotal: null,
   catalogCompleted: 0,
   recommendation: null,
+  sessions: [],
+  practiceExercise: null,
+  nextPractice: null,
+  projects: [],
+  selectedProject: null,
+  authoringToken: sessionStorage.getItem("authoringToken") || "",
+  authoringAuthor: sessionStorage.getItem("authoringAuthor") || "",
+  authoredLessons: [],
+  selectedLesson: null,
+  retryAction: null,
+  focusReturn: null,
+  wasOffline: !navigator.onLine,
 };
 
 const voice = {
@@ -23,6 +35,86 @@ const voice = {
 const $ = (id) => document.getElementById(id);
 const chatForm = $("chat-form");
 const quizForm = $("quiz-form");
+const practiceForm = $("practice-form");
+const projectForm = $("project-form");
+const lessonForm = $("lesson-form");
+const activeSessionKey = `activeSession:${state.studentId}`;
+
+$("authoring-toggle").addEventListener("click", async () => {
+  state.focusReturn = document.activeElement;
+  $("authoring-panel").classList.remove("hidden");
+  $("authoring-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("authoring-title").focus();
+  $("authoring-author").value = state.authoringAuthor;
+  $("authoring-token").value = state.authoringToken;
+  if (state.authoringToken) await loadAuthoredLessons();
+});
+
+$("close-authoring").addEventListener("click", () => {
+  $("authoring-panel").classList.add("hidden");
+  restoreFocus();
+});
+
+$("authoring-login").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  state.authoringAuthor = $("authoring-author").value.trim();
+  state.authoringToken = $("authoring-token").value;
+  sessionStorage.setItem("authoringAuthor", state.authoringAuthor);
+  sessionStorage.setItem("authoringToken", state.authoringToken);
+  await loadAuthoredLessons();
+});
+
+$("new-lesson").addEventListener("click", startNewLesson);
+$("lesson-search").addEventListener("input", renderAuthoredLessonList);
+$("lesson-list").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-lesson-id]");
+  if (!button) return;
+  selectAuthoredLesson(button.dataset.lessonId);
+});
+
+lessonForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await saveLessonDraft();
+});
+
+$("preview-lesson").addEventListener("click", () => {
+  if (!lessonForm.reportValidity()) return;
+  renderLessonPreview(lessonContentFromForm());
+});
+
+$("publish-lesson").addEventListener("click", async () => {
+  const formContent = lessonContentFromForm();
+  const saved =
+    state.selectedLesson &&
+    JSON.stringify(formContent) === JSON.stringify(state.selectedLesson.draft)
+      ? state.selectedLesson
+      : await saveLessonDraft();
+  if (saved) await runLessonAction("publish");
+});
+
+$("unpublish-lesson").addEventListener("click", async () => {
+  if (!state.selectedLesson) return;
+  await runLessonAction("unpublish");
+});
+
+$("lesson-history").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-revert-version]");
+  if (!button || !state.selectedLesson) return;
+  const version = Number(button.dataset.revertVersion);
+  if (!window.confirm(`¿Revertir la lección a la versión ${version}?`)) return;
+  try {
+    const lesson = await authoringRequest(
+      `/api/authoring/lessons/${encodeURIComponent(state.selectedLesson.id)}/revert`,
+      {
+        method: "POST",
+        body: JSON.stringify({ author: state.authoringAuthor, version }),
+      },
+    );
+    await refreshSelectedLesson(lesson);
+  } catch (error) {
+    showLessonError(error.message);
+  }
+});
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -31,33 +123,90 @@ chatForm.addEventListener("submit", async (event) => {
   await sendChat(message);
 });
 
+[$("message"), $("quiz-answer"), $("practice-answer"), $("project-submission")].forEach(
+  (textarea) => {
+    textarea.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        textarea.form?.requestSubmit();
+      }
+    });
+  },
+);
+
+$("retry-action").addEventListener("click", async () => {
+  const retry = state.retryAction;
+  showError("");
+  if (retry) await retry();
+});
+
+window.addEventListener("offline", updateConnectionStatus);
+window.addEventListener("online", updateConnectionStatus);
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (!$("authoring-panel").classList.contains("hidden")) {
+    $("authoring-panel").classList.add("hidden");
+    restoreFocus();
+  } else if (!$("project-workspace").classList.contains("hidden")) {
+    closeProject();
+  }
+});
+
 $("topic-grid").addEventListener("click", async (event) => {
+  if (event.target.closest("[data-retry-topics]")) {
+    await loadTopicCatalog();
+    return;
+  }
   const button = event.target.closest("[data-start-topic]");
   if (!button) return;
   const selected = state.catalog.find(
     (item) => item.topic === button.dataset.startTopic,
   );
   if (!selected) return;
-  state.sessionId = null;
+  startNewConversation();
   await sendChat(`Quiero aprender sobre ${selected.title}`);
 });
 
 $("start-recommended").addEventListener("click", async () => {
   if (!state.recommendation) return;
-  state.sessionId = null;
+  startNewConversation();
   await sendChat(`Quiero aprender sobre ${state.recommendation.title}`);
 });
 
 $("category-filter").addEventListener("change", renderTopicCatalog);
 $("level-filter").addEventListener("change", renderTopicCatalog);
 
-async function sendChat(message) {
+$("another-example").addEventListener("click", async () => {
+  await sendChat("Muéstrame otro ejemplo práctico del mismo tema.");
+});
+
+$("simpler-explanation").addEventListener("click", async () => {
+  await sendChat("Explícamelo más fácil usando una analogía.");
+});
+
+$("start-practice").addEventListener("click", async () => {
+  await startPractice();
+});
+
+$("improvements").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-practice-concept]");
+  if (!button) return;
+  await startPractice(button.dataset.practiceConcept || null);
+});
+
+$("resume-practice").addEventListener("click", () => {
+  if (state.practiceExercise) renderPractice(state.practiceExercise);
+});
+
+async function sendChat(message, { appendUser = true } = {}) {
   setBusy(true);
   showError("");
   $("feedback").classList.add("hidden");
   $("quiz-card").classList.add("hidden");
-  appendMessage("user", "Tú", message);
-  $("message").value = "";
+  if (appendUser) {
+    appendMessage("user", "Tú", message);
+    $("message").value = "";
+  }
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -70,12 +219,18 @@ async function sendChat(message) {
     });
     const data = await readResponse(response);
     state.sessionId = data.session_id;
+    localStorage.setItem(activeSessionKey, state.sessionId);
     state.trace = data.trace;
     state.quizAttempt = data.quiz_attempt;
     state.nextQuiz = null;
     renderChat(data);
+    await loadSessions();
+    loadObservability();
   } catch (error) {
-    showError(error.message);
+    showError(
+      error.message,
+      () => sendChat(message, { appendUser: false }),
+    );
   } finally {
     setBusy(false);
   }
@@ -115,6 +270,8 @@ quizForm.addEventListener("submit", async (event) => {
     renderProgress(data.progress);
     renderTrace();
     await loadTopicCatalog();
+    await loadSessions();
+    loadObservability();
   } catch (error) {
     showError(error.message);
   } finally {
@@ -141,13 +298,144 @@ $("clear-trace").addEventListener("click", () => {
   renderTrace();
 });
 
+$("refresh-health").addEventListener("click", loadObservability);
+
+practiceForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const answer = $("practice-answer").value.trim();
+  if (!answer || !state.practiceExercise) return;
+  const button = practiceForm.querySelector("button");
+  button.disabled = true;
+  button.querySelector("span").textContent = "Analizando…";
+  showError("");
+  try {
+    const response = await fetch("/api/practice/evaluate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student_id: state.studentId,
+        session_id: state.sessionId,
+        answer,
+      }),
+    });
+    const data = await readResponse(response);
+    state.practiceExercise = data.next_exercise;
+    state.nextPractice = data.next_exercise;
+    $("practice-result").innerHTML = `
+      <strong>${Math.round(data.score)}/100 · ${escapeHtml(statusLabel(data.status))}</strong>
+      <p>${escapeHtml(data.feedback)}</p>`;
+    $("practice-result").classList.remove("hidden");
+    $("next-practice").classList.remove("hidden");
+    renderProgress(data.progress);
+    await loadTopicCatalog();
+    loadObservability();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    button.disabled = false;
+    button.querySelector("span").textContent = "Comprobar práctica";
+  }
+});
+
+$("next-practice").addEventListener("click", () => {
+  if (!state.nextPractice) return;
+  state.practiceExercise = state.nextPractice;
+  state.nextPractice = null;
+  renderPractice(state.practiceExercise);
+});
+
+$("return-main").addEventListener("click", showMainLearning);
+
+$("project-grid").addEventListener("click", (event) => {
+  if (event.target.closest("[data-retry-projects]")) {
+    loadProjects();
+    return;
+  }
+  const button = event.target.closest("[data-open-project]");
+  if (!button) return;
+  const project = state.projects.find(
+    (item) => item.id === button.dataset.openProject,
+  );
+  if (project) openProject(project);
+});
+
+$("close-project").addEventListener("click", () => {
+  closeProject();
+});
+
+projectForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!state.selectedProject) return;
+  const submission = $("project-submission").value.trim();
+  if (!submission) return;
+  const button = projectForm.querySelector("button");
+  button.disabled = true;
+  button.querySelector("span").textContent = "Evaluando…";
+  try {
+    const response = await fetch(
+      `/api/projects/${encodeURIComponent(state.selectedProject.id)}/evaluate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: state.studentId,
+          submission,
+        }),
+      },
+    );
+    const data = await readResponse(response);
+    renderProjectResult(data);
+    loadObservability();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    button.disabled = false;
+    button.querySelector("span").textContent = "Evaluar proyecto";
+  }
+});
+
+$("session-select").addEventListener("change", async (event) => {
+  if (!event.target.value) {
+    startNewConversation();
+    return;
+  }
+  await openSession(event.target.value);
+});
+
+$("new-session").addEventListener("click", startNewConversation);
+
+$("rename-session").addEventListener("click", async () => {
+  if (!state.sessionId) return;
+  const current = state.sessions.find((item) => item.id === state.sessionId);
+  const title = window.prompt(
+    "Nuevo nombre de la conversación",
+    current?.title || "",
+  )?.trim();
+  if (!title || title === current?.title) return;
+  await updateSession({ title });
+});
+
+$("archive-session").addEventListener("click", async () => {
+  if (!state.sessionId) return;
+  await updateSession({ archived: true });
+  startNewConversation();
+  await loadSessions();
+});
+
 $("mic").addEventListener("click", async () => {
   if (voice.socket) stopVoice();
   else await startVoice();
 });
 
 initializeCapabilities();
+updateConnectionStatus();
 loadTopicCatalog();
+loadSessions({ restore: true });
+loadProjects();
+loadObservability();
+window.setInterval(() => {
+  if (!document.hidden && navigator.onLine) loadObservability();
+}, 30_000);
 
 async function initializeCapabilities() {
   try {
@@ -156,14 +444,245 @@ async function initializeCapabilities() {
     $("mic").title = capabilities.voice
       ? "Iniciar conversación por voz"
       : "Voz no configurada; el modo texto sigue disponible";
+    $("authoring-toggle").classList.toggle("hidden", !capabilities.authoring);
   } catch {
     $("mic").disabled = true;
+    $("authoring-toggle").classList.add("hidden");
   }
 }
 
+async function loadAuthoredLessons() {
+  $("authoring-login-error").classList.add("hidden");
+  try {
+    state.authoredLessons = await authoringRequest("/api/authoring/lessons");
+    $("authoring-login").classList.add("hidden");
+    $("authoring-workspace").classList.remove("hidden");
+    populateLessonTopics();
+    renderAuthoredLessonList();
+    if (state.selectedLesson) {
+      const current = state.authoredLessons.find(
+        (lesson) => lesson.id === state.selectedLesson.id,
+      );
+      if (current) selectAuthoredLesson(current.id);
+      else startNewLesson();
+    } else {
+      startNewLesson();
+    }
+  } catch (error) {
+    state.authoringToken = "";
+    sessionStorage.removeItem("authoringToken");
+    $("authoring-workspace").classList.add("hidden");
+    $("authoring-login").classList.remove("hidden");
+    $("authoring-login-error").textContent = error.message;
+    $("authoring-login-error").classList.remove("hidden");
+  }
+}
+
+function populateLessonTopics() {
+  const select = $("lesson-topic");
+  const topics = state.catalog.length
+    ? state.catalog
+    : state.authoredLessons.reduce((items, lesson) => {
+        if (!items.some((item) => item.topic === lesson.draft.topic)) {
+          items.push({
+            topic: lesson.draft.topic,
+            title: topicTitle(lesson.draft.topic),
+          });
+        }
+        return items;
+      }, []);
+  select.innerHTML = topics
+    .map(
+      (topic) =>
+        `<option value="${escapeHtml(topic.topic)}">${escapeHtml(topic.title)}</option>`,
+    )
+    .join("");
+}
+
+function renderAuthoredLessonList() {
+  const query = $("lesson-search").value.trim().toLocaleLowerCase("es");
+  const lessons = state.authoredLessons.filter((lesson) => {
+    const haystack = `${lesson.id} ${lesson.draft.title}`.toLocaleLowerCase("es");
+    return haystack.includes(query);
+  });
+  $("lesson-list").innerHTML = lessons.length
+    ? lessons
+        .map(
+          (lesson) => `
+            <button type="button" data-lesson-id="${escapeHtml(lesson.id)}"
+              class="${state.selectedLesson?.id === lesson.id ? "active" : ""}">
+              <span>${escapeHtml(lesson.draft.title)}</span>
+              <small>${lesson.published ? "Publicada" : "Borrador"} · v${lesson.version}</small>
+            </button>`,
+        )
+        .join("")
+    : '<p class="catalog-message">No hay lecciones que coincidan.</p>';
+}
+
+function startNewLesson() {
+  state.selectedLesson = null;
+  lessonForm.reset();
+  $("lesson-id").disabled = false;
+  $("lesson-level").value = "beginner";
+  $("lesson-editor-title").textContent = "Nueva lección";
+  $("lesson-status").textContent = "Sin guardar";
+  $("publish-lesson").disabled = true;
+  $("unpublish-lesson").disabled = true;
+  $("lesson-preview").classList.add("hidden");
+  $("lesson-history-panel").classList.add("hidden");
+  showLessonError("");
+  renderAuthoredLessonList();
+}
+
+function selectAuthoredLesson(lessonId) {
+  const lesson = state.authoredLessons.find((item) => item.id === lessonId);
+  if (!lesson) return;
+  state.selectedLesson = lesson;
+  const content = lesson.draft;
+  $("lesson-id").value = content.id;
+  $("lesson-id").disabled = true;
+  $("lesson-topic").value = content.topic;
+  $("lesson-level").value = content.level;
+  $("lesson-title").value = content.title;
+  $("lesson-source").value = content.source;
+  $("lesson-keywords").value = content.keywords.join(", ");
+  $("lesson-text").value = content.text;
+  $("lesson-editor-title").textContent = content.title;
+  $("lesson-status").textContent =
+    `${lesson.published ? "Publicada" : "Borrador"} · v${lesson.version}`;
+  $("publish-lesson").disabled = false;
+  $("unpublish-lesson").disabled = !lesson.published;
+  $("lesson-preview").classList.add("hidden");
+  renderLessonHistory(lesson);
+  renderAuthoredLessonList();
+  showLessonError("");
+}
+
+function lessonContentFromForm() {
+  const keywords = $("lesson-keywords")
+    .value.split(",")
+    .map((keyword) => keyword.trim())
+    .filter(Boolean);
+  return {
+    id: $("lesson-id").value.trim(),
+    topic: $("lesson-topic").value,
+    title: $("lesson-title").value.trim(),
+    level: $("lesson-level").value,
+    text: $("lesson-text").value.trim(),
+    source: $("lesson-source").value.trim(),
+    keywords,
+  };
+}
+
+async function saveLessonDraft() {
+  if (!lessonForm.reportValidity()) return null;
+  showLessonError("");
+  const content = lessonContentFromForm();
+  const existing = state.selectedLesson;
+  const path = existing
+    ? `/api/authoring/lessons/${encodeURIComponent(existing.id)}`
+    : "/api/authoring/lessons";
+  try {
+    const lesson = await authoringRequest(path, {
+      method: existing ? "PUT" : "POST",
+      body: JSON.stringify({
+        content,
+        author: state.authoringAuthor,
+      }),
+    });
+    await refreshSelectedLesson(lesson);
+    return lesson;
+  } catch (error) {
+    showLessonError(error.message);
+    return null;
+  }
+}
+
+async function runLessonAction(action) {
+  if (!state.selectedLesson) return;
+  showLessonError("");
+  try {
+    const lesson = await authoringRequest(
+      `/api/authoring/lessons/${encodeURIComponent(state.selectedLesson.id)}/${action}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ author: state.authoringAuthor }),
+      },
+    );
+    await refreshSelectedLesson(lesson);
+    await loadTopicCatalog();
+  } catch (error) {
+    showLessonError(error.message);
+  }
+}
+
+async function refreshSelectedLesson(lesson) {
+  const index = state.authoredLessons.findIndex((item) => item.id === lesson.id);
+  if (index >= 0) state.authoredLessons[index] = lesson;
+  else state.authoredLessons.push(lesson);
+  state.authoredLessons.sort((left, right) => left.id.localeCompare(right.id));
+  selectAuthoredLesson(lesson.id);
+}
+
+function renderLessonPreview(content) {
+  $("lesson-preview").innerHTML = `
+    <p class="eyebrow">${escapeHtml(levelLabel(content.level))} · ${escapeHtml(topicTitle(content.topic))}</p>
+    <h3>${escapeHtml(content.title)}</h3>
+    <div>${renderMarkdown(content.text)}</div>
+    <p class="lesson-preview-source"><strong>Fuente:</strong> ${escapeHtml(content.source)}</p>
+    <div class="level-list">${content.keywords.map((keyword) => `<span>${escapeHtml(keyword)}</span>`).join("")}</div>
+  `;
+  $("lesson-preview").classList.remove("hidden");
+}
+
+function renderLessonHistory(lesson) {
+  $("lesson-history-panel").classList.remove("hidden");
+  $("lesson-version").textContent = `Versión actual: ${lesson.version}`;
+  const actions = {
+    bootstrapped: "Contenido inicial",
+    created: "Borrador creado",
+    updated: "Borrador actualizado",
+    published: "Publicado",
+    unpublished: "Despublicado",
+    reverted: "Revertido",
+  };
+  $("lesson-history").innerHTML = [...lesson.revisions]
+    .reverse()
+    .map(
+      (revision) => `
+        <article>
+          <div>
+            <strong>v${revision.version} · ${escapeHtml(actions[revision.action] || revision.action)}</strong>
+            <span>${escapeHtml(revision.author)} · ${new Date(revision.created_at).toLocaleString("es-GT")}</span>
+          </div>
+          <button type="button" data-revert-version="${revision.version}"
+            ${revision.version === lesson.version ? "disabled" : ""}>Revertir</button>
+        </article>`,
+    )
+    .join("");
+}
+
+async function authoringRequest(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Authoring-Token": state.authoringToken,
+      ...(options.headers || {}),
+    },
+  });
+  return readResponse(response);
+}
+
+function showLessonError(message) {
+  $("lesson-error").textContent = message;
+  $("lesson-error").classList.toggle("hidden", !message);
+}
+
 async function loadTopicCatalog() {
+  $("topic-grid").setAttribute("aria-busy", "true");
   $("topic-grid").innerHTML =
-    '<p class="catalog-message">Consultando el catálogo del MCP…</p>';
+    '<p class="catalog-message loading-message"><span class="spinner" aria-hidden="true"></span>Consultando el catálogo del MCP…</p>';
   try {
     const response = await fetch(
       `/api/topics?student_id=${encodeURIComponent(state.studentId)}`,
@@ -173,15 +692,159 @@ async function loadTopicCatalog() {
     state.catalogTotal = data.total_topics;
     state.catalogCompleted = data.completed_topics;
     state.recommendation = data.recommendation;
+    if (!$("authoring-workspace").classList.contains("hidden")) {
+      populateLessonTopics();
+    }
     populateCatalogFilters(data.topics);
     renderLearningPath();
     renderTopicCatalog();
     renderProgress(data.progress);
+    announce(`${data.total_topics} temas disponibles.`);
   } catch (error) {
     $("topics-count").textContent = "No disponible";
     $("topic-grid").innerHTML =
-      `<p class="catalog-message error">No pudimos cargar los temas. ${escapeHtml(error.message)}</p>`;
+      `<div class="catalog-message empty-state error">
+        <strong>No pudimos cargar los temas.</strong>
+        <span>${escapeHtml(error.message)}</span>
+        <button type="button" data-retry-topics>Reintentar</button>
+      </div>`;
+  } finally {
+    $("topic-grid").setAttribute("aria-busy", "false");
   }
+}
+
+async function loadSessions({ restore = false } = {}) {
+  try {
+    const response = await fetch(
+      `/api/sessions?student_id=${encodeURIComponent(state.studentId)}`,
+    );
+    const data = await readResponse(response);
+    state.sessions = data.sessions;
+    const select = $("session-select");
+    select.innerHTML =
+      '<option value="">Nueva conversación</option>' +
+      state.sessions
+        .map(
+          (session) =>
+            `<option value="${escapeHtml(session.id)}">${escapeHtml(session.title)}</option>`,
+        )
+        .join("");
+    if (state.sessionId && state.sessions.some((item) => item.id === state.sessionId)) {
+      select.value = state.sessionId;
+    }
+    if (restore) {
+      const saved = localStorage.getItem(activeSessionKey);
+      if (saved && state.sessions.some((item) => item.id === saved)) {
+        await openSession(saved);
+      }
+    }
+    updateSessionActions();
+  } catch (error) {
+    showError(
+      `No pudimos sincronizar las conversaciones. ${error.message}`,
+      () => loadSessions({ restore }),
+    );
+  }
+}
+
+async function openSession(sessionId) {
+  setBusy(true);
+  showError("");
+  try {
+    const response = await fetch(
+      `/api/sessions/${encodeURIComponent(sessionId)}?student_id=${encodeURIComponent(state.studentId)}`,
+    );
+    const session = await readResponse(response);
+    state.sessionId = session.id;
+    state.trace = [];
+    state.quizAttempt = session.pending_quiz.attempt;
+    state.nextQuiz = { question: session.pending_quiz.question };
+    state.practiceExercise = session.pending_practice?.exercise || null;
+    state.nextPractice = null;
+    localStorage.setItem(activeSessionKey, session.id);
+    resetConversation({ keepSession: true });
+    session.messages.forEach((message) => {
+      appendMessage(
+        message.role,
+        message.label,
+        message.content,
+        message.sources,
+        message.note,
+      );
+    });
+    const topicProgress = state.catalog.find(
+      (item) => item.topic === session.topic,
+    )?.progress;
+    $("topic-badge").textContent = topicTitle(session.topic);
+    $("level-badge").textContent = levelLabel(topicProgress?.level || "beginner");
+    $("detected").classList.remove("hidden");
+    $("question").textContent = session.pending_quiz.question;
+    $("quiz-topic").textContent = topicTitle(session.topic);
+    $("quiz-kicker").textContent = "Comprueba tu comprensión";
+    $("quiz-step").textContent = `Ronda ${session.pending_quiz.attempt}`;
+    $("question").classList.remove("hidden");
+    quizForm.classList.remove("hidden");
+    $("quiz-card").classList.remove("hidden");
+    $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
+    $("session-select").value = session.id;
+    updateSessionActions();
+  } catch (error) {
+    showError(error.message);
+    startNewConversation();
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function updateSession(update) {
+  showError("");
+  try {
+    const response = await fetch(
+      `/api/sessions/${encodeURIComponent(state.sessionId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ student_id: state.studentId, ...update }),
+      },
+    );
+    await readResponse(response);
+    await loadSessions();
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function startNewConversation() {
+  state.sessionId = null;
+  state.trace = [];
+  state.nextQuiz = null;
+  state.quizAttempt = 1;
+  state.practiceExercise = null;
+  state.nextPractice = null;
+  localStorage.removeItem(activeSessionKey);
+  resetConversation();
+}
+
+function resetConversation({ keepSession = false } = {}) {
+  document
+    .querySelectorAll("#conversation-feed .chat-message")
+    .forEach((message) => message.remove());
+  $("welcome").classList.remove("hidden");
+  $("detected").classList.add("hidden");
+  $("quiz-card").classList.add("hidden");
+  $("feedback").classList.add("hidden");
+  $("practice-card").classList.add("hidden");
+  $("resume-practice").classList.add("hidden");
+  $("quiz-answer").value = "";
+  if (!keepSession) $("session-select").value = "";
+  renderTrace();
+  updateSessionActions();
+}
+
+function updateSessionActions() {
+  const hasSession = Boolean(state.sessionId);
+  $("rename-session").disabled = !hasSession;
+  $("archive-session").disabled = !hasSession;
 }
 
 function populateCatalogFilters(topics) {
@@ -227,13 +890,14 @@ function renderTopicCatalog() {
       : `${visible.length} de ${state.catalogTotal} temas`;
   if (!visible.length) {
     $("topic-grid").innerHTML =
-      '<p class="catalog-message">No hay temas que coincidan con estos filtros.</p>';
+      '<div class="catalog-message empty-state"><strong>Sin coincidencias</strong><span>Cambia la categoría o el nivel para ver otros temas.</span></div>';
+    announce("No hay temas que coincidan con los filtros seleccionados.");
     return;
   }
   $("topic-grid").innerHTML = visible
     .map(
       (item) => `
-        <article class="topic-card ${item.status}">
+        <article class="topic-card ${item.status}" role="listitem">
           <div class="topic-card-heading">
             <span class="category-label">${escapeHtml(categoryLabel(item.category))}</span>
             <span class="topic-status ${item.status}">
@@ -281,6 +945,148 @@ function renderLearningPath() {
   $("recommended-topic").textContent = state.recommendation.title;
   $("recommendation-reason").textContent = state.recommendation.reason;
   card.classList.remove("hidden");
+}
+
+async function startPractice(focusConcept = null) {
+  if (!state.sessionId) {
+    showError("Inicia una conversación antes de abrir el modo práctica.");
+    return;
+  }
+  showError("");
+  try {
+    const response = await fetch("/api/practice/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student_id: state.studentId,
+        session_id: state.sessionId,
+        focus_concept: focusConcept,
+      }),
+    });
+    const data = await readResponse(response);
+    state.practiceExercise = data.exercise;
+    state.nextPractice = null;
+    renderPractice(data.exercise);
+    await loadSessions();
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function renderPractice(exercise) {
+  const difficultyLabels = {
+    foundation: "Fundamentos",
+    application: "Aplicación",
+    challenge: "Desafío",
+  };
+  state.practiceExercise = exercise;
+  $("quiz-card").classList.add("hidden");
+  $("practice-title").textContent = exercise.title;
+  $("practice-difficulty").textContent =
+    `${difficultyLabels[exercise.difficulty] || "Práctica"} · ronda ${exercise.round}`;
+  $("practice-prompt").textContent = exercise.prompt;
+  $("practice-hint").textContent = exercise.hint;
+  $("practice-answer").value = "";
+  $("practice-result").classList.add("hidden");
+  $("next-practice").classList.add("hidden");
+  $("practice-card").classList.remove("hidden");
+  $("practice-answer").focus();
+  $("practice-card").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function showMainLearning() {
+  $("practice-card").classList.add("hidden");
+  $("quiz-card").classList.remove("hidden");
+  $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
+  $("quiz-card").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function loadProjects() {
+  $("project-grid").setAttribute("aria-busy", "true");
+  $("project-grid").innerHTML =
+    '<p class="catalog-message loading-message"><span class="spinner" aria-hidden="true"></span>Cargando proyectos…</p>';
+  try {
+    const data = await fetch("/api/projects").then(readResponse);
+    state.projects = data.projects;
+    $("project-grid").innerHTML = data.projects
+      .map(
+        (project) => `
+          <article class="project-card" role="listitem">
+            <div>
+              <span>${project.estimated_minutes} min</span>
+              <span>${project.topics.length} temas</span>
+            </div>
+            <h3>${escapeHtml(project.title)}</h3>
+            <p>${escapeHtml(project.summary)}</p>
+            <div class="project-topics">
+              ${project.topics.map((topic) => `<span>${escapeHtml(topicTitle(topic))}</span>`).join("")}
+            </div>
+            <button type="button" data-open-project="${escapeHtml(project.id)}">
+              Abrir proyecto <b>→</b>
+            </button>
+          </article>`,
+      )
+      .join("");
+    announce(`${data.projects.length} proyectos disponibles.`);
+  } catch (error) {
+    $("project-grid").innerHTML =
+      `<div class="catalog-message empty-state error">
+        <strong>No pudimos cargar los proyectos.</strong>
+        <span>${escapeHtml(error.message)}</span>
+        <button type="button" data-retry-projects>Reintentar</button>
+      </div>`;
+  } finally {
+    $("project-grid").setAttribute("aria-busy", "false");
+  }
+}
+
+function openProject(project) {
+  state.focusReturn = document.activeElement;
+  state.selectedProject = project;
+  $("project-title").textContent = project.title;
+  $("project-challenge").textContent = project.challenge;
+  $("project-deliverables").innerHTML = project.deliverables
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  $("project-rubric").innerHTML = project.rubric
+    .map(
+      (item) =>
+        `<li><strong>${escapeHtml(item.title)}</strong> — ${escapeHtml(item.description)}</li>`,
+    )
+    .join("");
+  $("project-submission").value = "";
+  $("project-result").classList.add("hidden");
+  $("project-workspace").classList.remove("hidden");
+  $("project-workspace").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("project-title").focus();
+}
+
+function closeProject() {
+  state.selectedProject = null;
+  $("project-workspace").classList.add("hidden");
+  restoreFocus();
+}
+
+function renderProjectResult(data) {
+  $("project-result").innerHTML = `
+    <div class="project-result-summary">
+      <strong>${Math.round(data.score)}/100 · ${escapeHtml(statusLabel(data.status))}</strong>
+      <span>${data.evaluation_mode === "model" ? "Rúbrica del modelo" : "Fallback determinista"}</span>
+    </div>
+    <p>${escapeHtml(data.feedback)}</p>
+    <div class="project-rubric-results">
+      ${data.rubric
+        .map(
+          (item) => `
+            <article>
+              <div><strong>${escapeHtml(item.title)}</strong><span>${item.score}/4</span></div>
+              <p>${escapeHtml(item.explanation)}</p>
+            </article>`,
+        )
+        .join("")}
+    </div>`;
+  $("project-result").classList.remove("hidden");
+  $("project-result").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 async function startVoice() {
@@ -431,10 +1237,14 @@ function renderChat(data) {
   $("question").classList.remove("hidden");
   $("quiz-answer").value = "";
   quizForm.classList.remove("hidden");
+  $("practice-card").classList.add("hidden");
   $("quiz-card").classList.remove("hidden");
+  $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
   renderProgress(data.progress);
   renderTrace();
   $("quiz-card").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  $("quiz-answer").focus();
+  announce("La explicación está lista. Responde la pregunta de comprensión.");
 }
 
 function renderFeedback(data) {
@@ -452,7 +1262,32 @@ function renderFeedback(data) {
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
   $("improvements").innerHTML = data.improvements
-    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .map((item, index) => {
+      const concept = data.practice_concepts[index] || "";
+      return `<li>
+        <span>${escapeHtml(item)}</span>
+        <button type="button" data-practice-concept="${escapeHtml(concept)}">Practicar esto</button>
+      </li>`;
+    })
+    .join("");
+  const rubricLabels = {
+    precision: "Precisión",
+    comprehension: "Comprensión",
+    application: "Aplicación",
+    clarity: "Claridad",
+  };
+  $("rubric-mode").textContent =
+    data.rubric.evaluation_mode === "hybrid_model"
+      ? "Modelo + conceptos"
+      : "Fallback determinista";
+  $("rubric-scores").innerHTML = Object.entries(rubricLabels)
+    .map(([key, label]) => {
+      const criterion = data.rubric[key];
+      return `<article>
+        <div><strong>${escapeHtml(label)}</strong><span>${criterion.score}/4</span></div>
+        <p>${escapeHtml(criterion.explanation)}</p>
+      </article>`;
+    })
     .join("");
   $("learning-context").textContent = data.learning_context;
   $("quiz-kicker").textContent = "Feedback personalizado";
@@ -460,7 +1295,10 @@ function renderFeedback(data) {
   $("question").classList.add("hidden");
   quizForm.classList.add("hidden");
   $("feedback").classList.remove("hidden");
+  $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
   $("feedback").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("feedback").focus();
+  announce(`Evaluación completada: ${Math.round(data.score)} de 100.`);
 }
 
 function appendMessage(role, label, text, sources = [], note = "") {
@@ -491,6 +1329,11 @@ function renderProgress(progress) {
     ? Math.round(topics.reduce((sum, item) => sum + item.best_score, 0) / topics.length)
     : null;
   $("progress-bar").style.width = `${completion}%`;
+  $("progress-track").setAttribute("aria-valuenow", String(Math.round(completion)));
+  $("progress-track").setAttribute(
+    "aria-valuetext",
+    `${state.catalogCompleted} de ${totalTopics || topics.length} temas completados`,
+  );
   $("score-orb").textContent = average === null ? "—" : average;
   const count = totalTopics
     ? `${state.catalogCompleted} de ${totalTopics} temas completados`
@@ -561,17 +1404,119 @@ function renderTrace() {
     </article>`).join("");
 }
 
+async function loadObservability() {
+  const container = $("health-summary");
+  const refresh = $("refresh-health");
+  container.setAttribute("aria-busy", "true");
+  refresh.disabled = true;
+  try {
+    const data = await fetch("/api/observability").then(readResponse);
+    const activityLabels = {
+      guided_explanation: "Explicaciones",
+      topic_evaluation: "Evaluaciones",
+      practice_evaluation: "Prácticas",
+      project_evaluation: "Proyectos",
+    };
+    const activities = data.activities.length
+      ? data.activities
+          .map(
+            (activity) => `
+              <li>
+                <span>${escapeHtml(activityLabels[activity.name] || pretty(activity.name))}</span>
+                <strong>${activity.completed}/${activity.started}</strong>
+              </li>`,
+          )
+          .join("")
+      : '<li class="empty-health">Aún no hay actividades registradas.</li>';
+    const pricing = data.model.pricing_configured
+      ? `$${Number(data.model.estimated_cost_usd).toFixed(4)}`
+      : "Sin tarifa";
+    container.innerHTML = `
+      <div class="health-state">
+        <span class="health-dot" aria-hidden="true"></span>
+        <strong>Servicio disponible</strong>
+        <small>${formatDuration(data.uptime_seconds)} activo</small>
+      </div>
+      <div class="health-metrics">
+        <article><span>Peticiones</span><strong>${data.http.requests}</strong></article>
+        <article><span>Errores</span><strong>${formatPercentage(data.http.error_rate)}</strong></article>
+        <article><span>Latencia p95</span><strong>${Math.round(data.http.latency_ms.p95)} ms</strong></article>
+        <article><span>Llamadas IA</span><strong>${data.model.calls}</strong></article>
+        <article><span>Tokens estimados</span><strong>${formatNumber(data.model.input_tokens + data.model.output_tokens)}</strong></article>
+        <article><span>Costo estimado</span><strong>${pricing}</strong></article>
+      </div>
+      <div class="activity-completion">
+        <strong>Actividades completadas</strong>
+        <ul>${activities}</ul>
+      </div>
+      <p class="metrics-note">Tokens aproximados por longitud. El costo requiere tarifas configuradas por entorno.</p>`;
+  } catch (error) {
+    container.innerHTML = `
+      <div class="empty-state error">
+        <strong>No pudimos consultar las señales.</strong>
+        <span>${escapeHtml(error.message)}</span>
+        <button id="retry-health" type="button">Reintentar</button>
+      </div>`;
+    $("retry-health").addEventListener("click", loadObservability);
+  } finally {
+    container.setAttribute("aria-busy", "false");
+    refresh.disabled = false;
+  }
+}
+
 function setBusy(busy) {
   $("send").disabled = busy;
   $("send").querySelector("span").textContent = busy ? "Coordinando…" : "Enviar";
+  chatForm.setAttribute("aria-busy", String(busy));
+  $("conversation-feed").setAttribute("aria-busy", String(busy));
+  $("request-status").textContent = busy ? "Preparando respuesta…" : "";
+  $("request-status").classList.toggle("hidden", !busy);
   document.querySelectorAll("[data-start-topic]").forEach((button) => {
     button.disabled = busy;
   });
 }
 
-function showError(message) {
-  $("error").textContent = message;
+function showError(message, retryAction = null) {
+  state.retryAction = retryAction;
+  $("error-message").textContent = message;
+  $("retry-action").classList.toggle("hidden", !message || !retryAction);
   $("error").classList.toggle("hidden", !message);
+  if (message) announce(`Error: ${message}`);
+}
+
+function announce(message) {
+  const region = $("announcements");
+  region.textContent = "";
+  window.setTimeout(() => {
+    region.textContent = message;
+  }, 20);
+}
+
+function restoreFocus() {
+  const target = state.focusReturn;
+  state.focusReturn = null;
+  if (target instanceof HTMLElement && document.contains(target)) target.focus();
+}
+
+function updateConnectionStatus() {
+  const offline = !navigator.onLine;
+  $("connection-status").classList.toggle("hidden", !offline);
+  document.body.classList.toggle("offline", offline);
+  if (offline) {
+    state.wasOffline = true;
+    announce("Sin conexión. Reintentaremos cuando vuelva la red.");
+    return;
+  }
+  if (state.wasOffline) {
+    state.wasOffline = false;
+    announce("Conexión recuperada. Actualizando la información.");
+    Promise.allSettled([
+      initializeCapabilities(),
+      loadTopicCatalog(),
+      loadSessions(),
+      loadProjects(),
+    ]);
+  }
 }
 
 function pretty(value) {
@@ -607,6 +1552,31 @@ function topicStatusLabel(status) {
     available: "Disponible",
     in_progress: "En progreso",
     completed: "✓ Completado",
+  }[status] || status;
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("es-GT", { maximumFractionDigits: 0 }).format(value);
+}
+
+function formatPercentage(value) {
+  return new Intl.NumberFormat("es-GT", {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function formatDuration(seconds) {
+  if (seconds < 60) return `${Math.max(0, Math.round(seconds))} s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
+  return `${Math.round(seconds / 3600)} h`;
+}
+
+function statusLabel(status) {
+  return {
+    reinforce: "Reforzar",
+    progressing: "En progreso",
+    mastered: "Dominado",
   }[status] || status;
 }
 

@@ -5,10 +5,19 @@ services:
       dockerfile: agent_app/Dockerfile
     environment:
       APP_PORT: "8080"
+      APP_SESSIONS_BACKEND: local
+      APP_SESSIONS_PATH: /data/sessions.json
+      APP_SESSION_RETENTION_DAYS: ${APP_SESSION_RETENTION_DAYS:-365}
+      APP_AUTHORING_TOKEN: ${AUTHORING_TOKEN:-}
       MODEL_PROVIDER: ${MODEL_PROVIDER:-mock}
       MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
+      MODEL_INPUT_COST_PER_MILLION_USD: ${MODEL_INPUT_COST_PER_MILLION_USD:-0}
+      MODEL_OUTPUT_COST_PER_MILLION_USD: ${MODEL_OUTPUT_COST_PER_MILLION_USD:-0}
+      OBSERVABILITY_MAX_LATENCY_SAMPLES: ${OBSERVABILITY_MAX_LATENCY_SAMPLES:-1000}
       MCP_USE_LOCAL_ADAPTER: "false"
       MCP_SERVER_URL: http://mcp-server:8080/mcp/
+      MCP_AUTHORING_URL: http://mcp-server:8080/admin
+      MCP_AUTHORING_TOKEN: ${AUTHORING_TOKEN:-}
       MCP_TIMEOUT_SECONDS: ${MCP_TIMEOUT_SECONDS:-5}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-3.1-flash-live-preview}
@@ -25,6 +34,8 @@ services:
       AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET:-}
     ports:
       - "8000:8080"
+    volumes:
+      - agent-data:/data
     depends_on:
       mcp-server:
         condition: service_healthy
@@ -42,7 +53,9 @@ services:
     environment:
       MCP_PORT: "8080"
       MCP_PROGRESS_PATH: /data/student_progress.json
+      MCP_CONTENT_AUTHORING_PATH: /data/content_authoring.json
       MCP_PROGRESS_BACKEND: local
+      MCP_AUTHORING_TOKEN: ${AUTHORING_TOKEN:-}
       MCP_ALLOWED_HOSTS: "mcp-server:8080"
     ports:
       - "8001:8080"
@@ -56,4 +69,5 @@ services:
       start_period: 5s
 
 volumes:
+  agent-data:
   mcp-data:

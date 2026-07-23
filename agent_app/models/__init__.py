@@ -5,6 +5,7 @@ from agent_app.models.chat import (
     ChatResponse,
     EvaluationRequest,
     EvaluationResponse,
+    SessionUpdateRequest,
     TraceEvent,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "ChatResponse",
     "EvaluationRequest",
     "EvaluationResponse",
+    "SessionUpdateRequest",
     "TraceEvent",
 ]

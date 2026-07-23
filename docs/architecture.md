@@ -2,8 +2,9 @@
 
 ## Conceptos y fronteras
 
-- **Modelo:** transforma entradas en salidas probabilísticas; Gemini será el
-  predeterminado y Foundry será un proveedor opcional.
+- **Modelo:** transforma entradas en salidas probabilísticas; `mock` permite la
+  ejecución local, Gemini cubre el flujo real y Foundry es un proveedor
+  opcional.
 - **Agente:** combina modelo, instrucciones, estado y herramientas para decidir
   el siguiente paso hacia un objetivo.
 - **Subagente:** agente especialista al que otro agente delega una
@@ -13,7 +14,7 @@
 - **MCP:** protocolo que estandariza cómo descubrir e invocar herramientas y
   leer recursos. El servidor MCP de este proyecto no es un agente.
 
-## Componentes objetivo
+## Componentes implementados
 
 ```mermaid
 flowchart LR
@@ -25,18 +26,25 @@ flowchart LR
   D & T & E --> C["Cliente MCP"]
   C -->|"Streamable HTTP + ID token"| M["MCP Server en Cloud Run"]
   M --> R["Contenido / índice RAG"]
+  A --> AU["Panel y proxy de autoría"]
+  AU -->|"API administrativa + token"| M
   M --> P["Repositorio de progreso"]
   P -. "local" .-> J["JSON"]
   P -. "producción" .-> F["Firestore"]
   A --> G["Gemini en Google Cloud"]
   A -. "opcional" .-> AZ["Microsoft Foundry en Azure"]
+  A --> S["Repositorio de sesiones"]
+  S -. "local" .-> SJ["JSON atómico"]
+  S -. "producción" .-> SF["Firestore"]
+  A --> OB["Observabilidad agregada en memoria"]
 ```
 
-La Fase 1 implementa la parte MCP, el índice local y el repositorio JSON. El
-servidor se ejecuta como servicio remoto independiente mediante Streamable
-HTTP sin estado y respuestas JSON.
+El servidor MCP, el índice local, la autoría y los repositorios de progreso se
+mantienen separados de Agent App. El servidor se ejecuta como servicio remoto
+independiente mediante Streamable HTTP sin estado y respuestas JSON; para la
+demo local, Agent App también puede usar un adaptador directo sin red.
 
-## Secuencia objetivo de aprendizaje
+## Secuencia principal de aprendizaje
 
 ```mermaid
 sequenceDiagram
@@ -61,8 +69,8 @@ sequenceDiagram
   M-->>E: progreso actualizado
 ```
 
-La futura interfaz mostrará estos eventos resumidos, herramientas, duración y
-resultado, pero nunca razonamiento interno ni chain-of-thought.
+La interfaz muestra eventos resumidos, herramientas, duración y resultado,
+pero nunca razonamiento interno ni chain-of-thought.
 
 ## Decisiones de Fase 1
 
@@ -128,13 +136,104 @@ resultado, pero nunca razonamiento interno ni chain-of-thought.
    las evaluaciones históricas; el detalle por concepto comienza a poblarse con
    el siguiente intento. El primer guardado posterior persiste el formato nuevo.
 
+## Decisiones de Fase 4
+
+1. **Estado de conversación en Agent App.** Mensajes, tema y evaluación
+   pendiente pertenecen al flujo de coordinación, no al dominio académico del
+   MCP. Por eso usan un repositorio propio sin ampliar las herramientas MCP.
+2. **Servidor como fuente de verdad.** El navegador conserva sólo el ID de la
+   conversación activa. Al abrir la aplicación obtiene mensajes y pregunta
+   pendiente mediante la API, evitando divergencia entre dispositivos.
+3. **Pregunta privada durable.** El repositorio conserva las palabras esperadas
+   por el evaluador determinista; los modelos de respuesta pública exponen sólo
+   la pregunta y el número de ronda.
+4. **Dos adaptadores.** JSON atómico y un volumen nombrado cubren desarrollo y
+   Docker Compose. Firestore permite reinicios y varias réplicas en Cloud Run.
+5. **Retención explícita.** Se conservan 365 días desde la última actividad,
+   configurable entre 1 y 3650. Los registros vencidos se purgan al consultar;
+   archivar es reversible y `DELETE` realiza borrado inmediato.
+6. **Aislamiento por propietario.** Todas las operaciones sobre un ID de sesión
+   validan el `student_id` y responden 403 ante cruces. En un producto público,
+   ese ID deberá proceder de una identidad autenticada y no del cuerpo del
+   cliente.
+
+## Decisiones de Fase 5
+
+1. **Dos señales complementarias.** La cobertura determinista conserva el
+   control de conceptos esenciales y la rúbrica semántica reconoce comprensión
+   expresada con otras palabras. La nota pondera ambas señales 20/80.
+2. **Rúbrica estable.** Precisión, comprensión, aplicación y claridad se
+   califican de 0 a 4 y siempre incluyen una explicación acotada.
+3. **JSON validado.** Gemini recibe un JSON Schema nativo. Pydantic rechaza
+   salidas incompletas, valores fuera de rango y campos no previstos antes de
+   que puedan afectar el progreso.
+4. **Degradación segura.** Errores, timeouts o JSON inválido producen la misma
+   estructura mediante reglas deterministas; nunca cambian el contrato HTTP.
+5. **Respuesta no confiable.** El prompt delimita la respuesta del estudiante
+   como datos. Además, listas de términos sin explicación e intentos explícitos
+   de manipulación no pueden alcanzar 50 puntos.
+6. **Evolución compatible.** Rúbrica y explicación se agregan como campos
+   opcionales de `Assessment`, por lo que los documentos JSON y Firestore
+   existentes continúan cargando sin migración manual.
+
+## Decisiones de Fase 6
+
+1. **Dos estados de actividad.** `pending_evaluation` representa la explicación
+   guiada y `pending_practice` la microactividad opcional. Ambos se persisten,
+   pero cambiar de modo no reemplaza el estado del otro.
+2. **Adaptación explicable.** Los conceptos pendientes determinan el foco; los
+   intentos académicos y la ronda determinan dificultad de fundamentos,
+   aplicación o desafío.
+3. **Práctica sin dominio artificial.** El resultado de una microactividad se
+   devuelve al estudiante, pero no se guarda como evaluación completa del tema.
+4. **Ayuda dentro del hilo.** Otro ejemplo y una explicación más fácil usan el
+   Tutor Agent dentro de la misma conversación, conservando la pregunta del
+   Evaluator Agent.
+5. **Proyectos con rúbricas propias.** Los tres proyectos tienen criterios
+   diferentes y validan que el modelo devuelva exactamente esos identificadores.
+6. **Progreso individual intacto.** Una nota transversal no se copia a cada
+   tema del proyecto; hacerlo confundiría integración con dominio individual.
+
+## Decisiones de Fase 7
+
+1. **Autoría fuera de las herramientas MCP.** Agent App actúa como proxy de una
+   API administrativa protegida. Ningún agente recibe capacidad para crear,
+   publicar o revertir contenido.
+2. **Borrador y publicación separados.** Editar una lección publicada no cambia
+   lo que recupera el tutor hasta ejecutar una publicación explícita.
+3. **Repositorio editorial atómico.** El estado local conserva borrador,
+   snapshot publicado e historial completo mediante reemplazo atómico de JSON.
+4. **Reversión trazable.** Revertir crea una versión nueva; nunca elimina las
+   revisiones que explican cómo se llegó al estado actual.
+5. **Contrato canónico de contenido.** Todo origen futuro debe convertirse a
+   `LearningContent` y pasar por el mismo flujo de validación, previsualización
+   y publicación.
+
+## Decisiones de Fase 8
+
+1. **Accesibilidad como contrato.** La estructura semántica, el manejo de foco,
+   los atajos y los estados recuperables cuentan con pruebas automatizadas,
+   además de la validación manual en escritorio y móvil.
+2. **Observabilidad sin contenido educativo.** Las métricas agregan rutas,
+   latencia, errores, tokens, costos y actividades; excluyen mensajes,
+   respuestas, identificadores y secretos.
+3. **Costo configurado por entorno.** Las tarifas no se codifican en la
+   aplicación. Con valores cero se conserva la medición de tokens sin publicar
+   un costo potencialmente obsoleto.
+4. **Alcance por réplica explícito.** El registro en memoria sirve para la demo y
+   diagnóstico local. Un despliegue horizontal debe exportar señales a un
+   backend central.
+5. **Frontend sin runtime adicional.** HTML, CSS y JavaScript nativos, compresión,
+   caché versionada y presupuestos de tamaño mantienen predecible la entrega.
+
 ## Reemplazos para producción
 
 | Pieza local | Adaptador futuro | Motivo |
 |---|---|---|
 | `LocalProgressRepository` | `FirestoreProgressRepository` | concurrencia y durabilidad |
+| `LocalSessionRepository` | `FirestoreSessionRepository` | sesiones entre réplicas y dispositivos |
 | `InMemoryContentStore` | índice administrado o vector store en GCP | volumen y búsqueda semántica |
-| JSON curricular empaquetado | Google Cloud Storage + pipeline de ingestión | actualización independiente |
+| `LocalContentAuthoringRepository` | base durable o Google Cloud Storage + pipeline editorial | concurrencia y actualización independiente |
 
 Firestore no debe ser llamado directamente desde agentes: seguirá detrás de
 las herramientas MCP. El audio no se persistirá de forma predeterminada.

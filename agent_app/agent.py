@@ -60,8 +60,10 @@ def build_adk_root_agent(settings: Settings | None = None) -> Agent:
         model=settings.gemini_model,
         mode="task",
         instruction=(
-            "Crea una pregunta corta del tema, califica la respuesta, ofrece feedback "
-            "y usa save_learning_result para persistir el resultado."
+            "Crea una pregunta corta del tema, comprueba conceptos esenciales y "
+            "califica precisión, comprensión, aplicación y claridad con una rúbrica "
+            "estructurada. Ofrece feedback y usa save_learning_result para persistir "
+            "el resultado."
         ),
         tools=[_toolset(settings, ["save_learning_result", "get_learning_path"])],
     )

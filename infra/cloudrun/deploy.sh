@@ -25,6 +25,9 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member "serviceAccount:learning-agent@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role roles/aiplatform.user
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member "serviceAccount:learning-agent@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role roles/datastore.user
 
 MCP_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/mcp-server:${TAG}"
 AGENT_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/agent-app:${TAG}"
@@ -52,13 +55,10 @@ gcloud run services add-iam-policy-binding learning-mcp --region "${REGION}" \
   --member "serviceAccount:learning-agent@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role roles/run.invoker
 
-# --max-instances 1: InMemoryEvaluationStore y SessionTopicStore viven en el
-# proceso de la instancia. Más de una réplica rompe /api/evaluate y los
-# mensajes de seguimiento de forma intermitente (ver agent-service.yaml).
 gcloud run deploy learning-agent --image "${AGENT_IMAGE}" --region "${REGION}" \
   --service-account "learning-agent@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --allow-unauthenticated --max-instances 1 --set-env-vars \
-"MODEL_PROVIDER=gemini,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GEMINI_LIVE_MODEL=gemini-live-2.5-flash-native-audio,MCP_USE_LOCAL_ADAPTER=false,MCP_SERVER_URL=${MCP_URI}/mcp/,MCP_AUTH_AUDIENCE=${MCP_URI}" \
+  --allow-unauthenticated --max-instances 3 --set-env-vars \
+"MODEL_PROVIDER=gemini,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GEMINI_LIVE_MODEL=gemini-live-2.5-flash-native-audio,APP_SESSIONS_BACKEND=firestore,FIRESTORE_SESSIONS_COLLECTION=learning_sessions,APP_SESSION_RETENTION_DAYS=365,MCP_USE_LOCAL_ADAPTER=false,MCP_SERVER_URL=${MCP_URI}/mcp/,MCP_AUTH_AUDIENCE=${MCP_URI}" \
   --startup-probe httpGet.path=/healthz --liveness-probe httpGet.path=/healthz
 
 gcloud run services describe learning-agent --region "${REGION}" --format='value(status.url)'

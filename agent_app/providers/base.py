@@ -1,6 +1,6 @@
 """Puerto único de modelos para mantener aisladas las APIs de proveedores."""
 
-from typing import Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,6 +11,7 @@ class ModelRequest(BaseModel):
     system_instruction: str = Field(min_length=1)
     prompt: str = Field(min_length=1)
     temperature: float = Field(default=0.2, ge=0, le=2)
+    response_json_schema: dict[str, Any] | None = None
 
 
 class ModelProvider(Protocol):

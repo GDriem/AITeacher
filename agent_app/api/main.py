@@ -4,14 +4,25 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import secrets
+import time
 import uuid
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 
 from agent_app.agents.diagnostic import DiagnosticAgent
 from agent_app.agents.evaluator import EvaluatorAgent
@@ -23,8 +34,18 @@ from agent_app.models.chat import (
     ChatResponse,
     EvaluationRequest,
     EvaluationResponse,
+    SessionUpdateRequest,
     TopicCatalogItem,
     TopicCatalogResponse,
+)
+from agent_app.models.activities import (
+    PracticeEvaluationRequest,
+    PracticeEvaluationResponse,
+    PracticeStartRequest,
+    PracticeStartResponse,
+    ProjectCatalogResponse,
+    ProjectEvaluationRequest,
+    ProjectEvaluationResponse,
 )
 from agent_app.providers.base import ModelProvider
 from agent_app.providers.factory import create_model_provider
@@ -34,19 +55,64 @@ from agent_app.services.learning_tools import (
     RemoteMcpLearningTools,
 )
 from agent_app.services.logging import configure_logging
+from agent_app.services.observability import (
+    ObservableModelProvider,
+    ObservabilityRegistry,
+)
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
-from agent_app.services.sessions import InMemoryEvaluationStore, SessionTopicStore
-from mcp_learning_server.models import TopicStatus
+from agent_app.services.activities import PROJECTS, evaluate_project
+from agent_app.services.authoring import (
+    AuthoringGateway,
+    LocalAuthoringGateway,
+    RemoteAuthoringGateway,
+)
+from agent_app.services.sessions import (
+    ConversationDetail,
+    ConversationListResponse,
+    FirestoreSessionRepository,
+    LocalSessionRepository,
+    SessionRepository,
+    conversation_detail,
+    conversation_summary,
+)
+from mcp_learning_server.models import (
+    AuthoredLesson,
+    LearningContent,
+    LessonActionRequest,
+    LessonMutationRequest,
+    LessonRevertRequest,
+    TopicStatus,
+)
 from mcp_learning_server.server import build_learning_service
 
 logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parents[1] / "static"
 
 
+def build_session_repository(settings: Settings) -> SessionRepository:
+    if settings.app_sessions_backend == "local":
+        return LocalSessionRepository(
+            settings.app_sessions_path,
+            settings.app_session_retention_days,
+        )
+    try:
+        from google.cloud import firestore
+    except ImportError as exc:  # pragma: no cover - depende del extra cloud
+        raise RuntimeError(
+            "El backend firestore requiere instalar el extra cloud"
+        ) from exc
+    return FirestoreSessionRepository(
+        firestore.Client(project=settings.google_cloud_project),
+        collection=settings.firestore_sessions_collection,
+        retention_days=settings.app_session_retention_days,
+    )
+
+
 def build_orchestrator(
     settings: Settings,
     tools: LearningTools | None = None,
     provider: ModelProvider | None = None,
+    sessions: SessionRepository | None = None,
 ) -> LearningOrchestrator:
     if tools is None:
         tools = (
@@ -62,9 +128,8 @@ def build_orchestrator(
     return LearningOrchestrator(
         DiagnosticAgent(tools),
         TutorAgent(tools, provider),
-        EvaluatorAgent(tools),
-        InMemoryEvaluationStore(),
-        SessionTopicStore(),
+        EvaluatorAgent(tools, provider),
+        sessions or build_session_repository(settings),
     )
 
 
@@ -80,32 +145,122 @@ def build_learning_tools(settings: Settings) -> LearningTools:
     )
 
 
+def build_authoring_gateway(
+    settings: Settings,
+    tools: LearningTools,
+) -> AuthoringGateway | None:
+    if isinstance(tools, LocalLearningTools):
+        if tools.service.authoring is None:
+            return None
+        return LocalAuthoringGateway(tools.service.authoring)
+    if not settings.mcp_authoring_token:
+        return None
+    return RemoteAuthoringGateway(
+        settings.mcp_authoring_url,
+        settings.mcp_authoring_token,
+        settings.mcp_timeout_seconds,
+        settings.mcp_auth_audience,
+    )
+
+
 def create_app(
     settings: Settings | None = None,
     tools: LearningTools | None = None,
     provider: ModelProvider | None = None,
+    sessions: SessionRepository | None = None,
+    authoring: AuthoringGateway | None = None,
+    observability: ObservabilityRegistry | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     tools = tools or build_learning_tools(settings)
-    orchestrator = build_orchestrator(settings, tools, provider)
+    sessions = sessions or build_session_repository(settings)
+    authoring = authoring or build_authoring_gateway(settings, tools)
+    provider = provider or create_model_provider(settings)
+    observability = observability or ObservabilityRegistry(
+        provider_name=provider.name,
+        input_cost_per_million_usd=settings.model_input_cost_per_million_usd,
+        output_cost_per_million_usd=settings.model_output_cost_per_million_usd,
+        max_latency_samples=settings.observability_max_latency_samples,
+    )
+    observed_provider = ObservableModelProvider(provider, observability)
+    orchestrator = build_orchestrator(
+        settings,
+        tools,
+        observed_provider,
+        sessions,
+    )
     app = FastAPI(
         title="AITeacher",
-        version="0.3.0",
+        version="0.8.0",
         description=(
             "Tutor de IA multiagente con aprendizaje adaptativo y herramientas "
             "MCP independientes."
         ),
     )
+    app.add_middleware(GZipMiddleware, minimum_size=1_000)
     app.state.orchestrator = orchestrator
     app.state.learning_tools = tools
+    app.state.sessions = sessions
+    app.state.authoring = authoring
     app.state.settings = settings
+    app.state.observability = observability
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.middleware("http")
     async def correlation_middleware(request: Request, call_next):
         correlation_id = request.headers.get("x-correlation-id") or str(uuid.uuid4())
         request.state.correlation_id = correlation_id
-        response = await call_next(request)
+        started = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            duration_ms = (time.perf_counter() - started) * 1_000
+            route = getattr(request.scope.get("route"), "path", "<unmatched>")
+            if not request.url.path.startswith("/static/"):
+                observability.record_http(
+                    method=request.method,
+                    route=route,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                )
+            logger.exception(
+                "http_request_failed",
+                extra={
+                    "correlation_id": correlation_id,
+                    "method": request.method,
+                    "route": route,
+                    "status_code": 500,
+                    "duration_ms": round(duration_ms, 2),
+                },
+            )
+            raise
+        duration_ms = (time.perf_counter() - started) * 1_000
+        route = getattr(request.scope.get("route"), "path", "<unmatched>")
+        if not request.url.path.startswith("/static/"):
+            observability.record_http(
+                method=request.method,
+                route=route,
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+            )
+        logger.info(
+            "http_request_completed",
+            extra={
+                "correlation_id": correlation_id,
+                "method": request.method,
+                "route": route,
+                "status_code": response.status_code,
+                "duration_ms": round(duration_ms, 2),
+            },
+        )
+        if request.url.path.startswith("/static/"):
+            response.headers.setdefault(
+                "cache-control",
+                "public, max-age=3600, stale-while-revalidate=86400",
+            )
+        elif request.url.path == "/":
+            response.headers.setdefault("cache-control", "no-cache")
+        response.headers.setdefault("x-content-type-options", "nosniff")
         response.headers["x-correlation-id"] = correlation_id
         return response
 
@@ -117,6 +272,10 @@ def create_app(
     async def missing_session(_: Request, exc: KeyError) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(exc.args[0])})
 
+    @app.exception_handler(PermissionError)
+    async def forbidden_session(_: Request, exc: PermissionError) -> JSONResponse:
+        return JSONResponse(status_code=403, content={"detail": str(exc)})
+
     @app.get("/healthz")
     async def health() -> dict:
         return {
@@ -126,13 +285,146 @@ def create_app(
             "mcp_mode": "local" if settings.mcp_use_local_adapter else "remote",
         }
 
+    @app.get("/readyz", response_model=None)
+    async def readiness() -> dict | Response:
+        try:
+            async with asyncio.timeout(settings.mcp_timeout_seconds):
+                await tools.list_available_topics()
+        except Exception:
+            logger.exception("readiness_dependency_failed")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "not_ready",
+                    "service": "agent-app",
+                    "dependency": "learning-mcp",
+                },
+            )
+        return {
+            "status": "ready",
+            "service": "agent-app",
+            "mcp_mode": "local" if settings.mcp_use_local_adapter else "remote",
+        }
+
+    @app.get("/api/observability")
+    async def observability_summary() -> dict:
+        return observability.snapshot()
+
     @app.get("/api/capabilities")
     async def capabilities() -> dict:
         return {
             "text": True,
             "voice": settings.voice_enabled,
             "voice_model": settings.gemini_live_model if settings.voice_enabled else None,
+            "authoring": bool(settings.app_authoring_token and authoring),
         }
+
+    def require_authoring(
+        supplied_token: str | None,
+    ) -> AuthoringGateway:
+        if not settings.app_authoring_token or authoring is None:
+            raise HTTPException(
+                status_code=503,
+                detail="El panel de autoría no está configurado",
+            )
+        if not supplied_token or not secrets.compare_digest(
+            supplied_token,
+            settings.app_authoring_token,
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail="Credencial de autoría inválida",
+            )
+        return authoring
+
+    @app.get("/api/authoring/lessons", response_model=list[AuthoredLesson])
+    async def list_authored_lessons(
+        x_authoring_token: str | None = Header(default=None),
+    ) -> list[AuthoredLesson]:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.list_lessons()
+
+    @app.post(
+        "/api/authoring/lessons",
+        response_model=AuthoredLesson,
+        status_code=201,
+    )
+    async def create_authored_lesson(
+        payload: LessonMutationRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.create_lesson(payload)
+
+    @app.get(
+        "/api/authoring/lessons/{lesson_id}",
+        response_model=AuthoredLesson,
+    )
+    async def get_authored_lesson(
+        lesson_id: str,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.get_lesson(lesson_id)
+
+    @app.put(
+        "/api/authoring/lessons/{lesson_id}",
+        response_model=AuthoredLesson,
+    )
+    async def update_authored_lesson(
+        lesson_id: str,
+        payload: LessonMutationRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.update_lesson(lesson_id, payload)
+
+    @app.get(
+        "/api/authoring/lessons/{lesson_id}/preview",
+        response_model=LearningContent,
+    )
+    async def preview_authored_lesson(
+        lesson_id: str,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> LearningContent:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.preview_lesson(lesson_id)
+
+    @app.post(
+        "/api/authoring/lessons/{lesson_id}/publish",
+        response_model=AuthoredLesson,
+    )
+    async def publish_authored_lesson(
+        lesson_id: str,
+        payload: LessonActionRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.publish_lesson(lesson_id, payload)
+
+    @app.post(
+        "/api/authoring/lessons/{lesson_id}/unpublish",
+        response_model=AuthoredLesson,
+    )
+    async def unpublish_authored_lesson(
+        lesson_id: str,
+        payload: LessonActionRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.unpublish_lesson(lesson_id, payload)
+
+    @app.post(
+        "/api/authoring/lessons/{lesson_id}/revert",
+        response_model=AuthoredLesson,
+    )
+    async def revert_authored_lesson(
+        lesson_id: str,
+        payload: LessonRevertRequest,
+        x_authoring_token: str | None = Header(default=None),
+    ) -> AuthoredLesson:
+        gateway = require_authoring(x_authoring_token)
+        return await gateway.revert_lesson(lesson_id, payload)
 
     @app.get("/api/topics", response_model=TopicCatalogResponse)
     async def topics(student_id: str) -> TopicCatalogResponse:
@@ -178,6 +470,46 @@ def create_app(
             topics=items,
         )
 
+    @app.get("/api/sessions", response_model=ConversationListResponse)
+    async def list_sessions(
+        student_id: str, include_archived: bool = False
+    ) -> ConversationListResponse:
+        items = sessions.list(student_id, include_archived)
+        return ConversationListResponse(
+            sessions=[conversation_summary(item) for item in items],
+            retention_days=sessions.retention_days,
+        )
+
+    @app.get(
+        "/api/sessions/{session_id}",
+        response_model=ConversationDetail,
+    )
+    async def get_session(session_id: str, student_id: str) -> ConversationDetail:
+        return conversation_detail(sessions.get(session_id, student_id))
+
+    @app.patch(
+        "/api/sessions/{session_id}",
+        response_model=ConversationDetail,
+    )
+    async def update_session(
+        session_id: str, payload: SessionUpdateRequest
+    ) -> ConversationDetail:
+        session = sessions.get(session_id, payload.student_id)
+        if payload.title is not None:
+            session = sessions.rename(session_id, payload.student_id, payload.title)
+        if payload.archived is not None:
+            session = sessions.set_archived(
+                session_id, payload.student_id, payload.archived
+            )
+        return conversation_detail(session)
+
+    @app.delete("/api/sessions/{session_id}", status_code=204)
+    async def delete_session(
+        session_id: str, student_id: str
+    ) -> Response:
+        sessions.delete(session_id, student_id)
+        return Response(status_code=204)
+
     @app.websocket("/ws/live")
     async def live_voice(websocket: WebSocket) -> None:
         await websocket.accept()
@@ -212,7 +544,8 @@ def create_app(
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         correlation_id = request.state.correlation_id
         logger.info("chat_started", extra={"correlation_id": correlation_id})
-        result = await orchestrator.chat(payload, correlation_id)
+        with observability.activity("guided_explanation"):
+            result = await orchestrator.chat(payload, correlation_id)
         logger.info("chat_completed", extra={"correlation_id": correlation_id})
         return result
 
@@ -220,22 +553,56 @@ def create_app(
     async def evaluate(
         payload: EvaluationRequest, request: Request
     ) -> EvaluationResponse:
-        try:
-            return await orchestrator.evaluate(payload, request.state.correlation_id)
-        except PermissionError as exc:
-            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        with observability.activity("topic_evaluation"):
+            return await orchestrator.evaluate(
+                payload, request.state.correlation_id
+            )
+
+    @app.post("/api/practice/start", response_model=PracticeStartResponse)
+    async def start_practice(
+        payload: PracticeStartRequest,
+    ) -> PracticeStartResponse:
+        return await orchestrator.start_practice(payload)
+
+    @app.post("/api/practice/evaluate", response_model=PracticeEvaluationResponse)
+    async def evaluate_practice(
+        payload: PracticeEvaluationRequest,
+    ) -> PracticeEvaluationResponse:
+        with observability.activity("practice_evaluation"):
+            return await orchestrator.evaluate_practice(payload)
+
+    @app.get("/api/projects", response_model=ProjectCatalogResponse)
+    async def projects() -> ProjectCatalogResponse:
+        return ProjectCatalogResponse(projects=list(PROJECTS.values()))
+
+    @app.post(
+        "/api/projects/{project_id}/evaluate",
+        response_model=ProjectEvaluationResponse,
+    )
+    async def evaluate_integrative_project(
+        project_id: str,
+        payload: ProjectEvaluationRequest,
+    ) -> ProjectEvaluationResponse:
+        project = PROJECTS.get(project_id)
+        if project is None:
+            raise KeyError("No existe el proyecto solicitado")
+        with observability.activity("project_evaluation"):
+            return await evaluate_project(
+                orchestrator.evaluator.provider,
+                project,
+                payload.submission,
+            )
 
     return app
 
 
 configure_logging()
-app = create_app()
 
 
 def main() -> None:
     settings = Settings()
     uvicorn.run(
-        "agent_app.api.main:app",
+        create_app(settings),
         host=settings.app_host,
         port=settings.app_port,
     )

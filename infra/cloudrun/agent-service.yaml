@@ -7,13 +7,7 @@ spec:
     metadata:
       annotations:
         autoscaling.knative.dev/minScale: "0"
-        # maxScale=1: InMemoryEvaluationStore y SessionTopicStore viven en el
-        # proceso de esta instancia. Con más de una instancia, una sesión
-        # creada en una réplica no existe en otra y /api/evaluate o un
-        # mensaje de seguimiento fallarían de forma intermitente. Subir este
-        # límite requiere primero mover ese estado a Firestore/Redis
-        # (docs/architecture.md, mejora recomendada #1).
-        autoscaling.knative.dev/maxScale: "1"
+        autoscaling.knative.dev/maxScale: "3"
     spec:
       serviceAccountName: learning-agent@PROJECT_ID.iam.gserviceaccount.com
       containerConcurrency: 40
@@ -31,6 +25,12 @@ spec:
               value: PROJECT_ID
             - name: GOOGLE_CLOUD_LOCATION
               value: REGION
+            - name: APP_SESSIONS_BACKEND
+              value: firestore
+            - name: FIRESTORE_SESSIONS_COLLECTION
+              value: learning_sessions
+            - name: APP_SESSION_RETENTION_DAYS
+              value: "365"
             - name: GEMINI_LIVE_MODEL
               value: gemini-live-2.5-flash-native-audio
             - name: MCP_USE_LOCAL_ADAPTER
