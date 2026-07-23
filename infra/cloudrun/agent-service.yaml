@@ -1,0 +1,56 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: learning-agent
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        # maxScale=1: InMemoryEvaluationStore y SessionTopicStore viven en el
+        # proceso de esta instancia. Con más de una instancia, una sesión
+        # creada en una réplica no existe en otra y /api/evaluate o un
+        # mensaje de seguimiento fallarían de forma intermitente. Subir este
+        # límite requiere primero mover ese estado a Firestore/Redis
+        # (docs/architecture.md, mejora recomendada #1).
+        autoscaling.knative.dev/maxScale: "1"
+    spec:
+      serviceAccountName: learning-agent@PROJECT_ID.iam.gserviceaccount.com
+      containerConcurrency: 40
+      timeoutSeconds: 300
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/agent-mcp-run/agent-app:TAG
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MODEL_PROVIDER
+              value: gemini
+            - name: GOOGLE_GENAI_USE_VERTEXAI
+              value: "true"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: PROJECT_ID
+            - name: GOOGLE_CLOUD_LOCATION
+              value: REGION
+            - name: GEMINI_LIVE_MODEL
+              value: gemini-live-2.5-flash-native-audio
+            - name: MCP_USE_LOCAL_ADAPTER
+              value: "false"
+            - name: MCP_SERVER_URL
+              value: MCP_SERVICE_URL/mcp/
+            - name: MCP_AUTH_AUDIENCE
+              value: MCP_SERVICE_URL
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            failureThreshold: 10
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 30

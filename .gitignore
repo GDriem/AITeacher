@@ -157,6 +157,11 @@ ENV/
 env.bak/
 venv.bak/
 
+# AITeacher local state and generated artifacts
+.data/
+output/
+tmp/
+
 # Spyder project settings
 .spyderproject
 .spyproject

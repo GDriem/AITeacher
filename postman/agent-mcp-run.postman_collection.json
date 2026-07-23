@@ -1,0 +1,287 @@
+{
+  "info": {
+    "name": "AITeacher — Pruebas locales",
+    "_postman_id": "9a6f9b1e-6f3a-4e9a-8f0d-agentmcprun01",
+    "description": "Colección de pruebas para AITeacher, proyecto originado en la charla Agent, MCP & Run. Incluye el servidor MCP (mcp_learning_server, puerto 8001) llamado directamente vía JSON-RPC/Streamable HTTP, y la API del Agent App (puerto 8000) que orquesta diagnóstico, tutoría (RAG) y evaluación.\n\nRequisitos: ambos servicios corriendo localmente (ver README.md / docs/demo-script.md).\n- mcp_learning_server: python -m mcp_learning_server.server\n- agent_app: python -m agent_app.api.main",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "mcpBaseUrl", "value": "http://localhost:8001" },
+    { "key": "agentBaseUrl", "value": "http://localhost:8000" },
+    { "key": "studentId", "value": "demo-1" },
+    { "key": "sessionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "MCP Server (mcp_learning_server)",
+      "description": "Servidor MCP remoto e independiente. No decide flujo pedagógico: solo expone las 6 herramientas y el recurso learning://topics vía JSON-RPC 2.0 sobre Streamable HTTP sin estado.",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{mcpBaseUrl}}/healthz", "host": ["{{mcpBaseUrl}}"], "path": ["healthz"] }
+          }
+        },
+        {
+          "name": "Ready",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{mcpBaseUrl}}/readyz", "host": ["{{mcpBaseUrl}}"], "path": ["readyz"] }
+          }
+        },
+        {
+          "name": "MCP initialize",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2025-06-18\",\n    \"capabilities\": {},\n    \"clientInfo\": { \"name\": \"postman\", \"version\": \"1.0\" }\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "MCP tools/list",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 2,\n  \"method\": \"tools/list\",\n  \"params\": {}\n}"
+            }
+          }
+        },
+        {
+          "name": "MCP resources/list",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 3,\n  \"method\": \"resources/list\",\n  \"params\": {}\n}"
+            }
+          }
+        },
+        {
+          "name": "MCP resources/read (learning://topics)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 4,\n  \"method\": \"resources/read\",\n  \"params\": { \"uri\": \"learning://topics\" }\n}"
+            }
+          }
+        },
+        {
+          "name": "tools/call — list_available_topics",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 10,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_available_topics\",\n    \"arguments\": {}\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "tools/call — search_learning_content",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 11,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"search_learning_content\",\n    \"arguments\": { \"topic\": \"embeddings\", \"level\": \"beginner\", \"limit\": 3 }\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "tools/call — get_student_progress",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 12,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"get_student_progress\",\n    \"arguments\": { \"student_id\": \"{{studentId}}\" }\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "tools/call — get_learning_path",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 13,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"get_learning_path\",\n    \"arguments\": { \"student_id\": \"{{studentId}}\" }\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "tools/call — save_learning_result",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 14,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"save_learning_result\",\n    \"arguments\": {\n      \"student_id\": \"{{studentId}}\",\n      \"topic\": \"embeddings\",\n      \"score\": 100,\n      \"feedback\": \"Respuesta sólida: incluiste los conceptos esenciales.\",\n      \"recommendation\": \"Avanzar al siguiente concepto del camino.\"\n    }\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "tools/call — find_practical_example",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 15,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"find_practical_example\",\n    \"arguments\": { \"topic\": \"embeddings\", \"programming_language\": \"python\" }\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "tools/call — entrada inválida (tema desconocido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "url": { "raw": "{{mcpBaseUrl}}/mcp/", "host": ["{{mcpBaseUrl}}"], "path": ["mcp", ""] },
+            "description": "Debe responder un error MCP controlado (isError=true o error JSON-RPC), no un 500.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 16,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"search_learning_content\",\n    \"arguments\": { \"topic\": \"tema-que-no-existe\", \"level\": \"beginner\" }\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agent App (agent_app)",
+      "description": "API pública: orquestador + Diagnostic/Tutor/Evaluator sobre Google ADK. Usa el ModelProvider configurado en .env (mock/gemini/foundry).",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{agentBaseUrl}}/healthz", "host": ["{{agentBaseUrl}}"], "path": ["healthz"] }
+          }
+        },
+        {
+          "name": "Capabilities",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{agentBaseUrl}}/api/capabilities", "host": ["{{agentBaseUrl}}"], "path": ["api", "capabilities"] }
+          }
+        },
+        {
+          "name": "UI (index.html)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{agentBaseUrl}}/", "host": ["{{agentBaseUrl}}"], "path": [""] }
+          }
+        },
+        {
+          "name": "Chat — embeddings (diagnóstico + tutoría + quiz)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('sessionId', body.session_id);",
+                  "    pm.test('respuesta incluye topic y quiz', function () {",
+                  "        pm.expect(body.topic).to.eql('embeddings');",
+                  "        pm.expect(body.quiz).to.have.property('question');",
+                  "    });",
+                  "} else {",
+                  "    pm.test('chat respondió 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{agentBaseUrl}}/api/chat", "host": ["{{agentBaseUrl}}"], "path": ["api", "chat"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"{{studentId}}\",\n  \"message\": \"Explícame qué son los embeddings, pero primero comprueba cuánto sé\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Evaluate — responder el quiz",
+          "description": "Depende de haber ejecutado 'Chat — embeddings' antes, para que {{sessionId}} tenga valor.",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{agentBaseUrl}}/api/evaluate", "host": ["{{agentBaseUrl}}"], "path": ["api", "evaluate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"{{studentId}}\",\n  \"session_id\": \"{{sessionId}}\",\n  \"answer\": \"Un embedding es un vector de significado y la similitud permite comparar elementos cercanos.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Chat — mensaje ambiguo (debe rechazar tema)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{agentBaseUrl}}/api/chat", "host": ["{{agentBaseUrl}}"], "path": ["api", "chat"] },
+            "description": "Sin un tema del currículo detectable, debe responder 4xx pidiendo aclarar el tema (embeddings, RAG, MCP, agentes...).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"{{studentId}}\",\n  \"message\": \"cual es mi progreso\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
