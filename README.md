@@ -7,9 +7,16 @@ por voz”** del Google I/O Extended Guatemala City.
 
 Repositorio oficial: [GDriem/AITeacher](https://github.com/GDriem/AITeacher).
 
-El repositorio implementa un MVP completo por texto, una interfaz demostrativa,
-voz opcional con Gemini Live y artefactos de despliegue. MCP se mantiene como una
-frontera de herramientas y recursos deterministas; no se presenta como agente.
+El repositorio implementa el producto definido en las ocho fases de su hoja de
+ruta: experiencia completa por texto, interfaz demostrativa, voz opcional con
+Gemini Live y artefactos de despliegue. MCP se mantiene como una frontera de
+herramientas y recursos deterministas; no se presenta como agente.
+
+## Estado del proyecto
+
+Las ocho fases de producto están completadas. La referencia consolidada está en
+la [hoja de ruta](docs/product-roadmap.md) y la navegación de toda la
+documentación en el [índice de `docs/`](docs/README.md).
 
 ## Capacidades
 
@@ -64,7 +71,8 @@ python -m pip install -e ".[dev,agents,foundry]"
 ```
 
 Copie `.env.example` a `.env` únicamente si desea cambiar los valores por
-defecto. Ninguna credencial es necesaria en la Fase 1.
+defecto. El proveedor `mock`, el adaptador MCP local y los repositorios JSON
+permiten ejecutar el flujo principal y las pruebas sin credenciales.
 
 ## Ejecutar el servidor MCP
 
@@ -179,10 +187,8 @@ La dirección `MCP_SERVER_URL` se configura internamente como
 - `find_practical_example(topic, programming_language)`
 - `list_available_topics()`
 
-Consulte [la arquitectura](docs/architecture.md), [el guion de demo](docs/demo-script.md),
-[el despliegue](docs/deployment.md), [Foundry](docs/foundry.md),
-[la guía de Fase 1](docs/phase-1.md), [la guía de Fase 2](docs/phase-2.md) y
-[la guía de Fase 3](docs/phase-3.md), [la guía de Fase 4](docs/phase-4.md) y
-[la guía de Fase 5](docs/phase-5.md), [la guía de Fase 6](docs/phase-6.md) y
-[la guía de Fase 7](docs/phase-7.md), y
-[la guía de Fase 8](docs/phase-8.md).
+## Documentación
+
+Consulte el [índice de documentación](docs/README.md) para navegar la
+arquitectura, la hoja de ruta completada, las guías de cada capacidad, el guion
+de demo y el despliegue.

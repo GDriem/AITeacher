@@ -21,13 +21,13 @@ autoría y proyectos pueden operarse mediante tabulación, `Enter`, `Espacio` y
 
 ### 2. Observabilidad y panel mínimo
 
-Agent App medirá peticiones HTTP, latencia, errores, llamadas al modelo, tokens,
-costo configurable y finalización de actividades. Las métricas serán agregadas
-y no contendrán mensajes, respuestas, IDs de estudiante ni secretos.
+Agent App mide peticiones HTTP, latencia, errores, llamadas al modelo, tokens,
+costo configurable y finalización de actividades. Las métricas son agregadas y
+no contienen mensajes, respuestas, IDs de estudiante ni secretos.
 
-El panel de salud y uso consumirá un endpoint de resumen de sólo lectura. Los
-tokens que un proveedor no reporte se identificarán explícitamente como
-estimados; el costo se calculará con precios configurados por entorno, nunca con
+El panel de salud y uso consume un endpoint de resumen de sólo lectura. Los
+tokens que un proveedor no reporta se identifican explícitamente como
+estimados; el costo se calcula con precios configurados por entorno, nunca con
 tarifas codificadas que puedan quedar obsoletas.
 
 La implementación usa `ObservabilityRegistry`, un registro en memoria con una

@@ -1,28 +1,28 @@
 # Hoja de ruta de producto — AITeacher
 
-Esta hoja de ruta divide las mejoras del producto en sesiones independientes. Cada
-fase debe poder desarrollarse, probarse y entregarse sin depender del contexto de
-la conversación anterior.
+Esta hoja de ruta conserva el registro de las ocho fases entregadas. El plan se
+completó el 23 de julio de 2026; sus objetivos, criterios y decisiones se
+mantienen aquí como historial verificable, no como trabajo pendiente.
 
 ## Estado general
 
-| Fase | Objetivo | Estado |
-| --- | --- | --- |
-| 1 | Explorador de temas | Completada |
-| 2 | Ruta de aprendizaje adaptativa | Completada |
-| 3 | Dominio y nivel por tema | Completada |
-| 4 | Persistencia completa de sesiones | Completada |
-| 5 | Evaluación híbrida con rúbricas | Completada |
-| 6 | Feedback accionable y modo práctica | Completada |
-| 7 | Panel de autoría de contenido | Completada |
-| 8 | Accesibilidad, observabilidad y pulido | Completada |
+| Fase | Objetivo | Estado | Evidencia |
+| --- | --- | --- | --- |
+| 1 | Explorador de temas | Completada | [Guía](phase-1.md) |
+| 2 | Ruta de aprendizaje adaptativa | Completada | [Guía](phase-2.md) |
+| 3 | Dominio y nivel por tema | Completada | [Guía](phase-3.md) |
+| 4 | Persistencia completa de sesiones | Completada | [Guía](phase-4.md) |
+| 5 | Evaluación híbrida con rúbricas | Completada | [Guía](phase-5.md) |
+| 6 | Feedback accionable y modo práctica | Completada | [Guía](phase-6.md) |
+| 7 | Panel de autoría de contenido | Completada | [Guía](phase-7.md) |
+| 8 | Accesibilidad, observabilidad y pulido | Completada | [Guía](phase-8.md) |
 
 ## Fase 1 — Explorador de temas
 
 **Objetivo:** permitir que el estudiante descubra los 23 temas sin tener que
 adivinar qué escribir en el chat.
 
-### Alcance
+### Alcance entregado
 
 - Exponer un endpoint de la app para consultar los temas del MCP.
 - Mostrar un catálogo con título, niveles disponibles y estado del estudiante.
@@ -31,7 +31,7 @@ adivinar qué escribir en el chat.
 - Obtener dinámicamente el total de temas y eliminar el valor fijo del frontend.
 - Mantener el diseño responsive.
 
-### Criterios de terminado
+### Criterios verificados
 
 - Los 23 temas aparecen en la interfaz.
 - Elegir un tema inicia una conversación válida sobre él.
@@ -51,16 +51,11 @@ adivinar qué escribir en el chat.
 - `total_topics` es la única fuente del denominador usado por la interfaz; el
   frontend no conserva un total fijo.
 
-### Prompt para iniciar la sesión
-
-> Continuemos AITeacher implementando la fase 1 de
-> `docs/product-roadmap.md`: Explorador de temas.
-
 ## Fase 2 — Ruta de aprendizaje adaptativa
 
 **Objetivo:** recomendar qué estudiar después usando prerrequisitos y progreso.
 
-### Alcance
+### Alcance entregado
 
 - Definir categorías, orden y prerrequisitos del currículo.
 - Ampliar la ruta de aprendizaje para explicar por qué recomienda un tema.
@@ -68,7 +63,7 @@ adivinar qué escribir en el chat.
 - Diferenciar temas bloqueados, disponibles, en progreso y completados.
 - Permitir estudiar fuera del orden recomendado sin bloquear el chat.
 
-### Criterios de terminado
+### Criterios verificados
 
 - Un estudiante nuevo recibe una ruta inicial coherente.
 - Después de una evaluación, la recomendación cambia cuando corresponde.
@@ -93,16 +88,11 @@ adivinar qué escribir en el chat.
   “Continuar aprendiendo” y los estados bloqueado, disponible, en progreso y
   completado.
 
-### Prompt para iniciar la sesión
-
-> Continuemos AITeacher implementando la fase 2 de
-> `docs/product-roadmap.md`: Ruta de aprendizaje adaptativa.
-
 ## Fase 3 — Dominio y nivel por tema
 
 **Objetivo:** evitar que un único nivel global represente conocimientos diferentes.
 
-### Alcance
+### Alcance entregado
 
 - Crear progreso por tema y por concepto.
 - Registrar intentos, mejor puntaje, nivel y estado de dominio.
@@ -110,7 +100,7 @@ adivinar qué escribir en el chat.
 - Mostrar conceptos dominados y pendientes.
 - Diseñar compatibilidad o migración para el progreso ya guardado.
 
-### Criterios de terminado
+### Criterios verificados
 
 - Un estudiante puede ser avanzado en RAG y principiante en seguridad.
 - Las explicaciones se adaptan al nivel específico del tema.
@@ -135,17 +125,12 @@ adivinar qué escribir en el chat.
 - `GET /api/topics` incluye el progreso del tema en cada tarjeta. El panel
   muestra nivel, intentos, mejor puntaje y conceptos dominados o pendientes.
 
-### Prompt para iniciar la sesión
-
-> Continuemos AITeacher implementando la fase 3 de
-> `docs/product-roadmap.md`: Dominio y nivel por tema.
-
 ## Fase 4 — Persistencia completa de sesiones
 
 **Objetivo:** recuperar conversación, tema y evaluación después de reiniciar la
 aplicación o cambiar de dispositivo.
 
-### Alcance
+### Alcance entregado
 
 - Persistir sesiones y mensajes en el backend.
 - Persistir la pregunta de evaluación pendiente y su número de ronda.
@@ -153,7 +138,7 @@ aplicación o cambiar de dispositivo.
 - Sincronizar el historial local actual con el servidor.
 - Definir retención y eliminación de datos.
 
-### Criterios de terminado
+### Criterios verificados
 
 - Reiniciar Docker no pierde la conversación ni la evaluación pendiente.
 - El estudiante puede abrir una conversación anterior.
@@ -179,16 +164,11 @@ aplicación o cambiar de dispositivo.
   La lectura elimina registros vencidos y `DELETE` ofrece eliminación inmediata;
   archivar sólo oculta una conversación y es reversible.
 
-### Prompt para iniciar la sesión
-
-> Continuemos AITeacher implementando la fase 4 de
-> `docs/product-roadmap.md`: Persistencia completa de sesiones.
-
 ## Fase 5 — Evaluación híbrida con rúbricas
 
 **Objetivo:** evaluar comprensión real sin depender únicamente de palabras clave.
 
-### Alcance
+### Alcance entregado
 
 - Mantener la comprobación determinista de conceptos esenciales.
 - Agregar una evaluación estructurada mediante Gemini.
@@ -197,7 +177,7 @@ aplicación o cambiar de dispositivo.
 - Guardar la rúbrica y una explicación breve del resultado.
 - Crear un dataset de respuestas representativas para regresión.
 
-### Criterios de terminado
+### Criterios verificados
 
 - Mencionar palabras clave sin explicarlas no produce una nota alta.
 - Una paráfrasis correcta puede obtener una buena evaluación.
@@ -221,16 +201,11 @@ aplicación o cambiar de dispositivo.
   `tests/fixtures/evaluation_responses.json` cubre respuestas correctas,
   parafraseadas, parciales, vacías, adversariales y listas de palabras clave.
 
-### Prompt para iniciar la sesión
-
-> Continuemos AITeacher implementando la fase 5 de
-> `docs/product-roadmap.md`: Evaluación híbrida con rúbricas.
-
 ## Fase 6 — Feedback accionable y modo práctica
 
 **Objetivo:** transformar cada resultado en una actividad educativa concreta.
 
-### Alcance
+### Alcance entregado
 
 - Agregar acciones “Ver otro ejemplo”, “Explícamelo más fácil” e “Intentar de nuevo”.
 - Generar ejercicios breves según los conceptos faltantes.
@@ -238,7 +213,7 @@ aplicación o cambiar de dispositivo.
 - Incorporar proyectos pequeños que combinen varios temas.
 - Evaluar proyectos con rúbricas específicas.
 
-### Criterios de terminado
+### Criterios verificados
 
 - Cada aspecto por mejorar ofrece una acción inmediata.
 - El estudiante puede practicar sin perder el hilo principal.
@@ -261,16 +236,11 @@ aplicación o cambiar de dispositivo.
 - Las evaluaciones transversales de proyecto no se distribuyen entre los temas
   individuales, porque esa inferencia produciría dominio académico artificial.
 
-### Prompt para iniciar la sesión
-
-> Continuemos AITeacher implementando la fase 6 de
-> `docs/product-roadmap.md`: Feedback accionable y modo práctica.
-
 ## Fase 7 — Panel de autoría
 
 **Objetivo:** administrar el currículo sin editar manualmente el archivo JSON.
 
-### Alcance
+### Alcance entregado
 
 - Crear una interfaz protegida para listar y editar lecciones.
 - Validar identificadores, niveles, fuentes, texto y palabras clave.
@@ -278,7 +248,7 @@ aplicación o cambiar de dispositivo.
 - Mantener historial o versionado de cambios.
 - Preparar importación posterior desde Markdown o documentos.
 
-### Criterios de terminado
+### Criterios verificados
 
 - Una lección puede crearse, editarse y despublicarse desde la interfaz.
 - El contenido inválido no puede publicarse.
@@ -303,16 +273,11 @@ aplicación o cambiar de dispositivo.
   y palabras clave únicas. Este contrato será también la salida de futuros
   importadores Markdown o documentales.
 
-### Prompt para iniciar la sesión
-
-> Continuemos AITeacher implementando la fase 7 de
-> `docs/product-roadmap.md`: Panel de autoría.
-
 ## Fase 8 — Accesibilidad, observabilidad y pulido
 
 **Objetivo:** preparar una experiencia confiable y medible para usuarios reales.
 
-### Alcance
+### Alcance entregado
 
 - Revisar navegación por teclado, foco, contraste y lectores de pantalla.
 - Mejorar estados vacíos, carga, errores y reconexión.
@@ -320,7 +285,7 @@ aplicación o cambiar de dispositivo.
 - Agregar pruebas responsive y de accesibilidad.
 - Revisar rendimiento y dependencias del frontend.
 
-### Criterios de terminado
+### Criterios verificados
 
 - Los flujos principales pueden completarse usando teclado.
 - Los errores ofrecen recuperación clara.
@@ -348,17 +313,9 @@ aplicación o cambiar de dispositivo.
   evaluación por teclado, foco administrado y ausencia de desbordamiento
   horizontal.
 
-### Prompt para iniciar la sesión
+## Mantenimiento posterior
 
-> Continuemos AITeacher implementando la fase 8 de
-> `docs/product-roadmap.md`: Accesibilidad, observabilidad y pulido.
-
-## Regla de cierre de cada fase
-
-Al terminar una fase:
-
-1. Actualizar su estado en esta hoja de ruta.
-2. Ejecutar todas las pruebas.
-3. Reconstruir Docker Compose.
-4. Validar el flujo principal en la aplicación.
-5. Documentar cualquier decisión que afecte las fases siguientes.
+Las nuevas iniciativas deben registrarse en una hoja de ruta nueva bajo
+`docs/`, con alcance, criterios verificables y decisiones propias. Esta hoja no
+se reabre: documenta la entrega cerrada de las fases 1–8. Las reglas vigentes de
+trabajo por fases y commits están en [`AGENTS.md`](../AGENTS.md).
