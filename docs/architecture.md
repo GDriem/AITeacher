@@ -171,6 +171,24 @@ resultado, pero nunca razonamiento interno ni chain-of-thought.
    opcionales de `Assessment`, por lo que los documentos JSON y Firestore
    existentes continúan cargando sin migración manual.
 
+## Decisiones de Fase 6
+
+1. **Dos estados de actividad.** `pending_evaluation` representa la explicación
+   guiada y `pending_practice` la microactividad opcional. Ambos se persisten,
+   pero cambiar de modo no reemplaza el estado del otro.
+2. **Adaptación explicable.** Los conceptos pendientes determinan el foco; los
+   intentos académicos y la ronda determinan dificultad de fundamentos,
+   aplicación o desafío.
+3. **Práctica sin dominio artificial.** El resultado de una microactividad se
+   devuelve al estudiante, pero no se guarda como evaluación completa del tema.
+4. **Ayuda dentro del hilo.** Otro ejemplo y una explicación más fácil usan el
+   Tutor Agent dentro de la misma conversación, conservando la pregunta del
+   Evaluator Agent.
+5. **Proyectos con rúbricas propias.** Los tres proyectos tienen criterios
+   diferentes y validan que el modelo devuelva exactamente esos identificadores.
+6. **Progreso individual intacto.** Una nota transversal no se copia a cada
+   tema del proyecto; hacerlo confundiría integración con dominio individual.
+
 ## Reemplazos para producción
 
 | Pieza local | Adaptador futuro | Motivo |

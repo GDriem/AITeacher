@@ -3,12 +3,14 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from agent_app.models.activities import PracticeDifficulty, PracticeExercise
 from agent_app.models.chat import Quiz
 from agent_app.services.sessions import (
     ConversationMessage,
     LocalSessionRepository,
     MessageRole,
     PendingEvaluation,
+    PendingPractice,
     StoredConversation,
 )
 from mcp_learning_server.models import Topic
@@ -36,6 +38,23 @@ def make_session(session_id: str = "session-1") -> StoredConversation:
             ),
             attempt=2,
         ),
+        pending_practice=PendingPractice(
+            exercise=PracticeExercise(
+                id="embeddings-practice-1",
+                topic=Topic.EMBEDDINGS,
+                round=1,
+                based_on_attempts=1,
+                difficulty=PracticeDifficulty.FOUNDATION,
+                focus_concepts=["similitud"],
+                title="Conecta las ideas esenciales",
+                prompt="Explica para qué sirve la similitud.",
+                hint="Relaciona dos elementos.",
+            ),
+            quiz=Quiz(
+                question="Explica para qué sirve la similitud.",
+                expected_keywords=["similitud"],
+            ),
+        ),
     )
 
 
@@ -54,6 +73,9 @@ def test_local_session_repository_round_trip_keeps_private_quiz(tmp_path) -> Non
         "significado",
     ]
     assert raw["session-1"]["pending_evaluation"]["quiz"]["expected_keywords"]
+    assert recovered.pending_practice is not None
+    assert recovered.pending_practice.quiz.expected_keywords == ["similitud"]
+    assert raw["session-1"]["pending_practice"]["quiz"]["expected_keywords"]
     assert not list(tmp_path.glob("*.tmp"))
 
 

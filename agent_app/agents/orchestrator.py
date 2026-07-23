@@ -8,11 +8,18 @@ import uuid
 from agent_app.agents.diagnostic import DiagnosticAgent
 from agent_app.agents.evaluator import EvaluatorAgent
 from agent_app.agents.tutor import TutorAgent
+from agent_app.models.activities import (
+    PracticeEvaluationRequest,
+    PracticeEvaluationResponse,
+    PracticeStartRequest,
+    PracticeStartResponse,
+)
 from agent_app.models.chat import (
     ChatRequest,
     ChatResponse,
     EvaluationRequest,
     EvaluationResponse,
+    Quiz,
     TraceEvent,
     TraceKind,
 )
@@ -21,9 +28,11 @@ from agent_app.services.sessions import (
     InMemorySessionRepository,
     MessageRole,
     PendingEvaluation,
+    PendingPractice,
     SessionRepository,
     StoredConversation,
 )
+from agent_app.services.activities import create_practice_exercise
 from mcp_learning_server.models import RubricEvaluationMode, Topic
 from mcp_learning_server.services.learning import TOPIC_ALIASES
 from mcp_learning_server.services.retrieval import tokenize
@@ -292,11 +301,103 @@ class LearningOrchestrator:
             result_explanation=result.result_explanation,
             strengths=result.strengths,
             improvements=result.improvements,
+            practice_concepts=result.next_quiz.expected_keywords,
             learning_context=result.learning_context,
             recommendation=result.recommendation,
             next_quiz=result.next_quiz,
             progress=result.saved.progress,
             trace=trace,
+        )
+
+    async def start_practice(
+        self, request: PracticeStartRequest
+    ) -> PracticeStartResponse:
+        session = self.sessions.get(request.session_id, request.student_id)
+        _ensure_active(session)
+        progress = await self.evaluator.tools.get_student_progress(request.student_id)
+        topic_progress = progress.progress_for(session.topic)
+        available_concepts = (
+            list(topic_progress.pending_concepts)
+            if topic_progress and topic_progress.pending_concepts
+            else list(session.pending_evaluation.quiz.expected_keywords)
+        )
+        if request.focus_concept:
+            if request.focus_concept not in available_concepts:
+                raise ValueError(
+                    "El concepto elegido no está pendiente en esta actividad"
+                )
+            concepts = [request.focus_concept]
+        else:
+            concepts = available_concepts
+        round_number = (
+            session.pending_practice.exercise.round + 1
+            if session.pending_practice
+            else 1
+        )
+        exercise = create_practice_exercise(
+            session.topic,
+            concepts,
+            round_number,
+            topic_progress.attempts if topic_progress else 0,
+        )
+        session.pending_practice = PendingPractice(
+            exercise=exercise,
+            quiz=Quiz(
+                question=exercise.prompt,
+                expected_keywords=exercise.focus_concepts,
+            ),
+        )
+        self.sessions.save(session)
+        return PracticeStartResponse(
+            session_id=session.id,
+            exercise=exercise,
+            main_quiz=session.pending_evaluation.quiz,
+        )
+
+    async def evaluate_practice(
+        self, request: PracticeEvaluationRequest
+    ) -> PracticeEvaluationResponse:
+        session = self.sessions.get(request.session_id, request.student_id)
+        _ensure_active(session)
+        pending = session.pending_practice
+        if pending is None:
+            raise ValueError("Inicia un ejercicio de práctica antes de responder")
+        result = await self.evaluator.grade_practice(
+            pending.exercise.topic,
+            pending.quiz,
+            request.answer,
+        )
+        progress = await self.evaluator.tools.get_student_progress(request.student_id)
+        topic_progress = progress.progress_for(pending.exercise.topic)
+        next_concepts = (
+            result.missing_concepts
+            if result.missing_concepts
+            else pending.exercise.focus_concepts
+        )
+        next_exercise = create_practice_exercise(
+            pending.exercise.topic,
+            next_concepts,
+            pending.exercise.round + 1,
+            topic_progress.attempts if topic_progress else 0,
+        )
+        session.pending_practice = PendingPractice(
+            exercise=next_exercise,
+            quiz=Quiz(
+                question=next_exercise.prompt,
+                expected_keywords=next_exercise.focus_concepts,
+            ),
+        )
+        self.sessions.save(session)
+        return PracticeEvaluationResponse(
+            session_id=session.id,
+            exercise=pending.exercise,
+            score=result.score,
+            status=result.status,
+            feedback=result.feedback,
+            rubric=result.rubric,
+            next_exercise=next_exercise,
+            main_quiz=session.pending_evaluation.quiz,
+            progress=progress,
         )
 
 
@@ -331,3 +432,8 @@ def _elapsed(started: float) -> float:
 def _default_title(message: str) -> str:
     normalized = " ".join(message.split())
     return normalized if len(normalized) <= 70 else f"{normalized[:67].rstrip()}…"
+
+
+def _ensure_active(session: StoredConversation) -> None:
+    if session.archived_at is not None:
+        raise ValueError("La conversación está archivada; restáurala para continuar")

@@ -9,6 +9,10 @@ const state = {
   catalogCompleted: 0,
   recommendation: null,
   sessions: [],
+  practiceExercise: null,
+  nextPractice: null,
+  projects: [],
+  selectedProject: null,
 };
 
 const voice = {
@@ -24,6 +28,8 @@ const voice = {
 const $ = (id) => document.getElementById(id);
 const chatForm = $("chat-form");
 const quizForm = $("quiz-form");
+const practiceForm = $("practice-form");
+const projectForm = $("project-form");
 const activeSessionKey = `activeSession:${state.studentId}`;
 
 chatForm.addEventListener("submit", async (event) => {
@@ -52,6 +58,28 @@ $("start-recommended").addEventListener("click", async () => {
 
 $("category-filter").addEventListener("change", renderTopicCatalog);
 $("level-filter").addEventListener("change", renderTopicCatalog);
+
+$("another-example").addEventListener("click", async () => {
+  await sendChat("Muéstrame otro ejemplo práctico del mismo tema.");
+});
+
+$("simpler-explanation").addEventListener("click", async () => {
+  await sendChat("Explícamelo más fácil usando una analogía.");
+});
+
+$("start-practice").addEventListener("click", async () => {
+  await startPractice();
+});
+
+$("improvements").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-practice-concept]");
+  if (!button) return;
+  await startPractice(button.dataset.practiceConcept || null);
+});
+
+$("resume-practice").addEventListener("click", () => {
+  if (state.practiceExercise) renderPractice(state.practiceExercise);
+});
 
 async function sendChat(message) {
   setBusy(true);
@@ -146,6 +174,95 @@ $("clear-trace").addEventListener("click", () => {
   renderTrace();
 });
 
+practiceForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const answer = $("practice-answer").value.trim();
+  if (!answer || !state.practiceExercise) return;
+  const button = practiceForm.querySelector("button");
+  button.disabled = true;
+  button.querySelector("span").textContent = "Analizando…";
+  showError("");
+  try {
+    const response = await fetch("/api/practice/evaluate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student_id: state.studentId,
+        session_id: state.sessionId,
+        answer,
+      }),
+    });
+    const data = await readResponse(response);
+    state.practiceExercise = data.next_exercise;
+    state.nextPractice = data.next_exercise;
+    $("practice-result").innerHTML = `
+      <strong>${Math.round(data.score)}/100 · ${escapeHtml(statusLabel(data.status))}</strong>
+      <p>${escapeHtml(data.feedback)}</p>`;
+    $("practice-result").classList.remove("hidden");
+    $("next-practice").classList.remove("hidden");
+    renderProgress(data.progress);
+    await loadTopicCatalog();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    button.disabled = false;
+    button.querySelector("span").textContent = "Comprobar práctica";
+  }
+});
+
+$("next-practice").addEventListener("click", () => {
+  if (!state.nextPractice) return;
+  state.practiceExercise = state.nextPractice;
+  state.nextPractice = null;
+  renderPractice(state.practiceExercise);
+});
+
+$("return-main").addEventListener("click", showMainLearning);
+
+$("project-grid").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-open-project]");
+  if (!button) return;
+  const project = state.projects.find(
+    (item) => item.id === button.dataset.openProject,
+  );
+  if (project) openProject(project);
+});
+
+$("close-project").addEventListener("click", () => {
+  state.selectedProject = null;
+  $("project-workspace").classList.add("hidden");
+});
+
+projectForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!state.selectedProject) return;
+  const submission = $("project-submission").value.trim();
+  if (!submission) return;
+  const button = projectForm.querySelector("button");
+  button.disabled = true;
+  button.querySelector("span").textContent = "Evaluando…";
+  try {
+    const response = await fetch(
+      `/api/projects/${encodeURIComponent(state.selectedProject.id)}/evaluate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: state.studentId,
+          submission,
+        }),
+      },
+    );
+    const data = await readResponse(response);
+    renderProjectResult(data);
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    button.disabled = false;
+    button.querySelector("span").textContent = "Evaluar proyecto";
+  }
+});
+
 $("session-select").addEventListener("change", async (event) => {
   if (!event.target.value) {
     startNewConversation();
@@ -182,6 +299,7 @@ $("mic").addEventListener("click", async () => {
 initializeCapabilities();
 loadTopicCatalog();
 loadSessions({ restore: true });
+loadProjects();
 
 async function initializeCapabilities() {
   try {
@@ -261,6 +379,8 @@ async function openSession(sessionId) {
     state.trace = [];
     state.quizAttempt = session.pending_quiz.attempt;
     state.nextQuiz = { question: session.pending_quiz.question };
+    state.practiceExercise = session.pending_practice?.exercise || null;
+    state.nextPractice = null;
     localStorage.setItem(activeSessionKey, session.id);
     resetConversation({ keepSession: true });
     session.messages.forEach((message) => {
@@ -285,6 +405,7 @@ async function openSession(sessionId) {
     $("question").classList.remove("hidden");
     quizForm.classList.remove("hidden");
     $("quiz-card").classList.remove("hidden");
+    $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
     $("session-select").value = session.id;
     updateSessionActions();
   } catch (error) {
@@ -318,6 +439,8 @@ function startNewConversation() {
   state.trace = [];
   state.nextQuiz = null;
   state.quizAttempt = 1;
+  state.practiceExercise = null;
+  state.nextPractice = null;
   localStorage.removeItem(activeSessionKey);
   resetConversation();
 }
@@ -330,6 +453,8 @@ function resetConversation({ keepSession = false } = {}) {
   $("detected").classList.add("hidden");
   $("quiz-card").classList.add("hidden");
   $("feedback").classList.add("hidden");
+  $("practice-card").classList.add("hidden");
+  $("resume-practice").classList.add("hidden");
   $("quiz-answer").value = "";
   if (!keepSession) $("session-select").value = "";
   renderTrace();
@@ -439,6 +564,130 @@ function renderLearningPath() {
   $("recommended-topic").textContent = state.recommendation.title;
   $("recommendation-reason").textContent = state.recommendation.reason;
   card.classList.remove("hidden");
+}
+
+async function startPractice(focusConcept = null) {
+  if (!state.sessionId) {
+    showError("Inicia una conversación antes de abrir el modo práctica.");
+    return;
+  }
+  showError("");
+  try {
+    const response = await fetch("/api/practice/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student_id: state.studentId,
+        session_id: state.sessionId,
+        focus_concept: focusConcept,
+      }),
+    });
+    const data = await readResponse(response);
+    state.practiceExercise = data.exercise;
+    state.nextPractice = null;
+    renderPractice(data.exercise);
+    await loadSessions();
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function renderPractice(exercise) {
+  const difficultyLabels = {
+    foundation: "Fundamentos",
+    application: "Aplicación",
+    challenge: "Desafío",
+  };
+  state.practiceExercise = exercise;
+  $("quiz-card").classList.add("hidden");
+  $("practice-title").textContent = exercise.title;
+  $("practice-difficulty").textContent =
+    `${difficultyLabels[exercise.difficulty] || "Práctica"} · ronda ${exercise.round}`;
+  $("practice-prompt").textContent = exercise.prompt;
+  $("practice-hint").textContent = exercise.hint;
+  $("practice-answer").value = "";
+  $("practice-result").classList.add("hidden");
+  $("next-practice").classList.add("hidden");
+  $("practice-card").classList.remove("hidden");
+  $("practice-answer").focus();
+  $("practice-card").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function showMainLearning() {
+  $("practice-card").classList.add("hidden");
+  $("quiz-card").classList.remove("hidden");
+  $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
+  $("quiz-card").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function loadProjects() {
+  try {
+    const data = await fetch("/api/projects").then(readResponse);
+    state.projects = data.projects;
+    $("project-grid").innerHTML = data.projects
+      .map(
+        (project) => `
+          <article class="project-card">
+            <div>
+              <span>${project.estimated_minutes} min</span>
+              <span>${project.topics.length} temas</span>
+            </div>
+            <h3>${escapeHtml(project.title)}</h3>
+            <p>${escapeHtml(project.summary)}</p>
+            <div class="project-topics">
+              ${project.topics.map((topic) => `<span>${escapeHtml(topicTitle(topic))}</span>`).join("")}
+            </div>
+            <button type="button" data-open-project="${escapeHtml(project.id)}">
+              Abrir proyecto <b>→</b>
+            </button>
+          </article>`,
+      )
+      .join("");
+  } catch (error) {
+    $("project-grid").innerHTML =
+      `<p class="catalog-message error">No pudimos cargar los proyectos. ${escapeHtml(error.message)}</p>`;
+  }
+}
+
+function openProject(project) {
+  state.selectedProject = project;
+  $("project-title").textContent = project.title;
+  $("project-challenge").textContent = project.challenge;
+  $("project-deliverables").innerHTML = project.deliverables
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  $("project-rubric").innerHTML = project.rubric
+    .map(
+      (item) =>
+        `<li><strong>${escapeHtml(item.title)}</strong> — ${escapeHtml(item.description)}</li>`,
+    )
+    .join("");
+  $("project-submission").value = "";
+  $("project-result").classList.add("hidden");
+  $("project-workspace").classList.remove("hidden");
+  $("project-workspace").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderProjectResult(data) {
+  $("project-result").innerHTML = `
+    <div class="project-result-summary">
+      <strong>${Math.round(data.score)}/100 · ${escapeHtml(statusLabel(data.status))}</strong>
+      <span>${data.evaluation_mode === "model" ? "Rúbrica del modelo" : "Fallback determinista"}</span>
+    </div>
+    <p>${escapeHtml(data.feedback)}</p>
+    <div class="project-rubric-results">
+      ${data.rubric
+        .map(
+          (item) => `
+            <article>
+              <div><strong>${escapeHtml(item.title)}</strong><span>${item.score}/4</span></div>
+              <p>${escapeHtml(item.explanation)}</p>
+            </article>`,
+        )
+        .join("")}
+    </div>`;
+  $("project-result").classList.remove("hidden");
+  $("project-result").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 async function startVoice() {
@@ -589,7 +838,9 @@ function renderChat(data) {
   $("question").classList.remove("hidden");
   $("quiz-answer").value = "";
   quizForm.classList.remove("hidden");
+  $("practice-card").classList.add("hidden");
   $("quiz-card").classList.remove("hidden");
+  $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
   renderProgress(data.progress);
   renderTrace();
   $("quiz-card").scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -610,7 +861,13 @@ function renderFeedback(data) {
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
   $("improvements").innerHTML = data.improvements
-    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .map((item, index) => {
+      const concept = data.practice_concepts[index] || "";
+      return `<li>
+        <span>${escapeHtml(item)}</span>
+        <button type="button" data-practice-concept="${escapeHtml(concept)}">Practicar esto</button>
+      </li>`;
+    })
     .join("");
   const rubricLabels = {
     precision: "Precisión",
@@ -637,6 +894,7 @@ function renderFeedback(data) {
   $("question").classList.add("hidden");
   quizForm.classList.add("hidden");
   $("feedback").classList.remove("hidden");
+  $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
   $("feedback").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
@@ -784,6 +1042,14 @@ function topicStatusLabel(status) {
     available: "Disponible",
     in_progress: "En progreso",
     completed: "✓ Completado",
+  }[status] || status;
+}
+
+function statusLabel(status) {
+  return {
+    reinforce: "Reforzar",
+    progressing: "En progreso",
+    mastered: "Dominado",
   }[status] || status;
 }
 

@@ -14,6 +14,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
+from agent_app.models.activities import PracticeExercise
 from agent_app.models.chat import Quiz
 from mcp_learning_server.models import Topic, utc_now
 
@@ -44,6 +45,11 @@ class PendingEvaluation(SessionModel):
     attempt: int = Field(default=1, ge=1)
 
 
+class PendingPractice(SessionModel):
+    exercise: PracticeExercise
+    quiz: Quiz
+
+
 class StoredConversation(SessionModel):
     id: str
     student_id: str = Field(min_length=1, max_length=100)
@@ -51,6 +57,7 @@ class StoredConversation(SessionModel):
     topic: Topic
     messages: list[ConversationMessage] = Field(default_factory=list)
     pending_evaluation: PendingEvaluation
+    pending_practice: PendingPractice | None = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     archived_at: datetime | None = None
@@ -59,6 +66,10 @@ class StoredConversation(SessionModel):
 class PendingQuizResponse(SessionModel):
     question: str
     attempt: int = Field(ge=1)
+
+
+class PendingPracticeResponse(SessionModel):
+    exercise: PracticeExercise
 
 
 class ConversationSummary(SessionModel):
@@ -75,6 +86,7 @@ class ConversationSummary(SessionModel):
 class ConversationDetail(ConversationSummary):
     student_id: str
     messages: list[ConversationMessage]
+    pending_practice: PendingPracticeResponse | None = None
 
 
 class ConversationListResponse(SessionModel):
@@ -411,6 +423,11 @@ def conversation_detail(session: StoredConversation) -> ConversationDetail:
         **conversation_summary(session).model_dump(),
         student_id=session.student_id,
         messages=session.messages,
+        pending_practice=(
+            PendingPracticeResponse(exercise=session.pending_practice.exercise)
+            if session.pending_practice
+            else None
+        ),
     )
 
 
@@ -420,6 +437,10 @@ def _serialize_session(session: StoredConversation) -> dict:
     payload["pending_evaluation"]["quiz"]["expected_keywords"] = list(
         pending.quiz.expected_keywords
     )
+    if session.pending_practice:
+        payload["pending_practice"]["quiz"]["expected_keywords"] = list(
+            session.pending_practice.quiz.expected_keywords
+        )
     return payload
 
 

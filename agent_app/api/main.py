@@ -27,6 +27,15 @@ from agent_app.models.chat import (
     TopicCatalogItem,
     TopicCatalogResponse,
 )
+from agent_app.models.activities import (
+    PracticeEvaluationRequest,
+    PracticeEvaluationResponse,
+    PracticeStartRequest,
+    PracticeStartResponse,
+    ProjectCatalogResponse,
+    ProjectEvaluationRequest,
+    ProjectEvaluationResponse,
+)
 from agent_app.providers.base import ModelProvider
 from agent_app.providers.factory import create_model_provider
 from agent_app.services.learning_tools import (
@@ -36,6 +45,7 @@ from agent_app.services.learning_tools import (
 )
 from agent_app.services.logging import configure_logging
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
+from agent_app.services.activities import PROJECTS, evaluate_project
 from agent_app.services.sessions import (
     ConversationDetail,
     ConversationListResponse,
@@ -120,7 +130,7 @@ def create_app(
     orchestrator = build_orchestrator(settings, tools, provider, sessions)
     app = FastAPI(
         title="AITeacher",
-        version="0.5.0",
+        version="0.6.0",
         description=(
             "Tutor de IA multiagente con aprendizaje adaptativo y herramientas "
             "MCP independientes."
@@ -296,6 +306,39 @@ def create_app(
         payload: EvaluationRequest, request: Request
     ) -> EvaluationResponse:
         return await orchestrator.evaluate(payload, request.state.correlation_id)
+
+    @app.post("/api/practice/start", response_model=PracticeStartResponse)
+    async def start_practice(
+        payload: PracticeStartRequest,
+    ) -> PracticeStartResponse:
+        return await orchestrator.start_practice(payload)
+
+    @app.post("/api/practice/evaluate", response_model=PracticeEvaluationResponse)
+    async def evaluate_practice(
+        payload: PracticeEvaluationRequest,
+    ) -> PracticeEvaluationResponse:
+        return await orchestrator.evaluate_practice(payload)
+
+    @app.get("/api/projects", response_model=ProjectCatalogResponse)
+    async def projects() -> ProjectCatalogResponse:
+        return ProjectCatalogResponse(projects=list(PROJECTS.values()))
+
+    @app.post(
+        "/api/projects/{project_id}/evaluate",
+        response_model=ProjectEvaluationResponse,
+    )
+    async def evaluate_integrative_project(
+        project_id: str,
+        payload: ProjectEvaluationRequest,
+    ) -> ProjectEvaluationResponse:
+        project = PROJECTS.get(project_id)
+        if project is None:
+            raise KeyError("No existe el proyecto solicitado")
+        return await evaluate_project(
+            orchestrator.evaluator.provider,
+            project,
+            payload.submission,
+        )
 
     return app
 

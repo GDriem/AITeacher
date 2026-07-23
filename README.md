@@ -30,6 +30,8 @@ frontera de herramientas y recursos deterministas; no se presenta como agente.
 - Historial con apertura, renombrado, archivado y eliminación por estudiante.
 - Evaluación híbrida con conceptos esenciales y rúbrica semántica estructurada.
 - Fallback determinista y dataset de regresión para respuestas representativas.
+- Feedback con acciones directas y práctica adaptativa separada del hilo principal.
+- Tres proyectos integradores con rúbricas específicas y evaluación estructurada.
 - Interfaz para proyección y voz opt-in mediante WebSocket backend.
 - Adaptadores JSON/Firestore y dos servicios preparados para Cloud Run.
 
@@ -104,6 +106,14 @@ un esquema JSON nativo y después se valida; si el proveedor falla o incumple el
 contrato, el flujo conserva la misma respuesta estructurada con un fallback
 determinista. La rúbrica y la explicación breve quedan guardadas en el progreso.
 
+Desde el feedback se puede solicitar otro ejemplo, una explicación más sencilla,
+reintentar o iniciar práctica sobre un concepto pendiente. La práctica usa
+`POST /api/practice/start` y `POST /api/practice/evaluate`; su ronda se persiste
+sin reemplazar la evaluación principal ni inflar el dominio del tema.
+
+`GET /api/projects` lista tres retos transversales. Cada entrega se evalúa en
+`POST /api/projects/{project_id}/evaluate` con una rúbrica propia del proyecto.
+
 ## Ejecutar pruebas
 
 ```bash
@@ -146,4 +156,4 @@ Consulte [la arquitectura](docs/architecture.md), [el guion de demo](docs/demo-s
 [el despliegue](docs/deployment.md), [Foundry](docs/foundry.md),
 [la guía de Fase 1](docs/phase-1.md), [la guía de Fase 2](docs/phase-2.md) y
 [la guía de Fase 3](docs/phase-3.md), [la guía de Fase 4](docs/phase-4.md) y
-[la guía de Fase 5](docs/phase-5.md).
+[la guía de Fase 5](docs/phase-5.md) y [la guía de Fase 6](docs/phase-6.md).

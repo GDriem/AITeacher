@@ -5,6 +5,11 @@ from agent_app.agents.evaluator import EvaluatorAgent
 from agent_app.agents.orchestrator import LearningOrchestrator, detect_topic
 from agent_app.agents.tutor import TutorAgent
 from agent_app.models.chat import ChatRequest, EvaluationRequest, EvaluationStatus
+from agent_app.models.activities import (
+    PracticeDifficulty,
+    PracticeEvaluationRequest,
+    PracticeStartRequest,
+)
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.learning_tools import LocalLearningTools
 from agent_app.services.sessions import InMemorySessionRepository
@@ -208,3 +213,68 @@ async def test_evaluator_recognizes_equivalent_expressions(learning_service) -> 
         )
     )
     assert result.score == 100
+
+
+@pytest.mark.asyncio
+async def test_practice_adapts_without_replacing_main_quiz(learning_service) -> None:
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(
+        ChatRequest(student_id="practice-student", message="Enséñame embeddings")
+    )
+    evaluated = await orchestrator.evaluate(
+        EvaluationRequest(
+            student_id="practice-student",
+            session_id=chat.session_id,
+            answer="Es una representación numérica.",
+        )
+    )
+
+    started = await orchestrator.start_practice(
+        PracticeStartRequest(
+            student_id="practice-student",
+            session_id=chat.session_id,
+            focus_concept="similitud",
+        )
+    )
+
+    assert started.exercise.focus_concepts == ["similitud"]
+    assert started.exercise.based_on_attempts == 1
+    assert started.exercise.difficulty == PracticeDifficulty.FOUNDATION
+    assert started.main_quiz.question == evaluated.next_quiz.question
+
+    practice_result = await orchestrator.evaluate_practice(
+        PracticeEvaluationRequest(
+            student_id="practice-student",
+            session_id=chat.session_id,
+            answer=(
+                "La similitud permite comparar qué tan cercanos son dos vectores "
+                "para encontrar elementos relacionados."
+            ),
+        )
+    )
+
+    assert practice_result.main_quiz.question == evaluated.next_quiz.question
+    assert practice_result.next_exercise.round == 2
+    assert practice_result.next_exercise.difficulty == PracticeDifficulty.APPLICATION
+    assert practice_result.progress.progress_for(Topic.EMBEDDINGS).attempts == 1
+    recovered = orchestrator.sessions.get(chat.session_id, "practice-student")
+    assert recovered.pending_evaluation.quiz.question == evaluated.next_quiz.question
+    assert recovered.pending_practice is not None
+    assert recovered.pending_practice.exercise.id == practice_result.next_exercise.id
+
+
+@pytest.mark.asyncio
+async def test_practice_rejects_concept_outside_pending_work(learning_service) -> None:
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(
+        ChatRequest(student_id="practice-student", message="Enséñame embeddings")
+    )
+
+    with pytest.raises(ValueError, match="no está pendiente"):
+        await orchestrator.start_practice(
+            PracticeStartRequest(
+                student_id="practice-student",
+                session_id=chat.session_id,
+                focus_concept="recuperación",
+            )
+        )

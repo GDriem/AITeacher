@@ -136,6 +136,7 @@ class EvaluationResponse(AppModel):
     result_explanation: str
     strengths: list[str]
     improvements: list[str]
+    practice_concepts: list[str]
     learning_context: str
     recommendation: str
     next_quiz: Quiz

@@ -13,7 +13,7 @@ la conversación anterior.
 | 3 | Dominio y nivel por tema | Completada |
 | 4 | Persistencia completa de sesiones | Completada |
 | 5 | Evaluación híbrida con rúbricas | Completada |
-| 6 | Feedback accionable y modo práctica | Pendiente |
+| 6 | Feedback accionable y modo práctica | Completada |
 | 7 | Panel de autoría de contenido | Pendiente |
 | 8 | Accesibilidad, observabilidad y pulido | Pendiente |
 
@@ -244,6 +244,22 @@ aplicación o cambiar de dispositivo.
 - El estudiante puede practicar sin perder el hilo principal.
 - Los ejercicios se adaptan a sus intentos previos.
 - Al menos tres proyectos integradores están disponibles.
+
+### Decisiones implementadas
+
+- El feedback ofrece “Ver otro ejemplo”, “Explícamelo más fácil” e “Intentar de
+  nuevo”. Cada aspecto pendiente incorpora además una acción “Practicar esto”.
+- La práctica conserva su propio ejercicio y número de ronda en la sesión. La
+  pregunta guiada principal nunca se reemplaza y se recupera al salir del modo.
+- Los ejercicios usan conceptos pendientes y escalan de fundamentos a
+  aplicación y desafío según intentos académicos y rondas de práctica.
+- La nota de un ejercicio enfocado no altera el mejor puntaje del tema; evita
+  marcar como dominado un tema completo por resolver una sola microactividad.
+- Se incorporaron tres proyectos que combinan RAG y seguridad, agentes y MCP,
+  y multimodalidad responsable. Cada uno tiene cuatro criterios específicos,
+  salida JSON validada y fallback determinista.
+- Las evaluaciones transversales de proyecto no se distribuyen entre los temas
+  individuales, porque esa inferencia produciría dominio académico artificial.
 
 ### Prompt para iniciar la sesión
 

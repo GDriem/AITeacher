@@ -58,6 +58,42 @@
       </div>
     </section>
 
+    <section class="project-lab panel" aria-labelledby="projects-title">
+      <div class="explorer-heading">
+        <div>
+          <p class="eyebrow">Aprende construyendo</p>
+          <h2 id="projects-title">Proyectos integradores</h2>
+          <p class="muted">Combina varios temas en un reto pequeño y recibe una evaluación específica para el proyecto.</p>
+        </div>
+        <strong class="catalog-count">3 proyectos</strong>
+      </div>
+      <div id="project-grid" class="project-grid" aria-live="polite">
+        <p class="catalog-message">Cargando proyectos…</p>
+      </div>
+      <section id="project-workspace" class="project-workspace hidden">
+        <button id="close-project" class="text-button" type="button">Cerrar proyecto</button>
+        <p class="eyebrow">Proyecto seleccionado</p>
+        <h3 id="project-title"></h3>
+        <p id="project-challenge" class="muted"></p>
+        <div class="project-details">
+          <section>
+            <h4>Entregables</h4>
+            <ul id="project-deliverables"></ul>
+          </section>
+          <section>
+            <h4>Rúbrica específica</h4>
+            <ul id="project-rubric"></ul>
+          </section>
+        </div>
+        <form id="project-form">
+          <label for="project-submission">Tu propuesta</label>
+          <textarea id="project-submission" rows="7" maxlength="8000" placeholder="Describe arquitectura, decisiones, riesgos y cómo validarías el resultado…" required></textarea>
+          <button type="submit"><span>Evaluar proyecto</span><b>→</b></button>
+        </form>
+        <div id="project-result" class="project-result hidden" aria-live="polite"></div>
+      </section>
+    </section>
+
     <main class="layout">
       <section class="conversation panel">
         <div class="panel-title">
@@ -112,7 +148,10 @@
         <section id="quiz-card" class="quiz-card hidden">
           <div class="quiz-heading">
             <span id="quiz-kicker">Comprueba tu comprensión</span>
-            <div><b id="quiz-topic"></b><em id="quiz-step">Ronda 1</em></div>
+            <div>
+              <button id="resume-practice" class="practice-link hidden" type="button">Continuar práctica</button>
+              <b id="quiz-topic"></b><em id="quiz-step">Ronda 1</em>
+            </div>
           </div>
           <p id="question"></p>
           <form id="quiz-form">
@@ -139,6 +178,11 @@
                 <ul id="improvements"></ul>
               </section>
             </div>
+            <div class="feedback-actions" aria-label="Acciones para seguir aprendiendo">
+              <button id="another-example" type="button">Ver otro ejemplo</button>
+              <button id="simpler-explanation" type="button">Explícamelo más fácil</button>
+              <button id="start-practice" type="button">Practicar conceptos pendientes</button>
+            </div>
             <section class="rubric-panel" aria-labelledby="rubric-title">
               <div class="rubric-heading">
                 <h4 id="rubric-title">Rúbrica de comprensión</h4>
@@ -151,8 +195,33 @@
               <p id="learning-context"></p>
             </div>
             <button id="continue-learning" class="continue-button" type="button">
-              Continuar con el siguiente reto <b>→</b>
+              Intentar de nuevo <b>→</b>
             </button>
+          </div>
+        </section>
+
+        <section id="practice-card" class="practice-card hidden" aria-live="polite">
+          <div class="practice-heading">
+            <div>
+              <p class="eyebrow">Modo práctica · hilo separado</p>
+              <h3 id="practice-title"></h3>
+            </div>
+            <span id="practice-difficulty"></span>
+          </div>
+          <p id="practice-prompt"></p>
+          <div class="practice-hint">
+            <strong>Pista</strong>
+            <span id="practice-hint"></span>
+          </div>
+          <form id="practice-form">
+            <label class="sr-only" for="practice-answer">Respuesta de práctica</label>
+            <textarea id="practice-answer" rows="4" maxlength="2000" placeholder="Resuelve el ejercicio con tus propias palabras…" required></textarea>
+            <button type="submit"><span>Comprobar práctica</span><b>→</b></button>
+          </form>
+          <div id="practice-result" class="practice-result hidden"></div>
+          <div class="practice-actions">
+            <button id="next-practice" class="hidden" type="button">Siguiente ejercicio</button>
+            <button id="return-main" type="button">Volver a la explicación guiada</button>
           </div>
         </section>
       </section>

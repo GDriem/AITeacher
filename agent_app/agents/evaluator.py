@@ -219,6 +219,15 @@ class EvaluationResult:
     saved: SaveResultResponse
 
 
+@dataclass(frozen=True)
+class PracticeGrade:
+    score: float
+    status: EvaluationStatus
+    feedback: str
+    rubric: EvaluationRubric
+    missing_concepts: list[str]
+
+
 class EvaluatorAgent:
     name = "evaluator_agent"
 
@@ -368,6 +377,45 @@ class EvaluatorAgent:
         return EvaluationRubric(
             **parsed.model_dump(),
             evaluation_mode=RubricEvaluationMode.HYBRID_MODEL,
+        )
+
+    async def grade_practice(
+        self, topic: Topic, quiz: Quiz, answer: str
+    ) -> PracticeGrade:
+        normalized = " ".join(tokenize(answer))
+        matched = [
+            concept
+            for concept in quiz.expected_keywords
+            if _matches_concept(normalized, concept)
+        ]
+        missing = [
+            concept for concept in quiz.expected_keywords if concept not in matched
+        ]
+        concept_score = (
+            len(matched) / max(len(quiz.expected_keywords), 1) * 100
+        )
+        rubric = await self._evaluate_rubric(
+            topic,
+            quiz,
+            answer,
+            concept_score,
+        )
+        score = round((concept_score * 0.2) + (_rubric_score(rubric) * 0.8), 2)
+        if _is_keyword_list(answer, quiz.expected_keywords) or _is_adversarial(answer):
+            score = min(score, 49)
+        status = (
+            EvaluationStatus.MASTERED
+            if score >= 80
+            else EvaluationStatus.PROGRESSING
+            if score >= 50
+            else EvaluationStatus.REINFORCE
+        )
+        return PracticeGrade(
+            score=score,
+            status=status,
+            feedback=_result_explanation(status, rubric, matched, missing),
+            rubric=rubric,
+            missing_concepts=missing,
         )
 
     def create_follow_up(

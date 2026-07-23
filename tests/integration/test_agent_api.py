@@ -69,9 +69,13 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert 'id="category-filter"' in page.text
         assert 'id="level-filter"' in page.text
         assert 'id="learning-path-card"' in page.text
+        assert 'id="project-grid"' in page.text
+        assert 'id="practice-card"' in page.text
         assert styles.status_code == 200
         assert script.status_code == 200
         assert "data-start-topic" in script.text
+        assert "/api/practice/start" in script.text
+        assert "/api/projects" in script.text
         assert "const totalTopics = 23" not in script.text
         chat = await client.post(
             "/api/chat",
@@ -345,3 +349,73 @@ async def test_session_can_be_renamed_archived_restored_and_deleted(
     assert restored.json()["archived_at"] is None
     assert deleted.status_code == 204
     assert missing.status_code == 404
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_practice_and_projects_are_available_without_losing_main_quiz(
+    learning_service,
+) -> None:
+    app = create_app(
+        Settings(),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+    ) as client:
+        projects = await client.get("/api/projects")
+        chat = await client.post(
+            "/api/chat",
+            json={"student_id": "practice-api", "message": "Explícame embeddings"},
+        )
+        session_id = chat.json()["session_id"]
+        main_question = chat.json()["quiz"]["question"]
+        practice = await client.post(
+            "/api/practice/start",
+            json={
+                "student_id": "practice-api",
+                "session_id": session_id,
+            },
+        )
+        practice_evaluation = await client.post(
+            "/api/practice/evaluate",
+            json={
+                "student_id": "practice-api",
+                "session_id": session_id,
+                "answer": (
+                    "Un vector representa el significado y la similitud permite "
+                    "comparar elementos relacionados."
+                ),
+            },
+        )
+        recovered = await client.get(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "practice-api"},
+        )
+        project = projects.json()["projects"][0]
+        project_evaluation = await client.post(
+            f"/api/projects/{project['id']}/evaluate",
+            json={
+                "student_id": "practice-api",
+                "submission": (
+                    "Primero recupera evidencia y después genera una respuesta. "
+                    "Cita las fuentes, valida permisos y mide errores y latencia."
+                ),
+            },
+        )
+
+    assert projects.status_code == 200
+    assert len(projects.json()["projects"]) == 3
+    assert all(len(item["topics"]) >= 2 for item in projects.json()["projects"])
+    assert practice.status_code == 200
+    assert practice.json()["main_quiz"]["question"] == main_question
+    assert practice.json()["exercise"]["focus_concepts"]
+    assert practice_evaluation.status_code == 200
+    assert practice_evaluation.json()["main_quiz"]["question"] == main_question
+    assert practice_evaluation.json()["next_exercise"]["round"] == 2
+    assert recovered.json()["pending_quiz"]["question"] == main_question
+    assert recovered.json()["pending_practice"]["exercise"]["round"] == 2
+    assert "expected_keywords" not in recovered.text
+    assert project_evaluation.status_code == 200
+    assert len(project_evaluation.json()["rubric"]) == 4
