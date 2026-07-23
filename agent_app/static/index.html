@@ -8,8 +8,13 @@
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <div class="ambient ambient-one"></div>
-    <div class="ambient ambient-two"></div>
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div id="connection-status" class="connection-status hidden" role="status" aria-live="polite">
+      <span>Sin conexión. Puedes seguir leyendo; reintentaremos al recuperar la red.</span>
+    </div>
+    <div id="announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
       <div>
@@ -19,14 +24,16 @@
       <button id="authoring-toggle" class="authoring-toggle hidden" type="button">
         Panel de autoría
       </button>
-      <div class="status"><i></i><span>Aprendizaje adaptativo</span></div>
+      <div class="status" role="status" aria-label="Servicio disponible">
+        <i aria-hidden="true"></i><span>Aprendizaje adaptativo</span>
+      </div>
     </header>
 
     <section id="authoring-panel" class="authoring-panel panel hidden" aria-labelledby="authoring-title">
       <div class="explorer-heading">
         <div>
           <p class="eyebrow">Currículo versionado</p>
-          <h2 id="authoring-title">Panel de autoría</h2>
+          <h2 id="authoring-title" tabindex="-1">Panel de autoría</h2>
           <p class="muted">Prepara borradores, revisa la vista previa y publica contenido directamente en el MCP.</p>
         </div>
         <button id="close-authoring" class="text-button" type="button">Cerrar panel</button>
@@ -51,7 +58,8 @@
             <strong>Lecciones</strong>
             <button id="new-lesson" type="button">Nueva</button>
           </div>
-          <input id="lesson-search" type="search" placeholder="Filtrar por título o ID…" />
+          <input id="lesson-search" type="search" aria-label="Filtrar lecciones por título o identificador"
+                 placeholder="Filtrar por título o ID…" />
           <div id="lesson-list" class="lesson-list"></div>
         </aside>
 
@@ -119,11 +127,12 @@
       </div>
     </section>
 
+    <main id="main-content" tabindex="-1">
     <section class="topic-explorer panel" aria-labelledby="topics-title">
       <div class="explorer-heading">
         <div>
           <p class="eyebrow">Explora el currículo</p>
-          <h2 id="topics-title">Elige qué quieres aprender</h2>
+          <h2 id="topics-title" tabindex="-1">Elige qué quieres aprender</h2>
           <p class="muted">Descubre los temas disponibles y comienza una explicación guiada con un clic.</p>
         </div>
         <strong id="topics-count" class="catalog-count">Cargando…</strong>
@@ -153,7 +162,7 @@
           </select>
         </label>
       </div>
-      <div id="topic-grid" class="topic-grid" aria-live="polite">
+      <div id="topic-grid" class="topic-grid" role="list" aria-live="polite" aria-busy="true">
         <p class="catalog-message">Consultando el catálogo del MCP…</p>
       </div>
     </section>
@@ -162,18 +171,18 @@
       <div class="explorer-heading">
         <div>
           <p class="eyebrow">Aprende construyendo</p>
-          <h2 id="projects-title">Proyectos integradores</h2>
+          <h2 id="projects-title" tabindex="-1">Proyectos integradores</h2>
           <p class="muted">Combina varios temas en un reto pequeño y recibe una evaluación específica para el proyecto.</p>
         </div>
         <strong class="catalog-count">3 proyectos</strong>
       </div>
-      <div id="project-grid" class="project-grid" aria-live="polite">
+      <div id="project-grid" class="project-grid" role="list" aria-live="polite" aria-busy="true">
         <p class="catalog-message">Cargando proyectos…</p>
       </div>
       <section id="project-workspace" class="project-workspace hidden">
         <button id="close-project" class="text-button" type="button">Cerrar proyecto</button>
         <p class="eyebrow">Proyecto seleccionado</p>
-        <h3 id="project-title"></h3>
+        <h3 id="project-title" tabindex="-1"></h3>
         <p id="project-challenge" class="muted"></p>
         <div class="project-details">
           <section>
@@ -194,12 +203,12 @@
       </section>
     </section>
 
-    <main class="layout">
-      <section class="conversation panel">
+    <div class="layout">
+      <section class="conversation panel" aria-labelledby="conversation-title">
         <div class="panel-title">
           <div>
             <p class="eyebrow">Tutor multiagente</p>
-            <h2>Construyamos tu comprensión</h2>
+            <h2 id="conversation-title">Construyamos tu comprensión</h2>
           </div>
           <div id="detected" class="detected hidden">
             <span id="topic-badge" class="badge blue"></span>
@@ -217,7 +226,8 @@
           <button id="archive-session" type="button" disabled>Archivar</button>
         </div>
 
-        <div id="conversation-feed" class="conversation-feed" aria-live="polite">
+        <div id="conversation-feed" class="conversation-feed" role="log"
+             aria-live="polite" aria-relevant="additions" aria-busy="false" tabindex="0">
           <div id="welcome" class="welcome-card">
             <div class="spark">✦</div>
             <div>
@@ -242,8 +252,12 @@
             </button>
           </div>
         </form>
+        <p id="request-status" class="request-status hidden" role="status" aria-live="polite"></p>
         <p id="voice-status" class="voice-status hidden" aria-live="polite"></p>
-        <p id="error" class="error hidden" role="alert"></p>
+        <div id="error" class="error recovery-message hidden" role="alert">
+          <span id="error-message"></span>
+          <button id="retry-action" class="text-button hidden" type="button">Reintentar</button>
+        </div>
 
         <section id="quiz-card" class="quiz-card hidden">
           <div class="quiz-heading">
@@ -259,7 +273,7 @@
             <textarea id="quiz-answer" rows="3" maxlength="2000" placeholder="Explícalo con tus propias palabras…" required></textarea>
             <button type="submit"><span>Recibir feedback</span><b>→</b></button>
           </form>
-          <div id="feedback" class="feedback hidden" aria-live="polite">
+          <div id="feedback" class="feedback hidden" aria-live="polite" tabindex="-1">
             <div class="feedback-summary">
               <div id="feedback-score" class="feedback-score">—</div>
               <div>
@@ -318,7 +332,7 @@
             <textarea id="practice-answer" rows="4" maxlength="2000" placeholder="Resuelve el ejercicio con tus propias palabras…" required></textarea>
             <button type="submit"><span>Comprobar práctica</span><b>→</b></button>
           </form>
-          <div id="practice-result" class="practice-result hidden"></div>
+          <div id="practice-result" class="practice-result hidden" role="status" aria-live="polite"></div>
           <div class="practice-actions">
             <button id="next-practice" class="hidden" type="button">Siguiente ejercicio</button>
             <button id="return-main" type="button">Volver a la explicación guiada</button>
@@ -332,7 +346,9 @@
             <div><p class="eyebrow">Estudiante</p><h2>Dominio por tema</h2></div>
             <span id="score-orb" class="score-orb" title="Promedio de los mejores puntajes por tema">—</span>
           </div>
-          <div class="progress-track"><span id="progress-bar"></span></div>
+          <div id="progress-track" class="progress-track" role="progressbar"
+               aria-label="Progreso del currículo" aria-valuemin="0" aria-valuemax="100"
+               aria-valuenow="0"><span id="progress-bar"></span></div>
           <p id="progress-copy" class="muted">Inicia una conversación para construir tu ruta.</p>
           <div id="studied-topics" class="topic-mastery-list"></div>
         </section>
@@ -342,11 +358,12 @@
             <div><p class="eyebrow">Ejecución observable</p><h2>Agentes y herramientas</h2></div>
             <button id="clear-trace" class="text-button" type="button">Limpiar</button>
           </div>
-          <div id="trace" class="trace empty">
+          <div id="trace" class="trace empty" role="log" aria-live="polite" aria-relevant="additions">
             <p>Los eventos aparecerán aquí. No se muestra razonamiento interno.</p>
           </div>
         </section>
       </aside>
+    </div>
     </main>
 
     <footer>

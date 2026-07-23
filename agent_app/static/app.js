@@ -17,6 +17,9 @@ const state = {
   authoringAuthor: sessionStorage.getItem("authoringAuthor") || "",
   authoredLessons: [],
   selectedLesson: null,
+  retryAction: null,
+  focusReturn: null,
+  wasOffline: !navigator.onLine,
 };
 
 const voice = {
@@ -38,8 +41,10 @@ const lessonForm = $("lesson-form");
 const activeSessionKey = `activeSession:${state.studentId}`;
 
 $("authoring-toggle").addEventListener("click", async () => {
+  state.focusReturn = document.activeElement;
   $("authoring-panel").classList.remove("hidden");
   $("authoring-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("authoring-title").focus();
   $("authoring-author").value = state.authoringAuthor;
   $("authoring-token").value = state.authoringToken;
   if (state.authoringToken) await loadAuthoredLessons();
@@ -47,6 +52,7 @@ $("authoring-toggle").addEventListener("click", async () => {
 
 $("close-authoring").addEventListener("click", () => {
   $("authoring-panel").classList.add("hidden");
+  restoreFocus();
 });
 
 $("authoring-login").addEventListener("submit", async (event) => {
@@ -117,7 +123,40 @@ chatForm.addEventListener("submit", async (event) => {
   await sendChat(message);
 });
 
+[$("message"), $("quiz-answer"), $("practice-answer"), $("project-submission")].forEach(
+  (textarea) => {
+    textarea.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        textarea.form?.requestSubmit();
+      }
+    });
+  },
+);
+
+$("retry-action").addEventListener("click", async () => {
+  const retry = state.retryAction;
+  showError("");
+  if (retry) await retry();
+});
+
+window.addEventListener("offline", updateConnectionStatus);
+window.addEventListener("online", updateConnectionStatus);
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (!$("authoring-panel").classList.contains("hidden")) {
+    $("authoring-panel").classList.add("hidden");
+    restoreFocus();
+  } else if (!$("project-workspace").classList.contains("hidden")) {
+    closeProject();
+  }
+});
+
 $("topic-grid").addEventListener("click", async (event) => {
+  if (event.target.closest("[data-retry-topics]")) {
+    await loadTopicCatalog();
+    return;
+  }
   const button = event.target.closest("[data-start-topic]");
   if (!button) return;
   const selected = state.catalog.find(
@@ -159,13 +198,15 @@ $("resume-practice").addEventListener("click", () => {
   if (state.practiceExercise) renderPractice(state.practiceExercise);
 });
 
-async function sendChat(message) {
+async function sendChat(message, { appendUser = true } = {}) {
   setBusy(true);
   showError("");
   $("feedback").classList.add("hidden");
   $("quiz-card").classList.add("hidden");
-  appendMessage("user", "Tú", message);
-  $("message").value = "";
+  if (appendUser) {
+    appendMessage("user", "Tú", message);
+    $("message").value = "";
+  }
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -185,7 +226,10 @@ async function sendChat(message) {
     renderChat(data);
     await loadSessions();
   } catch (error) {
-    showError(error.message);
+    showError(
+      error.message,
+      () => sendChat(message, { appendUser: false }),
+    );
   } finally {
     setBusy(false);
   }
@@ -298,6 +342,10 @@ $("next-practice").addEventListener("click", () => {
 $("return-main").addEventListener("click", showMainLearning);
 
 $("project-grid").addEventListener("click", (event) => {
+  if (event.target.closest("[data-retry-projects]")) {
+    loadProjects();
+    return;
+  }
   const button = event.target.closest("[data-open-project]");
   if (!button) return;
   const project = state.projects.find(
@@ -307,8 +355,7 @@ $("project-grid").addEventListener("click", (event) => {
 });
 
 $("close-project").addEventListener("click", () => {
-  state.selectedProject = null;
-  $("project-workspace").classList.add("hidden");
+  closeProject();
 });
 
 projectForm.addEventListener("submit", async (event) => {
@@ -375,6 +422,7 @@ $("mic").addEventListener("click", async () => {
 });
 
 initializeCapabilities();
+updateConnectionStatus();
 loadTopicCatalog();
 loadSessions({ restore: true });
 loadProjects();
@@ -622,8 +670,9 @@ function showLessonError(message) {
 }
 
 async function loadTopicCatalog() {
+  $("topic-grid").setAttribute("aria-busy", "true");
   $("topic-grid").innerHTML =
-    '<p class="catalog-message">Consultando el catálogo del MCP…</p>';
+    '<p class="catalog-message loading-message"><span class="spinner" aria-hidden="true"></span>Consultando el catálogo del MCP…</p>';
   try {
     const response = await fetch(
       `/api/topics?student_id=${encodeURIComponent(state.studentId)}`,
@@ -640,10 +689,17 @@ async function loadTopicCatalog() {
     renderLearningPath();
     renderTopicCatalog();
     renderProgress(data.progress);
+    announce(`${data.total_topics} temas disponibles.`);
   } catch (error) {
     $("topics-count").textContent = "No disponible";
     $("topic-grid").innerHTML =
-      `<p class="catalog-message error">No pudimos cargar los temas. ${escapeHtml(error.message)}</p>`;
+      `<div class="catalog-message empty-state error">
+        <strong>No pudimos cargar los temas.</strong>
+        <span>${escapeHtml(error.message)}</span>
+        <button type="button" data-retry-topics>Reintentar</button>
+      </div>`;
+  } finally {
+    $("topic-grid").setAttribute("aria-busy", "false");
   }
 }
 
@@ -674,7 +730,10 @@ async function loadSessions({ restore = false } = {}) {
     }
     updateSessionActions();
   } catch (error) {
-    showError(`No pudimos sincronizar las conversaciones. ${error.message}`);
+    showError(
+      `No pudimos sincronizar las conversaciones. ${error.message}`,
+      () => loadSessions({ restore }),
+    );
   }
 }
 
@@ -821,13 +880,14 @@ function renderTopicCatalog() {
       : `${visible.length} de ${state.catalogTotal} temas`;
   if (!visible.length) {
     $("topic-grid").innerHTML =
-      '<p class="catalog-message">No hay temas que coincidan con estos filtros.</p>';
+      '<div class="catalog-message empty-state"><strong>Sin coincidencias</strong><span>Cambia la categoría o el nivel para ver otros temas.</span></div>';
+    announce("No hay temas que coincidan con los filtros seleccionados.");
     return;
   }
   $("topic-grid").innerHTML = visible
     .map(
       (item) => `
-        <article class="topic-card ${item.status}">
+        <article class="topic-card ${item.status}" role="listitem">
           <div class="topic-card-heading">
             <span class="category-label">${escapeHtml(categoryLabel(item.category))}</span>
             <span class="topic-status ${item.status}">
@@ -932,13 +992,16 @@ function showMainLearning() {
 }
 
 async function loadProjects() {
+  $("project-grid").setAttribute("aria-busy", "true");
+  $("project-grid").innerHTML =
+    '<p class="catalog-message loading-message"><span class="spinner" aria-hidden="true"></span>Cargando proyectos…</p>';
   try {
     const data = await fetch("/api/projects").then(readResponse);
     state.projects = data.projects;
     $("project-grid").innerHTML = data.projects
       .map(
         (project) => `
-          <article class="project-card">
+          <article class="project-card" role="listitem">
             <div>
               <span>${project.estimated_minutes} min</span>
               <span>${project.topics.length} temas</span>
@@ -954,13 +1017,21 @@ async function loadProjects() {
           </article>`,
       )
       .join("");
+    announce(`${data.projects.length} proyectos disponibles.`);
   } catch (error) {
     $("project-grid").innerHTML =
-      `<p class="catalog-message error">No pudimos cargar los proyectos. ${escapeHtml(error.message)}</p>`;
+      `<div class="catalog-message empty-state error">
+        <strong>No pudimos cargar los proyectos.</strong>
+        <span>${escapeHtml(error.message)}</span>
+        <button type="button" data-retry-projects>Reintentar</button>
+      </div>`;
+  } finally {
+    $("project-grid").setAttribute("aria-busy", "false");
   }
 }
 
 function openProject(project) {
+  state.focusReturn = document.activeElement;
   state.selectedProject = project;
   $("project-title").textContent = project.title;
   $("project-challenge").textContent = project.challenge;
@@ -977,6 +1048,13 @@ function openProject(project) {
   $("project-result").classList.add("hidden");
   $("project-workspace").classList.remove("hidden");
   $("project-workspace").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("project-title").focus();
+}
+
+function closeProject() {
+  state.selectedProject = null;
+  $("project-workspace").classList.add("hidden");
+  restoreFocus();
 }
 
 function renderProjectResult(data) {
@@ -1155,6 +1233,8 @@ function renderChat(data) {
   renderProgress(data.progress);
   renderTrace();
   $("quiz-card").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  $("quiz-answer").focus();
+  announce("La explicación está lista. Responde la pregunta de comprensión.");
 }
 
 function renderFeedback(data) {
@@ -1207,6 +1287,8 @@ function renderFeedback(data) {
   $("feedback").classList.remove("hidden");
   $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
   $("feedback").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("feedback").focus();
+  announce(`Evaluación completada: ${Math.round(data.score)} de 100.`);
 }
 
 function appendMessage(role, label, text, sources = [], note = "") {
@@ -1237,6 +1319,11 @@ function renderProgress(progress) {
     ? Math.round(topics.reduce((sum, item) => sum + item.best_score, 0) / topics.length)
     : null;
   $("progress-bar").style.width = `${completion}%`;
+  $("progress-track").setAttribute("aria-valuenow", String(Math.round(completion)));
+  $("progress-track").setAttribute(
+    "aria-valuetext",
+    `${state.catalogCompleted} de ${totalTopics || topics.length} temas completados`,
+  );
   $("score-orb").textContent = average === null ? "—" : average;
   const count = totalTopics
     ? `${state.catalogCompleted} de ${totalTopics} temas completados`
@@ -1310,14 +1397,56 @@ function renderTrace() {
 function setBusy(busy) {
   $("send").disabled = busy;
   $("send").querySelector("span").textContent = busy ? "Coordinando…" : "Enviar";
+  chatForm.setAttribute("aria-busy", String(busy));
+  $("conversation-feed").setAttribute("aria-busy", String(busy));
+  $("request-status").textContent = busy ? "Preparando respuesta…" : "";
+  $("request-status").classList.toggle("hidden", !busy);
   document.querySelectorAll("[data-start-topic]").forEach((button) => {
     button.disabled = busy;
   });
 }
 
-function showError(message) {
-  $("error").textContent = message;
+function showError(message, retryAction = null) {
+  state.retryAction = retryAction;
+  $("error-message").textContent = message;
+  $("retry-action").classList.toggle("hidden", !message || !retryAction);
   $("error").classList.toggle("hidden", !message);
+  if (message) announce(`Error: ${message}`);
+}
+
+function announce(message) {
+  const region = $("announcements");
+  region.textContent = "";
+  window.setTimeout(() => {
+    region.textContent = message;
+  }, 20);
+}
+
+function restoreFocus() {
+  const target = state.focusReturn;
+  state.focusReturn = null;
+  if (target instanceof HTMLElement && document.contains(target)) target.focus();
+}
+
+function updateConnectionStatus() {
+  const offline = !navigator.onLine;
+  $("connection-status").classList.toggle("hidden", !offline);
+  document.body.classList.toggle("offline", offline);
+  if (offline) {
+    state.wasOffline = true;
+    announce("Sin conexión. Reintentaremos cuando vuelva la red.");
+    return;
+  }
+  if (state.wasOffline) {
+    state.wasOffline = false;
+    announce("Conexión recuperada. Actualizando la información.");
+    Promise.allSettled([
+      initializeCapabilities(),
+      loadTopicCatalog(),
+      loadSessions(),
+      loadProjects(),
+    ]);
+  }
 }
 
 function pretty(value) {
