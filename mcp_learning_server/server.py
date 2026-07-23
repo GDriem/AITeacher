@@ -286,12 +286,9 @@ def create_app(
     return app
 
 
-app = create_app()
-
-
 def main() -> None:
     uvicorn.run(
-        "mcp_learning_server.server:app",
+        create_app(),
         host=os.getenv("MCP_HOST", "0.0.0.0"),
         port=int(os.getenv("MCP_PORT", "8001")),
     )

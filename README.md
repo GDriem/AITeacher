@@ -34,6 +34,9 @@ frontera de herramientas y recursos deterministas; no se presenta como agente.
 - Tres proyectos integradores con rúbricas específicas y evaluación estructurada.
 - Panel protegido para crear, previsualizar, publicar y versionar lecciones.
 - Borradores aislados del corpus MCP, con despublicación y reversión trazable.
+- Navegación accesible por teclado, foco administrado y estados recuperables.
+- Panel agregado de salud, latencia, errores, tokens, costos y actividades.
+- Compresión, caché versionada y presupuestos de rendimiento del frontend.
 - Interfaz para proyección y voz opt-in mediante WebSocket backend.
 - Adaptadores JSON/Firestore y dos servicios preparados para Cloud Run.
 
@@ -123,6 +126,21 @@ administrativas del MCP. Las lecciones se guardan en
 tutor. Consulte [la guía de Fase 7](docs/phase-7.md) para el flujo y los
 contratos.
 
+`GET /healthz` comprueba la vida del proceso y `GET /readyz` valida que Agent
+App pueda consultar el catálogo MCP. `GET /api/observability` entrega métricas
+agregadas sin contenido del estudiante. El panel **Operación** muestra
+peticiones, tasa de error, latencia p95, llamadas al modelo, tokens estimados,
+costo y actividades completadas. Configure las tarifas vigentes mediante:
+
+```dotenv
+MODEL_INPUT_COST_PER_MILLION_USD=0
+MODEL_OUTPUT_COST_PER_MILLION_USD=0
+```
+
+Con ambos valores en cero se mide consumo sin atribuir un costo. Las métricas
+son locales a cada réplica; consulte [la guía de Fase 8](docs/phase-8.md) para
+privacidad, alcance y validación responsive.
+
 ## Ejecutar pruebas
 
 ```bash
@@ -166,4 +184,5 @@ Consulte [la arquitectura](docs/architecture.md), [el guion de demo](docs/demo-s
 [la guía de Fase 1](docs/phase-1.md), [la guía de Fase 2](docs/phase-2.md) y
 [la guía de Fase 3](docs/phase-3.md), [la guía de Fase 4](docs/phase-4.md) y
 [la guía de Fase 5](docs/phase-5.md), [la guía de Fase 6](docs/phase-6.md) y
-[la guía de Fase 7](docs/phase-7.md).
+[la guía de Fase 7](docs/phase-7.md), y
+[la guía de Fase 8](docs/phase-8.md).

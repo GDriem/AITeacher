@@ -15,7 +15,7 @@ la conversación anterior.
 | 5 | Evaluación híbrida con rúbricas | Completada |
 | 6 | Feedback accionable y modo práctica | Completada |
 | 7 | Panel de autoría de contenido | Completada |
-| 8 | Accesibilidad, observabilidad y pulido | Pendiente |
+| 8 | Accesibilidad, observabilidad y pulido | Completada |
 
 ## Fase 1 — Explorador de temas
 
@@ -326,6 +326,27 @@ aplicación o cambiar de dispositivo.
 - Los errores ofrecen recuperación clara.
 - Existe un panel mínimo de salud y uso.
 - Las pruebas automatizadas cubren tamaños móvil y escritorio.
+
+### Decisiones implementadas
+
+- La interfaz incorpora enlace de salto, landmarks, nombres accesibles, regiones
+  vivas, progreso semántico, foco visible y retorno de foco. `Ctrl+Enter`
+  completa los formularios principales y `Escape` cierra autoría o proyectos.
+- Los catálogos comunican carga, vacío y error con reintento. Los fallos
+  recuperables conservan una acción clara y el cliente actualiza capacidades,
+  sesiones, temas y proyectos cuando vuelve la conexión.
+- `ObservabilityRegistry` agrega latencia HTTP, errores, llamadas al modelo,
+  tokens estimados, costo configurable y finalización de actividades sin guardar
+  mensajes, respuestas ni identificadores de estudiante.
+- `/healthz` comprueba vida, `/readyz` valida la dependencia MCP y
+  `/api/observability` alimenta un panel mínimo de salud y uso. Las métricas en
+  memoria son por réplica y deberán exportarse para agregación multiinstancia.
+- El frontend no agregó dependencias de runtime. Los recursos se comprimen,
+  tienen URLs versionadas y presupuestos automatizados de tamaño. Las pruebas
+  cubren contratos responsive de escritorio, tableta y móvil.
+- La validación real a 1440×1000 y 390×844 confirmó los flujos de chat y
+  evaluación por teclado, foco administrado y ausencia de desbordamiento
+  horizontal.
 
 ### Prompt para iniciar la sesión
 

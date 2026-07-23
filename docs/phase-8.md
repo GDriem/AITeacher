@@ -59,6 +59,44 @@ ruta de FastAPI y agrupa las rutas no reconocidas como `<unmatched>`.
 - ejecución de la suite completa y reconstrucción de Docker Compose;
 - actualización de roadmap, README y decisiones de esta guía.
 
+El frontend se mantiene en HTML, CSS y JavaScript nativos, sin `npm`, CDN ni
+framework de runtime. `GZipMiddleware` comprime respuestas mayores de 1 KB y los
+dos recursos enlazados usan una versión de despliegue en la URL para que una
+hora de caché no sirva CSS o JavaScript de una entrega anterior.
+
+La suite fija presupuestos de 30 KB para HTML, 40 KB para CSS y 100 KB para
+JavaScript, además de comprobar que el script sea diferido y que no existan
+recursos remotos. También valida los contratos de columnas para:
+
+- escritorio: contenido y sidebar, catálogo de cuatro columnas;
+- tableta hasta 900 px: una columna principal y catálogo de dos columnas;
+- móvil hasta 600 px: una columna y controles de sesión reorganizados.
+
+La prueba en navegador se ejecutó a 1440×1000 y 390×844. En escritorio se
+completaron explicación y evaluación con `Ctrl+Enter`; el foco pasó a la
+pregunta y después al feedback. En móvil se abrió y cerró un proyecto con
+retorno de foco. La comprobación final confirmó ancho completo sin scroll
+horizontal y ausencia de errores de consola.
+
+Los dos entrypoints construyen su aplicación ASGI una sola vez dentro de
+`main()`. Esto elimina la inicialización duplicada de Uvicorn y evita que importar
+el módulo MCP intente crear persistencia local dentro de una imagen de Agent App
+configurada para usar el MCP remoto.
+
+## Validación final
+
+Los comandos de cierre son:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+node --check agent_app\static\app.js
+docker compose up --build -d
+```
+
+Después de levantar Compose se comprueban `/healthz`, `/readyz`, el catálogo, el
+chat, la evaluación y `/api/observability`. La validación no requiere
+credenciales porque usa el proveedor `mock`.
+
 ## Privacidad y alcance operativo
 
 La observabilidad es deliberadamente agregada y local a cada instancia. Sirve

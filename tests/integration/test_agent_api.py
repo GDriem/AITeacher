@@ -105,6 +105,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert embedding["unmet_prerequisites"] == ["tokens"]
         assert embedding["available_levels"] == ["beginner", "intermediate"]
         assert page.status_code == 200
+        assert page.headers["cache-control"] == "no-cache"
         assert "AITeacher" in page.text
         assert 'id="category-filter"' in page.text
         assert 'id="level-filter"' in page.text
@@ -113,6 +114,9 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert 'id="practice-card"' in page.text
         assert 'id="authoring-panel"' in page.text
         assert styles.status_code == 200
+        assert styles.headers["content-encoding"] == "gzip"
+        assert styles.headers["cache-control"].startswith("public, max-age=3600")
+        assert styles.headers["x-content-type-options"] == "nosniff"
         assert script.status_code == 200
         assert "data-start-topic" in script.text
         assert "/api/practice/start" in script.text

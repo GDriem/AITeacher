@@ -22,6 +22,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 
 from agent_app.agents.diagnostic import DiagnosticAgent
 from agent_app.agents.evaluator import EvaluatorAgent
@@ -196,6 +197,7 @@ def create_app(
             "MCP independientes."
         ),
     )
+    app.add_middleware(GZipMiddleware, minimum_size=1_000)
     app.state.orchestrator = orchestrator
     app.state.learning_tools = tools
     app.state.sessions = sessions
@@ -251,6 +253,14 @@ def create_app(
                 "duration_ms": round(duration_ms, 2),
             },
         )
+        if request.url.path.startswith("/static/"):
+            response.headers.setdefault(
+                "cache-control",
+                "public, max-age=3600, stale-while-revalidate=86400",
+            )
+        elif request.url.path == "/":
+            response.headers.setdefault("cache-control", "no-cache")
+        response.headers.setdefault("x-content-type-options", "nosniff")
         response.headers["x-correlation-id"] = correlation_id
         return response
 
@@ -587,13 +597,12 @@ def create_app(
 
 
 configure_logging()
-app = create_app()
 
 
 def main() -> None:
     settings = Settings()
     uvicorn.run(
-        "agent_app.api.main:app",
+        create_app(settings),
         host=settings.app_host,
         port=settings.app_port,
     )

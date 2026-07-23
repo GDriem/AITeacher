@@ -204,6 +204,7 @@ h1 span { color: var(--green); }
 .layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(340px, .85fr); gap: 22px; padding-block: 24px; }
 .panel { background: linear-gradient(150deg, rgba(18,40,65,.94), var(--panel)); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); backdrop-filter: blur(18px); }
 .conversation { min-height: 720px; padding: clamp(22px, 3vw, 36px); display: flex; flex-direction: column; }
+.conversation, .sidebar { min-width: 0; }
 .panel-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
 .panel-title h2 { margin-bottom: 0; font-size: clamp(1.4rem, 2.2vw, 2rem); letter-spacing: -.035em; }
 .panel-title.compact h2 { font-size: 1.22rem; }
@@ -434,7 +435,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding: 7px 
   .lesson-list { max-height: 260px; }
   .topic-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .project-grid { grid-template-columns: 1fr; }
-  .layout { grid-template-columns: 1fr; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
   .conversation { min-height: 620px; }
   .sidebar { grid-template-columns: 1fr; grid-template-rows: auto; }
   .trace { max-height: 400px; }

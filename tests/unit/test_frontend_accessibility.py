@@ -94,7 +94,7 @@ def test_styles_cover_focus_contrast_motion_and_responsive_layouts() -> None:
     assert "@media (prefers-reduced-motion: reduce)" in css
     assert "@media (max-width: 900px)" in css
     assert "@media (max-width: 600px)" in css
-    assert ".layout { grid-template-columns: 1fr; }" in css
+    assert ".layout { grid-template-columns: minmax(0, 1fr); }" in css
     assert ".topic-grid { grid-template-columns: 1fr;" in css
 
 
