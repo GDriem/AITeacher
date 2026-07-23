@@ -8,7 +8,8 @@ este archivo es el resumen operativo para trabajar en el código.
 
 Idea central: **el modelo genera, los agentes deciden y delegan, MCP expone
 herramientas y recursos deterministas**. El servidor MCP nunca es tratado como
-agente y nunca contiene lógica pedagógica.
+agente; conserva contenido, progreso y reglas de dominio, mientras Agent App
+coordina el flujo pedagógico.
 
 ## Estructura del repositorio
 
@@ -18,13 +19,13 @@ agent_app/            App multiagente (FastAPI + Google ADK 2.x)
   agents/              orchestrator.py, diagnostic.py, tutor.py, evaluator.py
   api/main.py          Endpoints FastAPI, correlation ID, composición de dependencias
   providers/           ModelProvider: mock.py, gemini.py, foundry.py, factory.py
-  services/            learning_tools.py (cliente MCP), live_voice.py (Gemini Live),
-                       sessions.py (JSON/Firestore), logging.py
-  models/chat.py        Contratos HTTP (ChatRequest/Response, TraceEvent, etc.)
+  services/            Cliente MCP, sesiones, evaluación/actividades, autoría,
+                       voz, logging y observabilidad
+  models/               Contratos HTTP de chat y actividades
   static/               UI (HTML/CSS/JS servidos por FastAPI)
 
 mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable HTTP)
-  server.py             Punto de entrada ASGI, monta /mcp, /healthz, /readyz
+  server.py             Punto de entrada ASGI, monta /mcp, /healthz y /admin
   content/learning_content.json  Corpus propio: 23 temas y 46 lecciones
   services/             ingestion.py, content_store.py (in-memory), retrieval.py (TF-IDF),
                        learning.py (LearningService), authoring.py (versionado editorial)
@@ -33,12 +34,12 @@ mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable H
   tools/learning_tools.py  Registro de las 6 herramientas MCP validadas con Pydantic
 
 tests/                 unit/ (aislado) e integration/ (API + transporte MCP real)
-infra/cloudrun/         Dockerfiles, manifiestos Cloud Run, deploy.sh (manual, no automático)
-docs/                   architecture.md, demo-script.md, deployment.md, foundry.md, phase-1.md
+infra/cloudrun/         Manifiestos Cloud Run, Cloud Build y deploy.sh manual
+docs/                   Índice, arquitectura, roadmap cerrado y guías de fases 1–8
 ```
 
-Nota: no es un repositorio git (`git status` fallará aquí); no hay `.env` real,
-sólo `.env.example`.
+Es un repositorio Git. `.env` contiene únicamente configuración local y está
+ignorado; sólo `.env.example`, sin credenciales, se versiona.
 
 ## Conceptos clave (no confundir)
 
@@ -97,7 +98,12 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
 - `MCP_USE_LOCAL_ADAPTER`: `true` (adaptador local, sin red) | `false` (Streamable HTTP real).
 - `MCP_PROGRESS_BACKEND`: `local` (JSON atómico) | `firestore`.
 - `APP_SESSIONS_BACKEND`: `local` (JSON atómico) | `firestore`; controla
-  conversaciones, tema y evaluación pendiente.
+  conversaciones, tema, evaluación y práctica pendientes.
+- `APP_AUTHORING_TOKEN` / `MCP_AUTHORING_TOKEN`: habilitan y protegen el flujo
+  editorial; vacíos mantienen la autoría deshabilitada.
+- `MODEL_INPUT_COST_PER_MILLION_USD` /
+  `MODEL_OUTPUT_COST_PER_MILLION_USD`: tarifas configurables para el panel de
+  observabilidad; `0` mide tokens sin atribuir costo.
 - Voz (`voice_enabled` en `config.py`): sólo activa si `MODEL_PROVIDER=gemini` y hay
   credenciales (API key o Vertex AI). Con `foundry` la voz se deshabilita a propósito.
 
@@ -110,11 +116,12 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
 - **RAG léxico local es intencional** (TF-IDF, sin embeddings): determinista y sin
   credenciales para la demo. `ContentStore` es la interfaz reemplazable si se migra
   a búsqueda vectorial — no tocar contratos de agentes/MCP al hacerlo.
-- **Evaluador determinista** (comparación de palabras clave, no un segundo LLM) —
-  a propósito, para poder probarlo sin costo ni red.
+- **Evaluación híbrida con fallback**: combina cobertura determinista (20 %) y
+  rúbrica semántica estructurada (80 %). Con `mock`, error o salida inválida usa
+  el mismo contrato mediante fallback determinista.
 - **MCP SDK fijado a `<2`** (`mcp[cli]>=1.27,<2`): la línea 2.x estaba en alfa al
-  escribir esto; no subir de mayor versión sin revisar la nota en
-  `docs/architecture.md` / sección 16 del PDF.
+  tomar esta decisión; no subir de versión mayor sin revisar compatibilidad y la
+  nota en `docs/architecture.md`.
 - **Repositorio JSON atómico**: `LocalProgressRepository` escribe a archivo temporal
   + `os.replace`; no reemplazar por escritura directa.
 - **Mínimo privilegio también en el diseño del agente**: cada especialista ADK recibe
@@ -137,10 +144,10 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
 
 ## Pruebas
 
-90 pruebas, ninguna llama servicios cloud reales (usan repos temporales, clientes
+99 pruebas, ninguna llama servicios cloud reales (usan repos temporales, clientes
 simulados, y un servidor MCP local real para el transporte). Ver `docs/phase-1.md`
-y sección 13 del PDF para el desglose por área. Marker `integration` en pytest para
-pruebas que combinan componentes sin credenciales cloud.
+y las guías de cada fase para el desglose por área. Marker `integration` en
+pytest para pruebas que combinan componentes sin credenciales cloud.
 
 ## Dónde mirar primero según la tarea
 
@@ -151,9 +158,16 @@ pruebas que combinan componentes sin credenciales cloud.
 | Cliente MCP (local vs remoto) | `agent_app/services/learning_tools.py` |
 | Voz / Gemini Live | `agent_app/services/live_voice.py` |
 | Endpoints y middleware | `agent_app/api/main.py` |
+| Sesiones JSON/Firestore | `agent_app/services/sessions.py` |
+| Evaluación híbrida | `agent_app/agents/evaluator.py` |
+| Práctica y proyectos | `agent_app/services/activities.py` |
+| Proxy de autoría | `agent_app/services/authoring.py` |
+| Métricas agregadas | `agent_app/services/observability.py` |
+| Interfaz web | `agent_app/static/` |
 | TF-IDF / recuperación | `mcp_learning_server/services/retrieval.py` |
 | Contratos MCP validados | `mcp_learning_server/tools/learning_tools.py` |
 | Persistencia JSON | `mcp_learning_server/repositories/local_progress.py` |
+| Versionado editorial | `mcp_learning_server/repositories/content_authoring.py` |
 | Despliegue reproducible | `infra/cloudrun/deploy.sh` |
 | Pruebas manuales de API/MCP | `postman/agent-mcp-run.postman_collection.json` |
 
@@ -174,8 +188,7 @@ servicios corriendo localmente.
 
 ## Documentación completa
 
-`docs/architecture.md`, `docs/demo-script.md`, `docs/deployment.md`,
-`docs/foundry.md`, `docs/phase-1.md`, `docs/phase-2.md`, `docs/phase-3.md`,
-`docs/phase-4.md`, `docs/phase-5.md`, `docs/phase-6.md`, `docs/phase-7.md`, y
-`agent-mcp-run-guia-completa.pdf`
-(guía técnica de 18 secciones con diagramas, decisiones y trade-offs).
+Use `docs/README.md` como índice. Incluye arquitectura, hoja de ruta cerrada,
+demo, despliegue, Foundry y las guías de las fases 1–8.
+`agent-mcp-run-guia-completa.pdf` conserva la guía histórica de 18 secciones;
+ante diferencias, prevalecen el código y la documentación Markdown vigente.
