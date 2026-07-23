@@ -8,6 +8,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from mcp_learning_server.models import (
+    EvaluationRubric,
     LearningLevel,
     LearningRecommendation,
     StudentProgress,
@@ -131,6 +132,8 @@ class EvaluationResponse(AppModel):
     status: EvaluationStatus
     attempt: int = Field(ge=1)
     feedback: str
+    rubric: EvaluationRubric
+    result_explanation: str
     strengths: list[str]
     improvements: list[str]
     learning_context: str

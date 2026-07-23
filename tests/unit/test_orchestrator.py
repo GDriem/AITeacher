@@ -16,7 +16,7 @@ def make_orchestrator(learning_service) -> LearningOrchestrator:
     return LearningOrchestrator(
         DiagnosticAgent(tools),
         TutorAgent(tools, MockModelProvider()),
-        EvaluatorAgent(tools),
+        EvaluatorAgent(tools, MockModelProvider()),
         InMemorySessionRepository(),
     )
 

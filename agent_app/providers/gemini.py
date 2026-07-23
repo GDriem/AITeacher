@@ -29,14 +29,22 @@ class GeminiModelProvider:
         self.timeout = settings.model_timeout_seconds
 
     async def generate(self, request: ModelRequest) -> str:
+        response_config = {
+            "system_instruction": request.system_instruction,
+            "temperature": request.temperature,
+        }
+        if request.response_json_schema is not None:
+            response_config.update(
+                {
+                    "response_mime_type": "application/json",
+                    "response_json_schema": request.response_json_schema,
+                }
+            )
         async with asyncio.timeout(self.timeout):
             response = await self.client.aio.models.generate_content(
                 model=self.model,
                 contents=request.prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=request.system_instruction,
-                    temperature=request.temperature,
-                ),
+                config=types.GenerateContentConfig(**response_config),
             )
         text = response.text
         if not text or not text.strip():

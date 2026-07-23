@@ -12,7 +12,7 @@ la conversación anterior.
 | 2 | Ruta de aprendizaje adaptativa | Completada |
 | 3 | Dominio y nivel por tema | Completada |
 | 4 | Persistencia completa de sesiones | Completada |
-| 5 | Evaluación híbrida con rúbricas | Pendiente |
+| 5 | Evaluación híbrida con rúbricas | Completada |
 | 6 | Feedback accionable y modo práctica | Pendiente |
 | 7 | Panel de autoría de contenido | Pendiente |
 | 8 | Accesibilidad, observabilidad y pulido | Pendiente |
@@ -203,6 +203,23 @@ aplicación o cambiar de dispositivo.
 - Una paráfrasis correcta puede obtener una buena evaluación.
 - El resultado siempre cumple el contrato estructurado.
 - Las pruebas cubren respuestas correctas, parciales, vacías y adversariales.
+
+### Decisiones implementadas
+
+- La nota combina 20 % de cobertura determinista de conceptos esenciales y
+  80 % de una rúbrica semántica con precisión, comprensión, aplicación y
+  claridad, calificadas de 0 a 4.
+- Gemini recibe un esquema JSON nativo y la respuesta se valida estrictamente
+  con Pydantic. Una salida vacía, inválida o un error del proveedor activa la
+  misma rúbrica mediante un fallback determinista.
+- Enumerar términos sin explicar relaciones, o intentar manipular al evaluador,
+  limita el resultado a 49/100 incluso si la rúbrica del modelo fuera alta.
+- Cada evaluación persiste la rúbrica, su modo (`hybrid_model` o
+  `deterministic_fallback`) y una explicación breve. Los registros anteriores
+  siguen siendo legibles porque los campos nuevos son opcionales.
+- La API y la interfaz muestran las cuatro dimensiones. El dataset
+  `tests/fixtures/evaluation_responses.json` cubre respuestas correctas,
+  parafraseadas, parciales, vacías, adversariales y listas de palabras clave.
 
 ### Prompt para iniciar la sesión
 

@@ -100,6 +100,10 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert evaluated.status_code == 200, evaluated.text
         assert evaluated.json()["score"] == 100
         assert evaluated.json()["status"] == "mastered"
+        assert evaluated.json()["rubric"]["evaluation_mode"] == (
+            "deterministic_fallback"
+        )
+        assert evaluated.json()["result_explanation"]
         assert evaluated.json()["strengths"]
         assert evaluated.json()["learning_context"]
         assert "expected_keywords" not in evaluated.json()["next_quiz"]
@@ -162,7 +166,10 @@ async def test_recommendation_changes_after_mastering_prerequisite(
             json={
                 "student_id": "adaptive-student",
                 "session_id": chat.json()["session_id"],
-                "answer": "Artificial intelligence",
+                "answer": (
+                    "Artificial intelligence es un sistema que permite realizar "
+                    "tareas que normalmente requieren capacidades humanas."
+                ),
             },
         )
         updated = await client.get(

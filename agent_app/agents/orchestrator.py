@@ -24,7 +24,7 @@ from agent_app.services.sessions import (
     SessionRepository,
     StoredConversation,
 )
-from mcp_learning_server.models import Topic
+from mcp_learning_server.models import RubricEvaluationMode, Topic
 from mcp_learning_server.services.learning import TOPIC_ALIASES
 from mcp_learning_server.services.retrieval import tokenize
 
@@ -248,6 +248,20 @@ class LearningOrchestrator:
         self.sessions.save(session)
         trace.append(
             TraceEvent(
+                kind=TraceKind.MODEL,
+                actor=self.evaluator.name,
+                action="evaluate_with_rubric",
+                summary=(
+                    "Rúbrica del modelo validada y combinada con conceptos esenciales."
+                    if result.rubric.evaluation_mode
+                    == RubricEvaluationMode.HYBRID_MODEL
+                    else "Se aplicó la rúbrica determinista de respaldo."
+                ),
+                duration_ms=_elapsed(started),
+            )
+        )
+        trace.append(
+            TraceEvent(
                 kind=TraceKind.TOOL,
                 actor=self.evaluator.name,
                 action="save_learning_result",
@@ -274,6 +288,8 @@ class LearningOrchestrator:
             status=result.status,
             attempt=pending.attempt,
             feedback=result.feedback,
+            rubric=result.rubric,
+            result_explanation=result.result_explanation,
             strengths=result.strengths,
             improvements=result.improvements,
             learning_context=result.learning_context,

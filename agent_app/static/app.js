@@ -612,6 +612,25 @@ function renderFeedback(data) {
   $("improvements").innerHTML = data.improvements
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
+  const rubricLabels = {
+    precision: "Precisión",
+    comprehension: "Comprensión",
+    application: "Aplicación",
+    clarity: "Claridad",
+  };
+  $("rubric-mode").textContent =
+    data.rubric.evaluation_mode === "hybrid_model"
+      ? "Modelo + conceptos"
+      : "Fallback determinista";
+  $("rubric-scores").innerHTML = Object.entries(rubricLabels)
+    .map(([key, label]) => {
+      const criterion = data.rubric[key];
+      return `<article>
+        <div><strong>${escapeHtml(label)}</strong><span>${criterion.score}/4</span></div>
+        <p>${escapeHtml(criterion.explanation)}</p>
+      </article>`;
+    })
+    .join("");
   $("learning-context").textContent = data.learning_context;
   $("quiz-kicker").textContent = "Feedback personalizado";
   $("quiz-step").textContent = `Ronda ${data.attempt} completada`;

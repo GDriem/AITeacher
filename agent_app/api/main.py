@@ -91,7 +91,7 @@ def build_orchestrator(
     return LearningOrchestrator(
         DiagnosticAgent(tools),
         TutorAgent(tools, provider),
-        EvaluatorAgent(tools),
+        EvaluatorAgent(tools, provider),
         sessions or build_session_repository(settings),
     )
 
@@ -120,7 +120,7 @@ def create_app(
     orchestrator = build_orchestrator(settings, tools, provider, sessions)
     app = FastAPI(
         title="AITeacher",
-        version="0.4.0",
+        version="0.5.0",
         description=(
             "Tutor de IA multiagente con aprendizaje adaptativo y herramientas "
             "MCP independientes."

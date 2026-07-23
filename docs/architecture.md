@@ -152,6 +152,25 @@ resultado, pero nunca razonamiento interno ni chain-of-thought.
    ese ID deberá proceder de una identidad autenticada y no del cuerpo del
    cliente.
 
+## Decisiones de Fase 5
+
+1. **Dos señales complementarias.** La cobertura determinista conserva el
+   control de conceptos esenciales y la rúbrica semántica reconoce comprensión
+   expresada con otras palabras. La nota pondera ambas señales 20/80.
+2. **Rúbrica estable.** Precisión, comprensión, aplicación y claridad se
+   califican de 0 a 4 y siempre incluyen una explicación acotada.
+3. **JSON validado.** Gemini recibe un JSON Schema nativo. Pydantic rechaza
+   salidas incompletas, valores fuera de rango y campos no previstos antes de
+   que puedan afectar el progreso.
+4. **Degradación segura.** Errores, timeouts o JSON inválido producen la misma
+   estructura mediante reglas deterministas; nunca cambian el contrato HTTP.
+5. **Respuesta no confiable.** El prompt delimita la respuesta del estudiante
+   como datos. Además, listas de términos sin explicación e intentos explícitos
+   de manipulación no pueden alcanzar 50 puntos.
+6. **Evolución compatible.** Rúbrica y explicación se agregan como campos
+   opcionales de `Assessment`, por lo que los documentos JSON y Firestore
+   existentes continúan cargando sin migración manual.
+
 ## Reemplazos para producción
 
 | Pieza local | Adaptador futuro | Motivo |

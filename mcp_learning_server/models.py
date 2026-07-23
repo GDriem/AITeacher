@@ -42,6 +42,11 @@ class MasteryStatus(StrEnum):
     MASTERED = "mastered"
 
 
+class RubricEvaluationMode(StrEnum):
+    HYBRID_MODEL = "hybrid_model"
+    DETERMINISTIC_FALLBACK = "deterministic_fallback"
+
+
 class Topic(StrEnum):
     ARTIFICIAL_INTELLIGENCE = "artificial-intelligence"
     MACHINE_LEARNING = "machine-learning"
@@ -88,6 +93,19 @@ class SearchResult(StrictModel):
     score: float = Field(ge=0)
 
 
+class RubricCriterion(StrictModel):
+    score: int = Field(ge=0, le=4)
+    explanation: str = Field(min_length=1, max_length=300)
+
+
+class EvaluationRubric(StrictModel):
+    precision: RubricCriterion
+    comprehension: RubricCriterion
+    application: RubricCriterion
+    clarity: RubricCriterion
+    evaluation_mode: RubricEvaluationMode
+
+
 class Assessment(StrictModel):
     topic: Topic
     score: float = Field(ge=0, le=100)
@@ -95,6 +113,8 @@ class Assessment(StrictModel):
     recommendation: str = Field(min_length=1, max_length=500)
     mastered_concepts: list[str] = Field(default_factory=list, max_length=30)
     pending_concepts: list[str] = Field(default_factory=list, max_length=30)
+    rubric: EvaluationRubric | None = None
+    result_explanation: str | None = Field(default=None, min_length=1, max_length=500)
     created_at: datetime = Field(default_factory=utc_now)
 
     @field_validator("mastered_concepts", "pending_concepts")

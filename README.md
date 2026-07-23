@@ -28,6 +28,8 @@ frontera de herramientas y recursos deterministas; no se presenta como agente.
 - Dominio por tema y concepto con intentos, mejor puntaje y nivel independiente.
 - Conversaciones persistentes con recuperación de mensajes, tema y evaluación.
 - Historial con apertura, renombrado, archivado y eliminación por estudiante.
+- Evaluación híbrida con conceptos esenciales y rúbrica semántica estructurada.
+- Fallback determinista y dataset de regresión para respuestas representativas.
 - Interfaz para proyección y voz opt-in mediante WebSocket backend.
 - Adaptadores JSON/Firestore y dos servicios preparados para Cloud Run.
 
@@ -96,6 +98,12 @@ sincronizan con el backend. `PATCH /api/sessions/{id}` permite renombrar o
 archivar y `DELETE /api/sessions/{id}` elimina de inmediato. La retención
 predeterminada es de 365 días.
 
+Cada resultado de `POST /api/evaluate` incluye una rúbrica de precisión,
+comprensión, aplicación y claridad. Con Gemini, la salida se solicita mediante
+un esquema JSON nativo y después se valida; si el proveedor falla o incumple el
+contrato, el flujo conserva la misma respuesta estructurada con un fallback
+determinista. La rúbrica y la explicación breve quedan guardadas en el progreso.
+
 ## Ejecutar pruebas
 
 ```bash
@@ -137,4 +145,5 @@ La dirección `MCP_SERVER_URL` se configura internamente como
 Consulte [la arquitectura](docs/architecture.md), [el guion de demo](docs/demo-script.md),
 [el despliegue](docs/deployment.md), [Foundry](docs/foundry.md),
 [la guía de Fase 1](docs/phase-1.md), [la guía de Fase 2](docs/phase-2.md) y
-[la guía de Fase 3](docs/phase-3.md) y [la guía de Fase 4](docs/phase-4.md).
+[la guía de Fase 3](docs/phase-3.md), [la guía de Fase 4](docs/phase-4.md) y
+[la guía de Fase 5](docs/phase-5.md).
