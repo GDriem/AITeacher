@@ -17,9 +17,12 @@ from agent_app.models.chat import (
     TraceKind,
 )
 from agent_app.services.sessions import (
-    InMemoryEvaluationStore,
+    ConversationMessage,
+    InMemorySessionRepository,
+    MessageRole,
     PendingEvaluation,
-    SessionTopicStore,
+    SessionRepository,
+    StoredConversation,
 )
 from mcp_learning_server.models import Topic
 from mcp_learning_server.services.learning import TOPIC_ALIASES
@@ -34,20 +37,25 @@ class LearningOrchestrator:
         diagnostic: DiagnosticAgent,
         tutor: TutorAgent,
         evaluator: EvaluatorAgent,
-        evaluations: InMemoryEvaluationStore,
-        topics: SessionTopicStore | None = None,
+        sessions: SessionRepository | None = None,
     ) -> None:
         self.diagnostic = diagnostic
         self.tutor = tutor
         self.evaluator = evaluator
-        self.evaluations = evaluations
-        self.topics = topics or SessionTopicStore()
+        self.sessions = sessions or InMemorySessionRepository()
 
     async def chat(
         self, request: ChatRequest, correlation_id: str | None = None
     ) -> ChatResponse:
         correlation_id = correlation_id or str(uuid.uuid4())
         session_id = request.session_id or str(uuid.uuid4())
+        session = (
+            self.sessions.get(session_id, request.student_id)
+            if request.session_id
+            else None
+        )
+        if session is not None and session.archived_at is not None:
+            raise ValueError("La conversación está archivada; restáurala para continuar")
         trace = [
             TraceEvent(
                 kind=TraceKind.USER,
@@ -61,14 +69,12 @@ class LearningOrchestrator:
             topic = detect_topic(request.message)
             detection_summary = f"Intención educativa; tema detectado: {topic.value}."
         except ValueError:
-            remembered = self.topics.get(session_id)
-            if remembered is None:
+            if session is None:
                 raise
-            topic = remembered
+            topic = session.topic
             detection_summary = (
                 f"Sin tema nuevo en el mensaje; continúa el tema de la sesión: {topic.value}."
             )
-        self.topics.put(session_id, topic)
         trace.append(
             TraceEvent(
                 kind=TraceKind.DECISION,
@@ -116,7 +122,7 @@ class LearningOrchestrator:
         )
 
         trace.append(_delegation(self.name, self.evaluator.name, "crear evaluación corta"))
-        pending = self.evaluations.get_optional(session_id)
+        pending = session.pending_evaluation if session is not None else None
         if (
             pending is not None
             and pending.student_id == request.student_id
@@ -131,14 +137,11 @@ class LearningOrchestrator:
             quiz = self.evaluator.create_quiz(topic)
             quiz_attempt = 1
             quiz_summary = "Se creó la primera evaluación del tema."
-        self.evaluations.put(
-            session_id,
-            PendingEvaluation(
-                student_id=request.student_id,
-                topic=topic,
-                quiz=quiz,
-                attempt=quiz_attempt,
-            ),
+        pending = PendingEvaluation(
+            student_id=request.student_id,
+            topic=topic,
+            quiz=quiz,
+            attempt=quiz_attempt,
         )
         trace.append(
             TraceEvent(
@@ -156,7 +159,7 @@ class LearningOrchestrator:
                 summary="Respuesta y evaluación preparadas.",
             )
         )
-        return ChatResponse(
+        response = ChatResponse(
             correlation_id=correlation_id,
             session_id=session_id,
             topic=topic,
@@ -168,14 +171,43 @@ class LearningOrchestrator:
             quiz_attempt=quiz_attempt,
             trace=trace,
         )
+        if session is None:
+            session = StoredConversation(
+                id=session_id,
+                student_id=request.student_id,
+                title=_default_title(request.message),
+                topic=topic,
+                pending_evaluation=pending,
+            )
+        else:
+            session.topic = topic
+            session.pending_evaluation = pending
+        session.messages.extend(
+            [
+                ConversationMessage(
+                    role=MessageRole.USER,
+                    label="Tú",
+                    content=request.message,
+                ),
+                ConversationMessage(
+                    role=MessageRole.ASSISTANT,
+                    label="Tutor Agent",
+                    content=answer,
+                    sources=sources,
+                ),
+            ]
+        )
+        self.sessions.save(session)
+        return response
 
     async def evaluate(
         self, request: EvaluationRequest, correlation_id: str | None = None
     ) -> EvaluationResponse:
         correlation_id = correlation_id or str(uuid.uuid4())
-        pending = self.evaluations.get(request.session_id)
-        if pending.student_id != request.student_id:
-            raise PermissionError("La evaluación no pertenece al estudiante")
+        session = self.sessions.get(request.session_id, request.student_id)
+        if session.archived_at is not None:
+            raise ValueError("La conversación está archivada; restáurala para continuar")
+        pending = session.pending_evaluation
         trace = [
             TraceEvent(
                 kind=TraceKind.DELEGATION,
@@ -192,15 +224,28 @@ class LearningOrchestrator:
             request.answer,
             pending.attempt,
         )
-        self.evaluations.put(
-            request.session_id,
-            PendingEvaluation(
-                student_id=request.student_id,
-                topic=pending.topic,
-                quiz=result.next_quiz,
-                attempt=pending.attempt + 1,
-            ),
+        session.pending_evaluation = PendingEvaluation(
+            student_id=request.student_id,
+            topic=pending.topic,
+            quiz=result.next_quiz,
+            attempt=pending.attempt + 1,
         )
+        session.messages.extend(
+            [
+                ConversationMessage(
+                    role=MessageRole.USER,
+                    label="Tu explicación",
+                    content=request.answer,
+                ),
+                ConversationMessage(
+                    role=MessageRole.ASSISTANT,
+                    label="Evaluator Agent",
+                    content=result.feedback,
+                    note=result.learning_context,
+                ),
+            ]
+        )
+        self.sessions.save(session)
         trace.append(
             TraceEvent(
                 kind=TraceKind.TOOL,
@@ -265,3 +310,8 @@ def _delegation(actor: str, target: str, purpose: str) -> TraceEvent:
 
 def _elapsed(started: float) -> float:
     return round((time.perf_counter() - started) * 1_000, 3)
+
+
+def _default_title(message: str) -> str:
+    normalized = " ".join(message.split())
+    return normalized if len(normalized) <= 70 else f"{normalized[:67].rstrip()}…"

@@ -30,6 +30,9 @@ flowchart LR
   P -. "producción" .-> F["Firestore"]
   A --> G["Gemini en Google Cloud"]
   A -. "opcional" .-> AZ["Microsoft Foundry en Azure"]
+  A --> S["Repositorio de sesiones"]
+  S -. "local" .-> SJ["JSON atómico"]
+  S -. "producción" .-> SF["Firestore"]
 ```
 
 La Fase 1 implementa la parte MCP, el índice local y el repositorio JSON. El
@@ -128,11 +131,33 @@ resultado, pero nunca razonamiento interno ni chain-of-thought.
    las evaluaciones históricas; el detalle por concepto comienza a poblarse con
    el siguiente intento. El primer guardado posterior persiste el formato nuevo.
 
+## Decisiones de Fase 4
+
+1. **Estado de conversación en Agent App.** Mensajes, tema y evaluación
+   pendiente pertenecen al flujo de coordinación, no al dominio académico del
+   MCP. Por eso usan un repositorio propio sin ampliar las herramientas MCP.
+2. **Servidor como fuente de verdad.** El navegador conserva sólo el ID de la
+   conversación activa. Al abrir la aplicación obtiene mensajes y pregunta
+   pendiente mediante la API, evitando divergencia entre dispositivos.
+3. **Pregunta privada durable.** El repositorio conserva las palabras esperadas
+   por el evaluador determinista; los modelos de respuesta pública exponen sólo
+   la pregunta y el número de ronda.
+4. **Dos adaptadores.** JSON atómico y un volumen nombrado cubren desarrollo y
+   Docker Compose. Firestore permite reinicios y varias réplicas en Cloud Run.
+5. **Retención explícita.** Se conservan 365 días desde la última actividad,
+   configurable entre 1 y 3650. Los registros vencidos se purgan al consultar;
+   archivar es reversible y `DELETE` realiza borrado inmediato.
+6. **Aislamiento por propietario.** Todas las operaciones sobre un ID de sesión
+   validan el `student_id` y responden 403 ante cruces. En un producto público,
+   ese ID deberá proceder de una identidad autenticada y no del cuerpo del
+   cliente.
+
 ## Reemplazos para producción
 
 | Pieza local | Adaptador futuro | Motivo |
 |---|---|---|
 | `LocalProgressRepository` | `FirestoreProgressRepository` | concurrencia y durabilidad |
+| `LocalSessionRepository` | `FirestoreSessionRepository` | sesiones entre réplicas y dispositivos |
 | `InMemoryContentStore` | índice administrado o vector store en GCP | volumen y búsqueda semántica |
 | JSON curricular empaquetado | Google Cloud Storage + pipeline de ingestión | actualización independiente |
 

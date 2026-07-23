@@ -5,6 +5,9 @@ services:
       dockerfile: agent_app/Dockerfile
     environment:
       APP_PORT: "8080"
+      APP_SESSIONS_BACKEND: local
+      APP_SESSIONS_PATH: /data/sessions.json
+      APP_SESSION_RETENTION_DAYS: ${APP_SESSION_RETENTION_DAYS:-365}
       MODEL_PROVIDER: ${MODEL_PROVIDER:-mock}
       MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
       MCP_USE_LOCAL_ADAPTER: "false"
@@ -25,6 +28,8 @@ services:
       AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET:-}
     ports:
       - "8000:8080"
+    volumes:
+      - agent-data:/data
     depends_on:
       mcp-server:
         condition: service_healthy
@@ -56,4 +61,5 @@ services:
       start_period: 5s
 
 volumes:
+  agent-data:
   mcp-data:

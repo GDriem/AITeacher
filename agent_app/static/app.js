@@ -8,6 +8,7 @@ const state = {
   catalogTotal: null,
   catalogCompleted: 0,
   recommendation: null,
+  sessions: [],
 };
 
 const voice = {
@@ -23,6 +24,7 @@ const voice = {
 const $ = (id) => document.getElementById(id);
 const chatForm = $("chat-form");
 const quizForm = $("quiz-form");
+const activeSessionKey = `activeSession:${state.studentId}`;
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -38,13 +40,13 @@ $("topic-grid").addEventListener("click", async (event) => {
     (item) => item.topic === button.dataset.startTopic,
   );
   if (!selected) return;
-  state.sessionId = null;
+  startNewConversation();
   await sendChat(`Quiero aprender sobre ${selected.title}`);
 });
 
 $("start-recommended").addEventListener("click", async () => {
   if (!state.recommendation) return;
-  state.sessionId = null;
+  startNewConversation();
   await sendChat(`Quiero aprender sobre ${state.recommendation.title}`);
 });
 
@@ -70,10 +72,12 @@ async function sendChat(message) {
     });
     const data = await readResponse(response);
     state.sessionId = data.session_id;
+    localStorage.setItem(activeSessionKey, state.sessionId);
     state.trace = data.trace;
     state.quizAttempt = data.quiz_attempt;
     state.nextQuiz = null;
     renderChat(data);
+    await loadSessions();
   } catch (error) {
     showError(error.message);
   } finally {
@@ -115,6 +119,7 @@ quizForm.addEventListener("submit", async (event) => {
     renderProgress(data.progress);
     renderTrace();
     await loadTopicCatalog();
+    await loadSessions();
   } catch (error) {
     showError(error.message);
   } finally {
@@ -141,6 +146,34 @@ $("clear-trace").addEventListener("click", () => {
   renderTrace();
 });
 
+$("session-select").addEventListener("change", async (event) => {
+  if (!event.target.value) {
+    startNewConversation();
+    return;
+  }
+  await openSession(event.target.value);
+});
+
+$("new-session").addEventListener("click", startNewConversation);
+
+$("rename-session").addEventListener("click", async () => {
+  if (!state.sessionId) return;
+  const current = state.sessions.find((item) => item.id === state.sessionId);
+  const title = window.prompt(
+    "Nuevo nombre de la conversación",
+    current?.title || "",
+  )?.trim();
+  if (!title || title === current?.title) return;
+  await updateSession({ title });
+});
+
+$("archive-session").addEventListener("click", async () => {
+  if (!state.sessionId) return;
+  await updateSession({ archived: true });
+  startNewConversation();
+  await loadSessions();
+});
+
 $("mic").addEventListener("click", async () => {
   if (voice.socket) stopVoice();
   else await startVoice();
@@ -148,6 +181,7 @@ $("mic").addEventListener("click", async () => {
 
 initializeCapabilities();
 loadTopicCatalog();
+loadSessions({ restore: true });
 
 async function initializeCapabilities() {
   try {
@@ -182,6 +216,130 @@ async function loadTopicCatalog() {
     $("topic-grid").innerHTML =
       `<p class="catalog-message error">No pudimos cargar los temas. ${escapeHtml(error.message)}</p>`;
   }
+}
+
+async function loadSessions({ restore = false } = {}) {
+  try {
+    const response = await fetch(
+      `/api/sessions?student_id=${encodeURIComponent(state.studentId)}`,
+    );
+    const data = await readResponse(response);
+    state.sessions = data.sessions;
+    const select = $("session-select");
+    select.innerHTML =
+      '<option value="">Nueva conversación</option>' +
+      state.sessions
+        .map(
+          (session) =>
+            `<option value="${escapeHtml(session.id)}">${escapeHtml(session.title)}</option>`,
+        )
+        .join("");
+    if (state.sessionId && state.sessions.some((item) => item.id === state.sessionId)) {
+      select.value = state.sessionId;
+    }
+    if (restore) {
+      const saved = localStorage.getItem(activeSessionKey);
+      if (saved && state.sessions.some((item) => item.id === saved)) {
+        await openSession(saved);
+      }
+    }
+    updateSessionActions();
+  } catch (error) {
+    showError(`No pudimos sincronizar las conversaciones. ${error.message}`);
+  }
+}
+
+async function openSession(sessionId) {
+  setBusy(true);
+  showError("");
+  try {
+    const response = await fetch(
+      `/api/sessions/${encodeURIComponent(sessionId)}?student_id=${encodeURIComponent(state.studentId)}`,
+    );
+    const session = await readResponse(response);
+    state.sessionId = session.id;
+    state.trace = [];
+    state.quizAttempt = session.pending_quiz.attempt;
+    state.nextQuiz = { question: session.pending_quiz.question };
+    localStorage.setItem(activeSessionKey, session.id);
+    resetConversation({ keepSession: true });
+    session.messages.forEach((message) => {
+      appendMessage(
+        message.role,
+        message.label,
+        message.content,
+        message.sources,
+        message.note,
+      );
+    });
+    const topicProgress = state.catalog.find(
+      (item) => item.topic === session.topic,
+    )?.progress;
+    $("topic-badge").textContent = topicTitle(session.topic);
+    $("level-badge").textContent = levelLabel(topicProgress?.level || "beginner");
+    $("detected").classList.remove("hidden");
+    $("question").textContent = session.pending_quiz.question;
+    $("quiz-topic").textContent = topicTitle(session.topic);
+    $("quiz-kicker").textContent = "Comprueba tu comprensión";
+    $("quiz-step").textContent = `Ronda ${session.pending_quiz.attempt}`;
+    $("question").classList.remove("hidden");
+    quizForm.classList.remove("hidden");
+    $("quiz-card").classList.remove("hidden");
+    $("session-select").value = session.id;
+    updateSessionActions();
+  } catch (error) {
+    showError(error.message);
+    startNewConversation();
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function updateSession(update) {
+  showError("");
+  try {
+    const response = await fetch(
+      `/api/sessions/${encodeURIComponent(state.sessionId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ student_id: state.studentId, ...update }),
+      },
+    );
+    await readResponse(response);
+    await loadSessions();
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function startNewConversation() {
+  state.sessionId = null;
+  state.trace = [];
+  state.nextQuiz = null;
+  state.quizAttempt = 1;
+  localStorage.removeItem(activeSessionKey);
+  resetConversation();
+}
+
+function resetConversation({ keepSession = false } = {}) {
+  document
+    .querySelectorAll("#conversation-feed .chat-message")
+    .forEach((message) => message.remove());
+  $("welcome").classList.remove("hidden");
+  $("detected").classList.add("hidden");
+  $("quiz-card").classList.add("hidden");
+  $("feedback").classList.add("hidden");
+  $("quiz-answer").value = "";
+  if (!keepSession) $("session-select").value = "";
+  renderTrace();
+  updateSessionActions();
+}
+
+function updateSessionActions() {
+  const hasSession = Boolean(state.sessionId);
+  $("rename-session").disabled = !hasSession;
+  $("archive-session").disabled = !hasSession;
 }
 
 function populateCatalogFilters(topics) {

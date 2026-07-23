@@ -11,6 +11,8 @@ Cloud Run, Vertex AI y Firestore pueden generar costos.
 - `learning-agent` obtiene un ID token de su identidad de servicio y usa como
   audiencia la URL base de `learning-mcp`.
 - Sólo la cuenta `learning-agent` recibe `roles/run.invoker` sobre MCP.
+- Agent App guarda conversaciones en la colección Firestore
+  `learning_sessions`; su cuenta recibe `roles/datastore.user`.
 
 Se recomienda desplegar ambos servicios en la misma región. Cloud Run recomienda
 cuentas administradas por el usuario y mínimo privilegio para comunicación entre
@@ -89,8 +91,9 @@ gcloud run services update-traffic learning-agent --region "$REGION" \
 ```
 
 Repita para `learning-mcp` si cambió su contrato. Las evaluaciones están en
-Firestore y no se eliminan al volver una revisión. Para rollback de esquema,
-prepare una migración compatible; no borre documentos desde el despliegue.
+Firestore y las conversaciones en `learning_sessions`; no se eliminan al volver
+una revisión. Para rollback de esquema, prepare una migración compatible; no
+borre documentos desde el despliegue.
 
 ## Eliminación controlada
 

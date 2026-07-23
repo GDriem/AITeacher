@@ -11,7 +11,7 @@ la conversación anterior.
 | 1 | Explorador de temas | Completada |
 | 2 | Ruta de aprendizaje adaptativa | Completada |
 | 3 | Dominio y nivel por tema | Completada |
-| 4 | Persistencia completa de sesiones | Pendiente |
+| 4 | Persistencia completa de sesiones | Completada |
 | 5 | Evaluación híbrida con rúbricas | Pendiente |
 | 6 | Feedback accionable y modo práctica | Pendiente |
 | 7 | Panel de autoría de contenido | Pendiente |
@@ -159,6 +159,25 @@ aplicación o cambiar de dispositivo.
 - El estudiante puede abrir una conversación anterior.
 - Las sesiones están aisladas por estudiante.
 - Existen pruebas de recuperación y autorización.
+
+### Decisiones implementadas
+
+- Agent App persiste cada conversación completa, su tema y la evaluación
+  pendiente. La pregunta interna conserva las palabras esperadas para poder
+  evaluar después de un reinicio, pero la API nunca las expone.
+- `LocalSessionRepository` usa JSON atómico y el volumen `agent-data` de Docker
+  Compose. Cloud Run usa `FirestoreSessionRepository`, por lo que las sesiones
+  no dependen de una réplica específica.
+- `GET /api/sessions` lista conversaciones; el detalle, renombrado, archivado,
+  restauración y borrado se realizan sobre `/api/sessions/{session_id}`. Cada
+  operación comprueba que el `student_id` sea el propietario.
+- La interfaz conserva únicamente el identificador activo en `localStorage`.
+  Los mensajes y la evaluación se recuperan siempre del servidor, que es la
+  fuente de verdad, y las conversaciones anteriores pueden abrirse desde el
+  selector.
+- Las sesiones se conservan 365 días desde su última actividad por defecto.
+  La lectura elimina registros vencidos y `DELETE` ofrece eliminación inmediata;
+  archivar sólo oculta una conversación y es reversible.
 
 ### Prompt para iniciar la sesión
 

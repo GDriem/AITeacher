@@ -19,7 +19,7 @@ agent_app/            App multiagente (FastAPI + Google ADK 2.x)
   api/main.py          Endpoints FastAPI, correlation ID, composición de dependencias
   providers/           ModelProvider: mock.py, gemini.py, foundry.py, factory.py
   services/            learning_tools.py (cliente MCP), live_voice.py (Gemini Live),
-                       sessions.py, logging.py
+                       sessions.py (JSON/Firestore), logging.py
   models/chat.py        Contratos HTTP (ChatRequest/Response, TraceEvent, etc.)
   static/               UI (HTML/CSS/JS servidos por FastAPI)
 
@@ -96,6 +96,8 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
   todo pasa por `ModelProvider`/`factory.py`.
 - `MCP_USE_LOCAL_ADAPTER`: `true` (adaptador local, sin red) | `false` (Streamable HTTP real).
 - `MCP_PROGRESS_BACKEND`: `local` (JSON atómico) | `firestore`.
+- `APP_SESSIONS_BACKEND`: `local` (JSON atómico) | `firestore`; controla
+  conversaciones, tema y evaluación pendiente.
 - Voz (`voice_enabled` en `config.py`): sólo activa si `MODEL_PROVIDER=gemini` y hay
   credenciales (API key o Vertex AI). Con `foundry` la voz se deshabilita a propósito.
 
@@ -135,7 +137,7 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
 
 ## Pruebas
 
-60 pruebas, ninguna llama servicios cloud reales (usan repos temporales, clientes
+68 pruebas, ninguna llama servicios cloud reales (usan repos temporales, clientes
 simulados, y un servidor MCP local real para el transporte). Ver `docs/phase-1.md`
 y sección 13 del PDF para el desglose por área. Marker `integration` en pytest para
 pruebas que combinan componentes sin credenciales cloud.
@@ -173,6 +175,7 @@ servicios corriendo localmente.
 ## Documentación completa
 
 `docs/architecture.md`, `docs/demo-script.md`, `docs/deployment.md`,
-`docs/foundry.md`, `docs/phase-1.md`, `docs/phase-2.md`, `docs/phase-3.md`, y
+`docs/foundry.md`, `docs/phase-1.md`, `docs/phase-2.md`, `docs/phase-3.md`,
+`docs/phase-4.md`, y
 `agent-mcp-run-guia-completa.pdf`
 (guía técnica de 18 secciones con diagramas, decisiones y trade-offs).

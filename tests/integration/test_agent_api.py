@@ -5,6 +5,7 @@ from agent_app.api.main import create_app
 from agent_app.config import ModelProviderName, Settings
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.learning_tools import LocalLearningTools
+from agent_app.services.sessions import LocalSessionRepository
 
 
 @pytest.mark.integration
@@ -196,3 +197,144 @@ async def test_invalid_message_is_handled(learning_service) -> None:
         )
     assert response.status_code == 422
     assert "tema" in response.json()["detail"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_session_recovers_after_restart_and_is_authorized(
+    learning_service, tmp_path
+) -> None:
+    path = tmp_path / "sessions.json"
+    settings = Settings(app_sessions_path=str(path))
+    tools = LocalLearningTools(learning_service)
+    first_app = create_app(
+        settings,
+        tools=tools,
+        provider=MockModelProvider(),
+        sessions=LocalSessionRepository(path),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=first_app),
+        base_url="http://agent.local",
+    ) as client:
+        chat = await client.post(
+            "/api/chat",
+            json={
+                "student_id": "persistent-student",
+                "message": "Explícame embeddings",
+            },
+        )
+        assert chat.status_code == 200
+        session_id = chat.json()["session_id"]
+
+    restarted_app = create_app(
+        settings,
+        tools=tools,
+        provider=MockModelProvider(),
+        sessions=LocalSessionRepository(path),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=restarted_app),
+        base_url="http://agent.local",
+    ) as client:
+        listed = await client.get(
+            "/api/sessions", params={"student_id": "persistent-student"}
+        )
+        recovered = await client.get(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "persistent-student"},
+        )
+        forbidden = await client.get(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "other-student"},
+        )
+        evaluated = await client.post(
+            "/api/evaluate",
+            json={
+                "student_id": "persistent-student",
+                "session_id": session_id,
+                "answer": (
+                    "Es un vector que representa significado y permite comparar "
+                    "elementos por similitud."
+                ),
+            },
+        )
+
+    assert listed.status_code == 200
+    assert listed.json()["retention_days"] == 365
+    assert listed.json()["sessions"][0]["id"] == session_id
+    assert recovered.status_code == 200
+    assert recovered.json()["topic"] == "embeddings"
+    assert recovered.json()["message_count"] == 2
+    assert recovered.json()["pending_quiz"]["attempt"] == 1
+    assert len(recovered.json()["messages"]) == 2
+    assert "expected_keywords" not in recovered.text
+    assert forbidden.status_code == 403
+    assert evaluated.status_code == 200
+    assert evaluated.json()["score"] == 100
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_session_can_be_renamed_archived_restored_and_deleted(
+    learning_service, tmp_path
+) -> None:
+    repository = LocalSessionRepository(tmp_path / "sessions.json")
+    app = create_app(
+        Settings(),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+        sessions=repository,
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+    ) as client:
+        chat = await client.post(
+            "/api/chat",
+            json={"student_id": "student-1", "message": "Explícame embeddings"},
+        )
+        session_id = chat.json()["session_id"]
+        renamed = await client.patch(
+            f"/api/sessions/{session_id}",
+            json={"student_id": "student-1", "title": "Vectores semánticos"},
+        )
+        archived = await client.patch(
+            f"/api/sessions/{session_id}",
+            json={"student_id": "student-1", "archived": True},
+        )
+        active = await client.get(
+            "/api/sessions", params={"student_id": "student-1"}
+        )
+        all_sessions = await client.get(
+            "/api/sessions",
+            params={"student_id": "student-1", "include_archived": True},
+        )
+        blocked_chat = await client.post(
+            "/api/chat",
+            json={
+                "student_id": "student-1",
+                "session_id": session_id,
+                "message": "Explícamelo más fácil",
+            },
+        )
+        restored = await client.patch(
+            f"/api/sessions/{session_id}",
+            json={"student_id": "student-1", "archived": False},
+        )
+        deleted = await client.delete(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "student-1"},
+        )
+        missing = await client.get(
+            f"/api/sessions/{session_id}",
+            params={"student_id": "student-1"},
+        )
+
+    assert renamed.json()["title"] == "Vectores semánticos"
+    assert archived.json()["archived_at"] is not None
+    assert active.json()["sessions"] == []
+    assert len(all_sessions.json()["sessions"]) == 1
+    assert blocked_chat.status_code == 422
+    assert restored.json()["archived_at"] is None
+    assert deleted.status_code == 204
+    assert missing.status_code == 404

@@ -88,6 +88,12 @@ h1 span { color: var(--green); }
 .badge.blue { color: #b9d5ff; border-color: rgba(108,167,255,.38); background: rgba(108,167,255,.12); }
 .badge.green { color: #a7f0ce; border-color: rgba(98,217,162,.35); background: rgba(98,217,162,.1); }
 
+.session-toolbar { display: grid; grid-template-columns: auto minmax(160px, 1fr) auto auto auto; align-items: center; gap: 8px; margin-top: 18px; padding: 10px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.025); }
+.session-toolbar label { color: var(--muted); font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.session-toolbar select { min-width: 0; height: 36px; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; outline: 0; color: var(--text); background: #10243c; font: inherit; font-size: .78rem; }
+.session-toolbar button { min-height: 34px; padding: 0 9px; border: 1px solid rgba(108,167,255,.22); border-radius: 9px; color: #dceaff; background: rgba(108,167,255,.07); font-size: .72rem; font-weight: 750; }
+.session-toolbar button:disabled { opacity: .4; cursor: not-allowed; }
+
 .conversation-feed { flex: 1; min-height: 260px; max-height: 560px; margin: 24px -8px 20px 0; padding: 0 12px 4px 0; overflow-y: auto; scroll-behavior: smooth; }
 .conversation-feed::-webkit-scrollbar, .trace::-webkit-scrollbar { width: 6px; }
 .conversation-feed::-webkit-scrollbar-thumb, .trace::-webkit-scrollbar-thumb { border-radius: 10px; background: rgba(151,171,194,.22); }
@@ -226,6 +232,9 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding: 7px 
   .conversation { padding: 18px; border-radius: 16px; min-height: auto; }
   .panel-title { flex-direction: column; }
   .detected { justify-content: flex-start; }
+  .session-toolbar { grid-template-columns: 1fr 1fr 1fr; }
+  .session-toolbar label { grid-column: 1 / -1; }
+  .session-toolbar select { grid-column: 1 / -1; }
   .conversation-feed { flex: 0 1 auto; min-height: 0; max-height: 440px; margin-top: 16px; }
   .welcome-card { margin: 0; padding: 14px; }
   .welcome-card p { font-size: .82rem; line-height: 1.5; }

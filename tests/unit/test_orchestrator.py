@@ -7,7 +7,7 @@ from agent_app.agents.tutor import TutorAgent
 from agent_app.models.chat import ChatRequest, EvaluationRequest, EvaluationStatus
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.learning_tools import LocalLearningTools
-from agent_app.services.sessions import InMemoryEvaluationStore
+from agent_app.services.sessions import InMemorySessionRepository
 from mcp_learning_server.models import Topic
 
 
@@ -17,7 +17,7 @@ def make_orchestrator(learning_service) -> LearningOrchestrator:
         DiagnosticAgent(tools),
         TutorAgent(tools, MockModelProvider()),
         EvaluatorAgent(tools),
-        InMemoryEvaluationStore(),
+        InMemorySessionRepository(),
     )
 
 

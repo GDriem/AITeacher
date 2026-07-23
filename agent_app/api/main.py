@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +23,7 @@ from agent_app.models.chat import (
     ChatResponse,
     EvaluationRequest,
     EvaluationResponse,
+    SessionUpdateRequest,
     TopicCatalogItem,
     TopicCatalogResponse,
 )
@@ -35,7 +36,15 @@ from agent_app.services.learning_tools import (
 )
 from agent_app.services.logging import configure_logging
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
-from agent_app.services.sessions import InMemoryEvaluationStore, SessionTopicStore
+from agent_app.services.sessions import (
+    ConversationDetail,
+    ConversationListResponse,
+    FirestoreSessionRepository,
+    LocalSessionRepository,
+    SessionRepository,
+    conversation_detail,
+    conversation_summary,
+)
 from mcp_learning_server.models import TopicStatus
 from mcp_learning_server.server import build_learning_service
 
@@ -43,10 +52,30 @@ logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parents[1] / "static"
 
 
+def build_session_repository(settings: Settings) -> SessionRepository:
+    if settings.app_sessions_backend == "local":
+        return LocalSessionRepository(
+            settings.app_sessions_path,
+            settings.app_session_retention_days,
+        )
+    try:
+        from google.cloud import firestore
+    except ImportError as exc:  # pragma: no cover - depende del extra cloud
+        raise RuntimeError(
+            "El backend firestore requiere instalar el extra cloud"
+        ) from exc
+    return FirestoreSessionRepository(
+        firestore.Client(project=settings.google_cloud_project),
+        collection=settings.firestore_sessions_collection,
+        retention_days=settings.app_session_retention_days,
+    )
+
+
 def build_orchestrator(
     settings: Settings,
     tools: LearningTools | None = None,
     provider: ModelProvider | None = None,
+    sessions: SessionRepository | None = None,
 ) -> LearningOrchestrator:
     if tools is None:
         tools = (
@@ -63,8 +92,7 @@ def build_orchestrator(
         DiagnosticAgent(tools),
         TutorAgent(tools, provider),
         EvaluatorAgent(tools),
-        InMemoryEvaluationStore(),
-        SessionTopicStore(),
+        sessions or build_session_repository(settings),
     )
 
 
@@ -84,13 +112,15 @@ def create_app(
     settings: Settings | None = None,
     tools: LearningTools | None = None,
     provider: ModelProvider | None = None,
+    sessions: SessionRepository | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     tools = tools or build_learning_tools(settings)
-    orchestrator = build_orchestrator(settings, tools, provider)
+    sessions = sessions or build_session_repository(settings)
+    orchestrator = build_orchestrator(settings, tools, provider, sessions)
     app = FastAPI(
         title="AITeacher",
-        version="0.3.0",
+        version="0.4.0",
         description=(
             "Tutor de IA multiagente con aprendizaje adaptativo y herramientas "
             "MCP independientes."
@@ -98,6 +128,7 @@ def create_app(
     )
     app.state.orchestrator = orchestrator
     app.state.learning_tools = tools
+    app.state.sessions = sessions
     app.state.settings = settings
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -116,6 +147,10 @@ def create_app(
     @app.exception_handler(KeyError)
     async def missing_session(_: Request, exc: KeyError) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(exc.args[0])})
+
+    @app.exception_handler(PermissionError)
+    async def forbidden_session(_: Request, exc: PermissionError) -> JSONResponse:
+        return JSONResponse(status_code=403, content={"detail": str(exc)})
 
     @app.get("/healthz")
     async def health() -> dict:
@@ -178,6 +213,46 @@ def create_app(
             topics=items,
         )
 
+    @app.get("/api/sessions", response_model=ConversationListResponse)
+    async def list_sessions(
+        student_id: str, include_archived: bool = False
+    ) -> ConversationListResponse:
+        items = sessions.list(student_id, include_archived)
+        return ConversationListResponse(
+            sessions=[conversation_summary(item) for item in items],
+            retention_days=sessions.retention_days,
+        )
+
+    @app.get(
+        "/api/sessions/{session_id}",
+        response_model=ConversationDetail,
+    )
+    async def get_session(session_id: str, student_id: str) -> ConversationDetail:
+        return conversation_detail(sessions.get(session_id, student_id))
+
+    @app.patch(
+        "/api/sessions/{session_id}",
+        response_model=ConversationDetail,
+    )
+    async def update_session(
+        session_id: str, payload: SessionUpdateRequest
+    ) -> ConversationDetail:
+        session = sessions.get(session_id, payload.student_id)
+        if payload.title is not None:
+            session = sessions.rename(session_id, payload.student_id, payload.title)
+        if payload.archived is not None:
+            session = sessions.set_archived(
+                session_id, payload.student_id, payload.archived
+            )
+        return conversation_detail(session)
+
+    @app.delete("/api/sessions/{session_id}", status_code=204)
+    async def delete_session(
+        session_id: str, student_id: str
+    ) -> Response:
+        sessions.delete(session_id, student_id)
+        return Response(status_code=204)
+
     @app.websocket("/ws/live")
     async def live_voice(websocket: WebSocket) -> None:
         await websocket.accept()
@@ -220,10 +295,7 @@ def create_app(
     async def evaluate(
         payload: EvaluationRequest, request: Request
     ) -> EvaluationResponse:
-        try:
-            return await orchestrator.evaluate(payload, request.state.correlation_id)
-        except PermissionError as exc:
-            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        return await orchestrator.evaluate(payload, request.state.correlation_id)
 
     return app
 

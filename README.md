@@ -26,6 +26,8 @@ frontera de herramientas y recursos deterministas; no se presenta como agente.
 - Explorador responsive de los 23 temas con categorías, niveles y progreso.
 - Ruta adaptativa con orden, prerrequisitos, motivos y cuatro estados por tema.
 - Dominio por tema y concepto con intentos, mejor puntaje y nivel independiente.
+- Conversaciones persistentes con recuperación de mensajes, tema y evaluación.
+- Historial con apertura, renombrado, archivado y eliminación por estudiante.
 - Interfaz para proyección y voz opt-in mediante WebSocket backend.
 - Adaptadores JSON/Firestore y dos servicios preparados para Cloud Run.
 
@@ -87,6 +89,13 @@ orientan la ruta, pero no impiden estudiar un tema fuera del orden sugerido.
 Cada elemento evaluado incluye además su progreso con nivel, mejor puntaje,
 intentos y conceptos dominados o pendientes.
 
+La aplicación persiste el historial en `APP_SESSIONS_PATH` y ofrece
+`GET /api/sessions?student_id=<id>` para recuperar conversaciones. El navegador
+guarda sólo el identificador activo; mensajes, tema y evaluación pendiente se
+sincronizan con el backend. `PATCH /api/sessions/{id}` permite renombrar o
+archivar y `DELETE /api/sessions/{id}` elimina de inmediato. La retención
+predeterminada es de 365 días.
+
 ## Ejecutar pruebas
 
 ```bash
@@ -100,7 +109,8 @@ docker compose up --build
 ```
 
 La interfaz queda en `http://localhost:8000` y MCP en `localhost:8001`. El
-progreso queda en `mcp-data`; las imágenes usan usuarios sin privilegios.
+progreso queda en `mcp-data` y las conversaciones en `agent-data`; las imágenes
+usan usuarios sin privilegios.
 
 Compose toma `MODEL_PROVIDER` y las credenciales desde `.env`. Para usar Google
 AI Studio dentro del contenedor:
@@ -127,4 +137,4 @@ La dirección `MCP_SERVER_URL` se configura internamente como
 Consulte [la arquitectura](docs/architecture.md), [el guion de demo](docs/demo-script.md),
 [el despliegue](docs/deployment.md), [Foundry](docs/foundry.md),
 [la guía de Fase 1](docs/phase-1.md), [la guía de Fase 2](docs/phase-2.md) y
-[la guía de Fase 3](docs/phase-3.md).
+[la guía de Fase 3](docs/phase-3.md) y [la guía de Fase 4](docs/phase-4.md).
