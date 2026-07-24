@@ -128,7 +128,22 @@
     </section>
 
     <main id="main-content" tabindex="-1">
-    <section class="topic-explorer panel" aria-labelledby="topics-title">
+    <nav id="view-tabs" class="view-tabs" role="tablist" aria-label="Secciones de la aplicación">
+      <button type="button" id="tab-estudiar" class="view-tab active" role="tab"
+        aria-selected="true" aria-controls="view-estudiar" data-view="estudiar">
+        <span class="view-tab-index">1</span> Estudiar
+      </button>
+      <button type="button" id="tab-proyectos" class="view-tab" role="tab"
+        aria-selected="false" tabindex="-1" aria-controls="view-proyectos" data-view="proyectos">
+        <span class="view-tab-index">2</span> Proyectos integradores
+      </button>
+      <button type="button" id="tab-tutor" class="view-tab" role="tab"
+        aria-selected="false" tabindex="-1" aria-controls="view-tutor" data-view="tutor">
+        <span class="view-tab-index">3</span> Tutor Multiagente
+      </button>
+    </nav>
+    <section id="view-estudiar" class="topic-explorer panel" data-view="estudiar" role="tabpanel"
+      tabindex="0" aria-labelledby="tab-estudiar topics-title">
       <div class="explorer-heading">
         <div>
           <p class="eyebrow">Explora el currículo</p>
@@ -167,7 +182,8 @@
       </div>
     </section>
 
-    <section class="project-lab panel" aria-labelledby="projects-title">
+    <section id="view-proyectos" class="project-lab panel hidden" data-view="proyectos" role="tabpanel"
+      tabindex="0" aria-labelledby="tab-proyectos projects-title">
       <div class="explorer-heading">
         <div>
           <p class="eyebrow">Aprende construyendo</p>
@@ -203,7 +219,8 @@
       </section>
     </section>
 
-    <div class="layout">
+    <div id="view-tutor" class="layout hidden" data-view="tutor" role="tabpanel"
+      tabindex="0" aria-labelledby="tab-tutor">
       <section class="conversation panel" aria-labelledby="conversation-title">
         <div class="panel-title">
           <div>

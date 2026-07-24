@@ -40,6 +40,61 @@ const projectForm = $("project-form");
 const lessonForm = $("lesson-form");
 const activeSessionKey = `activeSession:${state.studentId}`;
 
+const VIEWS = ["estudiar", "proyectos", "tutor"];
+const viewSections = {
+  estudiar: $("view-estudiar"),
+  proyectos: $("view-proyectos"),
+  tutor: $("view-tutor"),
+};
+const viewTabs = {
+  estudiar: $("tab-estudiar"),
+  proyectos: $("tab-proyectos"),
+  tutor: $("tab-tutor"),
+};
+state.activeView = "estudiar";
+
+function setActiveView(view, { scroll = true } = {}) {
+  if (!VIEWS.includes(view)) view = "estudiar";
+  state.activeView = view;
+  VIEWS.forEach((name) => {
+    const active = name === view;
+    viewSections[name].classList.toggle("hidden", !active);
+    viewTabs[name].classList.toggle("active", active);
+    viewTabs[name].setAttribute("aria-selected", String(active));
+    viewTabs[name].tabIndex = active ? 0 : -1;
+  });
+  if (location.hash.slice(1) !== view) {
+    history.replaceState(null, "", `#${view}`);
+  }
+  if (scroll) $("view-tabs").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+Object.values(viewTabs).forEach((tab) => {
+  tab.addEventListener("click", () => setActiveView(tab.dataset.view));
+});
+
+$("view-tabs").addEventListener("keydown", (event) => {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const currentIndex = VIEWS.indexOf(state.activeView);
+  let nextIndex = currentIndex;
+  if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + VIEWS.length) % VIEWS.length;
+  if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % VIEWS.length;
+  if (event.key === "Home") nextIndex = 0;
+  if (event.key === "End") nextIndex = VIEWS.length - 1;
+  const nextView = VIEWS[nextIndex];
+  setActiveView(nextView, { scroll: false });
+  viewTabs[nextView].focus();
+});
+
+window.addEventListener("hashchange", () => {
+  setActiveView(location.hash.slice(1), { scroll: false });
+});
+
+setActiveView(VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "estudiar", {
+  scroll: false,
+});
+
 $("authoring-toggle").addEventListener("click", async () => {
   state.focusReturn = document.activeElement;
   $("authoring-panel").classList.remove("hidden");
@@ -164,12 +219,14 @@ $("topic-grid").addEventListener("click", async (event) => {
   );
   if (!selected) return;
   startNewConversation();
+  setActiveView("tutor");
   await sendChat(`Quiero aprender sobre ${selected.title}`);
 });
 
 $("start-recommended").addEventListener("click", async () => {
   if (!state.recommendation) return;
   startNewConversation();
+  setActiveView("tutor");
   await sendChat(`Quiero aprender sobre ${state.recommendation.title}`);
 });
 
@@ -750,6 +807,7 @@ async function loadSessions({ restore = false } = {}) {
 async function openSession(sessionId) {
   setBusy(true);
   showError("");
+  setActiveView("tutor", { scroll: false });
   try {
     const response = await fetch(
       `/api/sessions/${encodeURIComponent(sessionId)}?student_id=${encodeURIComponent(state.studentId)}`,
