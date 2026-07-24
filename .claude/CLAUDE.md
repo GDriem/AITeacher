@@ -15,27 +15,34 @@ coordina el flujo pedagógico.
 
 ```
 agent_app/            App multiagente (FastAPI + Google ADK 2.x)
-  agent.py            root_agent ADK con 3 sub_agents (McpToolset por especialista)
+  agent.py            root_agent ADK nativo (adk run/adk web), no es el runtime de producción
   agents/              orchestrator.py, diagnostic.py, tutor.py, evaluator.py
   api/main.py          Endpoints FastAPI, correlation ID, composición de dependencias
-  providers/           ModelProvider: mock.py, gemini.py, foundry.py, factory.py
+  config.py            Settings (pydantic-settings), fuente única de configuración
+  providers/           ModelProvider: base.py (puerto), mock.py, gemini.py, foundry.py, factory.py
   services/            Cliente MCP, sesiones, evaluación/actividades, autoría,
                        voz, logging y observabilidad
   models/               Contratos HTTP de chat y actividades
   static/               UI (HTML/CSS/JS servidos por FastAPI)
+  Dockerfile            Imagen del servicio learning-agent
 
 mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable HTTP)
   server.py             Punto de entrada ASGI, monta /mcp, /healthz y /admin
   content/learning_content.json  Corpus propio: 23 temas y 46 lecciones
+  curriculum.py         CURRICULUM: grafo acíclico de temas y prerrequisitos (fuente única)
+  models.py             Modelos de dominio Pydantic (Topic, TopicCategory, TopicStatus, etc.)
   services/             ingestion.py, content_store.py (in-memory), retrieval.py (TF-IDF),
                        learning.py (LearningService), authoring.py (versionado editorial)
   repositories/         base.py (puerto), local_progress.py (JSON atómico),
                        firestore_progress.py, content_authoring.py (JSON atómico)
   tools/learning_tools.py  Registro de las 6 herramientas MCP validadas con Pydantic
+  Dockerfile            Imagen del servicio learning-mcp
 
-tests/                 unit/ (aislado) e integration/ (API + transporte MCP real)
+tests/                 unit/ (aislado), integration/ (API + transporte MCP real),
+                       conftest.py y fixtures/ compartidos
 infra/cloudrun/         Manifiestos Cloud Run, Cloud Build y deploy.sh manual
-docs/                   Índice, arquitectura, roadmap cerrado y guías de fases 1–8
+docs/                   README.md (índice), architecture.md, product-roadmap.md,
+                       demo-script.md, deployment.md, foundry.md, phase-1.md a phase-8.md
 ```
 
 Es un repositorio Git. `.env` contiene únicamente configuración local y está
@@ -50,12 +57,15 @@ ignorado; sólo `.env.example`, sin credenciales, se versiona.
 | MCP | Protocolo de descubrimiento/invocación; el servidor MCP **no decide** flujo pedagógico |
 | Subagente | Especialista con `sub_agents` en ADK, cada uno con `McpToolset` filtrado (mínimo privilegio) |
 
-Jerarquía ADK (`agent_app/agent.py`):
+Jerarquía ADK nativa (`agent_app/agent.py`, usada por `adk run`/`adk web`;
+**la API FastAPI en producción no delega por `sub_agents`**, orquesta a mano
+vía `agent_app/agents/orchestrator.py`):
 ```
-root_agent
- ├─ diagnostic_agent [single_turn]  → get_student_progress
- ├─ tutor_agent       [task]        → search_learning_content
- └─ evaluator_agent   [task]        → save_learning_result
+root_agent (learning_orchestrator)
+ ├─ diagnostic_agent [single_turn]  → get_student_progress, get_learning_path
+ ├─ tutor_agent       [task]        → search_learning_content, find_practical_example,
+ │                                    list_available_topics
+ └─ evaluator_agent   [task]        → save_learning_result, get_learning_path
 ```
 
 ## Herramientas MCP (6 + 1 recurso)
@@ -165,11 +175,14 @@ pytest para pruebas que combinan componentes sin credenciales cloud.
 | Métricas agregadas | `agent_app/services/observability.py` |
 | Interfaz web | `agent_app/static/` |
 | TF-IDF / recuperación | `mcp_learning_server/services/retrieval.py` |
+| Currículo y prerrequisitos | `mcp_learning_server/curriculum.py` |
 | Contratos MCP validados | `mcp_learning_server/tools/learning_tools.py` |
 | Persistencia JSON | `mcp_learning_server/repositories/local_progress.py` |
 | Versionado editorial | `mcp_learning_server/repositories/content_authoring.py` |
 | Despliegue reproducible | `infra/cloudrun/deploy.sh` |
 | Pruebas manuales de API/MCP | `postman/agent-mcp-run.postman_collection.json` |
+| Accesibilidad/performance de UI | `tests/unit/test_frontend_accessibility.py`, `test_frontend_performance.py` |
+| Integración contra MCP remoto real | `tests/integration/test_agent_mcp_remote.py` |
 
 ## Postman
 
