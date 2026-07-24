@@ -284,10 +284,18 @@ async function sendChat(message, { appendUser = true } = {}) {
     await loadSessions();
     loadObservability();
   } catch (error) {
-    showError(
-      error.message,
-      () => sendChat(message, { appendUser: false }),
-    );
+    if (error.message.includes("identificar el tema")) {
+      showError(
+        error.message,
+        () => setActiveView("estudiar"),
+        "Ver temas en Estudiar",
+      );
+    } else {
+      showError(
+        error.message,
+        () => sendChat(message, { appendUser: false }),
+      );
+    }
   } finally {
     setBusy(false);
   }
@@ -1534,9 +1542,10 @@ function setBusy(busy) {
   });
 }
 
-function showError(message, retryAction = null) {
+function showError(message, retryAction = null, retryLabel = "Reintentar") {
   state.retryAction = retryAction;
   $("error-message").textContent = message;
+  $("retry-action").textContent = retryLabel;
   $("retry-action").classList.toggle("hidden", !message || !retryAction);
   $("error").classList.toggle("hidden", !message);
   if (message) announce(`Error: ${message}`);

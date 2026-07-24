@@ -34,13 +34,24 @@ class FakeTransaction:
     def __init__(self, client):
         self.client = client
         self.pending = None
+        self.in_progress = False
+
+    def _begin(self):
+        assert not self.in_progress
+        self.in_progress = True
 
     def set(self, document, data):
+        assert self.in_progress
         self.pending = (document.document_id, data)
 
-    def commit(self):
+    def _commit(self):
+        assert self.in_progress
         document_id, data = self.pending
         self.client.data[document_id] = data
+        self.in_progress = False
+
+    def _rollback(self):
+        self.in_progress = False
 
 
 class FakeFirestoreClient:
