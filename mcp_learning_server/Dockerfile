@@ -4,7 +4,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MCP_HOST=0.0.0.0 \
     MCP_PORT=8080 \
-    MCP_PROGRESS_PATH=/data/student_progress.json
+    MCP_PROGRESS_PATH=/data/student_progress.json \
+    MCP_CONTENT_AUTHORING_PATH=/data/content_authoring.json
 
 WORKDIR /app
 
