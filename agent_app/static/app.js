@@ -1,5 +1,18 @@
+function loadStudentIdentity() {
+  let autoId = localStorage.getItem("studentAutoId");
+  if (!autoId) {
+    autoId = `alumno-${crypto.randomUUID()}`;
+    localStorage.setItem("studentAutoId", autoId);
+  }
+  return { autoId, name: localStorage.getItem("studentName") || "" };
+}
+
+const identity = loadStudentIdentity();
+
 const state = {
-  studentId: localStorage.getItem("studentId") || "demo-student",
+  studentAutoId: identity.autoId,
+  studentName: identity.name,
+  studentId: identity.name || identity.autoId,
   sessionId: null,
   trace: [],
   nextQuiz: null,
@@ -38,7 +51,9 @@ const quizForm = $("quiz-form");
 const practiceForm = $("practice-form");
 const projectForm = $("project-form");
 const lessonForm = $("lesson-form");
-const activeSessionKey = `activeSession:${state.studentId}`;
+function activeSessionKey() {
+  return `activeSession:${state.studentId}`;
+}
 
 const VIEWS = ["estudiar", "proyectos", "tutor"];
 const viewSections = {
@@ -94,6 +109,30 @@ window.addEventListener("hashchange", () => {
 setActiveView(VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "estudiar", {
   scroll: false,
 });
+
+function renderStudentLabel() {
+  $("student-name-label").textContent = state.studentName || "Invitado";
+}
+
+$("student-toggle").addEventListener("click", () => {
+  const input = window.prompt(
+    "¿Cómo quieres que te identifiquemos? Usaremos este nombre para guardar tu progreso; " +
+      "déjalo vacío para usar un identificador anónimo de este navegador.",
+    state.studentName,
+  );
+  if (input === null) return;
+  const trimmed = input.trim();
+  if (trimmed === state.studentName) return;
+  state.studentName = trimmed;
+  localStorage.setItem("studentName", trimmed);
+  state.studentId = trimmed || state.studentAutoId;
+  renderStudentLabel();
+  startNewConversation();
+  loadTopicCatalog();
+  loadSessions({ restore: true });
+});
+
+renderStudentLabel();
 
 $("authoring-toggle").addEventListener("click", async () => {
   state.focusReturn = document.activeElement;
@@ -276,7 +315,7 @@ async function sendChat(message, { appendUser = true } = {}) {
     });
     const data = await readResponse(response);
     state.sessionId = data.session_id;
-    localStorage.setItem(activeSessionKey, state.sessionId);
+    localStorage.setItem(activeSessionKey(), state.sessionId);
     state.trace = data.trace;
     state.quizAttempt = data.quiz_attempt;
     state.nextQuiz = null;
@@ -284,10 +323,18 @@ async function sendChat(message, { appendUser = true } = {}) {
     await loadSessions();
     loadObservability();
   } catch (error) {
-    showError(
-      error.message,
-      () => sendChat(message, { appendUser: false }),
-    );
+    if (error.message.includes("identificar el tema")) {
+      showError(
+        error.message,
+        () => setActiveView("estudiar"),
+        "Ver temas en Estudiar",
+      );
+    } else {
+      showError(
+        error.message,
+        () => sendChat(message, { appendUser: false }),
+      );
+    }
   } finally {
     setBusy(false);
   }
@@ -790,7 +837,7 @@ async function loadSessions({ restore = false } = {}) {
       select.value = state.sessionId;
     }
     if (restore) {
-      const saved = localStorage.getItem(activeSessionKey);
+      const saved = localStorage.getItem(activeSessionKey());
       if (saved && state.sessions.some((item) => item.id === saved)) {
         await openSession(saved);
       }
@@ -819,7 +866,7 @@ async function openSession(sessionId) {
     state.nextQuiz = { question: session.pending_quiz.question };
     state.practiceExercise = session.pending_practice?.exercise || null;
     state.nextPractice = null;
-    localStorage.setItem(activeSessionKey, session.id);
+    localStorage.setItem(activeSessionKey(), session.id);
     resetConversation({ keepSession: true });
     session.messages.forEach((message) => {
       appendMessage(
@@ -879,7 +926,7 @@ function startNewConversation() {
   state.quizAttempt = 1;
   state.practiceExercise = null;
   state.nextPractice = null;
-  localStorage.removeItem(activeSessionKey);
+  localStorage.removeItem(activeSessionKey());
   resetConversation();
 }
 
@@ -1534,9 +1581,10 @@ function setBusy(busy) {
   });
 }
 
-function showError(message, retryAction = null) {
+function showError(message, retryAction = null, retryLabel = "Reintentar") {
   state.retryAction = retryAction;
   $("error-message").textContent = message;
+  $("retry-action").textContent = retryLabel;
   $("retry-action").classList.toggle("hidden", !message || !retryAction);
   $("error").classList.toggle("hidden", !message);
   if (message) announce(`Error: ${message}`);

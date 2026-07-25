@@ -33,6 +33,7 @@ from agent_app.services.sessions import (
     StoredConversation,
 )
 from agent_app.services.activities import create_practice_exercise
+from mcp_learning_server.curriculum import TOPIC_TITLES
 from mcp_learning_server.models import RubricEvaluationMode, Topic
 from mcp_learning_server.services.learning import TOPIC_ALIASES
 from mcp_learning_server.services.retrieval import tokenize
@@ -401,17 +402,24 @@ class LearningOrchestrator:
         )
 
 
+_TOPIC_PHRASES: dict[str, Topic] = {
+    **{" ".join(tokenize(alias)): topic for alias, topic in TOPIC_ALIASES.items()},
+    **{" ".join(tokenize(title)): topic for topic, title in TOPIC_TITLES.items()},
+}
+
+
 def detect_topic(message: str) -> Topic:
     normalized = " ".join(tokenize(message))
     matches = [
-        (len(alias.split()), topic)
-        for alias, topic in TOPIC_ALIASES.items()
-        if " ".join(tokenize(alias)) in normalized
+        (len(phrase.split()), topic)
+        for phrase, topic in _TOPIC_PHRASES.items()
+        if phrase and phrase in normalized
     ]
     if not matches:
         raise ValueError(
-            "No pude identificar el tema. Menciona uno como embeddings, RAG, MCP, "
-            "prompt engineering, seguridad de IA o agentes."
+            "No pude identificar el tema. Elige uno desde la sección Estudiar o "
+            "menciona uno como embeddings, RAG, MCP, prompt engineering, "
+            "seguridad de IA o agentes."
         )
     return max(matches, key=lambda item: item[0])[1]
 

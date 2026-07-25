@@ -13,6 +13,7 @@ from agent_app.models.activities import (
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.learning_tools import LocalLearningTools
 from agent_app.services.sessions import InMemorySessionRepository
+from mcp_learning_server.curriculum import TOPIC_TITLES
 from mcp_learning_server.models import Topic
 
 
@@ -51,6 +52,15 @@ def test_routing_detects_extended_curriculum(
 def test_routing_rejects_missing_topic() -> None:
     with pytest.raises(ValueError, match="identificar"):
         detect_topic("Quiero aprender algo interesante")
+
+
+@pytest.mark.parametrize("topic", list(Topic))
+def test_routing_detects_topic_card_click(topic: Topic) -> None:
+    # La UI arma "Quiero aprender sobre {título}" al hacer clic en una tarjeta
+    # de la sección Estudiar; el título completo del currículo debe resolver
+    # siempre al mismo tema, aunque no exista un alias corto que lo cubra.
+    title = TOPIC_TITLES[topic]
+    assert detect_topic(f"Quiero aprender sobre {title}") == topic
 
 
 @pytest.mark.asyncio

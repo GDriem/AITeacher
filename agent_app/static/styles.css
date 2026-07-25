@@ -69,7 +69,8 @@ h1 { margin-bottom: 0; font-size: clamp(1.45rem, 3vw, 2.15rem); letter-spacing: 
 h1 span { color: var(--green); }
 .status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .84rem; }
 .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 14px var(--green); }
-.authoring-toggle { margin-left: auto; min-height: 38px; padding: 0 13px; border: 1px solid rgba(255,211,110,.28); border-radius: 10px; color: #ffe6aa; background: rgba(255,211,110,.07); font-weight: 800; }
+.student-toggle { margin-left: auto; min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: rgba(255,255,255,.035); font-weight: 800; }
+.authoring-toggle { min-height: 38px; padding: 0 13px; border: 1px solid rgba(255,211,110,.28); border-radius: 10px; color: #ffe6aa; background: rgba(255,211,110,.07); font-weight: 800; }
 
 .authoring-panel { margin-top: 24px; padding: clamp(22px, 3vw, 32px); }
 .authoring-login { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.025); }
@@ -454,7 +455,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding: 7px 
   .view-tabs { flex-direction: column; gap: 8px; margin-top: 12px; }
   .view-tab { justify-content: flex-start; }
   .status span { display: none; }
-  .authoring-toggle { padding-inline: 9px; font-size: .7rem; }
+  .student-toggle, .authoring-toggle { padding-inline: 9px; font-size: .7rem; }
   .authoring-panel { margin-top: 12px; padding: 18px; border-radius: 16px; }
   .authoring-login { align-items: stretch; }
   .authoring-login label { flex-basis: 100%; }

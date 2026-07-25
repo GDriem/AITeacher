@@ -32,20 +32,29 @@ class FirestoreProgressRepository:
         normalized_id = _validate_student_id(student_id)
         document = self.client.collection(self.collection).document(normalized_id)
         transaction = self.client.transaction()
-        snapshot = document.get(transaction=transaction)
-        progress = (
-            StudentProgress.model_validate(snapshot.to_dict())
-            if snapshot.exists
-            else StudentProgress(student_id=normalized_id)
-        )
-        progress.assessments.append(assessment)
-        if assessment.topic not in progress.studied_topics:
-            progress.studied_topics.append(assessment.topic)
-        progress.recommendations = (
-            progress.recommendations + [assessment.recommendation]
-        )[-10:]
-        progress.refresh_summary()
-        progress.updated_at = utc_now()
-        transaction.set(document, progress.model_dump(mode="python"))
-        transaction.commit()
+        # El SDK de Firestore exige iniciar la transacción (_begin) antes de
+        # leer/escribir con ella y confirmarla con _commit (no el `commit`
+        # público de WriteBatch, que ignora el id de transacción); ver
+        # google.cloud.firestore_v1.transaction.transactional.
+        transaction._begin()
+        try:
+            snapshot = document.get(transaction=transaction)
+            progress = (
+                StudentProgress.model_validate(snapshot.to_dict())
+                if snapshot.exists
+                else StudentProgress(student_id=normalized_id)
+            )
+            progress.assessments.append(assessment)
+            if assessment.topic not in progress.studied_topics:
+                progress.studied_topics.append(assessment.topic)
+            progress.recommendations = (
+                progress.recommendations + [assessment.recommendation]
+            )[-10:]
+            progress.refresh_summary()
+            progress.updated_at = utc_now()
+            transaction.set(document, progress.model_dump(mode="python"))
+            transaction._commit()
+        except BaseException:
+            transaction._rollback()
+            raise
         return progress.model_copy(deep=True)
