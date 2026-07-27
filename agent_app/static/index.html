@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#07111f" />
     <title>AITeacher</title>
-    <link rel="stylesheet" href="/static/styles.css?v=8" />
+    <link rel="stylesheet" href="/static/styles.css?v=9" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
@@ -134,14 +134,17 @@
     <nav id="view-tabs" class="view-tabs" role="tablist" aria-label="Secciones de la aplicación">
       <button type="button" id="tab-estudiar" class="view-tab active" role="tab"
         aria-selected="true" aria-controls="view-estudiar" data-view="estudiar">
+        <svg class="view-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"></path><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"></path></svg>
         <span class="view-tab-index">1</span> Estudiar
       </button>
       <button type="button" id="tab-proyectos" class="view-tab" role="tab"
         aria-selected="false" tabindex="-1" aria-controls="view-proyectos" data-view="proyectos">
+        <svg class="view-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"></rect><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6"></rect><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6"></rect><rect x="13" y="13" width="7.5" height="7.5" rx="1.6"></rect></svg>
         <span class="view-tab-index">2</span> Proyectos integradores
       </button>
       <button type="button" id="tab-tutor" class="view-tab" role="tab"
         aria-selected="false" tabindex="-1" aria-controls="view-tutor" data-view="tutor">
+        <svg class="view-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7A2.5 2.5 0 0 1 17.5 15H9l-4.2 3.5a.6.6 0 0 1-.98-.46V5.5Z"></path></svg>
         <span class="view-tab-index">3</span> Tutor Multiagente
       </button>
     </nav>
@@ -230,20 +233,24 @@
             <p class="eyebrow">Tutor multiagente</p>
             <h2 id="conversation-title">Construyamos tu comprensión</h2>
           </div>
-          <div id="detected" class="detected hidden">
-            <span id="topic-badge" class="badge blue"></span>
-            <span id="level-badge" class="badge green"></span>
+          <div class="panel-title-side">
+            <div class="panel-actions">
+              <button id="history-toggle" class="icon-button" type="button"
+                aria-haspopup="dialog" aria-expanded="false" aria-controls="sessions-drawer"
+                aria-label="Conversaciones guardadas">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16M4 14h10"></path><circle cx="18" cy="16.5" r="4"></circle><path d="M18 15v1.6l1.1.9"></path></svg>
+              </button>
+              <button id="insights-toggle" class="icon-button" type="button"
+                aria-haspopup="dialog" aria-expanded="false" aria-controls="insights-drawer"
+                aria-label="Progreso y diagnóstico">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V10M12 19V5M19 19v-6"></path></svg>
+              </button>
+            </div>
+            <div id="detected" class="detected hidden">
+              <span id="topic-badge" class="badge blue"></span>
+              <span id="level-badge" class="badge green"></span>
+            </div>
           </div>
-        </div>
-
-        <div class="session-toolbar" aria-label="Conversaciones guardadas">
-          <label for="session-select">Conversación</label>
-          <select id="session-select">
-            <option value="">Nueva conversación</option>
-          </select>
-          <button id="new-session" type="button">Nueva</button>
-          <button id="rename-session" type="button" disabled>Renombrar</button>
-          <button id="archive-session" type="button" disabled>Archivar</button>
         </div>
 
         <div id="conversation-feed" class="conversation-feed" role="log"
@@ -255,29 +262,6 @@
               <p>Haz una pregunta, responde con tus palabras y recibirás feedback para reforzar o profundizar según tu avance.</p>
             </div>
           </div>
-        </div>
-
-        <form id="chat-form" class="composer">
-          <label class="sr-only" for="message">Mensaje</label>
-          <textarea id="message" rows="2" maxlength="4000" placeholder="Ejemplo: Explícame qué son los embeddings">Explícame qué son los embeddings</textarea>
-          <div class="composer-actions">
-            <button id="mic" class="icon-button" type="button" disabled title="Comprobando disponibilidad de voz" aria-label="Activar micrófono">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="9" y="3" width="6" height="11" rx="3"></rect>
-                <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v4M9 21h6"></path>
-              </svg>
-            </button>
-            <button id="send" class="send-button" type="submit">
-              <span>Enviar</span><b>→</b>
-            </button>
-          </div>
-        </form>
-        <p id="request-status" class="request-status hidden" role="status" aria-live="polite"></p>
-        <p id="voice-status" class="voice-status hidden" aria-live="polite"></p>
-        <div id="error" class="error recovery-message hidden" role="alert">
-          <span id="error-message"></span>
-          <button id="retry-action" class="text-button hidden" type="button">Reintentar</button>
-        </div>
 
         <section id="quiz-card" class="quiz-card hidden">
           <div class="quiz-heading">
@@ -358,9 +342,40 @@
             <button id="return-main" type="button">Volver a la explicación guiada</button>
           </div>
         </section>
+        </div>
+
+        <p id="request-status" class="request-status hidden" role="status" aria-live="polite"></p>
+        <p id="voice-status" class="voice-status hidden" aria-live="polite"></p>
+        <div id="error" class="error recovery-message hidden" role="alert">
+          <span id="error-message"></span>
+          <button id="retry-action" class="text-button hidden" type="button">Reintentar</button>
+        </div>
+
+        <form id="chat-form" class="composer">
+          <label class="sr-only" for="message">Mensaje</label>
+          <textarea id="message" rows="2" maxlength="4000" placeholder="Ejemplo: Explícame qué son los embeddings">Explícame qué son los embeddings</textarea>
+          <div class="composer-actions">
+            <button id="mic" class="icon-button" type="button" disabled title="Comprobando disponibilidad de voz" aria-label="Activar micrófono">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v4M9 21h6"></path>
+              </svg>
+            </button>
+            <button id="send" class="send-button" type="submit">
+              <span>Enviar</span><b>→</b>
+            </button>
+          </div>
+        </form>
       </section>
 
-      <aside class="sidebar">
+      <aside id="insights-drawer" class="sidebar drawer drawer-right hidden"
+        role="dialog" aria-modal="true" aria-labelledby="insights-drawer-title" aria-hidden="true">
+        <div class="drawer-header">
+          <h2 id="insights-drawer-title">Progreso y diagnóstico</h2>
+          <button id="insights-drawer-close" class="icon-button" type="button" aria-label="Cerrar panel">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </button>
+        </div>
         <section class="panel progress-panel">
           <div class="panel-title compact">
             <div><p class="eyebrow">Estudiante</p><h2>Dominio por tema</h2></div>
@@ -405,6 +420,24 @@
       <span>Explica · recibe feedback · vuelve a intentar</span>
       <span>MCP es una frontera de herramientas, no un agente</span>
     </footer>
-    <script src="/static/app.js?v=8" defer></script>
+
+    <div id="drawer-scrim" class="drawer-scrim hidden"></div>
+
+    <aside id="sessions-drawer" class="drawer drawer-left hidden"
+      role="dialog" aria-modal="true" aria-labelledby="sessions-drawer-title" aria-hidden="true">
+      <div class="drawer-header">
+        <h2 id="sessions-drawer-title">Conversaciones</h2>
+        <button id="sessions-drawer-close" class="icon-button" type="button" aria-label="Cerrar panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </div>
+      <button id="drawer-new-session" class="drawer-new-chat" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" style="flex:0 0 auto"><path d="M12 5v14M5 12h14"></path></svg>
+        Nueva conversación
+      </button>
+      <div id="session-list" class="session-list" role="list"></div>
+    </aside>
+
+    <script src="/static/app.js?v=9" defer></script>
   </body>
 </html>

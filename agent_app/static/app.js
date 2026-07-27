@@ -33,6 +33,7 @@ const state = {
   retryAction: null,
   focusReturn: null,
   wasOffline: !navigator.onLine,
+  openDrawerName: null,
 };
 
 const voice = {
@@ -78,6 +79,7 @@ function setActiveView(view, { scroll = true } = {}) {
     viewTabs[name].setAttribute("aria-selected", String(active));
     viewTabs[name].tabIndex = active ? 0 : -1;
   });
+  document.body.classList.toggle("chat-active", view === "tutor");
   if (location.hash.slice(1) !== view) {
     history.replaceState(null, "", `#${view}`);
   }
@@ -148,6 +150,10 @@ $("close-authoring").addEventListener("click", () => {
   $("authoring-panel").classList.add("hidden");
   restoreFocus();
 });
+
+$("insights-toggle").addEventListener("click", () => openDrawer("insights"));
+$("insights-drawer-close").addEventListener("click", () => closeDrawer());
+$("drawer-scrim").addEventListener("click", () => closeDrawer());
 
 $("authoring-login").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -228,6 +234,14 @@ chatForm.addEventListener("submit", async (event) => {
   },
 );
 
+function autoGrowMessage() {
+  const el = $("message");
+  el.style.height = "auto";
+  el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+}
+$("message").addEventListener("input", autoGrowMessage);
+autoGrowMessage();
+
 $("retry-action").addEventListener("click", async () => {
   const retry = state.retryAction;
   showError("");
@@ -237,8 +251,14 @@ $("retry-action").addEventListener("click", async () => {
 window.addEventListener("offline", updateConnectionStatus);
 window.addEventListener("online", updateConnectionStatus);
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Tab" && state.openDrawerName) {
+    trapFocus($(DRAWER_IDS[state.openDrawerName]), event);
+    return;
+  }
   if (event.key !== "Escape") return;
-  if (!$("authoring-panel").classList.contains("hidden")) {
+  if (state.openDrawerName) {
+    closeDrawer();
+  } else if (!$("authoring-panel").classList.contains("hidden")) {
     $("authoring-panel").classList.add("hidden");
     restoreFocus();
   } else if (!$("project-workspace").classList.contains("hidden")) {
@@ -302,6 +322,7 @@ async function sendChat(message, { appendUser = true } = {}) {
   if (appendUser) {
     appendMessage("user", "Tú", message);
     $("message").value = "";
+    autoGrowMessage();
   }
   try {
     const response = await fetch("/api/chat", {
@@ -498,33 +519,89 @@ projectForm.addEventListener("submit", async (event) => {
   }
 });
 
-$("session-select").addEventListener("change", async (event) => {
-  if (!event.target.value) {
-    startNewConversation();
+$("history-toggle").addEventListener("click", () => openDrawer("sessions"));
+$("sessions-drawer-close").addEventListener("click", () => closeDrawer());
+
+$("drawer-new-session").addEventListener("click", () => {
+  startNewConversation();
+  closeDrawer();
+});
+
+$("session-list").addEventListener("click", async (event) => {
+  const menuToggle = event.target.closest("[data-toggle-session-menu]");
+  if (menuToggle) {
+    const id = menuToggle.dataset.toggleSessionMenu;
+    const menu = $("session-list").querySelector(
+      `[data-session-menu="${CSS.escape(id)}"]`,
+    );
+    const wasOpen = !menu.classList.contains("hidden");
+    closeSessionMenus();
+    if (!wasOpen) {
+      menu.classList.remove("hidden");
+      menuToggle.setAttribute("aria-expanded", "true");
+    }
     return;
   }
-  await openSession(event.target.value);
+  const renameBtn = event.target.closest("[data-rename-session]");
+  if (renameBtn) {
+    const id = renameBtn.dataset.renameSession;
+    const current = state.sessions.find((item) => item.id === id);
+    const title = window
+      .prompt("Nuevo nombre de la conversación", current?.title || "")
+      ?.trim();
+    closeSessionMenus();
+    if (title && title !== current?.title) await updateSession({ title }, id);
+    return;
+  }
+  const archiveBtn = event.target.closest("[data-archive-session]");
+  if (archiveBtn) {
+    const id = archiveBtn.dataset.archiveSession;
+    closeSessionMenus();
+    await updateSession({ archived: true }, id);
+    if (id === state.sessionId) startNewConversation();
+    return;
+  }
+  const openBtn = event.target.closest("[data-open-session]");
+  if (openBtn) {
+    await openSession(openBtn.dataset.openSession);
+    closeDrawer();
+  }
 });
 
-$("new-session").addEventListener("click", startNewConversation);
+function closeSessionMenus() {
+  $("session-list")
+    .querySelectorAll(".session-item-menu")
+    .forEach((el) => el.classList.add("hidden"));
+  $("session-list")
+    .querySelectorAll("[data-toggle-session-menu]")
+    .forEach((el) => el.setAttribute("aria-expanded", "false"));
+}
 
-$("rename-session").addEventListener("click", async () => {
-  if (!state.sessionId) return;
-  const current = state.sessions.find((item) => item.id === state.sessionId);
-  const title = window.prompt(
-    "Nuevo nombre de la conversación",
-    current?.title || "",
-  )?.trim();
-  if (!title || title === current?.title) return;
-  await updateSession({ title });
-});
-
-$("archive-session").addEventListener("click", async () => {
-  if (!state.sessionId) return;
-  await updateSession({ archived: true });
-  startNewConversation();
-  await loadSessions();
-});
+function renderSessionList() {
+  const container = $("session-list");
+  if (!state.sessions.length) {
+    container.innerHTML =
+      '<p class="session-empty">Aún no tienes conversaciones guardadas.</p>';
+    return;
+  }
+  container.innerHTML = state.sessions
+    .map(
+      (session) => `
+        <div class="session-item ${session.id === state.sessionId ? "active" : ""}" role="listitem">
+          <button type="button" class="session-item-open" data-open-session="${escapeHtml(session.id)}">
+            <span>${escapeHtml(session.title)}</span>
+            <small>${escapeHtml(topicTitle(session.topic))} · ${new Date(session.updated_at).toLocaleDateString("es-GT")}</small>
+          </button>
+          <button type="button" class="session-item-menu-toggle" data-toggle-session-menu="${escapeHtml(session.id)}"
+            aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false">⋮</button>
+          <div class="session-item-menu hidden" data-session-menu="${escapeHtml(session.id)}" role="menu">
+            <button type="button" role="menuitem" data-rename-session="${escapeHtml(session.id)}">Renombrar</button>
+            <button type="button" role="menuitem" data-archive-session="${escapeHtml(session.id)}">Archivar</button>
+          </div>
+        </div>`,
+    )
+    .join("");
+}
 
 $("mic").addEventListener("click", async () => {
   if (voice.socket) stopVoice();
@@ -824,25 +901,13 @@ async function loadSessions({ restore = false } = {}) {
     );
     const data = await readResponse(response);
     state.sessions = data.sessions;
-    const select = $("session-select");
-    select.innerHTML =
-      '<option value="">Nueva conversación</option>' +
-      state.sessions
-        .map(
-          (session) =>
-            `<option value="${escapeHtml(session.id)}">${escapeHtml(session.title)}</option>`,
-        )
-        .join("");
-    if (state.sessionId && state.sessions.some((item) => item.id === state.sessionId)) {
-      select.value = state.sessionId;
-    }
+    renderSessionList();
     if (restore) {
       const saved = localStorage.getItem(activeSessionKey());
       if (saved && state.sessions.some((item) => item.id === saved)) {
         await openSession(saved);
       }
     }
-    updateSessionActions();
   } catch (error) {
     showError(
       `No pudimos sincronizar las conversaciones. ${error.message}`,
@@ -867,7 +932,7 @@ async function openSession(sessionId) {
     state.practiceExercise = session.pending_practice?.exercise || null;
     state.nextPractice = null;
     localStorage.setItem(activeSessionKey(), session.id);
-    resetConversation({ keepSession: true });
+    resetConversation();
     session.messages.forEach((message) => {
       appendMessage(
         message.role,
@@ -891,8 +956,7 @@ async function openSession(sessionId) {
     quizForm.classList.remove("hidden");
     $("quiz-card").classList.remove("hidden");
     $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
-    $("session-select").value = session.id;
-    updateSessionActions();
+    renderSessionList();
   } catch (error) {
     showError(error.message);
     startNewConversation();
@@ -901,11 +965,11 @@ async function openSession(sessionId) {
   }
 }
 
-async function updateSession(update) {
+async function updateSession(update, targetId = state.sessionId) {
   showError("");
   try {
     const response = await fetch(
-      `/api/sessions/${encodeURIComponent(state.sessionId)}`,
+      `/api/sessions/${encodeURIComponent(targetId)}`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -930,7 +994,7 @@ function startNewConversation() {
   resetConversation();
 }
 
-function resetConversation({ keepSession = false } = {}) {
+function resetConversation() {
   document
     .querySelectorAll("#conversation-feed .chat-message")
     .forEach((message) => message.remove());
@@ -941,15 +1005,8 @@ function resetConversation({ keepSession = false } = {}) {
   $("practice-card").classList.add("hidden");
   $("resume-practice").classList.add("hidden");
   $("quiz-answer").value = "";
-  if (!keepSession) $("session-select").value = "";
   renderTrace();
-  updateSessionActions();
-}
-
-function updateSessionActions() {
-  const hasSession = Boolean(state.sessionId);
-  $("rename-session").disabled = !hasSession;
-  $("archive-session").disabled = !hasSession;
+  renderSessionList();
 }
 
 function populateCatalogFilters(topics) {
@@ -1420,7 +1477,7 @@ function appendMessage(role, label, text, sources = [], note = "") {
       ${note ? `<div class="message-note">${escapeHtml(note)}</div>` : ""}
     </div>`;
   const feed = $("conversation-feed");
-  feed.appendChild(article);
+  feed.insertBefore(article, $("quiz-card"));
   feed.scrollTop = feed.scrollHeight;
 }
 
@@ -1602,6 +1659,61 @@ function restoreFocus() {
   const target = state.focusReturn;
   state.focusReturn = null;
   if (target instanceof HTMLElement && document.contains(target)) target.focus();
+}
+
+const DRAWER_IDS = { sessions: "sessions-drawer", insights: "insights-drawer" };
+
+function openDrawer(name) {
+  const drawer = $(DRAWER_IDS[name]);
+  const toggle = $(`${name === "sessions" ? "history" : "insights"}-toggle`);
+  if (!drawer) return;
+  state.focusReturn = document.activeElement;
+  state.openDrawerName = name;
+  $("drawer-scrim").classList.remove("hidden");
+  drawer.classList.remove("hidden");
+  drawer.setAttribute("aria-hidden", "false");
+  toggle?.setAttribute("aria-expanded", "true");
+  requestAnimationFrame(() => {
+    $("drawer-scrim").classList.add("open");
+    drawer.classList.add("open");
+  });
+  const focusTarget = drawer.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+  focusTarget?.focus();
+}
+
+function closeDrawer() {
+  const name = state.openDrawerName;
+  if (!name) return;
+  const drawer = $(DRAWER_IDS[name]);
+  const toggle = $(`${name === "sessions" ? "history" : "insights"}-toggle`);
+  state.openDrawerName = null;
+  drawer.classList.remove("open");
+  drawer.setAttribute("aria-hidden", "true");
+  toggle?.setAttribute("aria-expanded", "false");
+  $("drawer-scrim").classList.remove("open");
+  window.setTimeout(() => {
+    if (!state.openDrawerName) {
+      drawer.classList.add("hidden");
+      $("drawer-scrim").classList.add("hidden");
+    }
+  }, 260);
+  restoreFocus();
+}
+
+function trapFocus(container, event) {
+  const focusable = container.querySelectorAll(
+    "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+  );
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 function updateConnectionStatus() {
