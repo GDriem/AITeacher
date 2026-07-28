@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#07111f" />
     <title>AITeacher</title>
-    <link rel="stylesheet" href="/static/styles.css?v=12" />
+    <link rel="stylesheet" href="/static/styles.css?v=13" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
@@ -156,7 +156,7 @@
           <h2 id="topics-title" tabindex="-1">Elige qué quieres aprender</h2>
           <p class="muted">Explora inteligencia artificial o practica inglés con una ruta adaptada a tu progreso.</p>
         </div>
-        <strong id="topics-count" class="catalog-count">Cargando…</strong>
+        <strong id="topics-count" class="catalog-count" aria-live="polite">Cargando…</strong>
       </div>
       <article id="learning-path-card" class="learning-path-card hidden">
         <div class="path-icon" aria-hidden="true">→</div>
@@ -170,6 +170,18 @@
         </button>
       </article>
       <div class="catalog-filters" aria-label="Filtros del catálogo">
+        <label class="topic-search" for="topic-search">
+          <span>Buscar tema</span>
+          <span class="topic-search-control">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="10.8" cy="10.8" r="6.3"></circle>
+              <path d="m15.5 15.5 4 4"></path>
+            </svg>
+            <input id="topic-search" type="search" autocomplete="off"
+              placeholder="Ejemplo: embeddings, inglés o seguridad"
+              aria-controls="topic-grid" aria-describedby="topics-count" />
+          </span>
+        </label>
         <label>
           <span>Materia</span>
           <select id="subject-filter">
@@ -455,6 +467,6 @@
       <div id="session-list" class="session-list" role="list"></div>
     </aside>
 
-    <script src="/static/app.js?v=12" defer></script>
+    <script src="/static/app.js?v=13" defer></script>
   </body>
 </html>
