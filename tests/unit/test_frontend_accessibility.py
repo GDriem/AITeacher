@@ -84,6 +84,10 @@ def test_page_exposes_keyboard_and_screen_reader_landmarks() -> None:
     assert 'id="retry-action"' in html
     assert 'id="progress-track" class="progress-track" role="progressbar"' in html
     assert 'id="health-summary" class="health-summary"' in html
+    assert 'id="session-search" type="search"' in html
+    assert 'aria-controls="session-list"' in html
+    assert 'id="subject-filter"' in html
+    assert 'id="category-filter"' in html
 
 
 def test_styles_cover_focus_contrast_motion_and_responsive_layouts() -> None:
@@ -94,7 +98,8 @@ def test_styles_cover_focus_contrast_motion_and_responsive_layouts() -> None:
     assert "@media (prefers-reduced-motion: reduce)" in css
     assert "@media (max-width: 900px)" in css
     assert "@media (max-width: 600px)" in css
-    assert ".layout { grid-template-columns: minmax(0, 1fr); }" in css
+    assert "body.chat-active { height: var(--app-height);" in css
+    assert "main { padding-bottom: var(--mobile-nav-height); }" in css
     assert ".topic-grid { grid-template-columns: 1fr;" in css
 
 
@@ -110,3 +115,8 @@ def test_client_manages_focus_loading_retries_and_reconnection() -> None:
     assert "data-retry-projects" in script
     assert 'fetch("/api/observability")' in script
     assert "Tokens estimados" in script
+    assert 'window.visualViewport?.addEventListener("resize", syncViewportHeight)' in script
+    assert 'await openSession(saved, { navigate: false })' in script
+    assert 'error.status === 422 && error.message.includes("selecciona un tema")' in script
+    assert "initialSessionLoadId === state.sessionLoadId" in script
+    assert 'String(topic).startsWith("english-")' in script

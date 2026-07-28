@@ -443,6 +443,7 @@ def create_app(
             TopicCatalogItem(
                 topic=item.topic,
                 title=item.title,
+                subject=item.subject,
                 category=item.category,
                 order=item.order,
                 prerequisites=item.prerequisites,

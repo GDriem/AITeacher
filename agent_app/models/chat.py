@@ -11,6 +11,7 @@ from mcp_learning_server.models import (
     EvaluationRubric,
     LearningLevel,
     LearningRecommendation,
+    LearningSubject,
     StudentProgress,
     Topic,
     TopicCategory,
@@ -59,6 +60,7 @@ class ChatRequest(AppModel):
 class TopicCatalogItem(AppModel):
     topic: Topic
     title: str
+    subject: LearningSubject
     category: TopicCategory
     order: int = Field(ge=1)
     prerequisites: list[Topic]

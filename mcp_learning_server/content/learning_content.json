@@ -412,5 +412,113 @@
     "text": "Una arquitectura de producción separa APIs, orquestación, herramientas y estado para escalar y desplegar cada componente con independencia. El fallback entre modelos debe respetar requisitos de calidad, seguridad, residencia de datos y presupuesto.",
     "source": "Currículo propio AITeacher",
     "keywords": ["escalabilidad", "fallback", "orquestación", "residencia de datos"]
+  },
+  {
+    "id": "english-greetings-beginner-first-meeting",
+    "topic": "english-greetings-introductions",
+    "title": "Tu primera presentación en inglés",
+    "level": "beginner",
+    "text": "Para iniciar una conversación puedes decir “Hello” o “Hi”. Preséntate con “My name is Ana” o “I’m Ana”, y responde “Nice to meet you”. “Good morning” se usa por la mañana y “Good evening” al saludar por la tarde o noche. Para cerrar, usa “Goodbye”, “Bye” o “See you”.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["hello", "hi", "my name is", "nice to meet you", "goodbye"]
+  },
+  {
+    "id": "english-greetings-intermediate-register",
+    "topic": "english-greetings-introductions",
+    "title": "Saludos según la situación",
+    "level": "intermediate",
+    "text": "El registro cambia según la relación y el contexto. “Hi, how’s it going?” funciona entre personas cercanas; “Good morning, it’s a pleasure to meet you” resulta más formal. Una presentación natural añade un dato que abre la conversación: “I’m Mateo. I work with Laura.” La respuesta puede reconocer ese dato y hacer una pregunta breve.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["formal", "informal", "how is it going", "pleasure to meet you", "small talk"]
+  },
+  {
+    "id": "english-greetings-advanced-pragmatics",
+    "topic": "english-greetings-introductions",
+    "title": "Naturalidad, cortesía y pragmática",
+    "level": "advanced",
+    "text": "Advanced introductions depend on pragmatics as much as grammar. A speaker signals warmth, distance, confidence, or deference through word choice and intonation. “It’s lovely to finally meet you” acknowledges shared context, while “May I introduce…” manages a formal turn. Effective small talk balances brief personal details with genuine follow-up questions.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["pragmatics", "intonation", "deference", "follow-up question", "small talk"]
+  },
+  {
+    "id": "english-vocabulary-beginner-daily-words",
+    "topic": "english-everyday-vocabulary",
+    "title": "Palabras para tu vida cotidiana",
+    "level": "beginner",
+    "text": "Aprende vocabulario dentro de frases útiles, no como una lista aislada. Agrupa palabras por situaciones: food para comida, school para escuela, home para casa y friend para amistad. Practica patrones cortos como “This is my school”, “My friend likes rice” y “I eat breakfast at home”. El contexto ayuda a recordar significado y uso.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["food", "school", "home", "friend", "daily routine"]
+  },
+  {
+    "id": "english-vocabulary-intermediate-collocations",
+    "topic": "english-everyday-vocabulary",
+    "title": "Combinaciones que suenan naturales",
+    "level": "intermediate",
+    "text": "Vocabulary becomes more natural when learned as collocations: “make a decision”, “take a break” and “do homework”. The surrounding words narrow meaning and reduce translation word by word. Record a new term with one common partner, a complete example and a contrasting expression. Then retrieve it by describing a real situation from your day.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["collocations", "make a decision", "take a break", "do homework", "context"]
+  },
+  {
+    "id": "english-vocabulary-advanced-nuance",
+    "topic": "english-everyday-vocabulary",
+    "title": "Matiz, registro y precisión léxica",
+    "level": "advanced",
+    "text": "Advanced vocabulary is less about rare words and more about precise choices. “Concerned”, “anxious” and “uneasy” overlap but differ in intensity and context. Register also matters: “kids” is conversational, whereas “children” is neutral. Compare authentic sentences, notice connotation and test whether a synonym preserves the speaker’s intended stance.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["nuance", "register", "connotation", "synonym", "stance"]
+  },
+  {
+    "id": "english-grammar-beginner-be-present",
+    "topic": "english-grammar-in-context",
+    "title": "El verbo be y el presente simple",
+    "level": "beginner",
+    "text": "El verbo be cambia con el sujeto: “I am”, “she is” y “they are”. Para negar, agrega not: “He is not tired”. En preguntas, coloca el verbo antes del sujeto: “Are you ready?”. Para rutinas usa presente simple: “I study every day”; con he, she o it normalmente se agrega s: “She studies every day”.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["am", "is", "are", "simple present", "subject"]
+  },
+  {
+    "id": "english-grammar-intermediate-time",
+    "topic": "english-grammar-in-context",
+    "title": "Hablar del pasado y su relación con el presente",
+    "level": "intermediate",
+    "text": "Use the simple past for a finished event at a finished time: “I visited Antigua last year”. Use the present perfect when the experience connects with now or the time is unfinished: “I have visited Antigua twice”. Time expressions guide the choice. Modals such as can, should and might add ability, advice or possibility without changing form for each subject.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["simple past", "present perfect", "time expressions", "modals", "finished event"]
+  },
+  {
+    "id": "english-grammar-advanced-meaning",
+    "topic": "english-grammar-in-context",
+    "title": "Gramática como elección de significado",
+    "level": "advanced",
+    "text": "At an advanced level, grammar encodes stance and information flow. Conditionals distinguish likely, hypothetical and counterfactual outcomes; relative clauses control which details identify a noun; and passive voice shifts attention from the actor to the event. Choose a structure because of the meaning and emphasis it creates, not merely because it is grammatically possible.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["conditionals", "relative clauses", "passive voice", "stance", "information flow"]
+  },
+  {
+    "id": "english-conversation-beginner-turns",
+    "topic": "english-conversation",
+    "title": "Mantener una conversación breve",
+    "level": "beginner",
+    "text": "Una conversación sencilla alterna saludo, respuesta y pregunta. Puedes decir “Hi! How are you?”, responder “I’m fine, thank you” y continuar con “What do you like to do?”. Si no entiendes, usa “Could you repeat that, please?” o “What does ___ mean?”. Estas frases te permiten seguir participando aunque todavía tengas poco vocabulario.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["how are you", "i am fine", "what do you like", "repeat please", "conversation"]
+  },
+  {
+    "id": "english-conversation-intermediate-follow-up",
+    "topic": "english-conversation",
+    "title": "Escuchar, responder y ampliar",
+    "level": "intermediate",
+    "text": "Natural conversation grows through follow-up questions and short reactions. After “I started a new course”, a listener might say “That sounds interesting. What are you studying?”. Stress the important words and use linking so phrases flow without rushing. When searching for a word, paraphrase: “It’s a place where…” instead of abandoning the turn.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["follow-up question", "reaction", "word stress", "linking", "paraphrase"]
+  },
+  {
+    "id": "english-conversation-advanced-fluency",
+    "topic": "english-conversation",
+    "title": "Fluidez, matiz y reparación",
+    "level": "advanced",
+    "text": "Fluency means managing interaction, not speaking without pauses. Discourse markers such as “actually”, “on the other hand” and “what I mean is” organize ideas and repair misunderstandings. Intonation can soften disagreement or signal that a turn is unfinished. Skilled speakers adapt register, invite clarification and reformulate when their first wording does not land.",
+    "source": "Currículo de inglés AITeacher",
+    "keywords": ["fluency", "discourse markers", "intonation", "repair", "register"]
   }
 ]

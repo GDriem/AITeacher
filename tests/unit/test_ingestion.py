@@ -34,6 +34,21 @@ def test_extended_curriculum_has_three_progressive_levels() -> None:
         assert {chunk.level for chunk in chunks if chunk.topic == topic} == expected_levels
 
 
+def test_english_curriculum_has_three_levels_per_topic() -> None:
+    chunks = load_content(CONTENT_PATH)
+    english_topics = {
+        Topic.ENGLISH_GREETINGS,
+        Topic.ENGLISH_VOCABULARY,
+        Topic.ENGLISH_GRAMMAR,
+        Topic.ENGLISH_CONVERSATION,
+    }
+
+    for topic in english_topics:
+        assert {chunk.level for chunk in chunks if chunk.topic == topic} == set(
+            LearningLevel
+        )
+
+
 def test_ingestion_rejects_invalid_content(tmp_path) -> None:
     path = tmp_path / "invalid.json"
     path.write_text(json.dumps([{"id": "x"}]), encoding="utf-8")

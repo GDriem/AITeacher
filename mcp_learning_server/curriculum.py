@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from mcp_learning_server.models import Topic, TopicCategory
+from mcp_learning_server.models import LearningSubject, Topic, TopicCategory
 
 
 @dataclass(frozen=True)
@@ -13,6 +13,7 @@ class CurriculumTopic:
     title: str
     category: TopicCategory
     prerequisites: tuple[Topic, ...] = ()
+    subject: LearningSubject = LearningSubject.ARTIFICIAL_INTELLIGENCE
 
 
 CURRICULUM: tuple[CurriculumTopic, ...] = (
@@ -157,10 +158,38 @@ CURRICULUM: tuple[CurriculumTopic, ...] = (
             Topic.RESPONSIBLE_AI,
         ),
     ),
+    CurriculumTopic(
+        Topic.ENGLISH_GREETINGS,
+        "Saludos y presentaciones en inglés",
+        TopicCategory.COMMUNICATION,
+        subject=LearningSubject.ENGLISH,
+    ),
+    CurriculumTopic(
+        Topic.ENGLISH_VOCABULARY,
+        "Vocabulario cotidiano en inglés",
+        TopicCategory.VOCABULARY,
+        (Topic.ENGLISH_GREETINGS,),
+        subject=LearningSubject.ENGLISH,
+    ),
+    CurriculumTopic(
+        Topic.ENGLISH_GRAMMAR,
+        "Gramática inglesa en contexto",
+        TopicCategory.GRAMMAR,
+        (Topic.ENGLISH_GREETINGS,),
+        subject=LearningSubject.ENGLISH,
+    ),
+    CurriculumTopic(
+        Topic.ENGLISH_CONVERSATION,
+        "Conversación en inglés",
+        TopicCategory.COMMUNICATION,
+        (Topic.ENGLISH_VOCABULARY, Topic.ENGLISH_GRAMMAR),
+        subject=LearningSubject.ENGLISH,
+    ),
 )
 
 TOPIC_ORDER = [item.topic for item in CURRICULUM]
 TOPIC_TITLES = {item.topic: item.title for item in CURRICULUM}
+TOPIC_SUBJECTS = {item.topic: item.subject for item in CURRICULUM}
 TOPIC_CATEGORIES = {item.topic: item.category for item in CURRICULUM}
 TOPIC_PREREQUISITES = {
     item.topic: item.prerequisites for item in CURRICULUM
@@ -181,6 +210,10 @@ def validate_curriculum() -> None:
         if topic in prerequisites:
             raise RuntimeError(f"{topic.value} no puede ser su propio prerrequisito")
         for prerequisite in prerequisites:
+            if TOPIC_SUBJECTS[prerequisite] != TOPIC_SUBJECTS[topic]:
+                raise RuntimeError(
+                    f"{topic.value} no puede depender de otra materia"
+                )
             if positions[prerequisite] >= positions[topic]:
                 raise RuntimeError(
                     f"El prerrequisito {prerequisite.value} debe aparecer antes "

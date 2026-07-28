@@ -62,7 +62,7 @@ async def test_agent_calls_independent_mcp_over_streamable_http(running_mcp_url)
             },
         )
     assert topics.status_code == 200, topics.text
-    assert topics.json()["total_topics"] == 23
+    assert topics.json()["total_topics"] == 27
     assert topics.json()["topics"][0]["category"] == "fundamentos"
     assert response.status_code == 200, response.text
     payload = response.json()

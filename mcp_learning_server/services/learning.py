@@ -9,6 +9,7 @@ from mcp_learning_server.curriculum import (
     TOPIC_ORDER,
     TOPIC_POSITIONS,
     TOPIC_PREREQUISITES,
+    TOPIC_SUBJECTS,
     TOPIC_TITLES,
 )
 from mcp_learning_server.models import (
@@ -90,6 +91,23 @@ TOPIC_ALIASES: dict[str, Topic] = {
     "ia a produccion": Topic.AI_PRODUCTION,
     "produccion de ia": Topic.AI_PRODUCTION,
     "ai production": Topic.AI_PRODUCTION,
+    "ingles": Topic.ENGLISH_GREETINGS,
+    "english": Topic.ENGLISH_GREETINGS,
+    "aprender ingles": Topic.ENGLISH_GREETINGS,
+    "curso de ingles": Topic.ENGLISH_GREETINGS,
+    "saludos en ingles": Topic.ENGLISH_GREETINGS,
+    "presentaciones en ingles": Topic.ENGLISH_GREETINGS,
+    "greetings and introductions": Topic.ENGLISH_GREETINGS,
+    "english greetings": Topic.ENGLISH_GREETINGS,
+    "vocabulario en ingles": Topic.ENGLISH_VOCABULARY,
+    "vocabulario cotidiano en ingles": Topic.ENGLISH_VOCABULARY,
+    "english vocabulary": Topic.ENGLISH_VOCABULARY,
+    "gramatica en ingles": Topic.ENGLISH_GRAMMAR,
+    "gramatica inglesa": Topic.ENGLISH_GRAMMAR,
+    "english grammar": Topic.ENGLISH_GRAMMAR,
+    "conversacion en ingles": Topic.ENGLISH_CONVERSATION,
+    "practicar conversacion en ingles": Topic.ENGLISH_CONVERSATION,
+    "english conversation": Topic.ENGLISH_CONVERSATION,
 }
 
 
@@ -235,6 +253,7 @@ class LearningService:
             TopicSummary(
                 topic=topic,
                 title=TOPIC_TITLES[topic],
+                subject=TOPIC_SUBJECTS[topic],
                 category=TOPIC_CATEGORIES[topic],
                 order=TOPIC_POSITIONS[topic],
                 prerequisites=list(TOPIC_PREREQUISITES[topic]),
@@ -248,8 +267,13 @@ class LearningService:
 
     @staticmethod
     def _next_topic(topic: Topic) -> str:
-        index = TOPIC_ORDER.index(topic)
-        next_topic = TOPIC_ORDER[min(index + 1, len(TOPIC_ORDER) - 1)]
+        subject_topics = [
+            candidate
+            for candidate in TOPIC_ORDER
+            if TOPIC_SUBJECTS[candidate] == TOPIC_SUBJECTS[topic]
+        ]
+        index = subject_topics.index(topic)
+        next_topic = subject_topics[min(index + 1, len(subject_topics) - 1)]
         return f"Continuar con: {TOPIC_TITLES[next_topic]}"
 
 

@@ -126,3 +126,34 @@ def test_repository_recovers_history_after_restart(tmp_path) -> None:
         "published",
     ]
     assert second_store.all()[0].id == "rag-authoring"
+
+
+def test_repository_adds_new_bootstrap_without_overwriting_existing_content(
+    tmp_path,
+) -> None:
+    path = tmp_path / "content-authoring.json"
+    original = lesson("existing-lesson")
+    changed = lesson(
+        "existing-lesson",
+        text=(
+            "Esta edición del usuario conserva recuperación, evidencia y una "
+            "explicación propia que el siguiente arranque no debe reemplazar."
+        ),
+    )
+    first = ContentAuthoringService(
+        LocalContentAuthoringRepository(path, [original]),
+        InMemoryContentStore(),
+    )
+    first.update_lesson(original.id, changed, "editora")
+    first.publish_lesson(original.id, "editora")
+    added = lesson("new-packaged-lesson")
+
+    restarted = ContentAuthoringService(
+        LocalContentAuthoringRepository(path, [original, added]),
+        InMemoryContentStore(),
+    )
+
+    assert restarted.get_lesson(original.id).published_content.text == changed.text
+    imported = restarted.get_lesson(added.id)
+    assert imported.published is True
+    assert imported.revisions[0].action == "bootstrapped"

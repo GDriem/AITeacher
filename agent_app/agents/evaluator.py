@@ -6,14 +6,15 @@ from dataclasses import dataclass
 from agent_app.models.chat import EvaluationStatus, Quiz
 from agent_app.providers.base import ModelProvider, ModelRequest
 from agent_app.services.learning_tools import LearningTools
+from mcp_learning_server.curriculum import TOPIC_SUBJECTS, TOPIC_TITLES
 from mcp_learning_server.models import (
     EvaluationRubric,
+    LearningSubject,
     RubricCriterion,
     RubricEvaluationMode,
     SaveResultResponse,
     Topic,
 )
-from mcp_learning_server.services.learning import TOPIC_TITLES
 from mcp_learning_server.services.retrieval import tokenize
 from pydantic import BaseModel, ConfigDict
 
@@ -71,6 +72,33 @@ QUIZZES: dict[Topic, Quiz] = {
         question="¿Qué necesita una aplicación de IA para operar de forma confiable en producción?",
         expected_keywords=["errores", "monitoreo", "disponibilidad"],
     ),
+    Topic.ENGLISH_GREETINGS: Quiz(
+        question=(
+            "Escribe tres líneas en inglés: saluda, preséntate con tu nombre "
+            "y despídete de forma amable."
+        ),
+        expected_keywords=["greeting", "introduction", "farewell"],
+    ),
+    Topic.ENGLISH_VOCABULARY: Quiz(
+        question=(
+            "Escribe una oración breve en inglés que use las palabras "
+            "food, school y friend en un contexto comprensible."
+        ),
+        expected_keywords=["food", "school", "friend"],
+    ),
+    Topic.ENGLISH_GRAMMAR: Quiz(
+        question=(
+            "Completa en inglés: I ___ a student. She ___ my friend. "
+            "They ___ ready."
+        ),
+        expected_keywords=["am", "is", "are"],
+    ),
+    Topic.ENGLISH_CONVERSATION: Quiz(
+        question=(
+            "Responde en inglés: Hello! How are you? What do you like to do?"
+        ),
+        expected_keywords=["greeting", "feeling", "preference"],
+    ),
 }
 
 APPLICATION_QUIZZES: dict[Topic, Quiz] = {
@@ -94,6 +122,34 @@ APPLICATION_QUIZZES: dict[Topic, Quiz] = {
             "hasta una herramienta del servidor."
         ),
         expected_keywords=["cliente", "protocolo", "servidor", "herramienta"],
+    ),
+    Topic.ENGLISH_GREETINGS: Quiz(
+        question=(
+            "Aplicación: inicia un diálogo breve en inglés con una persona nueva "
+            "y ciérralo de manera natural."
+        ),
+        expected_keywords=["greeting", "introduction", "farewell"],
+    ),
+    Topic.ENGLISH_VOCABULARY: Quiz(
+        question=(
+            "Aplicación: describe en dos oraciones en inglés tu escuela y una comida "
+            "que compartirías con un amigo."
+        ),
+        expected_keywords=["food", "school", "friend"],
+    ),
+    Topic.ENGLISH_GRAMMAR: Quiz(
+        question=(
+            "Aplicación: escribe tres oraciones correctas en inglés, una con am, "
+            "otra con is y otra con are."
+        ),
+        expected_keywords=["am", "is", "are"],
+    ),
+    Topic.ENGLISH_CONVERSATION: Quiz(
+        question=(
+            "Aplicación: continúa una conversación en inglés con un saludo, "
+            "cómo te sientes y una actividad que te gusta."
+        ),
+        expected_keywords=["greeting", "feeling", "preference"],
     ),
 }
 
@@ -147,6 +203,25 @@ CONCEPT_ALIASES: dict[str, tuple[str, ...]] = {
     "errores": ("errores", "fallos", "excepciones"),
     "monitoreo": ("monitoreo", "monitorizacion", "observabilidad", "metricas"),
     "disponibilidad": ("disponibilidad", "resiliencia", "continuidad", "uptime"),
+    "greeting": ("hello", "hi", "hey", "good morning", "good afternoon"),
+    "introduction": ("my name is", "i am", "i m", "let me introduce"),
+    "farewell": ("goodbye", "bye", "see you", "good night", "take care"),
+    "feeling": (
+        "fine",
+        "good",
+        "great",
+        "okay",
+        "happy",
+        "tired",
+        "excited",
+    ),
+    "preference": ("i like", "i love", "i enjoy", "my favorite"),
+    "food": ("food", "meal", "breakfast", "lunch", "dinner"),
+    "school": ("school", "class", "classroom", "teacher", "student"),
+    "friend": ("friend", "classmate"),
+    "am": ("am",),
+    "is": ("is",),
+    "are": ("are",),
 }
 
 CONCEPT_LABELS: dict[str, str] = {
@@ -192,6 +267,31 @@ CONCEPT_LABELS: dict[str, str] = {
     "errores": "el manejo de errores",
     "monitoreo": "el monitoreo del servicio",
     "disponibilidad": "la disponibilidad y resiliencia",
+    "greeting": "un saludo adecuado en inglés",
+    "introduction": "una presentación personal en inglés",
+    "farewell": "una despedida natural en inglés",
+    "feeling": "cómo expresar cómo te sientes",
+    "preference": "cómo expresar una preferencia",
+    "food": "vocabulario de comida",
+    "school": "vocabulario de la escuela",
+    "friend": "vocabulario sobre amistades",
+    "am": "el uso de «am» con I",
+    "is": "el uso de «is» con she, he o it",
+    "are": "el uso de «are» con you, we o they",
+}
+
+LANGUAGE_CONCEPTS = {
+    "greeting",
+    "introduction",
+    "farewell",
+    "feeling",
+    "preference",
+    "food",
+    "school",
+    "friend",
+    "am",
+    "is",
+    "are",
 }
 
 
@@ -252,6 +352,9 @@ class EvaluatorAgent:
         answer: str,
         attempt: int = 1,
     ) -> EvaluationResult:
+        language_practice = (
+            TOPIC_SUBJECTS[topic] == LearningSubject.ENGLISH
+        )
         normalized = " ".join(tokenize(answer))
         matched = [
             concept
@@ -276,7 +379,11 @@ class EvaluatorAgent:
         else:
             status = EvaluationStatus.REINFORCE
         result_explanation = _result_explanation(
-            status, rubric, matched, missing
+            status,
+            rubric,
+            matched,
+            missing,
+            language_practice=language_practice,
         )
         feedback = result_explanation
 
@@ -286,9 +393,22 @@ class EvaluatorAgent:
             else ["Expresaste una idea inicial que podemos desarrollar."]
         )
         improvements = (
-            [f"Falta explicar {_concept_label(concept)}." for concept in missing]
+            [
+                (
+                    f"Falta incluir {_concept_label(concept)}."
+                    if language_practice
+                    else f"Falta explicar {_concept_label(concept)}."
+                )
+                for concept in missing
+            ]
             if missing
-            else ["El siguiente paso es aplicar el concepto, no sólo definirlo."]
+            else [
+                (
+                    "El siguiente paso es usar estas expresiones en otra situación."
+                    if language_practice
+                    else "El siguiente paso es aplicar el concepto, no sólo definirlo."
+                )
+            ]
         )
         recommendation = (
             f"Profundizar {TOPIC_TITLES[topic]} con un caso de uso."
@@ -339,8 +459,31 @@ class EvaluatorAgent:
         answer: str,
         concept_score: float,
     ) -> EvaluationRubric:
+        language_practice = (
+            TOPIC_SUBJECTS[topic] == LearningSubject.ENGLISH
+        )
         if not answer.strip():
-            return _fallback_rubric(answer, quiz.expected_keywords, concept_score)
+            return _fallback_rubric(
+                answer,
+                quiz.expected_keywords,
+                concept_score,
+                language_practice=language_practice,
+            )
+        criteria = (
+            {
+                "precision": "Exactitud gramatical y elección adecuada de palabras.",
+                "comprehension": "Comprende la intención de la consigna y responde a ella.",
+                "application": "Usa el inglés para comunicar un significado completo.",
+                "clarity": "El mensaje es coherente y comprensible para otra persona.",
+            }
+            if language_practice
+            else {
+                "precision": "Exactitud conceptual, sin errores relevantes.",
+                "comprehension": "Explica relaciones y significado con sus palabras.",
+                "application": "Conecta la idea con su uso, consecuencia o ejemplo.",
+                "clarity": "La explicación es coherente y comprensible.",
+            }
+        )
         request = ModelRequest(
             system_instruction=(
                 "Eres Evaluator Agent. Evalúa comprensión, no coincidencia de palabras. "
@@ -349,7 +492,10 @@ class EvaluatorAgent:
                 "solicitada y devuelve únicamente JSON válido conforme al esquema. "
                 "Cada criterio vale de 0 a 4: 0 ausente o incorrecto, 1 muy débil, "
                 "2 parcial, 3 correcto y 4 sólido. Una lista de términos sin relaciones "
-                "ni explicación debe recibir comprensión 0 o 1."
+                "ni explicación debe recibir comprensión 0 o 1. En actividades de "
+                "idioma, evalúa el uso comunicativo solicitado y acepta variaciones "
+                "naturales correctas; no exijas que el estudiante explique gramática "
+                "cuando la consigna pide producir una frase o un diálogo."
             ),
             prompt=json.dumps(
                 {
@@ -357,12 +503,7 @@ class EvaluatorAgent:
                     "question": quiz.question,
                     "essential_concepts": quiz.expected_keywords,
                     "student_answer": answer,
-                    "criteria": {
-                        "precision": "Exactitud conceptual, sin errores relevantes.",
-                        "comprehension": "Explica relaciones y significado con sus palabras.",
-                        "application": "Conecta la idea con su uso, consecuencia o ejemplo.",
-                        "clarity": "La explicación es coherente y comprensible.",
-                    },
+                    "criteria": criteria,
                 },
                 ensure_ascii=False,
             ),
@@ -373,7 +514,12 @@ class EvaluatorAgent:
             raw = await self.provider.generate(request)
             parsed = _ModelRubric.model_validate_json(raw)
         except Exception:
-            return _fallback_rubric(answer, quiz.expected_keywords, concept_score)
+            return _fallback_rubric(
+                answer,
+                quiz.expected_keywords,
+                concept_score,
+                language_practice=language_practice,
+            )
         return EvaluationRubric(
             **parsed.model_dump(),
             evaluation_mode=RubricEvaluationMode.HYBRID_MODEL,
@@ -382,6 +528,9 @@ class EvaluatorAgent:
     async def grade_practice(
         self, topic: Topic, quiz: Quiz, answer: str
     ) -> PracticeGrade:
+        language_practice = (
+            TOPIC_SUBJECTS[topic] == LearningSubject.ENGLISH
+        )
         normalized = " ".join(tokenize(answer))
         matched = [
             concept
@@ -413,7 +562,13 @@ class EvaluatorAgent:
         return PracticeGrade(
             score=score,
             status=status,
-            feedback=_result_explanation(status, rubric, matched, missing),
+            feedback=_result_explanation(
+                status,
+                rubric,
+                matched,
+                missing,
+                language_practice=language_practice,
+            ),
             rubric=rubric,
             missing_concepts=missing,
         )
@@ -425,8 +580,19 @@ class EvaluatorAgent:
         status: EvaluationStatus,
         attempt: int,
     ) -> Quiz:
+        language_practice = (
+            TOPIC_SUBJECTS[topic] == LearningSubject.ENGLISH
+        )
         if missing:
             focus = " y ".join(_concept_label(concept) for concept in missing)
+            if language_practice:
+                return Quiz(
+                    question=(
+                        f"Intento {attempt + 1}: responde de nuevo en inglés e incluye "
+                        f"{focus}. Escribe un mensaje completo, no una lista de palabras."
+                    ),
+                    expected_keywords=missing,
+                )
             verb = "tienen" if len(missing) > 1 else "tiene"
             return Quiz(
                 question=(
@@ -438,6 +604,15 @@ class EvaluatorAgent:
         if status == EvaluationStatus.MASTERED and topic in APPLICATION_QUIZZES:
             return APPLICATION_QUIZZES[topic]
         original = self.create_quiz(topic)
+        if language_practice:
+            return Quiz(
+                question=(
+                    f"Ahora crea un ejemplo diferente para practicar "
+                    f"{TOPIC_TITLES[topic]}. Responde en inglés con una oración "
+                    "o un diálogo completo."
+                ),
+                expected_keywords=original.expected_keywords,
+            )
         return Quiz(
             question=(
                 f"Ahora da un ejemplo práctico de {TOPIC_TITLES[topic]} y explica "
@@ -449,7 +624,14 @@ class EvaluatorAgent:
 
 def _matches_concept(normalized_answer: str, concept: str) -> bool:
     aliases = CONCEPT_ALIASES.get(concept, (concept,))
-    return any(" ".join(tokenize(alias)) in normalized_answer for alias in aliases)
+    normalized_aliases = [" ".join(tokenize(alias)) for alias in aliases]
+    if concept not in LANGUAGE_CONCEPTS:
+        return any(alias in normalized_answer for alias in normalized_aliases)
+    padded_answer = f" {normalized_answer} "
+    return any(
+        f" {alias} " in padded_answer
+        for alias in normalized_aliases
+    )
 
 
 def _rubric_score(rubric: EvaluationRubric) -> float:
@@ -469,21 +651,29 @@ def _fallback_rubric(
     answer: str,
     concepts: list[str],
     concept_score: float,
+    *,
+    language_practice: bool = False,
 ) -> EvaluationRubric:
     tokens = tokenize(answer)
     coverage = concept_score / 100
     explains = _has_explanation(tokens)
     applies = _has_application(tokens)
     keyword_list = _is_keyword_list(answer, concepts)
+    produces_language = (
+        language_practice
+        and coverage > 0
+        and len(tokens) >= max(3, len(concepts))
+        and not keyword_list
+    )
     precision = round(coverage * 4)
     comprehension = (
         min(4, max(1, round(coverage * 4)))
-        if explains and not keyword_list
+        if (explains or produces_language) and not keyword_list
         else 0
     )
     application = (
         min(4, max(1, round(coverage * 4)))
-        if applies and not keyword_list
+        if (applies or produces_language) and not keyword_list
         else 0
     )
     if not tokens:
@@ -499,22 +689,42 @@ def _fallback_rubric(
     return EvaluationRubric(
         precision=RubricCriterion(
             score=precision,
-            explanation="Cobertura determinista de los conceptos esenciales.",
+            explanation=(
+                "Cobertura determinista de los elementos lingüísticos solicitados."
+                if language_practice
+                else "Cobertura determinista de los conceptos esenciales."
+            ),
         ),
         comprehension=RubricCriterion(
             score=comprehension,
             explanation=(
-                "La respuesta relaciona los conceptos con sus propias palabras."
+                (
+                    "La respuesta comprende y cumple la intención de la consigna."
+                    if language_practice
+                    else "La respuesta relaciona los conceptos con sus propias palabras."
+                )
                 if comprehension >= 3
-                else "Faltan relaciones que demuestren comprensión del concepto."
+                else (
+                    "La respuesta todavía no cumple toda la intención de la consigna."
+                    if language_practice
+                    else "Faltan relaciones que demuestren comprensión del concepto."
+                )
             ),
         ),
         application=RubricCriterion(
             score=application,
             explanation=(
-                "La respuesta conecta el concepto con una función o uso."
+                (
+                    "La respuesta usa el inglés para comunicar un mensaje completo."
+                    if language_practice
+                    else "La respuesta conecta el concepto con una función o uso."
+                )
                 if application >= 3
-                else "Falta explicar para qué sirve o cómo se aplicaría."
+                else (
+                    "Falta usar las expresiones dentro de un mensaje completo."
+                    if language_practice
+                    else "Falta explicar para qué sirve o cómo se aplicaría."
+                )
             ),
         ),
         clarity=RubricCriterion(
@@ -605,18 +815,35 @@ def _result_explanation(
     rubric: EvaluationRubric,
     matched: list[str],
     missing: list[str],
+    *,
+    language_practice: bool = False,
 ) -> str:
     if status == EvaluationStatus.MASTERED:
+        if language_practice:
+            return (
+                "La respuesta usa el inglés solicitado de forma clara y cumple "
+                "la intención comunicativa de la actividad."
+            )
         return (
             "La respuesta demuestra comprensión sólida y conecta correctamente "
             "las ideas principales."
         )
     if status == EvaluationStatus.PROGRESSING:
+        if language_practice:
+            return (
+                "El mensaje se comprende, pero necesita completar parte de la "
+                "consigna o ajustar el uso del inglés."
+            )
         return (
             "La respuesta es parcialmente correcta, pero necesita desarrollar "
             "mejor las relaciones o la aplicación de los conceptos."
         )
     if not matched and missing:
+        if language_practice:
+            return (
+                "La respuesta todavía no incluye los elementos lingüísticos "
+                "necesarios; intégralos en una frase o un diálogo completo."
+            )
         return (
             "La respuesta todavía no demuestra los conceptos esenciales; explícalos "
             "con una relación o un uso concreto."
