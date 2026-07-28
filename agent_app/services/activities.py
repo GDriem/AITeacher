@@ -17,8 +17,8 @@ from agent_app.models.activities import (
 )
 from agent_app.models.chat import EvaluationStatus
 from agent_app.providers.base import ModelProvider, ModelRequest
-from mcp_learning_server.models import Topic
-from mcp_learning_server.services.learning import TOPIC_TITLES
+from mcp_learning_server.curriculum import TOPIC_SUBJECTS, TOPIC_TITLES
+from mcp_learning_server.models import LearningSubject, Topic
 from mcp_learning_server.services.retrieval import tokenize
 
 
@@ -191,6 +191,51 @@ def create_practice_exercise(
     focus = list(dict.fromkeys(concepts))[:3] or [topic.value]
     difficulty = _difficulty_for(prior_attempts + round_number - 1)
     labels = " y ".join(item.replace("-", " ") for item in focus)
+    if TOPIC_SUBJECTS[topic] == LearningSubject.ENGLISH:
+        if difficulty == PracticeDifficulty.FOUNDATION:
+            title = "Construye un mensaje breve en inglés"
+            prompt = (
+                f"Escribe de dos a tres oraciones en inglés para practicar "
+                f"{TOPIC_TITLES[topic]}. Integra {labels} en un mensaje completo "
+                "que otra persona pueda comprender."
+            )
+            hint = (
+                "Empieza con una estructura que ya conozcas y cambia sólo una parte "
+                "a la vez. No respondas con una lista."
+            )
+        elif difficulty == PracticeDifficulty.APPLICATION:
+            title = "Responde en una situación real"
+            prompt = (
+                f"Imagina una conversación cotidiana donde necesites "
+                f"{TOPIC_TITLES[topic]}. Escribe un diálogo de cuatro líneas en "
+                f"inglés que use {labels} de manera natural."
+            )
+            hint = (
+                "Da a cada persona una intención clara: iniciar, responder, ampliar "
+                "o cerrar la conversación."
+            )
+        else:
+            title = "Haz que el inglés suene más natural"
+            prompt = (
+                f"Escribe una versión clara y natural de un mensaje en inglés sobre "
+                f"{TOPIC_TITLES[topic]} usando {labels}. Después explica en español "
+                "una decisión de vocabulario o gramática que tomaste."
+            )
+            hint = (
+                "Revisa orden de palabras, concordancia y si la expresión encaja "
+                "con la situación."
+            )
+        return PracticeExercise(
+            id=f"{topic.value}-practice-{round_number}",
+            topic=topic,
+            round=round_number,
+            based_on_attempts=prior_attempts,
+            difficulty=difficulty,
+            focus_concepts=focus,
+            title=title,
+            prompt=prompt,
+            hint=hint,
+        )
     if difficulty == PracticeDifficulty.FOUNDATION:
         title = "Conecta las ideas esenciales"
         prompt = (

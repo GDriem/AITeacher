@@ -21,6 +21,7 @@ const state = {
   catalogTotal: null,
   catalogCompleted: 0,
   recommendation: null,
+  displayedRecommendation: null,
   sessions: [],
   practiceExercise: null,
   nextPractice: null,
@@ -34,6 +35,10 @@ const state = {
   focusReturn: null,
   wasOffline: !navigator.onLine,
   openDrawerName: null,
+  sessionQuery: "",
+  sessionLoadId: 0,
+  chatRequestId: 0,
+  chatAbortController: null,
 };
 
 const voice = {
@@ -71,6 +76,13 @@ state.activeView = "estudiar";
 
 function setActiveView(view, { scroll = true } = {}) {
   if (!VIEWS.includes(view)) view = "estudiar";
+  const previousView = state.activeView;
+  if (state.openDrawerName && previousView !== view) {
+    closeDrawer({ restore: false });
+  }
+  if (previousView === "tutor" && view !== "tutor") {
+    state.sessionLoadId += 1;
+  }
   state.activeView = view;
   VIEWS.forEach((name) => {
     const active = name === view;
@@ -83,7 +95,9 @@ function setActiveView(view, { scroll = true } = {}) {
   if (location.hash.slice(1) !== view) {
     history.replaceState(null, "", `#${view}`);
   }
-  if (scroll) $("view-tabs").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (scroll && window.matchMedia("(min-width: 768px)").matches) {
+    $("view-tabs").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 Object.values(viewTabs).forEach((tab) => {
@@ -242,6 +256,14 @@ function autoGrowMessage() {
 $("message").addEventListener("input", autoGrowMessage);
 autoGrowMessage();
 
+function syncViewportHeight() {
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  document.documentElement.style.setProperty("--app-height", `${viewportHeight}px`);
+}
+syncViewportHeight();
+window.addEventListener("resize", syncViewportHeight);
+window.visualViewport?.addEventListener("resize", syncViewportHeight);
+
 $("retry-action").addEventListener("click", async () => {
   const retry = state.retryAction;
   showError("");
@@ -283,12 +305,17 @@ $("topic-grid").addEventListener("click", async (event) => {
 });
 
 $("start-recommended").addEventListener("click", async () => {
-  if (!state.recommendation) return;
+  if (!state.displayedRecommendation) return;
   startNewConversation();
   setActiveView("tutor");
-  await sendChat(`Quiero aprender sobre ${state.recommendation.title}`);
+  await sendChat(`Quiero aprender sobre ${state.displayedRecommendation.title}`);
 });
 
+$("subject-filter").addEventListener("change", () => {
+  populateCatalogFilters(state.catalog);
+  renderLearningPath();
+  renderTopicCatalog();
+});
 $("category-filter").addEventListener("change", renderTopicCatalog);
 $("level-filter").addEventListener("change", renderTopicCatalog);
 
@@ -315,6 +342,10 @@ $("resume-practice").addEventListener("click", () => {
 });
 
 async function sendChat(message, { appendUser = true } = {}) {
+  const requestId = ++state.chatRequestId;
+  state.chatAbortController?.abort();
+  const controller = new AbortController();
+  state.chatAbortController = controller;
   setBusy(true);
   showError("");
   $("feedback").classList.add("hidden");
@@ -328,6 +359,7 @@ async function sendChat(message, { appendUser = true } = {}) {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
         student_id: state.studentId,
         session_id: state.sessionId,
@@ -335,6 +367,7 @@ async function sendChat(message, { appendUser = true } = {}) {
       }),
     });
     const data = await readResponse(response);
+    if (requestId !== state.chatRequestId) return;
     state.sessionId = data.session_id;
     localStorage.setItem(activeSessionKey(), state.sessionId);
     state.trace = data.trace;
@@ -344,7 +377,8 @@ async function sendChat(message, { appendUser = true } = {}) {
     await loadSessions();
     loadObservability();
   } catch (error) {
-    if (error.message.includes("identificar el tema")) {
+    if (error.name === "AbortError" || requestId !== state.chatRequestId) return;
+    if (error.status === 422 && error.message.includes("selecciona un tema")) {
       showError(
         error.message,
         () => setActiveView("estudiar"),
@@ -357,7 +391,10 @@ async function sendChat(message, { appendUser = true } = {}) {
       );
     }
   } finally {
-    setBusy(false);
+    if (requestId === state.chatRequestId) {
+      state.chatAbortController = null;
+      setBusy(false);
+    }
   }
 }
 
@@ -527,6 +564,11 @@ $("drawer-new-session").addEventListener("click", () => {
   closeDrawer();
 });
 
+$("session-search").addEventListener("input", (event) => {
+  state.sessionQuery = event.currentTarget.value;
+  renderSessionList();
+});
+
 $("session-list").addEventListener("click", async (event) => {
   const menuToggle = event.target.closest("[data-toggle-session-menu]");
   if (menuToggle) {
@@ -579,12 +621,28 @@ function closeSessionMenus() {
 
 function renderSessionList() {
   const container = $("session-list");
+  const query = normalizeSearchText(state.sessionQuery);
+  const visibleSessions = query
+    ? state.sessions.filter((session) =>
+        normalizeSearchText(`${session.title} ${topicTitle(session.topic)}`).includes(query),
+      )
+    : state.sessions;
+  const status = $("session-search-status");
   if (!state.sessions.length) {
+    status.textContent = "";
     container.innerHTML =
       '<p class="session-empty">Aún no tienes conversaciones guardadas.</p>';
     return;
   }
-  container.innerHTML = state.sessions
+  status.textContent = query
+    ? `${visibleSessions.length} ${visibleSessions.length === 1 ? "conversación encontrada" : "conversaciones encontradas"}`
+    : "";
+  if (!visibleSessions.length) {
+    container.innerHTML =
+      '<p class="session-empty"><strong>Sin coincidencias.</strong><span>Prueba con otro título o tema.</span></p>';
+    return;
+  }
+  container.innerHTML = visibleSessions
     .map(
       (session) => `
         <div class="session-item ${session.id === state.sessionId ? "active" : ""}" role="listitem">
@@ -895,20 +953,29 @@ async function loadTopicCatalog() {
 }
 
 async function loadSessions({ restore = false } = {}) {
+  const studentId = state.studentId;
+  const initialSessionLoadId = state.sessionLoadId;
+  const initialChatRequestId = state.chatRequestId;
   try {
     const response = await fetch(
-      `/api/sessions?student_id=${encodeURIComponent(state.studentId)}`,
+      `/api/sessions?student_id=${encodeURIComponent(studentId)}`,
     );
     const data = await readResponse(response);
+    if (studentId !== state.studentId) return;
     state.sessions = data.sessions;
     renderSessionList();
-    if (restore) {
+    if (
+      restore &&
+      initialSessionLoadId === state.sessionLoadId &&
+      initialChatRequestId === state.chatRequestId
+    ) {
       const saved = localStorage.getItem(activeSessionKey());
       if (saved && state.sessions.some((item) => item.id === saved)) {
-        await openSession(saved);
+        await openSession(saved, { navigate: false });
       }
     }
   } catch (error) {
+    if (studentId !== state.studentId) return;
     showError(
       `No pudimos sincronizar las conversaciones. ${error.message}`,
       () => loadSessions({ restore }),
@@ -916,15 +983,18 @@ async function loadSessions({ restore = false } = {}) {
   }
 }
 
-async function openSession(sessionId) {
+async function openSession(sessionId, { navigate = true } = {}) {
+  const requestId = ++state.sessionLoadId;
+  cancelActiveChatRequest();
   setBusy(true);
   showError("");
-  setActiveView("tutor", { scroll: false });
+  if (navigate) setActiveView("tutor", { scroll: false });
   try {
     const response = await fetch(
       `/api/sessions/${encodeURIComponent(sessionId)}?student_id=${encodeURIComponent(state.studentId)}`,
     );
     const session = await readResponse(response);
+    if (requestId !== state.sessionLoadId) return;
     state.sessionId = session.id;
     state.trace = [];
     state.quizAttempt = session.pending_quiz.attempt;
@@ -952,16 +1022,20 @@ async function openSession(sessionId) {
     $("quiz-topic").textContent = topicTitle(session.topic);
     $("quiz-kicker").textContent = "Comprueba tu comprensión";
     $("quiz-step").textContent = `Ronda ${session.pending_quiz.attempt}`;
+    $("quiz-answer").placeholder = isEnglishTopic(session.topic)
+      ? "Escribe tu respuesta en inglés…"
+      : "Explícalo con tus propias palabras…";
     $("question").classList.remove("hidden");
     quizForm.classList.remove("hidden");
     $("quiz-card").classList.remove("hidden");
     $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
     renderSessionList();
   } catch (error) {
+    if (requestId !== state.sessionLoadId) return;
     showError(error.message);
     startNewConversation();
   } finally {
-    setBusy(false);
+    if (requestId === state.sessionLoadId) setBusy(false);
   }
 }
 
@@ -984,6 +1058,8 @@ async function updateSession(update, targetId = state.sessionId) {
 }
 
 function startNewConversation() {
+  state.sessionLoadId += 1;
+  cancelActiveChatRequest();
   state.sessionId = null;
   state.trace = [];
   state.nextQuiz = null;
@@ -1009,14 +1085,36 @@ function resetConversation() {
   renderSessionList();
 }
 
+function cancelActiveChatRequest() {
+  state.chatRequestId += 1;
+  state.chatAbortController?.abort();
+  state.chatAbortController = null;
+  setBusy(false);
+}
+
 function populateCatalogFilters(topics) {
+  const subject = $("subject-filter");
   const category = $("category-filter");
   const level = $("level-filter");
+  const selectedSubject = subject.value;
   const selectedCategory = category.value;
   const selectedLevel = level.value;
-  const categories = [...new Set(topics.map((item) => item.category))];
+  const subjects = [...new Set(topics.map((item) => item.subject))];
+  subject.innerHTML =
+    '<option value="">Todas las materias</option>' +
+    subjects
+      .map(
+        (value) =>
+          `<option value="${escapeHtml(value)}">${escapeHtml(subjectLabel(value))}</option>`,
+      )
+      .join("");
+  subject.value = subjects.includes(selectedSubject) ? selectedSubject : "";
+  const subjectTopics = subject.value
+    ? topics.filter((item) => item.subject === subject.value)
+    : topics;
+  const categories = [...new Set(subjectTopics.map((item) => item.category))];
   const levels = [
-    ...new Set(topics.flatMap((item) => item.available_levels)),
+    ...new Set(subjectTopics.flatMap((item) => item.available_levels)),
   ];
   category.innerHTML =
     '<option value="">Todas las categorías</option>' +
@@ -1039,10 +1137,12 @@ function populateCatalogFilters(topics) {
 }
 
 function renderTopicCatalog() {
+  const subject = $("subject-filter").value;
   const category = $("category-filter").value;
   const level = $("level-filter").value;
   const visible = state.catalog.filter(
     (item) =>
+      (!subject || item.subject === subject) &&
       (!category || item.category === category) &&
       (!level || item.available_levels.includes(level)),
   );
@@ -1061,7 +1161,7 @@ function renderTopicCatalog() {
       (item) => `
         <article class="topic-card ${item.status}" role="listitem">
           <div class="topic-card-heading">
-            <span class="category-label">${escapeHtml(categoryLabel(item.category))}</span>
+            <span class="category-label">${escapeHtml(subjectLabel(item.subject))} · ${escapeHtml(categoryLabel(item.category))}</span>
             <span class="topic-status ${item.status}">
               ${escapeHtml(topicStatusLabel(item.status))}
             </span>
@@ -1100,12 +1200,39 @@ function renderTopicCatalog() {
 
 function renderLearningPath() {
   const card = $("learning-path-card");
-  if (!state.recommendation) {
+  const selectedSubject = $("subject-filter").value;
+  let recommendation = state.recommendation;
+  if (
+    selectedSubject &&
+    (!recommendation ||
+      state.catalog.find((item) => item.topic === recommendation.topic)?.subject !==
+        selectedSubject)
+  ) {
+    const nextTopic =
+      state.catalog.find(
+        (item) => item.subject === selectedSubject && item.status === "in_progress",
+      ) ||
+      state.catalog.find(
+        (item) => item.subject === selectedSubject && item.status === "available",
+      );
+    recommendation = nextTopic
+      ? {
+          topic: nextTopic.topic,
+          title: nextTopic.title,
+          reason:
+            nextTopic.status === "in_progress"
+              ? `Retoma este tema desde tu mejor resultado: ${Math.round(nextTopic.progress?.best_score || 0)}/100.`
+              : "Es el siguiente tema disponible en esta materia.",
+        }
+      : null;
+  }
+  state.displayedRecommendation = recommendation;
+  if (!recommendation) {
     card.classList.add("hidden");
     return;
   }
-  $("recommended-topic").textContent = state.recommendation.title;
-  $("recommendation-reason").textContent = state.recommendation.reason;
+  $("recommended-topic").textContent = recommendation.title;
+  $("recommendation-reason").textContent = recommendation.reason;
   card.classList.remove("hidden");
 }
 
@@ -1149,18 +1276,20 @@ function renderPractice(exercise) {
   $("practice-prompt").textContent = exercise.prompt;
   $("practice-hint").textContent = exercise.hint;
   $("practice-answer").value = "";
+  $("practice-answer").placeholder = isEnglishTopic(exercise.topic)
+    ? "Responde en inglés según la consigna…"
+    : "Resuelve el ejercicio con tus propias palabras…";
   $("practice-result").classList.add("hidden");
   $("next-practice").classList.add("hidden");
   $("practice-card").classList.remove("hidden");
-  $("practice-answer").focus();
-  $("practice-card").scrollIntoView({ behavior: "smooth", block: "center" });
+  focusTutorElement("practice-answer", "center");
 }
 
 function showMainLearning() {
   $("practice-card").classList.add("hidden");
   $("quiz-card").classList.remove("hidden");
   $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
-  $("quiz-card").scrollIntoView({ behavior: "smooth", block: "center" });
+  focusTutorElement("quiz-card", "center");
 }
 
 async function loadProjects() {
@@ -1376,12 +1505,26 @@ function setVoiceStatus(message) {
 }
 
 async function readResponse(response) {
-  const data = await response.json();
+  const raw = await response.text();
+  let data;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    const invalidResponse = new Error(
+      response.ok
+        ? "El servicio devolvió una respuesta que no pudimos interpretar."
+        : "El servicio no pudo completar la solicitud. Intenta nuevamente.",
+    );
+    invalidResponse.status = response.status;
+    throw invalidResponse;
+  }
   if (!response.ok) {
     const detail = Array.isArray(data.detail)
       ? data.detail.map((item) => item.msg).join(". ")
       : data.detail;
-    throw new Error(detail || "La solicitud no pudo completarse.");
+    const responseError = new Error(detail || "La solicitud no pudo completarse.");
+    responseError.status = response.status;
+    throw responseError;
   }
   return data;
 }
@@ -1389,13 +1532,16 @@ async function readResponse(response) {
 function renderChat(data) {
   $("welcome").classList.add("hidden");
   appendMessage("assistant", "Tutor Agent", data.answer, data.sources);
-  $("topic-badge").textContent = pretty(data.topic);
+  $("topic-badge").textContent = topicTitle(data.topic);
   $("level-badge").textContent = levelLabel(data.level);
   $("detected").classList.remove("hidden");
   $("question").textContent = data.quiz.question;
-  $("quiz-topic").textContent = pretty(data.topic);
+  $("quiz-topic").textContent = topicTitle(data.topic);
   $("quiz-kicker").textContent = "Comprueba tu comprensión";
   $("quiz-step").textContent = `Ronda ${data.quiz_attempt}`;
+  $("quiz-answer").placeholder = isEnglishTopic(data.topic)
+    ? "Escribe tu respuesta en inglés…"
+    : "Explícalo con tus propias palabras…";
   $("question").classList.remove("hidden");
   $("quiz-answer").value = "";
   quizForm.classList.remove("hidden");
@@ -1404,8 +1550,7 @@ function renderChat(data) {
   $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
   renderProgress(data.progress);
   renderTrace();
-  $("quiz-card").scrollIntoView({ behavior: "smooth", block: "nearest" });
-  $("quiz-answer").focus();
+  focusTutorElement("quiz-answer", "nearest");
   announce("La explicación está lista. Responde la pregunta de comprensión.");
 }
 
@@ -1458,8 +1603,7 @@ function renderFeedback(data) {
   quizForm.classList.add("hidden");
   $("feedback").classList.remove("hidden");
   $("resume-practice").classList.toggle("hidden", !state.practiceExercise);
-  $("feedback").scrollIntoView({ behavior: "smooth", block: "center" });
-  $("feedback").focus();
+  focusTutorElement("feedback", "center");
   announce(`Evaluación completada: ${Math.round(data.score)} de 100.`);
 }
 
@@ -1681,7 +1825,7 @@ function openDrawer(name) {
   focusTarget?.focus();
 }
 
-function closeDrawer() {
+function closeDrawer({ restore = true } = {}) {
   const name = state.openDrawerName;
   if (!name) return;
   const drawer = $(DRAWER_IDS[name]);
@@ -1697,7 +1841,15 @@ function closeDrawer() {
       $("drawer-scrim").classList.add("hidden");
     }
   }, 260);
-  restoreFocus();
+  if (restore) restoreFocus();
+  else state.focusReturn = null;
+}
+
+function focusTutorElement(id, block = "nearest") {
+  if (state.activeView !== "tutor") return;
+  const element = $(id);
+  element.scrollIntoView({ behavior: "smooth", block });
+  element.focus();
 }
 
 function trapFocus(container, event) {
@@ -1746,6 +1898,14 @@ function conceptLabel(value) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+function normalizeSearchText(value) {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .trim();
+}
+
 function topicTitle(topic) {
   return state.catalog.find((item) => item.topic === topic)?.title || pretty(topic);
 }
@@ -1761,7 +1921,24 @@ function categoryLabel(category) {
     "agentes-y-herramientas": "Agentes y herramientas",
     "calidad-y-seguridad": "Calidad y seguridad",
     produccion: "Producción",
+    comunicacion: "Comunicación",
+    vocabulario: "Vocabulario",
+    gramatica: "Gramática",
   }[category] || category;
+}
+
+function subjectLabel(subject) {
+  return {
+    "artificial-intelligence": "Inteligencia artificial",
+    english: "Inglés",
+  }[subject] || subject;
+}
+
+function isEnglishTopic(topic) {
+  return (
+    String(topic).startsWith("english-") ||
+    state.catalog.find((item) => item.topic === topic)?.subject === "english"
+  );
 }
 
 function topicStatusLabel(status) {

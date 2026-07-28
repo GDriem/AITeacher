@@ -1,6 +1,6 @@
 # AITeacher
 
-**AITeacher** es un tutor de IA con aprendizaje adaptativo, agentes
+**AITeacher** es un tutor multiárea con aprendizaje adaptativo, agentes
 especializados, herramientas MCP y voz opcional. El proyecto nació como la
 demostración de la charla **“Agent, MCP & Run: de un LLM a un tutor multiagente
 por voz”** del Google I/O Extended Guatemala City.
@@ -20,7 +20,9 @@ documentación en el [índice de `docs/`](docs/README.md).
 
 ## Capacidades
 
-- 23 temas y 46 lecciones curriculares, con fuente, nivel y metadatos.
+- 27 temas y 58 lecciones curriculares, con fuente, materia, nivel y metadatos.
+- Dos materias: inteligencia artificial e inglés.
+- Inglés escrito con saludos, vocabulario, gramática y conversación en tres niveles.
 - Ingestión, almacenamiento y recuperación separados.
 - RAG léxico local, determinista y sin servicios externos.
 - Repositorio JSON atómico para progreso y evaluaciones.
@@ -30,7 +32,7 @@ documentación en el [índice de `docs/`](docs/README.md).
 - Pruebas unitarias y de integración sin credenciales cloud.
 - Google ADK 2.x con orquestador y tres subagentes especialistas.
 - FastAPI, chat, evaluación y trazabilidad sin chain-of-thought.
-- Explorador responsive de los 23 temas con categorías, niveles y progreso.
+- Explorador responsive de los 27 temas con filtros de materia, categoría y nivel.
 - Ruta adaptativa con orden, prerrequisitos, motivos y cuatro estados por tema.
 - Dominio por tema y concepto con intentos, mejor puntaje y nivel independiente.
 - Conversaciones persistentes con recuperación de mensajes, tema y evaluación.
@@ -103,8 +105,11 @@ catálogo, la ruta y el estado del estudiante. La respuesta incluye
 `total_topics`, una recomendación explicada y el estado de cada tema
 (`blocked`, `available`, `in_progress` o `completed`). Los prerrequisitos
 orientan la ruta, pero no impiden estudiar un tema fuera del orden sugerido.
+Cada tema identifica su `subject` (`artificial-intelligence` o `english`).
 Cada elemento evaluado incluye además su progreso con nivel, mejor puntaje,
-intentos y conceptos dominados o pendientes.
+intentos y conceptos dominados o pendientes. Consulte la
+[guía del currículo de inglés](docs/english-curriculum.md) para su enfoque
+pedagógico, progresión y límites actuales.
 
 La aplicación persiste el historial en `APP_SESSIONS_PATH` y ofrece
 `GET /api/sessions?student_id=<id>` para recuperar conversaciones. El navegador

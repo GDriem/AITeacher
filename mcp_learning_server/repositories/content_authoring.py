@@ -43,6 +43,15 @@ class LocalContentAuthoringRepository:
                 return lessons
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             lessons = _lesson_list.validate_python(raw.get("lessons", []))
+            known_ids = {lesson.id for lesson in lessons}
+            missing_bootstrap = [
+                content
+                for content in self._bootstrap_content
+                if content.id not in known_ids
+            ]
+            if missing_bootstrap:
+                lessons.extend(self._bootstrap_lessons(missing_bootstrap))
+                self._write(lessons)
             return [lesson.model_copy(deep=True) for lesson in lessons]
 
     def save(self, lessons: Sequence[AuthoredLesson]) -> None:
@@ -50,6 +59,12 @@ class LocalContentAuthoringRepository:
             self._write(list(lessons))
 
     def _bootstrap(self) -> list[AuthoredLesson]:
+        return self._bootstrap_lessons(self._bootstrap_content)
+
+    @staticmethod
+    def _bootstrap_lessons(
+        contents: Sequence[LearningContent],
+    ) -> list[AuthoredLesson]:
         now = utc_now()
         return [
             AuthoredLesson(
@@ -72,7 +87,7 @@ class LocalContentAuthoringRepository:
                 created_at=now,
                 updated_at=now,
             )
-            for content in self._bootstrap_content
+            for content in contents
         ]
 
     def _write(self, lessons: Sequence[AuthoredLesson]) -> None:

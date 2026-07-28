@@ -2,10 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#07111f" />
     <title>AITeacher</title>
-    <link rel="stylesheet" href="/static/styles.css?v=9" />
+    <link rel="stylesheet" href="/static/styles.css?v=12" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
@@ -154,7 +154,7 @@
         <div>
           <p class="eyebrow">Explora el currículo</p>
           <h2 id="topics-title" tabindex="-1">Elige qué quieres aprender</h2>
-          <p class="muted">Descubre los temas disponibles y comienza una explicación guiada con un clic.</p>
+          <p class="muted">Explora inteligencia artificial o practica inglés con una ruta adaptada a tu progreso.</p>
         </div>
         <strong id="topics-count" class="catalog-count">Cargando…</strong>
       </div>
@@ -170,6 +170,12 @@
         </button>
       </article>
       <div class="catalog-filters" aria-label="Filtros del catálogo">
+        <label>
+          <span>Materia</span>
+          <select id="subject-filter">
+            <option value="">Todas las materias</option>
+          </select>
+        </label>
         <label>
           <span>Categoría</span>
           <select id="category-filter">
@@ -353,7 +359,7 @@
 
         <form id="chat-form" class="composer">
           <label class="sr-only" for="message">Mensaje</label>
-          <textarea id="message" rows="2" maxlength="4000" placeholder="Ejemplo: Explícame qué son los embeddings">Explícame qué son los embeddings</textarea>
+          <textarea id="message" rows="2" maxlength="4000" placeholder="Ejemplo: Explícame embeddings o quiero aprender inglés">Explícame qué son los embeddings</textarea>
           <div class="composer-actions">
             <button id="mic" class="icon-button" type="button" disabled title="Comprobando disponibilidad de voz" aria-label="Activar micrófono">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -435,9 +441,20 @@
         <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" style="flex:0 0 auto"><path d="M12 5v14M5 12h14"></path></svg>
         Nueva conversación
       </button>
+      <label class="session-search" for="session-search">
+        <span class="sr-only">Buscar conversaciones por título o tema</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.8" cy="10.8" r="6.3"></circle>
+          <path d="m15.5 15.5 4 4"></path>
+        </svg>
+        <input id="session-search" type="search" autocomplete="off"
+          placeholder="Buscar conversaciones…" aria-controls="session-list"
+          aria-describedby="session-search-status" />
+      </label>
+      <p id="session-search-status" class="session-search-status" aria-live="polite"></p>
       <div id="session-list" class="session-list" role="list"></div>
     </aside>
 
-    <script src="/static/app.js?v=9" defer></script>
+    <script src="/static/app.js?v=12" defer></script>
   </body>
 </html>

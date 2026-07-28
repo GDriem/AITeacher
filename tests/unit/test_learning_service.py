@@ -2,6 +2,7 @@ import pytest
 
 from mcp_learning_server.models import (
     LearningLevel,
+    LearningSubject,
     Topic,
     TopicCategory,
     TopicStatus,
@@ -13,10 +14,16 @@ def test_new_student_starts_with_first_foundation(learning_service) -> None:
     assert path.completion_percentage == 0
     assert path.completed_topics == []
     assert path.in_progress_topics == []
-    assert path.available_topics == [Topic.ARTIFICIAL_INTELLIGENCE]
-    assert path.recommended_topics == [Topic.ARTIFICIAL_INTELLIGENCE]
+    assert path.available_topics == [
+        Topic.ARTIFICIAL_INTELLIGENCE,
+        Topic.ENGLISH_GREETINGS,
+    ]
+    assert path.recommended_topics == [
+        Topic.ARTIFICIAL_INTELLIGENCE,
+        Topic.ENGLISH_GREETINGS,
+    ]
     assert path.recommendations[0].reason.startswith("Es el punto de partida")
-    assert len(path.blocked_topics) == len(Topic) - 1
+    assert len(path.blocked_topics) == len(Topic) - 2
 
 
 def test_partial_assessment_prioritizes_topic_in_progress(learning_service) -> None:
@@ -28,7 +35,10 @@ def test_partial_assessment_prioritizes_topic_in_progress(learning_service) -> N
 
     assert path.in_progress_topics == [Topic.ARTIFICIAL_INTELLIGENCE]
     assert path.completed_topics == []
-    assert path.recommended_topics == [Topic.ARTIFICIAL_INTELLIGENCE]
+    assert path.recommended_topics == [
+        Topic.ARTIFICIAL_INTELLIGENCE,
+        Topic.ENGLISH_GREETINGS,
+    ]
     assert "50/100" in path.recommendations[0].reason
 
 
@@ -46,7 +56,7 @@ def test_mastering_prerequisite_unlocks_next_topics(learning_service) -> None:
         Topic.RESPONSIBLE_AI,
     ]
     assert "Inteligencia artificial" in path.recommendations[0].reason
-    assert path.completion_percentage == pytest.approx(4.35)
+    assert path.completion_percentage == pytest.approx(3.7)
 
 
 def test_prerequisites_drive_status_without_preventing_study(learning_service) -> None:
@@ -94,7 +104,56 @@ def test_topics_and_practical_example(learning_service) -> None:
     assert next(topic for topic in topics if topic.topic == Topic.MCP).prerequisites == [
         Topic.TOOL_CALLING
     ]
+    english = next(
+        topic for topic in topics if topic.topic == Topic.ENGLISH_GREETINGS
+    )
+    assert english.subject == LearningSubject.ENGLISH
+    assert english.category == TopicCategory.COMMUNICATION
+    assert set(english.available_levels) == set(LearningLevel)
     assert "call_tool" in example.code
+
+
+def test_english_path_unlocks_independently_from_ai(learning_service) -> None:
+    learning_service.save_learning_result(
+        "student-1",
+        "english-greetings-introductions",
+        100,
+        "Greets, introduces and closes the conversation naturally.",
+    )
+
+    path = learning_service.get_learning_path("student-1")
+
+    assert Topic.ENGLISH_GREETINGS in path.completed_topics
+    assert Topic.ENGLISH_VOCABULARY in path.available_topics
+    assert Topic.ENGLISH_GRAMMAR in path.available_topics
+    conversation = next(
+        item for item in path.topics if item.topic == Topic.ENGLISH_CONVERSATION
+    )
+    assert conversation.unmet_prerequisites == [
+        Topic.ENGLISH_VOCABULARY,
+        Topic.ENGLISH_GRAMMAR,
+    ]
+
+
+def test_english_level_requires_sustained_practice(learning_service) -> None:
+    for attempt in range(1, 5):
+        response = learning_service.save_learning_result(
+            "english-student",
+            "english-greetings-introductions",
+            100,
+            "Uses the requested English naturally.",
+        )
+        topic_progress = response.progress.progress_for(Topic.ENGLISH_GREETINGS)
+        assert topic_progress is not None
+        expected = (
+            LearningLevel.BEGINNER
+            if attempt == 1
+            else LearningLevel.INTERMEDIATE
+            if attempt < 4
+            else LearningLevel.ADVANCED
+        )
+        assert topic_progress.level == expected
+        assert response.progress.level == expected
 
 
 def test_spanish_topic_alias_ignores_accents(learning_service) -> None:

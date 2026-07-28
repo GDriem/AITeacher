@@ -79,11 +79,14 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         }
         assert topics.status_code == 200
         catalog = topics.json()
-        assert catalog["total_topics"] == 23
+        assert catalog["total_topics"] == 27
+        assert {
+            topic["subject"] for topic in catalog["topics"]
+        } == {"artificial-intelligence", "english"}
         assert catalog["completed_topics"] == 0
         assert catalog["in_progress_topics"] == 0
-        assert catalog["available_topics"] == 1
-        assert catalog["blocked_topics"] == 22
+        assert catalog["available_topics"] == 2
+        assert catalog["blocked_topics"] == 25
         assert catalog["completion_percentage"] == 0
         assert catalog["recommendation"]["topic"] == "artificial-intelligence"
         assert catalog["recommendation"]["reason"]
@@ -96,6 +99,9 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
             "agentes-y-herramientas",
             "calidad-y-seguridad",
             "produccion",
+            "comunicacion",
+            "vocabulario",
+            "gramatica",
         }
         embedding = next(
             topic for topic in catalog["topics"] if topic["topic"] == "embeddings"
@@ -196,7 +202,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
             if topic["topic"] == "embeddings"
         )
         assert updated_catalog["completed_topics"] == 1
-        assert updated_catalog["completion_percentage"] == pytest.approx(4.35)
+        assert updated_catalog["completion_percentage"] == pytest.approx(3.7)
         assert completed_embedding["status"] == "completed"
         assert completed_embedding["progress"]["level"] == "advanced"
         assert completed_embedding["progress"]["mastery_status"] == "mastered"
@@ -249,7 +255,12 @@ async def test_recommendation_changes_after_mastering_prerequisite(
         topic["topic"]
         for topic in updated.json()["topics"]
         if topic["status"] == "available"
-    } == {"machine-learning", "nlp", "responsible-ai"}
+    } == {
+        "machine-learning",
+        "nlp",
+        "responsible-ai",
+        "english-greetings-introductions",
+    }
 
 
 @pytest.mark.integration

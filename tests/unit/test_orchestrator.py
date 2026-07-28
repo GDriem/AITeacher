@@ -41,6 +41,10 @@ def test_routing_detects_longest_specific_topic() -> None:
         ("Hablemos de búsqueda híbrida", Topic.ADVANCED_RAG),
         ("Explícame IA multimodal", Topic.MULTIMODAL_AI),
         ("¿Cómo llevar IA a producción?", Topic.AI_PRODUCTION),
+        ("Quiero aprender inglés", Topic.ENGLISH_GREETINGS),
+        ("Practiquemos vocabulario en inglés", Topic.ENGLISH_VOCABULARY),
+        ("Enséñame gramática inglesa", Topic.ENGLISH_GRAMMAR),
+        ("Quiero conversación en inglés", Topic.ENGLISH_CONVERSATION),
     ],
 )
 def test_routing_detects_extended_curriculum(
@@ -50,7 +54,7 @@ def test_routing_detects_extended_curriculum(
 
 
 def test_routing_rejects_missing_topic() -> None:
-    with pytest.raises(ValueError, match="identificar"):
+    with pytest.raises(ValueError, match="selecciona un tema"):
         detect_topic("Quiero aprender algo interesante")
 
 
@@ -108,7 +112,7 @@ async def test_chat_continues_topic_without_repeating_keyword(learning_service) 
 @pytest.mark.asyncio
 async def test_chat_without_topic_or_known_session_fails(learning_service) -> None:
     orchestrator = make_orchestrator(learning_service)
-    with pytest.raises(ValueError, match="identificar"):
+    with pytest.raises(ValueError, match="selecciona un tema"):
         await orchestrator.chat(
             ChatRequest(student_id="student-1", message="cual es mi progreso")
         )
@@ -142,6 +146,59 @@ async def test_evaluator_saves_progress(learning_service) -> None:
     ]
     assert topic_progress.pending_concepts == []
     assert result.trace[0].summary.startswith("Delegación a evaluator_agent")
+
+
+@pytest.mark.asyncio
+async def test_english_lesson_uses_language_quiz_and_evaluation(
+    learning_service,
+) -> None:
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(
+        ChatRequest(student_id="english-student", message="Quiero aprender inglés")
+    )
+
+    assert chat.topic == Topic.ENGLISH_GREETINGS
+    assert "tres líneas en inglés" in chat.quiz.question
+    assert chat.sources == ["Currículo de inglés AITeacher"]
+
+    result = await orchestrator.evaluate(
+        EvaluationRequest(
+            student_id="english-student",
+            session_id=chat.session_id,
+            answer="Hello! My name is Ana. Nice to meet you. Goodbye!",
+        )
+    )
+
+    assert result.status == EvaluationStatus.MASTERED
+    assert result.score == 100
+    assert result.next_quiz.question.startswith("Aplicación:")
+    assert result.progress.studied_topics == [Topic.ENGLISH_GREETINGS]
+    assert result.progress.level.value == "beginner"
+    assert "Para iniciar una conversación" in result.learning_context
+    assert "intención comunicativa" in result.feedback
+
+
+@pytest.mark.asyncio
+async def test_english_grammar_matches_whole_words_not_substrings(
+    learning_service,
+) -> None:
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(
+        ChatRequest(
+            student_id="grammar-student",
+            message="Enséñame gramática inglesa",
+        )
+    )
+    result = await orchestrator.evaluate(
+        EvaluationRequest(
+            student_id="grammar-student",
+            session_id=chat.session_id,
+            answer="This sentence has no completed answers.",
+        )
+    )
+
+    assert result.status == EvaluationStatus.REINFORCE
+    assert any("«is»" in improvement for improvement in result.improvements)
 
 
 @pytest.mark.asyncio

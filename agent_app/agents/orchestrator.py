@@ -417,9 +417,10 @@ def detect_topic(message: str) -> Topic:
     ]
     if not matches:
         raise ValueError(
-            "No pude identificar el tema. Elige uno desde la sección Estudiar o "
-            "menciona uno como embeddings, RAG, MCP, prompt engineering, "
-            "seguridad de IA o agentes."
+            "Para comenzar, selecciona un tema del catálogo. Ve a Estudiar y elige "
+            "una tarjeta, o escribe el nombre de un tema; por ejemplo: Embeddings, "
+            "RAG, Model Context Protocol, ingeniería de prompts o seguridad para "
+            "aplicaciones con IA. También puedes escribir: quiero aprender inglés."
         )
     return max(matches, key=lambda item: item[0])[1]
 

@@ -22,12 +22,20 @@ class LearningLevel(StrEnum):
     ADVANCED = "advanced"
 
 
+class LearningSubject(StrEnum):
+    ARTIFICIAL_INTELLIGENCE = "artificial-intelligence"
+    ENGLISH = "english"
+
+
 class TopicCategory(StrEnum):
     FOUNDATIONS = "fundamentos"
     MODELS_DATA = "modelos-y-datos"
     AGENTS_TOOLS = "agentes-y-herramientas"
     QUALITY_SECURITY = "calidad-y-seguridad"
     PRODUCTION = "produccion"
+    COMMUNICATION = "comunicacion"
+    VOCABULARY = "vocabulario"
+    GRAMMAR = "gramatica"
 
 
 class TopicStatus(StrEnum):
@@ -71,6 +79,10 @@ class Topic(StrEnum):
     MULTIMODAL_AI = "multimodal-ai"
     RESPONSIBLE_AI = "responsible-ai"
     AI_PRODUCTION = "ai-production"
+    ENGLISH_GREETINGS = "english-greetings-introductions"
+    ENGLISH_VOCABULARY = "english-everyday-vocabulary"
+    ENGLISH_GRAMMAR = "english-grammar-in-context"
+    ENGLISH_CONVERSATION = "english-conversation"
 
 
 class LearningContent(StrictModel):
@@ -310,6 +322,7 @@ class PracticalExample(StrictModel):
 class TopicSummary(StrictModel):
     topic: Topic
     title: str
+    subject: LearningSubject
     category: TopicCategory
     order: int = Field(ge=1)
     prerequisites: list[Topic]
@@ -383,7 +396,7 @@ def _derive_topic_progress(assessments: list[Assessment]) -> list[TopicProgress]
                 topic=topic,
                 attempts=len(attempts),
                 best_score=best_score,
-                level=level_for_score(best_score),
+                level=_topic_level(topic, best_score, attempts),
                 mastery_status=(
                     MasteryStatus.MASTERED
                     if best_score >= MASTERY_SCORE
@@ -401,7 +414,41 @@ def _derive_topic_progress(assessments: list[Assessment]) -> list[TopicProgress]
 def _global_level(topic_progress: list[TopicProgress]) -> LearningLevel:
     if not topic_progress:
         return LearningLevel.BEGINNER
+    if all(_is_english_topic(item.topic) for item in topic_progress):
+        level_positions = {
+            LearningLevel.BEGINNER: 0,
+            LearningLevel.INTERMEDIATE: 1,
+            LearningLevel.ADVANCED: 2,
+        }
+        average_level = sum(
+            level_positions[item.level] for item in topic_progress
+        ) / len(topic_progress)
+        if average_level >= 1.5:
+            return LearningLevel.ADVANCED
+        if average_level >= 0.5:
+            return LearningLevel.INTERMEDIATE
+        return LearningLevel.BEGINNER
     average_best_score = sum(item.best_score for item in topic_progress) / len(
         topic_progress
     )
     return level_for_score(average_best_score)
+
+
+def _topic_level(
+    topic: Topic,
+    best_score: float,
+    attempts: list[Assessment],
+) -> LearningLevel:
+    if not _is_english_topic(topic):
+        return level_for_score(best_score)
+    successful_attempts = sum(item.score >= 60 for item in attempts)
+    strong_attempts = sum(item.score >= 85 for item in attempts)
+    if len(attempts) >= 4 and strong_attempts >= 2:
+        return LearningLevel.ADVANCED
+    if successful_attempts >= 2:
+        return LearningLevel.INTERMEDIATE
+    return LearningLevel.BEGINNER
+
+
+def _is_english_topic(topic: Topic) -> bool:
+    return topic.value.startswith("english-")

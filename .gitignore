@@ -222,5 +222,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Documentación local (no versionada)
-/docs
+# Documentación local (no versionada), salvo guías de capacidades del producto.
+/docs/*
+!/docs/english-curriculum.md
