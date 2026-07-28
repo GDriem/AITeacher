@@ -10,8 +10,8 @@ def test_frontend_has_no_runtime_dependency_or_render_blocking_script() -> None:
     assert "https://" not in html
     assert "http://" not in html
     assert html.count("<script ") == 1
-    assert '<script src="/static/app.js?v=12" defer></script>' in html
-    assert '<link rel="stylesheet" href="/static/styles.css?v=12" />' in html
+    assert '<script src="/static/app.js?v=13" defer></script>' in html
+    assert '<link rel="stylesheet" href="/static/styles.css?v=13" />' in html
     assert html.count('rel="stylesheet"') == 1
 
 

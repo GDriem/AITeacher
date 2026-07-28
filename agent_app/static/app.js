@@ -316,6 +316,7 @@ $("subject-filter").addEventListener("change", () => {
   renderLearningPath();
   renderTopicCatalog();
 });
+$("topic-search").addEventListener("input", renderTopicCatalog);
 $("category-filter").addEventListener("change", renderTopicCatalog);
 $("level-filter").addEventListener("change", renderTopicCatalog);
 
@@ -1137,14 +1138,27 @@ function populateCatalogFilters(topics) {
 }
 
 function renderTopicCatalog() {
+  const query = normalizeSearchText($("topic-search").value);
   const subject = $("subject-filter").value;
   const category = $("category-filter").value;
   const level = $("level-filter").value;
   const visible = state.catalog.filter(
-    (item) =>
-      (!subject || item.subject === subject) &&
-      (!category || item.category === category) &&
-      (!level || item.available_levels.includes(level)),
+    (item) => {
+      const searchableText = normalizeSearchText(
+        [
+          item.title,
+          item.topic,
+          subjectLabel(item.subject),
+          categoryLabel(item.category),
+        ].join(" "),
+      );
+      return (
+        (!query || searchableText.includes(query)) &&
+        (!subject || item.subject === subject) &&
+        (!category || item.category === category) &&
+        (!level || item.available_levels.includes(level))
+      );
+    },
   );
   $("topics-count").textContent =
     visible.length === state.catalogTotal
@@ -1152,7 +1166,11 @@ function renderTopicCatalog() {
       : `${visible.length} de ${state.catalogTotal} temas`;
   if (!visible.length) {
     $("topic-grid").innerHTML =
-      '<div class="catalog-message empty-state"><strong>Sin coincidencias</strong><span>Cambia la categoría o el nivel para ver otros temas.</span></div>';
+      `<div class="catalog-message empty-state"><strong>Sin coincidencias</strong><span>${
+        query
+          ? "Prueba con otra palabra o ajusta los filtros."
+          : "Cambia la materia, la categoría o el nivel para ver otros temas."
+      }</span></div>`;
     announce("No hay temas que coincidan con los filtros seleccionados.");
     return;
   }
@@ -1234,6 +1252,13 @@ function renderLearningPath() {
   $("recommended-topic").textContent = recommendation.title;
   $("recommendation-reason").textContent = recommendation.reason;
   card.classList.remove("hidden");
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es");
 }
 
 async function startPractice(focusConcept = null) {
