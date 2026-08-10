@@ -86,8 +86,14 @@ def test_page_exposes_keyboard_and_screen_reader_landmarks() -> None:
     assert 'id="health-summary" class="health-summary"' in html
     assert 'id="session-search" type="search"' in html
     assert 'aria-controls="session-list"' in html
+    assert 'id="topic-search" type="search"' in html
+    assert 'aria-controls="topic-grid"' in html
     assert 'id="subject-filter"' in html
     assert 'id="category-filter"' in html
+    assert 'id="auth-gate" class="auth-gate hidden" role="dialog"' in html
+    assert 'aria-labelledby="auth-title"' in html
+    assert 'id="student-menu" class="student-menu hidden" role="menu"' in html
+    assert 'id="student-logout" type="button" role="menuitem"' in html
 
 
 def test_styles_cover_focus_contrast_motion_and_responsive_layouts() -> None:
@@ -113,6 +119,8 @@ def test_client_manages_focus_loading_retries_and_reconnection() -> None:
     assert "restoreFocus()" in script
     assert "data-retry-topics" in script
     assert "data-retry-projects" in script
+    assert '$("topic-search").addEventListener("input", renderTopicCatalog)' in script
+    assert "normalizeSearchText" in script
     assert 'fetch("/api/observability")' in script
     assert "Tokens estimados" in script
     assert 'window.visualViewport?.addEventListener("resize", syncViewportHeight)' in script
@@ -120,3 +128,7 @@ def test_client_manages_focus_loading_retries_and_reconnection() -> None:
     assert 'error.status === 422 && error.message.includes("selecciona un tema")' in script
     assert "initialSessionLoadId === state.sessionLoadId" in script
     assert 'String(topic).startsWith("english-")' in script
+    assert 'fetch("/api/auth/status")' in script
+    assert 'fetch("/api/auth/google"' in script
+    assert 'element.setAttribute("aria-hidden", "true")' in script
+    assert 'window.google.accounts.id.renderButton' in script

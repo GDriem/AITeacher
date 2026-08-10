@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#07111f" />
     <title>AITeacher</title>
-    <link rel="stylesheet" href="/static/styles.css?v=12" />
+    <link rel="stylesheet" href="/static/styles.css?v=15" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
@@ -15,15 +15,39 @@
       <span>Sin conexión. Puedes seguir leyendo; reintentaremos al recuperar la red.</span>
     </div>
     <div id="announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    <section id="auth-gate" class="auth-gate hidden" role="dialog" aria-modal="true"
+      aria-labelledby="auth-title" aria-describedby="auth-description" aria-hidden="true">
+      <div class="auth-card panel">
+        <div class="auth-brand" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="eyebrow">Tu aprendizaje, siempre contigo</p>
+        <h2 id="auth-title" tabindex="-1">Continúa con Google</h2>
+        <p id="auth-description">Guarda tu progreso, conversaciones y ruta personalizada de forma segura.</p>
+        <div id="google-signin" class="google-signin" aria-live="polite"></div>
+        <p id="auth-error" class="auth-error hidden" role="alert"></p>
+        <button id="auth-retry" class="auth-retry hidden" type="button">Volver a intentar</button>
+        <small>Usamos tu nombre, correo y foto sólo para identificar tu perfil de aprendizaje.</small>
+      </div>
+    </section>
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
       <div>
         <p class="eyebrow">Tutor inteligente · Aprendizaje adaptativo</p>
         <h1>AI<span>Teacher</span></h1>
       </div>
-      <button id="student-toggle" class="student-toggle" type="button" title="Cambiar tu nombre">
-        <span id="student-name-label">Invitado</span>
-      </button>
+      <div class="student-account">
+        <button id="student-toggle" class="student-toggle" type="button" title="Cuenta del alumno"
+          aria-haspopup="menu" aria-expanded="false" aria-controls="student-menu">
+          <img id="student-avatar" class="student-avatar hidden" alt="" referrerpolicy="no-referrer" />
+          <span id="student-name-label">Invitado</span>
+        </button>
+        <div id="student-menu" class="student-menu hidden" role="menu">
+          <div role="presentation">
+            <strong id="student-menu-name">Invitado</strong>
+            <span id="student-menu-email"></span>
+          </div>
+          <button id="student-logout" type="button" role="menuitem">Cerrar sesión</button>
+        </div>
+      </div>
       <button id="authoring-toggle" class="authoring-toggle hidden" type="button">
         Panel de autoría
       </button>
@@ -156,7 +180,7 @@
           <h2 id="topics-title" tabindex="-1">Elige qué quieres aprender</h2>
           <p class="muted">Explora inteligencia artificial o practica inglés con una ruta adaptada a tu progreso.</p>
         </div>
-        <strong id="topics-count" class="catalog-count">Cargando…</strong>
+        <strong id="topics-count" class="catalog-count" aria-live="polite">Cargando…</strong>
       </div>
       <article id="learning-path-card" class="learning-path-card hidden">
         <div class="path-icon" aria-hidden="true">→</div>
@@ -170,6 +194,18 @@
         </button>
       </article>
       <div class="catalog-filters" aria-label="Filtros del catálogo">
+        <label class="topic-search" for="topic-search">
+          <span>Buscar tema</span>
+          <span class="topic-search-control">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="10.8" cy="10.8" r="6.3"></circle>
+              <path d="m15.5 15.5 4 4"></path>
+            </svg>
+            <input id="topic-search" type="search" autocomplete="off"
+              placeholder="Ejemplo: embeddings, inglés o seguridad"
+              aria-controls="topic-grid" aria-describedby="topics-count" />
+          </span>
+        </label>
         <label>
           <span>Materia</span>
           <select id="subject-filter">
@@ -455,6 +491,6 @@
       <div id="session-list" class="session-list" role="list"></div>
     </aside>
 
-    <script src="/static/app.js?v=12" defer></script>
+    <script src="/static/app.js?v=15" defer></script>
   </body>
 </html>

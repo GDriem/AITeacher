@@ -61,6 +61,18 @@ from agent_app.services.observability import (
 )
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
 from agent_app.services.activities import PROJECTS, evaluate_project
+from agent_app.services.auth import (
+    AuthService,
+    AuthStatus,
+    AuthenticationError,
+    FirestoreStudentProfileRepository,
+    GoogleLoginRequest,
+    GoogleTokenVerifier,
+    LocalStudentProfileRepository,
+    PublicStudentProfile,
+    SessionSigner,
+    StudentProfileRepository,
+)
 from agent_app.services.authoring import (
     AuthoringGateway,
     LocalAuthoringGateway,
@@ -87,6 +99,7 @@ from mcp_learning_server.server import build_learning_service
 
 logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parents[1] / "static"
+AUTH_COOKIE_NAME = "ait_session"
 
 
 def build_session_repository(settings: Settings) -> SessionRepository:
@@ -105,6 +118,37 @@ def build_session_repository(settings: Settings) -> SessionRepository:
         firestore.Client(project=settings.google_cloud_project),
         collection=settings.firestore_sessions_collection,
         retention_days=settings.app_session_retention_days,
+    )
+
+
+def build_student_profile_repository(
+    settings: Settings,
+) -> StudentProfileRepository:
+    if settings.app_student_profiles_backend == "local":
+        return LocalStudentProfileRepository(settings.app_student_profiles_path)
+    try:
+        from google.cloud import firestore
+    except ImportError as exc:  # pragma: no cover - depende del extra cloud
+        raise RuntimeError(
+            "El backend firestore requiere instalar el extra cloud"
+        ) from exc
+    return FirestoreStudentProfileRepository(
+        firestore.Client(project=settings.google_cloud_project),
+        collection=settings.firestore_student_profiles_collection,
+    )
+
+
+def build_auth_service(settings: Settings) -> AuthService | None:
+    if not settings.google_auth_enabled:
+        return None
+    if not settings.app_session_secret:
+        raise RuntimeError(
+            "APP_SESSION_SECRET es obligatorio cuando GOOGLE_CLIENT_ID está configurado"
+        )
+    return AuthService(
+        GoogleTokenVerifier(settings.google_client_id or ""),
+        build_student_profile_repository(settings),
+        SessionSigner(settings.app_session_secret, settings.app_auth_session_days),
     )
 
 
@@ -170,6 +214,7 @@ def create_app(
     sessions: SessionRepository | None = None,
     authoring: AuthoringGateway | None = None,
     observability: ObservabilityRegistry | None = None,
+    auth_service: AuthService | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     tools = tools or build_learning_tools(settings)
@@ -182,6 +227,7 @@ def create_app(
         output_cost_per_million_usd=settings.model_output_cost_per_million_usd,
         max_latency_samples=settings.observability_max_latency_samples,
     )
+    auth_service = auth_service or build_auth_service(settings)
     observed_provider = ObservableModelProvider(provider, observability)
     orchestrator = build_orchestrator(
         settings,
@@ -204,6 +250,7 @@ def create_app(
     app.state.authoring = authoring
     app.state.settings = settings
     app.state.observability = observability
+    app.state.auth_service = auth_service
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.middleware("http")
@@ -261,8 +308,34 @@ def create_app(
         elif request.url.path == "/":
             response.headers.setdefault("cache-control", "no-cache")
         response.headers.setdefault("x-content-type-options", "nosniff")
+        response.headers.setdefault(
+            "referrer-policy", "strict-origin-when-cross-origin"
+        )
+        response.headers.setdefault(
+            "cross-origin-opener-policy", "same-origin-allow-popups"
+        )
+        response.headers.setdefault(
+            "permissions-policy", "camera=(), geolocation=(), payment=()"
+        )
+        response.headers.setdefault(
+            "content-security-policy",
+            "default-src 'self'; "
+            "script-src 'self' https://accounts.google.com; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https://*.googleusercontent.com; "
+            "connect-src 'self' https://accounts.google.com; "
+            "frame-src https://accounts.google.com; "
+            "object-src 'none'; base-uri 'self'; form-action 'self'; "
+            "frame-ancestors 'none'",
+        )
         response.headers["x-correlation-id"] = correlation_id
         return response
+
+    @app.exception_handler(AuthenticationError)
+    async def invalid_authentication(
+        _: Request, exc: AuthenticationError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=401, content={"detail": str(exc)})
 
     @app.exception_handler(ValueError)
     async def invalid_request(_: Request, exc: ValueError) -> JSONResponse:
@@ -318,6 +391,72 @@ def create_app(
             "voice_model": settings.gemini_live_model if settings.voice_enabled else None,
             "authoring": bool(settings.app_authoring_token and authoring),
         }
+
+    def authenticated_profile(request: Request):
+        if auth_service is None:
+            return None
+        return auth_service.authenticate(request.cookies.get(AUTH_COOKIE_NAME))
+
+    def resolve_student_id(request: Request, claimed_student_id: str | None) -> str:
+        profile = authenticated_profile(request)
+        if profile is not None:
+            return profile.student_id
+        normalized = (claimed_student_id or "").strip()
+        if not normalized or len(normalized) > 100:
+            raise ValueError("student_id debe contener entre 1 y 100 caracteres")
+        return normalized
+
+    @app.get("/api/auth/status", response_model=AuthStatus)
+    async def auth_status(request: Request) -> AuthStatus:
+        if auth_service is None:
+            return AuthStatus(enabled=False, authenticated=False)
+        try:
+            profile = authenticated_profile(request)
+        except AuthenticationError:
+            return AuthStatus(
+                enabled=True,
+                authenticated=False,
+                google_client_id=settings.google_client_id,
+            )
+        return AuthStatus(
+            enabled=True,
+            authenticated=True,
+            google_client_id=settings.google_client_id,
+            profile=PublicStudentProfile.from_profile(profile),
+        )
+
+    @app.post("/api/auth/google", response_model=PublicStudentProfile)
+    async def google_login(
+        payload: GoogleLoginRequest, response: Response
+    ) -> PublicStudentProfile:
+        if auth_service is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Google Login no está configurado en este entorno",
+            )
+        token, _, profile = await asyncio.to_thread(
+            auth_service.login, payload.credential
+        )
+        response.set_cookie(
+            AUTH_COOKIE_NAME,
+            token,
+            max_age=settings.app_auth_session_days * 86_400,
+            httponly=True,
+            secure=settings.app_auth_cookie_secure,
+            samesite="lax",
+            path="/",
+        )
+        return PublicStudentProfile.from_profile(profile)
+
+    @app.post("/api/auth/logout", status_code=204)
+    async def logout(response: Response) -> None:
+        response.delete_cookie(
+            AUTH_COOKIE_NAME,
+            httponly=True,
+            secure=settings.app_auth_cookie_secure,
+            samesite="lax",
+            path="/",
+        )
 
     def require_authoring(
         supplied_token: str | None,
@@ -427,9 +566,10 @@ def create_app(
         return await gateway.revert_lesson(lesson_id, payload)
 
     @app.get("/api/topics", response_model=TopicCatalogResponse)
-    async def topics(student_id: str) -> TopicCatalogResponse:
-        if not student_id.strip() or len(student_id) > 100:
-            raise ValueError("student_id debe contener entre 1 y 100 caracteres")
+    async def topics(
+        request: Request, student_id: str | None = None
+    ) -> TopicCatalogResponse:
+        student_id = resolve_student_id(request, student_id)
         catalog, progress, path = await asyncio.gather(
             tools.list_available_topics(),
             tools.get_student_progress(student_id),
@@ -473,8 +613,11 @@ def create_app(
 
     @app.get("/api/sessions", response_model=ConversationListResponse)
     async def list_sessions(
-        student_id: str, include_archived: bool = False
+        request: Request,
+        student_id: str | None = None,
+        include_archived: bool = False,
     ) -> ConversationListResponse:
+        student_id = resolve_student_id(request, student_id)
         items = sessions.list(student_id, include_archived)
         return ConversationListResponse(
             sessions=[conversation_summary(item) for item in items],
@@ -485,7 +628,10 @@ def create_app(
         "/api/sessions/{session_id}",
         response_model=ConversationDetail,
     )
-    async def get_session(session_id: str, student_id: str) -> ConversationDetail:
+    async def get_session(
+        session_id: str, request: Request, student_id: str | None = None
+    ) -> ConversationDetail:
+        student_id = resolve_student_id(request, student_id)
         return conversation_detail(sessions.get(session_id, student_id))
 
     @app.patch(
@@ -493,26 +639,32 @@ def create_app(
         response_model=ConversationDetail,
     )
     async def update_session(
-        session_id: str, payload: SessionUpdateRequest
+        session_id: str, payload: SessionUpdateRequest, request: Request
     ) -> ConversationDetail:
-        session = sessions.get(session_id, payload.student_id)
+        student_id = resolve_student_id(request, payload.student_id)
+        session = sessions.get(session_id, student_id)
         if payload.title is not None:
-            session = sessions.rename(session_id, payload.student_id, payload.title)
+            session = sessions.rename(session_id, student_id, payload.title)
         if payload.archived is not None:
-            session = sessions.set_archived(
-                session_id, payload.student_id, payload.archived
-            )
+            session = sessions.set_archived(session_id, student_id, payload.archived)
         return conversation_detail(session)
 
     @app.delete("/api/sessions/{session_id}", status_code=204)
     async def delete_session(
-        session_id: str, student_id: str
+        session_id: str, request: Request, student_id: str | None = None
     ) -> Response:
+        student_id = resolve_student_id(request, student_id)
         sessions.delete(session_id, student_id)
         return Response(status_code=204)
 
     @app.websocket("/ws/live")
     async def live_voice(websocket: WebSocket) -> None:
+        if auth_service is not None:
+            try:
+                auth_service.authenticate(websocket.cookies.get(AUTH_COOKIE_NAME))
+            except AuthenticationError:
+                await websocket.close(code=4401)
+                return
         await websocket.accept()
         try:
             bridge = GeminiLiveBridge(settings)
@@ -543,6 +695,9 @@ def create_app(
 
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
+        payload = payload.model_copy(
+            update={"student_id": resolve_student_id(request, payload.student_id)}
+        )
         correlation_id = request.state.correlation_id
         logger.info("chat_started", extra={"correlation_id": correlation_id})
         with observability.activity("guided_explanation"):
@@ -554,6 +709,9 @@ def create_app(
     async def evaluate(
         payload: EvaluationRequest, request: Request
     ) -> EvaluationResponse:
+        payload = payload.model_copy(
+            update={"student_id": resolve_student_id(request, payload.student_id)}
+        )
         with observability.activity("topic_evaluation"):
             return await orchestrator.evaluate(
                 payload, request.state.correlation_id
@@ -561,14 +719,20 @@ def create_app(
 
     @app.post("/api/practice/start", response_model=PracticeStartResponse)
     async def start_practice(
-        payload: PracticeStartRequest,
+        payload: PracticeStartRequest, request: Request
     ) -> PracticeStartResponse:
+        payload = payload.model_copy(
+            update={"student_id": resolve_student_id(request, payload.student_id)}
+        )
         return await orchestrator.start_practice(payload)
 
     @app.post("/api/practice/evaluate", response_model=PracticeEvaluationResponse)
     async def evaluate_practice(
-        payload: PracticeEvaluationRequest,
+        payload: PracticeEvaluationRequest, request: Request
     ) -> PracticeEvaluationResponse:
+        payload = payload.model_copy(
+            update={"student_id": resolve_student_id(request, payload.student_id)}
+        )
         with observability.activity("practice_evaluation"):
             return await orchestrator.evaluate_practice(payload)
 
@@ -583,7 +747,11 @@ def create_app(
     async def evaluate_integrative_project(
         project_id: str,
         payload: ProjectEvaluationRequest,
+        request: Request,
     ) -> ProjectEvaluationResponse:
+        payload = payload.model_copy(
+            update={"student_id": resolve_student_id(request, payload.student_id)}
+        )
         project = PROJECTS.get(project_id)
         if project is None:
             raise KeyError("No existe el proyecto solicitado")
