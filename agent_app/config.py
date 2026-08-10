@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     app_session_retention_days: int = Field(default=365, ge=1, le=3_650)
     app_sessions_backend: str = Field(default="local", pattern="^(local|firestore)$")
     firestore_sessions_collection: str = "learning_sessions"
+    app_student_profiles_backend: str = Field(
+        default="local", pattern="^(local|firestore)$"
+    )
+    app_student_profiles_path: str = ".data/student_profiles.json"
+    firestore_student_profiles_collection: str = "student_profiles"
+    google_client_id: str | None = None
+    app_session_secret: str | None = None
+    app_auth_session_days: int = Field(default=7, ge=1, le=30)
+    app_auth_cookie_secure: bool = False
     app_authoring_token: str | None = None
     model_provider: ModelProviderName = ModelProviderName.MOCK
     model_timeout_seconds: float = Field(default=20, gt=0, le=120)
@@ -51,6 +60,10 @@ class Settings(BaseSettings):
         if self.google_genai_use_vertexai:
             return bool(self.google_cloud_project)
         return bool(self.google_api_key)
+
+    @property
+    def google_auth_enabled(self) -> bool:
+        return bool(self.google_client_id)
 
     foundry_endpoint: str | None = None
     foundry_model_deployment: str | None = None
