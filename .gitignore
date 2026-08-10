@@ -225,3 +225,4 @@ __marimo__/
 # Documentación local (no versionada), salvo guías de capacidades del producto.
 /docs/*
 !/docs/english-curriculum.md
+!/docs/google-auth-student-profiles-plan.md
