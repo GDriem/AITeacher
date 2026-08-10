@@ -57,6 +57,33 @@ class AuthSession(AuthModel):
     expires_at: datetime
 
 
+class GoogleLoginRequest(AuthModel):
+    credential: str = Field(min_length=100, max_length=8_192)
+
+
+class PublicStudentProfile(AuthModel):
+    student_id: str
+    email: str
+    display_name: str
+    picture_url: str | None
+
+    @classmethod
+    def from_profile(cls, profile: StudentProfile) -> "PublicStudentProfile":
+        return cls(
+            student_id=profile.student_id,
+            email=profile.email,
+            display_name=profile.display_name,
+            picture_url=profile.picture_url,
+        )
+
+
+class AuthStatus(AuthModel):
+    enabled: bool
+    authenticated: bool
+    google_client_id: str | None = None
+    profile: PublicStudentProfile | None = None
+
+
 class GoogleIdentityVerifier(Protocol):
     def verify(self, credential: str) -> GoogleIdentity: ...
 
