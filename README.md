@@ -46,7 +46,7 @@ documentación en el [índice de `docs/`](docs/README.md).
 - Navegación accesible por teclado, foco administrado y estados recuperables.
 - Panel agregado de salud, latencia, errores, tokens, costos y actividades.
 - Compresión, caché versionada y presupuestos de rendimiento del frontend.
-- Interfaz para proyección y voz opt-in mediante WebSocket backend.
+- Modo de voz inmersivo y opt-in con subtítulos, interrupción y WebSocket backend.
 - Adaptadores JSON/Firestore y dos servicios preparados para Cloud Run.
 
 Las dependencias de ADK, Google Cloud y Foundry están separadas en grupos
@@ -126,6 +126,21 @@ python -m agent_app.api.main
 Abra `http://localhost:8000`. Por defecto se usan proveedor `mock` y adaptador
 MCP local para que la demo arranque sin credenciales. Para probar dos procesos,
 configure `MCP_USE_LOCAL_ADAPTER=false`.
+
+## Conversación por voz
+
+El botón de micrófono abre una conversación continua con Gemini Live. El modo
+incluye subtítulos por turno, indicador de actividad, silencio del micrófono,
+finalización accesible por teclado y cancelación inmediata del audio cuando el
+alumno interrumpe. Si existe una conversación de texto activa, el backend aporta
+al modelo su tema, actividad pendiente y última explicación sin exponer la API
+key al navegador.
+
+Configure `MODEL_PROVIDER=gemini` y una de estas opciones: `GOOGLE_API_KEY`, o
+`GOOGLE_GENAI_USE_VERTEXAI=true` junto con `GOOGLE_CLOUD_PROJECT`. La voz y el
+modelo Live se seleccionan con `GEMINI_LIVE_VOICE` y `GEMINI_LIVE_MODEL`. En
+producción el sitio debe servirse por HTTPS para que el navegador permita el
+micrófono; `localhost` también se considera un contexto seguro.
 
 La aplicación expone `GET /api/topics` para consultar el
 catálogo, la ruta y el estado del estudiante. La respuesta incluye

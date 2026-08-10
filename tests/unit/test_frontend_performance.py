@@ -10,8 +10,8 @@ def test_frontend_has_no_runtime_dependency_or_render_blocking_script() -> None:
     assert "https://" not in html
     assert "http://" not in html
     assert html.count("<script ") == 1
-    assert '<script src="/static/app.js?v=15" defer></script>' in html
-    assert '<link rel="stylesheet" href="/static/styles.css?v=15" />' in html
+    assert '<script src="/static/app.js?v=16" defer></script>' in html
+    assert '<link rel="stylesheet" href="/static/styles.css?v=16" />' in html
     assert html.count('rel="stylesheet"') == 1
 
     script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
@@ -21,8 +21,9 @@ def test_frontend_has_no_runtime_dependency_or_render_blocking_script() -> None:
 def test_static_assets_stay_inside_lightweight_performance_budgets() -> None:
     budgets = {
         "index.html": 30_000,
-        "styles.css": 50_000,
+        "styles.css": 60_000,
         "app.js": 100_000,
+        "pcm-capture-worklet.js": 2_000,
     }
 
     for filename, maximum_bytes in budgets.items():

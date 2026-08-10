@@ -315,7 +315,8 @@ def create_app(
             "cross-origin-opener-policy", "same-origin-allow-popups"
         )
         response.headers.setdefault(
-            "permissions-policy", "camera=(), geolocation=(), payment=()"
+            "permissions-policy",
+            "camera=(), geolocation=(), microphone=(self), payment=()",
         )
         response.headers.setdefault(
             "content-security-policy",
@@ -659,15 +660,47 @@ def create_app(
 
     @app.websocket("/ws/live")
     async def live_voice(websocket: WebSocket) -> None:
+        voice_student_id = websocket.query_params.get("student_id")
         if auth_service is not None:
             try:
-                auth_service.authenticate(websocket.cookies.get(AUTH_COOKIE_NAME))
+                profile = auth_service.authenticate(
+                    websocket.cookies.get(AUTH_COOKIE_NAME)
+                )
+                voice_student_id = profile.student_id
             except AuthenticationError:
                 await websocket.close(code=4401)
                 return
         await websocket.accept()
+        session_context = ""
+        session_id = websocket.query_params.get("session_id")
+        if session_id and voice_student_id:
+            try:
+                current_session = sessions.get(session_id, voice_student_id)
+                context_parts = [
+                    f"Tema: {current_session.topic.value}.",
+                    f"Conversación: {current_session.title}.",
+                    (
+                        "Actividad pendiente: "
+                        f"{current_session.pending_evaluation.quiz.question}"
+                    ),
+                ]
+                last_explanation = next(
+                    (
+                        item.content
+                        for item in reversed(current_session.messages)
+                        if item.role.value == "assistant"
+                    ),
+                    "",
+                )
+                if last_explanation:
+                    context_parts.append(
+                        f"Última explicación del tutor: {last_explanation[:1_000]}"
+                    )
+                session_context = " ".join(context_parts)
+            except (KeyError, PermissionError, ValueError):
+                logger.warning("voice_session_context_unavailable")
         try:
-            bridge = GeminiLiveBridge(settings)
+            bridge = GeminiLiveBridge(settings, session_context=session_context)
         except VoiceUnavailable as exc:
             await websocket.send_json({"type": "unavailable", "message": str(exc)})
             await websocket.close(code=4403)

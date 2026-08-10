@@ -49,10 +49,19 @@ const voice = {
   socket: null,
   stream: null,
   context: null,
-  processor: null,
+  captureNode: null,
+  silentGain: null,
   source: null,
+  analyser: null,
+  analyserData: null,
+  animationFrame: null,
   playbackCursor: 0,
+  playbackSources: new Set(),
   stopping: false,
+  muted: false,
+  state: "idle",
+  focusReturn: null,
+  transcriptRole: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -465,6 +474,15 @@ document.addEventListener("click", (event) => {
   $("student-toggle").setAttribute("aria-expanded", "false");
 });
 document.addEventListener("keydown", (event) => {
+  if (!$('voice-panel').classList.contains("hidden")) {
+    if (event.key === "Tab") {
+      trapFocus($("voice-panel"), event);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      stopVoice();
+    }
+    return;
+  }
   if (event.key === "Tab" && state.openDrawerName) {
     trapFocus($(DRAWER_IDS[state.openDrawerName]), event);
     return;
@@ -862,9 +880,12 @@ function renderSessionList() {
 }
 
 $("mic").addEventListener("click", async () => {
-  if (voice.socket) stopVoice();
+  if (voice.state !== "idle") stopVoice();
   else await startVoice();
 });
+$("voice-close").addEventListener("click", stopVoice);
+$("voice-end").addEventListener("click", stopVoice);
+$("voice-mute").addEventListener("click", toggleVoiceMute);
 
 initializeApplication();
 window.setInterval(() => {
@@ -1622,25 +1643,36 @@ async function startVoice() {
     showError("Este navegador no permite capturar el micrófono. Continúa por texto.");
     return;
   }
+  openVoicePanel();
   try {
     voice.stopping = false;
     voice.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
     });
-    voice.context = new AudioContext();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    voice.context = new AudioContextClass({ latencyHint: "interactive" });
+    await voice.context.resume();
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    voice.socket = new WebSocket(`${protocol}//${location.host}/ws/live`);
+    const params = new URLSearchParams({ student_id: state.studentId });
+    if (state.sessionId) params.set("session_id", state.sessionId);
+    voice.socket = new WebSocket(`${protocol}//${location.host}/ws/live?${params}`);
     voice.socket.binaryType = "arraybuffer";
     voice.socket.onmessage = handleVoiceMessage;
-    voice.socket.onerror = () => voiceFallback("No se pudo conectar la voz.");
+    voice.socket.onerror = () => voiceFallback("No pudimos conectar la conversación por voz.");
     voice.socket.onclose = () => {
-      if (!voice.stopping) voiceFallback("La voz se desconectó.");
-      cleanupVoice();
+      if (!voice.stopping) voiceFallback("La conversación por voz se desconectó.");
     };
-    setVoiceStatus("Conectando con Gemini Live…");
+    setVoiceState("connecting");
   } catch (error) {
-    voiceFallback(error.name === "NotAllowedError" ? "Permiso de micrófono denegado." : error.message);
-    cleanupVoice();
+    const message = error.name === "NotAllowedError"
+      ? "Necesitamos permiso para usar el micrófono."
+      : "No pudimos preparar el audio en este navegador.";
+    voiceFallback(message);
   }
 }
 
@@ -1649,35 +1681,74 @@ async function handleVoiceMessage(event) {
     playPcm24(event.data);
     return;
   }
-  const message = JSON.parse(event.data);
+  let message;
+  try {
+    message = JSON.parse(event.data);
+  } catch {
+    voiceFallback("Recibimos una respuesta de voz que no pudimos procesar.");
+    return;
+  }
   if (message.type === "ready") {
-    beginCapture();
-    $("mic").classList.add("active");
-    setVoiceStatus("Escuchando… pulsa el micrófono para terminar.");
+    voice.outputSampleRate = message.sample_rate || 24000;
+    try {
+      await beginCapture();
+      setVoiceState("listening");
+    } catch {
+      voiceFallback("No pudimos iniciar la captura del micrófono.");
+    }
   } else if (message.type === "transcript") {
-    setVoiceStatus(`${message.role === "user" ? "Tú" : "Tutor"}: ${message.text}`);
+    updateVoiceTranscript(message.role, message.text);
+    if (message.role === "user") setVoiceState("listening", "Entendiendo lo que dices…");
+  } else if (message.type === "interrupted") {
+    stopVoicePlayback();
+    voice.transcriptRole = null;
+    setVoiceState("listening", "Te escucho. Continúa cuando quieras.");
   } else if (message.type === "turn_complete") {
-    setVoiceStatus("Escuchando…");
+    voice.transcriptRole = null;
+    setVoiceState(
+      voice.muted ? "muted" : (voice.playbackSources.size ? "speaking" : "listening"),
+    );
   } else if (message.type === "unavailable" || message.type === "error") {
     voiceFallback(message.message);
   }
 }
 
-function beginCapture() {
+async function beginCapture() {
+  if (voice.captureNode) return;
   voice.source = voice.context.createMediaStreamSource(voice.stream);
-  voice.processor = voice.context.createScriptProcessor(4096, 1, 1);
-  voice.processor.onaudioprocess = (event) => {
-    if (voice.socket?.readyState !== WebSocket.OPEN) return;
-    const input = event.inputBuffer.getChannelData(0);
-    const downsampled = downsample(input, voice.context.sampleRate, 16000);
-    const pcm = new Int16Array(downsampled.length);
-    downsampled.forEach((sample, index) => {
-      pcm[index] = Math.max(-1, Math.min(1, sample)) * 0x7fff;
-    });
-    voice.socket.send(pcm.buffer);
-  };
-  voice.source.connect(voice.processor);
-  voice.processor.connect(voice.context.destination);
+  voice.analyser = voice.context.createAnalyser();
+  voice.analyser.fftSize = 256;
+  voice.analyser.smoothingTimeConstant = .72;
+  voice.analyserData = new Uint8Array(voice.analyser.fftSize);
+  voice.source.connect(voice.analyser);
+
+  voice.silentGain = voice.context.createGain();
+  voice.silentGain.gain.value = 0;
+  if (voice.context.audioWorklet && window.AudioWorkletNode) {
+    await voice.context.audioWorklet.addModule("/static/pcm-capture-worklet.js?v=1");
+    voice.captureNode = new AudioWorkletNode(voice.context, "pcm-capture");
+    voice.captureNode.port.onmessage = (event) => sendVoiceSamples(event.data);
+  } else {
+    voice.captureNode = voice.context.createScriptProcessor(4096, 1, 1);
+    voice.captureNode.onaudioprocess = (event) => {
+      sendVoiceSamples(event.inputBuffer.getChannelData(0));
+    };
+  }
+  voice.source.connect(voice.captureNode);
+  voice.captureNode.connect(voice.silentGain);
+  voice.silentGain.connect(voice.context.destination);
+  animateVoiceWave();
+}
+
+function sendVoiceSamples(samples) {
+  if (voice.muted || voice.socket?.readyState !== WebSocket.OPEN) return;
+  const downsampled = downsample(samples, voice.context.sampleRate, 16000);
+  const pcm = new Int16Array(downsampled.length);
+  for (let index = 0; index < downsampled.length; index += 1) {
+    const sample = Math.max(-1, Math.min(1, downsampled[index]));
+    pcm[index] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+  }
+  voice.socket.send(pcm.buffer);
 }
 
 function downsample(buffer, inputRate, outputRate) {
@@ -1697,7 +1768,7 @@ function downsample(buffer, inputRate, outputRate) {
 function playPcm24(arrayBuffer) {
   if (!voice.context) return;
   const pcm = new Int16Array(arrayBuffer);
-  const audioBuffer = voice.context.createBuffer(1, pcm.length, 24000);
+  const audioBuffer = voice.context.createBuffer(1, pcm.length, voice.outputSampleRate || 24000);
   const channel = audioBuffer.getChannelData(0);
   for (let i = 0; i < pcm.length; i += 1) channel[i] = pcm[i] / 0x8000;
   const source = voice.context.createBufferSource();
@@ -1706,39 +1777,172 @@ function playPcm24(arrayBuffer) {
   voice.playbackCursor = Math.max(voice.context.currentTime, voice.playbackCursor);
   source.start(voice.playbackCursor);
   voice.playbackCursor += audioBuffer.duration;
+  voice.playbackSources.add(source);
+  source.addEventListener("ended", () => {
+    voice.playbackSources.delete(source);
+    if (!voice.playbackSources.size && voice.state === "speaking") {
+      setVoiceState(voice.muted ? "muted" : "listening");
+    }
+  }, { once: true });
+  if (!voice.muted) setVoiceState("speaking");
 }
 
 function stopVoice() {
+  if (voice.state === "idle") return;
   voice.stopping = true;
   if (voice.socket?.readyState === WebSocket.OPEN) {
     voice.socket.send(JSON.stringify({ type: "stop_audio" }));
-    voice.socket.close(1000, "user stopped voice");
   }
-  cleanupVoice();
-  setVoiceStatus("Voz detenida. Puedes continuar por texto.");
+  voice.socket?.close(1000, "user stopped voice");
+  cleanupVoice({ closePanel: true });
+  setVoiceStatus("Conversación por voz finalizada. Puedes continuar por texto.");
 }
 
-function cleanupVoice() {
-  voice.processor?.disconnect();
+function cleanupVoice({ closePanel = false } = {}) {
+  voice.stopping = true;
+  stopVoicePlayback();
+  if (voice.animationFrame) cancelAnimationFrame(voice.animationFrame);
+  voice.captureNode?.disconnect();
   voice.source?.disconnect();
+  voice.analyser?.disconnect();
+  voice.silentGain?.disconnect();
   voice.stream?.getTracks().forEach((track) => track.stop());
-  voice.context?.close();
+  if (voice.context && voice.context.state !== "closed") voice.context.close();
+  if (voice.socket && voice.socket.readyState < WebSocket.CLOSING) {
+    voice.socket.close(1000, "voice cleanup");
+  }
   voice.socket = null;
   voice.stream = null;
   voice.context = null;
-  voice.processor = null;
+  voice.captureNode = null;
+  voice.silentGain = null;
   voice.source = null;
+  voice.analyser = null;
+  voice.analyserData = null;
+  voice.animationFrame = null;
   voice.playbackCursor = 0;
+  voice.playbackSources.clear();
+  voice.muted = false;
+  voice.transcriptRole = null;
   $("mic").classList.remove("active");
+  $("mic").setAttribute("aria-label", "Activar micrófono");
+  $("voice-mute").setAttribute("aria-pressed", "false");
+  $("voice-mute-label").textContent = "Silenciar";
+  if (closePanel) closeVoicePanel();
 }
 
 function voiceFallback(message) {
+  cleanupVoice();
+  voice.state = "error";
+  $("voice-orb").dataset.state = "error";
+  $("voice-state-label").textContent = "La voz no está disponible";
+  $("voice-state-detail").textContent = `${message} Puedes cerrar este modo y continuar por texto.`;
+  $("voice-mute").disabled = true;
   setVoiceStatus(`${message} Continúa usando el chat de texto.`);
+  announce(message);
 }
 
 function setVoiceStatus(message) {
   $("voice-status").textContent = message;
   $("voice-status").classList.toggle("hidden", !message);
+}
+
+function openVoicePanel() {
+  voice.focusReturn = document.activeElement;
+  voice.state = "idle";
+  voice.transcriptRole = null;
+  $("voice-user-turn").classList.add("hidden");
+  $("voice-tutor-turn").classList.add("hidden");
+  $("voice-user-turn").querySelector("q").textContent = "";
+  $("voice-tutor-turn").querySelector("q").textContent = "";
+  $("voice-helper").classList.remove("hidden");
+  $("voice-mute").disabled = false;
+  $("voice-panel").classList.remove("hidden");
+  $("voice-panel").setAttribute("aria-hidden", "false");
+  document.body.classList.add("voice-mode");
+  $("mic").classList.add("active");
+  $("mic").setAttribute("aria-label", "Finalizar conversación por voz");
+  setVoiceState("connecting");
+  $("voice-close").focus();
+}
+
+function closeVoicePanel() {
+  $("voice-panel").classList.add("hidden");
+  $("voice-panel").setAttribute("aria-hidden", "true");
+  document.body.classList.remove("voice-mode");
+  voice.state = "idle";
+  const focusTarget = voice.focusReturn;
+  voice.focusReturn = null;
+  if (focusTarget?.isConnected) focusTarget.focus();
+}
+
+function setVoiceState(nextState, detail = "") {
+  if (voice.state === "error") return;
+  const content = {
+    connecting: ["Preparando el micrófono…", "La conversación comenzará en un momento."],
+    listening: ["Te escucho", "Habla cuando quieras. No necesitas pulsar nada más."],
+    speaking: ["El tutor está respondiendo", "Puedes interrumpirlo de forma natural."],
+    muted: ["Micrófono silenciado", "Actívalo cuando quieras volver a hablar."],
+  }[nextState];
+  if (!content) return;
+  voice.state = nextState;
+  $("voice-orb").dataset.state = nextState;
+  $("voice-state-label").textContent = content[0];
+  $("voice-state-detail").textContent = detail || content[1];
+  setVoiceStatus(content[0]);
+}
+
+function updateVoiceTranscript(role, text) {
+  const normalized = String(text || "").trim();
+  if (!normalized) return;
+  const isUser = role === "user";
+  const turn = isUser ? $("voice-user-turn") : $("voice-tutor-turn");
+  const caption = turn.querySelector("q");
+  if (voice.transcriptRole !== role) caption.textContent = "";
+  const current = caption.textContent.trim();
+  if (!current) caption.textContent = normalized;
+  else if (normalized.startsWith(current)) caption.textContent = normalized;
+  else caption.textContent = `${current}${/^[,.;:!?)]/.test(normalized) ? "" : " "}${normalized}`;
+  voice.transcriptRole = role;
+  turn.classList.remove("hidden");
+  $("voice-helper").classList.add("hidden");
+}
+
+function toggleVoiceMute() {
+  if (!voice.stream || voice.state === "error") return;
+  voice.muted = !voice.muted;
+  voice.stream.getAudioTracks().forEach((track) => { track.enabled = !voice.muted; });
+  $("voice-mute").setAttribute("aria-pressed", String(voice.muted));
+  $("voice-mute-label").textContent = voice.muted ? "Activar" : "Silenciar";
+  setVoiceState(voice.muted ? "muted" : "listening");
+  announce(voice.muted ? "Micrófono silenciado" : "Micrófono activado");
+}
+
+function stopVoicePlayback() {
+  voice.playbackSources.forEach((source) => {
+    try { source.stop(); } catch { /* La fuente ya terminó. */ }
+  });
+  voice.playbackSources.clear();
+  if (voice.context) voice.playbackCursor = voice.context.currentTime;
+}
+
+function animateVoiceWave() {
+  if (!voice.analyser || !voice.analyserData) return;
+  voice.analyser.getByteTimeDomainData(voice.analyserData);
+  let energy = 0;
+  for (let index = 0; index < voice.analyserData.length; index += 1) {
+    const sample = (voice.analyserData[index] - 128) / 128;
+    energy += sample * sample;
+  }
+  const rms = Math.sqrt(energy / voice.analyserData.length);
+  const activity = voice.muted ? 0 : Math.min(1, rms * 8);
+  const now = performance.now() / 180;
+  $("voice-wave").querySelectorAll("i").forEach((bar, index) => {
+    const speakingMotion = voice.state === "speaking" ? .28 + Math.abs(Math.sin(now + index * .72)) * .65 : 0;
+    const microphoneMotion = activity * (.52 + Math.abs(Math.sin(index * 1.37)) * .48);
+    bar.style.setProperty("--level", String(Math.max(.14, speakingMotion, microphoneMotion)));
+  });
+  voice.animationFrame = requestAnimationFrame(animateVoiceWave);
 }
 
 async function readResponse(response) {

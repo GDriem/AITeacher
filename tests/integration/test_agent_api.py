@@ -69,6 +69,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         page = await client.get("/")
         styles = await client.get("/static/styles.css")
         script = await client.get("/static/app.js")
+        voice_worklet = await client.get("/static/pcm-capture-worklet.js")
         assert health.status_code == 200
         assert readiness.json()["status"] == "ready"
         assert capabilities.json() == {
@@ -112,6 +113,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert embedding["available_levels"] == ["beginner", "intermediate"]
         assert page.status_code == 200
         assert page.headers["cache-control"] == "no-cache"
+        assert "microphone=(self)" in page.headers["permissions-policy"]
         assert "AITeacher" in page.text
         assert 'id="category-filter"' in page.text
         assert 'id="level-filter"' in page.text
@@ -124,6 +126,8 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert styles.headers["cache-control"].startswith("public, max-age=3600")
         assert styles.headers["x-content-type-options"] == "nosniff"
         assert script.status_code == 200
+        assert voice_worklet.status_code == 200
+        assert 'registerProcessor("pcm-capture"' in voice_worklet.text
         assert "data-start-topic" in script.text
         assert "/api/practice/start" in script.text
         assert "/api/authoring/lessons" in script.text
