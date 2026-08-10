@@ -92,6 +92,11 @@ def test_page_exposes_keyboard_and_screen_reader_landmarks() -> None:
     assert 'id="category-filter"' in html
     assert 'id="auth-gate" class="auth-gate hidden" role="dialog"' in html
     assert 'aria-labelledby="auth-title"' in html
+    assert 'id="voice-panel" class="voice-panel hidden" role="dialog"' in html
+    assert 'aria-labelledby="voice-title"' in html
+    assert 'id="voice-transcript" class="voice-transcript" aria-live="polite"' in html
+    assert 'id="voice-mute" class="voice-control" type="button" aria-pressed="false"' in html
+    assert 'id="voice-end" class="voice-control voice-end" type="button"' in html
     assert 'id="student-menu" class="student-menu hidden" role="menu"' in html
     assert 'id="student-logout" type="button" role="menuitem"' in html
 
@@ -132,3 +137,6 @@ def test_client_manages_focus_loading_retries_and_reconnection() -> None:
     assert 'fetch("/api/auth/google"' in script
     assert 'element.setAttribute("aria-hidden", "true")' in script
     assert 'window.google.accounts.id.renderButton' in script
+    assert 'trapFocus($("voice-panel"), event)' in script
+    assert 'track.enabled = !voice.muted' in script
+    assert 'source.stop()' in script

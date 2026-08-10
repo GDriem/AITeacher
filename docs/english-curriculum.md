@@ -34,8 +34,8 @@ mensajes completos o diálogos, no listas de vocabulario.
 
 ## Alcance actual
 
-La experiencia evalúa texto. No califica pronunciación, ritmo, acento ni
-comprensión auditiva. Cuando se incorpore conversación por voz, esas
-responsabilidades se aislarán en un `ConversationCoach` con turnos de audio y
-feedback fonético en tiempo real; el tutor y evaluador actuales seguirán
-ocupándose de enseñanza y dominio curricular.
+La experiencia curricular evalúa texto. El modo de voz permite practicar una
+conversación natural en tiempo real, pero todavía no califica pronunciación,
+ritmo, acento ni comprensión auditiva y no registra dominio. Esas evaluaciones
+se aislarán en un futuro `ConversationCoach` con feedback fonético; el tutor y
+evaluador actuales siguen ocupándose de enseñanza y dominio curricular.

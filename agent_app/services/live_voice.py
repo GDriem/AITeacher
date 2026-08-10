@@ -20,7 +20,11 @@ class VoiceUnavailable(RuntimeError):
 
 
 class GeminiLiveBridge:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        session_context: str | None = None,
+    ) -> None:
         if not settings.voice_enabled:
             raise VoiceUnavailable("Gemini Live API no está configurada")
         if settings.google_genai_use_vertexai:
@@ -33,6 +37,24 @@ class GeminiLiveBridge:
             self.client = genai.Client(api_key=settings.google_api_key)
         self.model = settings.gemini_live_model
         self.voice = settings.gemini_live_voice
+        self.session_context = (
+            " ".join(session_context.split())[:2_000] if session_context else ""
+        )
+
+    def _system_instruction(self) -> str:
+        instruction = (
+            "Eres la interfaz de voz de AITeacher, un tutor de IA. Conversa de "
+            "forma natural, cálida y didáctica. Responde normalmente en español, "
+            "salvo que el alumno esté practicando inglés o pida otro idioma. Usa "
+            "turnos breves de una a tres frases y haz una sola pregunta a la vez; "
+            "amplía únicamente cuando te lo pidan. El alumno puede interrumpirte, "
+            "así que evita monólogos y no describas formato visual. No afirmes haber "
+            "guardado progreso ni resultados: la evaluación curricular se confirma "
+            "en el chat de texto."
+        )
+        if self.session_context:
+            instruction += f" Contexto de la sesión actual: {self.session_context}"
+        return instruction
 
     async def run(self, websocket: WebSocket) -> None:
         config = types.LiveConnectConfig(
@@ -46,14 +68,16 @@ class GeminiLiveBridge:
             ),
             input_audio_transcription=types.AudioTranscriptionConfig(),
             output_audio_transcription=types.AudioTranscriptionConfig(),
-            system_instruction=(
-                "Eres la interfaz de voz de un tutor de IA. Responde en español, de "
-                "forma breve y didáctica. La experiencia principal y el progreso se "
-                "gestionan por texto; no afirmes haber guardado resultados."
-            ),
+            system_instruction=self._system_instruction(),
         )
         async with self.client.aio.live.connect(model=self.model, config=config) as session:
-            await websocket.send_json({"type": "ready", "sample_rate": 24000})
+            await websocket.send_json(
+                {
+                    "type": "ready",
+                    "sample_rate": 24000,
+                    "supports_interruption": True,
+                }
+            )
             browser_task = asyncio.create_task(self._browser_to_model(websocket, session))
             model_task = asyncio.create_task(self._model_to_browser(websocket, session))
             done, pending = await asyncio.wait(

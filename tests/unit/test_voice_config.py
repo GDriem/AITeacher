@@ -32,6 +32,24 @@ def test_voice_can_be_enabled_for_gemini_without_exposing_key() -> None:
     }
 
 
+def test_voice_prompt_is_conversational_and_receives_bounded_session_context() -> None:
+    settings = Settings(
+        model_provider=ModelProviderName.GEMINI,
+        google_api_key="test-only-key",
+    )
+    bridge = GeminiLiveBridge(
+        settings,
+        session_context="Tema actual: embeddings. " + ("detalle " * 400),
+    )
+
+    instruction = bridge._system_instruction()
+
+    assert "turnos breves" in instruction
+    assert "puede interrumpirte" in instruction
+    assert "Tema actual: embeddings" in instruction
+    assert len(bridge.session_context) <= 2_000
+
+
 @pytest.mark.asyncio
 async def test_cloud_run_identity_token_uses_configured_audience(monkeypatch) -> None:
     from google.oauth2 import id_token
