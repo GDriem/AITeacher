@@ -10,9 +10,12 @@ def test_frontend_has_no_runtime_dependency_or_render_blocking_script() -> None:
     assert "https://" not in html
     assert "http://" not in html
     assert html.count("<script ") == 1
-    assert '<script src="/static/app.js?v=13" defer></script>' in html
-    assert '<link rel="stylesheet" href="/static/styles.css?v=13" />' in html
+    assert '<script src="/static/app.js?v=15" defer></script>' in html
+    assert '<link rel="stylesheet" href="/static/styles.css?v=15" />' in html
     assert html.count('rel="stylesheet"') == 1
+
+    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+    assert 'script.src = "https://accounts.google.com/gsi/client"' in script
 
 
 def test_static_assets_stay_inside_lightweight_performance_budgets() -> None:

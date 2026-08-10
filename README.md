@@ -76,6 +76,33 @@ Copie `.env.example` a `.env` únicamente si desea cambiar los valores por
 defecto. El proveedor `mock`, el adaptador MCP local y los repositorios JSON
 permiten ejecutar el flujo principal y las pruebas sin credenciales.
 
+## Google Login y perfiles de alumnos
+
+Sin `GOOGLE_CLIENT_ID`, la aplicación conserva el modo invitado local. Para
+activar cuentas reales, cree un **OAuth 2.0 Client ID** de tipo **Web
+application** en Google Cloud Console y agregue los orígenes autorizados, por
+ejemplo `http://localhost:8000` y la URL HTTPS de producción. Después configure:
+
+```dotenv
+GOOGLE_CLIENT_ID=000000000000-example.apps.googleusercontent.com
+APP_SESSION_SECRET=un-secreto-aleatorio-de-al-menos-32-bytes
+APP_AUTH_SESSION_DAYS=7
+APP_AUTH_COOKIE_SECURE=false
+APP_STUDENT_PROFILES_BACKEND=local
+APP_STUDENT_PROFILES_PATH=.data/student_profiles.json
+```
+
+Use `APP_AUTH_COOKIE_SECURE=true` detrás de HTTPS. En Cloud Run seleccione
+`APP_STUDENT_PROFILES_BACKEND=firestore` y guarde `APP_SESSION_SECRET` en Secret
+Manager. La cuenta se verifica en FastAPI con las llaves públicas de Google; la
+sesión posterior vive en una cookie `HttpOnly` y `SameSite=Lax`.
+
+El perfil guarda únicamente identificador interno, nombre, correo, foto y
+marcas de alta/último acceso. El identificador se deriva del `sub` estable de
+Google, no del correo. Cuando Login está activo, cualquier `student_id` enviado
+por el navegador se ignora: progreso, rutas, chat y conversaciones pertenecen a
+la identidad verificada por el servidor.
+
 ## Ejecutar el servidor MCP
 
 ```bash
@@ -100,7 +127,7 @@ Abra `http://localhost:8000`. Por defecto se usan proveedor `mock` y adaptador
 MCP local para que la demo arranque sin credenciales. Para probar dos procesos,
 configure `MCP_USE_LOCAL_ADAPTER=false`.
 
-La aplicación expone `GET /api/topics?student_id=<id>` para consultar el
+La aplicación expone `GET /api/topics` para consultar el
 catálogo, la ruta y el estado del estudiante. La respuesta incluye
 `total_topics`, una recomendación explicada y el estado de cada tema
 (`blocked`, `available`, `in_progress` o `completed`). Los prerrequisitos
@@ -112,8 +139,8 @@ intentos y conceptos dominados o pendientes. Consulte la
 pedagógico, progresión y límites actuales.
 
 La aplicación persiste el historial en `APP_SESSIONS_PATH` y ofrece
-`GET /api/sessions?student_id=<id>` para recuperar conversaciones. El navegador
-guarda sólo el identificador activo; mensajes, tema y evaluación pendiente se
+`GET /api/sessions` para recuperar conversaciones. En modo autenticado, el
+navegador guarda sólo el identificador activo; mensajes, tema y evaluación pendiente se
 sincronizan con el backend. `PATCH /api/sessions/{id}` permite renombrar o
 archivar y `DELETE /api/sessions/{id}` elimina de inmediato. La retención
 predeterminada es de 365 días.

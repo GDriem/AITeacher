@@ -13,6 +13,10 @@ const state = {
   studentAutoId: identity.autoId,
   studentName: identity.name,
   studentId: identity.name || identity.autoId,
+  authEnabled: false,
+  authenticated: false,
+  googleClientId: null,
+  studentProfile: null,
   sessionId: null,
   trace: [],
   nextQuiz: null,
@@ -127,10 +131,40 @@ setActiveView(VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 
 });
 
 function renderStudentLabel() {
-  $("student-name-label").textContent = state.studentName || "Invitado";
+  const profile = state.studentProfile;
+  $("student-name-label").textContent = profile?.display_name || state.studentName || "Invitado";
+  $("student-menu-name").textContent = profile?.display_name || state.studentName || "Invitado";
+  $("student-menu-email").textContent = profile?.email || "Modo local sin cuenta";
+  const avatar = $("student-avatar");
+  avatar.classList.toggle("hidden", !profile?.picture_url);
+  if (profile?.picture_url) avatar.src = profile.picture_url;
+  else avatar.removeAttribute("src");
+  $("student-toggle").setAttribute(
+    "title",
+    profile ? `Cuenta de ${profile.display_name}` : "Cambiar tu nombre local",
+  );
+  if (state.authenticated) {
+    $("student-toggle").setAttribute("aria-haspopup", "menu");
+    $("student-toggle").setAttribute("aria-controls", "student-menu");
+  } else {
+    $("student-toggle").removeAttribute("aria-haspopup");
+    $("student-toggle").removeAttribute("aria-controls");
+    $("student-toggle").setAttribute("aria-expanded", "false");
+  }
 }
 
 $("student-toggle").addEventListener("click", () => {
+  if (state.authEnabled) {
+    if (!state.authenticated) {
+      showAuthGate(true);
+      return;
+    }
+    const menu = $("student-menu");
+    const open = menu.classList.toggle("hidden");
+    $("student-toggle").setAttribute("aria-expanded", String(!open));
+    if (!open) $("student-logout").focus();
+    return;
+  }
   const input = window.prompt(
     "¿Cómo quieres que te identifiquemos? Usaremos este nombre para guardar tu progreso; " +
       "déjalo vacío para usar un identificador anónimo de este navegador.",
@@ -149,6 +183,159 @@ $("student-toggle").addEventListener("click", () => {
 });
 
 renderStudentLabel();
+
+let googleIdentityScript;
+
+async function initializeAuthentication() {
+  setAuthError("");
+  $("auth-retry").classList.add("hidden");
+  try {
+    const status = await fetch("/api/auth/status").then(readResponse);
+    state.authEnabled = status.enabled;
+    state.authenticated = status.authenticated;
+    state.googleClientId = status.google_client_id;
+    state.studentProfile = status.profile;
+    if (!status.enabled) {
+      showAuthGate(false);
+      renderStudentLabel();
+      return true;
+    }
+    if (status.authenticated && status.profile) {
+      applyAuthenticatedProfile(status.profile);
+      showAuthGate(false);
+      return true;
+    }
+    showAuthGate(true);
+    await renderGoogleSignIn();
+    return false;
+  } catch (error) {
+    state.authEnabled = true;
+    state.authenticated = false;
+    showAuthGate(true);
+    setAuthError(`No pudimos preparar el acceso. ${error.message}`);
+    $("auth-retry").classList.remove("hidden");
+    return false;
+  }
+}
+
+function applyAuthenticatedProfile(profile) {
+  state.authenticated = true;
+  state.studentProfile = profile;
+  state.studentName = profile.display_name;
+  state.studentId = profile.student_id;
+  renderStudentLabel();
+}
+
+function showAuthGate(show) {
+  const gate = $("auth-gate");
+  gate.classList.toggle("hidden", !show);
+  gate.setAttribute("aria-hidden", String(!show));
+  document.body.classList.toggle("auth-required", show);
+  [
+    document.querySelector(".skip-link"),
+    document.querySelector("header"),
+    $("main-content"),
+    document.querySelector("footer"),
+  ]
+    .forEach((element) => {
+      element.inert = show;
+      if (show) element.setAttribute("aria-hidden", "true");
+      else element.removeAttribute("aria-hidden");
+    });
+  if (show) requestAnimationFrame(() => $("auth-title").focus());
+}
+
+function setAuthError(message) {
+  $("auth-error").textContent = message;
+  $("auth-error").classList.toggle("hidden", !message);
+}
+
+function loadGoogleIdentity() {
+  if (window.google?.accounts?.id) return Promise.resolve();
+  if (googleIdentityScript) return googleIdentityScript;
+  googleIdentityScript = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = () => {
+      googleIdentityScript = null;
+      script.remove();
+      reject(new Error("No se pudo cargar Google Identity Services."));
+    };
+    document.head.append(script);
+  });
+  return googleIdentityScript;
+}
+
+async function renderGoogleSignIn() {
+  if (!state.googleClientId) throw new Error("Falta GOOGLE_CLIENT_ID en el servidor.");
+  $("google-signin").textContent = "Cargando acceso seguro…";
+  await loadGoogleIdentity();
+  $("google-signin").textContent = "";
+  window.google.accounts.id.initialize({
+    client_id: state.googleClientId,
+    callback: handleGoogleCredential,
+    auto_select: false,
+    cancel_on_tap_outside: false,
+  });
+  window.google.accounts.id.renderButton($("google-signin"), {
+    type: "standard",
+    theme: "outline",
+    size: "large",
+    text: "continue_with",
+    shape: "rectangular",
+    logo_alignment: "left",
+    width: 300,
+  });
+}
+
+async function handleGoogleCredential(response) {
+  setAuthError("");
+  $("google-signin").setAttribute("aria-busy", "true");
+  try {
+    const profile = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential: response.credential }),
+    }).then(readResponse);
+    applyAuthenticatedProfile(profile);
+    showAuthGate(false);
+    startNewConversation();
+    await Promise.all([refreshStudentWorkspace({ restore: true }), loadProjects()]);
+    announce(`Sesión iniciada como ${profile.display_name}.`);
+  } catch (error) {
+    setAuthError(error.message);
+    await renderGoogleSignIn();
+  } finally {
+    $("google-signin").setAttribute("aria-busy", "false");
+  }
+}
+
+async function logoutStudent() {
+  $("student-menu").classList.add("hidden");
+  $("student-toggle").setAttribute("aria-expanded", "false");
+  try {
+    await fetch("/api/auth/logout", { method: "POST" }).then(readResponse);
+  } catch (error) {
+    showError(`No pudimos cerrar la sesión. ${error.message}`);
+    return;
+  }
+  window.google?.accounts?.id?.disableAutoSelect();
+  state.authenticated = false;
+  state.studentProfile = null;
+  state.studentName = "";
+  state.studentId = state.studentAutoId;
+  state.catalog = [];
+  state.sessions = [];
+  renderStudentLabel();
+  startNewConversation();
+  renderProgress({ topic_progress: [], level: "beginner" });
+  renderSessionList();
+  await initializeAuthentication();
+  announce("Sesión cerrada.");
+}
 
 $("authoring-toggle").addEventListener("click", async () => {
   state.focusReturn = document.activeElement;
@@ -272,6 +459,11 @@ $("retry-action").addEventListener("click", async () => {
 
 window.addEventListener("offline", updateConnectionStatus);
 window.addEventListener("online", updateConnectionStatus);
+document.addEventListener("click", (event) => {
+  if (event.target.closest(".student-account")) return;
+  $("student-menu").classList.add("hidden");
+  $("student-toggle").setAttribute("aria-expanded", "false");
+});
 document.addEventListener("keydown", (event) => {
   if (event.key === "Tab" && state.openDrawerName) {
     trapFocus($(DRAWER_IDS[state.openDrawerName]), event);
@@ -280,6 +472,10 @@ document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   if (state.openDrawerName) {
     closeDrawer();
+  } else if (!$("student-menu").classList.contains("hidden")) {
+    $("student-menu").classList.add("hidden");
+    $("student-toggle").setAttribute("aria-expanded", "false");
+    $("student-toggle").focus();
   } else if (!$("authoring-panel").classList.contains("hidden")) {
     $("authoring-panel").classList.add("hidden");
     restoreFocus();
@@ -316,6 +512,9 @@ $("subject-filter").addEventListener("change", () => {
   renderLearningPath();
   renderTopicCatalog();
 });
+
+$("student-logout").addEventListener("click", logoutStudent);
+$("auth-retry").addEventListener("click", initializeAuthentication);
 $("topic-search").addEventListener("input", renderTopicCatalog);
 $("category-filter").addEventListener("change", renderTopicCatalog);
 $("level-filter").addEventListener("change", renderTopicCatalog);
@@ -667,15 +866,28 @@ $("mic").addEventListener("click", async () => {
   else await startVoice();
 });
 
-initializeCapabilities();
-updateConnectionStatus();
-loadTopicCatalog();
-loadSessions({ restore: true });
-loadProjects();
-loadObservability();
+initializeApplication();
 window.setInterval(() => {
   if (!document.hidden && navigator.onLine) loadObservability();
 }, 30_000);
+
+async function initializeApplication() {
+  updateConnectionStatus();
+  initializeCapabilities();
+  loadObservability();
+  const canLoadStudentData = await initializeAuthentication();
+  if (canLoadStudentData) {
+    await Promise.all([refreshStudentWorkspace({ restore: true }), loadProjects()]);
+  }
+}
+
+async function refreshStudentWorkspace({ restore = false } = {}) {
+  if (state.authEnabled && !state.authenticated) return;
+  await Promise.all([
+    loadTopicCatalog(),
+    loadSessions({ restore }),
+  ]);
+}
 
 async function initializeCapabilities() {
   try {
@@ -1907,9 +2119,9 @@ function updateConnectionStatus() {
     announce("Conexión recuperada. Actualizando la información.");
     Promise.allSettled([
       initializeCapabilities(),
-      loadTopicCatalog(),
-      loadSessions(),
-      loadProjects(),
+      initializeAuthentication().then((ready) =>
+        ready ? Promise.all([refreshStudentWorkspace(), loadProjects()]) : undefined,
+      ),
     ]);
   }
 }

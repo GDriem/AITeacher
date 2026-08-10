@@ -86,6 +86,12 @@ async def test_google_session_owns_student_routes_and_rejects_spoofing(
         "google_client_id": "web-client.apps.googleusercontent.com",
         "profile": None,
     }
+    assert "https://accounts.google.com" in anonymous_status.headers[
+        "content-security-policy"
+    ]
+    assert anonymous_status.headers["cross-origin-opener-policy"] == (
+        "same-origin-allow-popups"
+    )
     assert unauthorized.status_code == 401
     assert login.status_code == 200
     assert "HttpOnly" in login.headers["set-cookie"]

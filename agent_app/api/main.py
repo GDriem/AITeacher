@@ -308,6 +308,26 @@ def create_app(
         elif request.url.path == "/":
             response.headers.setdefault("cache-control", "no-cache")
         response.headers.setdefault("x-content-type-options", "nosniff")
+        response.headers.setdefault(
+            "referrer-policy", "strict-origin-when-cross-origin"
+        )
+        response.headers.setdefault(
+            "cross-origin-opener-policy", "same-origin-allow-popups"
+        )
+        response.headers.setdefault(
+            "permissions-policy", "camera=(), geolocation=(), payment=()"
+        )
+        response.headers.setdefault(
+            "content-security-policy",
+            "default-src 'self'; "
+            "script-src 'self' https://accounts.google.com; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https://*.googleusercontent.com; "
+            "connect-src 'self' https://accounts.google.com; "
+            "frame-src https://accounts.google.com; "
+            "object-src 'none'; base-uri 'self'; form-action 'self'; "
+            "frame-ancestors 'none'",
+        )
         response.headers["x-correlation-id"] = correlation_id
         return response
 
