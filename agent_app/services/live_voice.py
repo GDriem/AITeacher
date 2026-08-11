@@ -115,32 +115,40 @@ class GeminiLiveBridge:
 
     @staticmethod
     async def _model_to_browser(websocket: WebSocket, session) -> None:
-        async for message in session.receive():
-            content = message.server_content
-            if content is None:
-                continue
-            if content.input_transcription and content.input_transcription.text:
-                await websocket.send_json(
-                    {
-                        "type": "transcript",
-                        "role": "user",
-                        "text": content.input_transcription.text,
-                    }
-                )
-            if content.output_transcription and content.output_transcription.text:
-                await websocket.send_json(
-                    {
-                        "type": "transcript",
-                        "role": "tutor",
-                        "text": content.output_transcription.text,
-                    }
-                )
-            if content.model_turn:
-                for part in content.model_turn.parts or []:
-                    if part.inline_data and part.inline_data.data:
-                        await websocket.send_bytes(part.inline_data.data)
-            if content.interrupted:
-                await websocket.send_json({"type": "interrupted"})
-            if content.turn_complete:
-                await websocket.send_json({"type": "turn_complete"})
+        while True:
+            received_message = False
+            # The SDK's receive() iterator covers one model turn only: it stops
+            # immediately after yielding turn_complete. Open a fresh iterator so
+            # the same Live session remains available for the next user turn.
+            async for message in session.receive():
+                received_message = True
+                content = message.server_content
+                if content is None:
+                    continue
+                if content.input_transcription and content.input_transcription.text:
+                    await websocket.send_json(
+                        {
+                            "type": "transcript",
+                            "role": "user",
+                            "text": content.input_transcription.text,
+                        }
+                    )
+                if content.output_transcription and content.output_transcription.text:
+                    await websocket.send_json(
+                        {
+                            "type": "transcript",
+                            "role": "tutor",
+                            "text": content.output_transcription.text,
+                        }
+                    )
+                if content.model_turn:
+                    for part in content.model_turn.parts or []:
+                        if part.inline_data and part.inline_data.data:
+                            await websocket.send_bytes(part.inline_data.data)
+                if content.interrupted:
+                    await websocket.send_json({"type": "interrupted"})
+                if content.turn_complete:
+                    await websocket.send_json({"type": "turn_complete"})
+            if not received_message:
+                return
 
