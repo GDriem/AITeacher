@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from agent_app.config import ModelProviderName, Settings
@@ -48,6 +50,60 @@ def test_voice_prompt_is_conversational_and_receives_bounded_session_context() -
     assert "puede interrumpirte" in instruction
     assert "Tema actual: embeddings" in instruction
     assert len(bridge.session_context) <= 2_000
+
+
+@pytest.mark.asyncio
+async def test_voice_receiver_stays_connected_across_model_turns() -> None:
+    def live_message(*, transcript: str | None = None, turn_complete: bool = False):
+        return SimpleNamespace(
+            server_content=SimpleNamespace(
+                input_transcription=None,
+                output_transcription=(
+                    SimpleNamespace(text=transcript) if transcript else None
+                ),
+                model_turn=None,
+                interrupted=False,
+                turn_complete=turn_complete,
+            )
+        )
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.turns = iter(
+                [
+                    [live_message(transcript="Primera respuesta"), live_message(turn_complete=True)],
+                    [live_message(transcript="Segunda respuesta"), live_message(turn_complete=True)],
+                    [],
+                ]
+            )
+
+        def receive(self):
+            async def messages():
+                for message in next(self.turns):
+                    yield message
+
+            return messages()
+
+    class FakeWebSocket:
+        def __init__(self) -> None:
+            self.messages = []
+
+        async def send_json(self, message) -> None:
+            self.messages.append(message)
+
+        async def send_bytes(self, _data: bytes) -> None:
+            raise AssertionError("Esta prueba no envía audio")
+
+    websocket = FakeWebSocket()
+
+    await GeminiLiveBridge._model_to_browser(websocket, FakeSession())
+
+    assert websocket.messages == [
+        {"type": "transcript", "role": "tutor", "text": "Primera respuesta"},
+        {"type": "turn_complete"},
+        {"type": "transcript", "role": "tutor", "text": "Segunda respuesta"},
+        {"type": "turn_complete"},
+    ]
 
 
 @pytest.mark.asyncio
