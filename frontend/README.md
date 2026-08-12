@@ -1,0 +1,108 @@
+# Frontend React de AITeacher
+
+Este directorio contiene la interfaz React que convive con la aplicación
+estática durante la migración descrita en
+`docs/react-frontend-migration-plan.md`. R1 publica únicamente el catálogo y
+la acción de iniciar un tema. Login, proyectos, sesiones, tutor, evaluación,
+práctica, voz, observabilidad y autoría permanecen en la interfaz vigente.
+
+## Arquitectura de R1
+
+```text
+src/
+├── app/                    # router, shell, QueryClient y límites de error
+├── api/                    # cliente HTTP, errores y contrato generado
+├── features/catalog/       # consulta, filtros, ruta y acción de inicio
+├── routes/                 # ensamblaje y división por ruta
+├── styles/                 # tokens semánticos y reset global
+└── test/                   # MSW, fixtures y render de integración
+```
+
+TanStack Query es dueño del catálogo remoto. La búsqueda, materia, categoría y
+nivel viven en los search params; los resultados y la recomendación por
+materia se derivan durante el render. No existe store global ni una copia local
+del catálogo. La identidad anónima usa un adaptador versionado que comparte el
+identificador mínimo con la UI heredada durante la convivencia.
+
+El cliente de `src/api/client.ts` consume tipos generados desde el OpenAPI de
+FastAPI. Todos los fallos HTTP se convierten a `ApiError`, con estado,
+correlation ID y un mensaje seguro para la interfaz. Los componentes no
+conocen modelos Python, repositorios ni detalles del MCP.
+
+Al iniciar un tema, React conserva el contrato funcional existente:
+
+1. envía `Quiero aprender sobre {título}` a `POST /api/chat`;
+2. guarda sólo el identificador de sesión necesario para convivencia;
+3. abre `/?session={id}#tutor`;
+4. la UI heredada recupera esa sesión y limpia el query param.
+
+Así R1 prueba la vertical completa sin implementar anticipadamente el tutor de
+R5 ni la administración de sesiones de R4.
+
+## Dirección visual
+
+Los tokens parten del inventario heredado: canvas `#07111f`, superficies azul
+pizarra, contenido frío, azul para guía, verde para dominio, ámbar para
+atención y rojo para recuperación. Se conserva la tipografía del sistema, sin
+descargas externas. La única pieza expresiva es la ruta de aprendizaje lineal;
+el resto evita gradientes decorativos, sombras pesadas y tarjetas uniformes.
+
+Los layouts se prueban en 320, 768, 1024 y 1440 px. Incluyen skip link, foco
+visible, contraste elevado, movimiento reducido, estados de carga, vacío,
+error/reintento y nombres accesibles.
+
+## Desarrollo
+
+Requisitos: Node 24, pnpm 11.16.0 y el entorno Python del repositorio.
+
+```powershell
+cd frontend
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Vite publica `http://127.0.0.1:4173/app/` y reenvía `/api` y `/ws` a
+`http://127.0.0.1:8000`. FastAPI continúa siendo el único servidor público en
+producción.
+
+## Contrato OpenAPI
+
+```powershell
+pnpm api:generate
+pnpm api:check
+```
+
+`api:generate` exporta un esquema determinista desde `create_app()` y actualiza
+`src/api/generated/schema.ts`. Ambos archivos se versionan para que el build no
+dependa de levantar el backend. `api:check` falla si el esquema o los tipos se
+desvían.
+
+## Verificación
+
+```powershell
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+pnpm test:e2e
+```
+
+Vitest usa Testing Library, MSW y axe. Playwright comprueba teclado, consola,
+axe en navegador y ausencia de overflow en los cuatro anchos de referencia.
+El build usa React Compiler y separa el catálogo por ruta.
+
+FastAPI sirve `frontend/dist` bajo `/app`, con fallback de SPA para rutas
+profundas y caché inmutable para `/app/assets/*`. El Dockerfile construye esos
+recursos en una etapa Node y copia solamente `dist` a la imagen Python final.
+
+## Deuda deliberada de R1
+
+- La pantalla React no implementa Google Identity ni perfil; eso corresponde a
+  R3. El backend sigue resolviendo la cookie existente y el handoff por sesión
+  funciona con autenticación habilitada.
+- No se define todavía un presupuesto automático de bundle por ruta; R9 lo
+  fijará con medición de Web Vitals y perfiles reales.
+- No se incorpora una biblioteca de primitivas: R1 sólo necesita controles
+  HTML nativos. La decisión se reevalúa cuando aparezcan dialogs y drawers.
+- El feed, composer y contenido de la sesión se muestran en la UI heredada
+  hasta R4/R5; React sólo crea y entrega la sesión.

@@ -99,6 +99,7 @@ from mcp_learning_server.server import build_learning_service
 
 logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parents[1] / "static"
+REACT_DIST_DIR = Path(__file__).parents[2] / "frontend" / "dist"
 AUTH_COOKIE_NAME = "ait_session"
 
 
@@ -252,6 +253,11 @@ def create_app(
     app.state.observability = observability
     app.state.auth_service = auth_service
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    app.mount(
+        "/app/assets",
+        StaticFiles(directory=REACT_DIST_DIR / "assets", check_dir=False),
+        name="react-assets",
+    )
 
     @app.middleware("http")
     async def correlation_middleware(request: Request, call_next):
@@ -263,7 +269,7 @@ def create_app(
         except Exception:
             duration_ms = (time.perf_counter() - started) * 1_000
             route = getattr(request.scope.get("route"), "path", "<unmatched>")
-            if not request.url.path.startswith("/static/"):
+            if not request.url.path.startswith(("/static/", "/app/assets/")):
                 observability.record_http(
                     method=request.method,
                     route=route,
@@ -283,7 +289,7 @@ def create_app(
             raise
         duration_ms = (time.perf_counter() - started) * 1_000
         route = getattr(request.scope.get("route"), "path", "<unmatched>")
-        if not request.url.path.startswith("/static/"):
+        if not request.url.path.startswith(("/static/", "/app/assets/")):
             observability.record_http(
                 method=request.method,
                 route=route,
@@ -300,12 +306,17 @@ def create_app(
                 "duration_ms": round(duration_ms, 2),
             },
         )
-        if request.url.path.startswith("/static/"):
+        if request.url.path.startswith("/app/assets/"):
+            response.headers.setdefault(
+                "cache-control",
+                "public, max-age=31536000, immutable",
+            )
+        elif request.url.path.startswith("/static/"):
             response.headers.setdefault(
                 "cache-control",
                 "public, max-age=3600, stale-while-revalidate=86400",
             )
-        elif request.url.path == "/":
+        elif request.url.path == "/" or request.url.path.startswith("/app"):
             response.headers.setdefault("cache-control", "no-cache")
         response.headers.setdefault("x-content-type-options", "nosniff")
         response.headers.setdefault(
@@ -725,6 +736,17 @@ def create_app(
     @app.get("/", include_in_schema=False)
     async def index() -> FileResponse:
         return FileResponse(STATIC_DIR / "index.html")
+
+    @app.get("/app", include_in_schema=False)
+    @app.get("/app/{path:path}", include_in_schema=False)
+    async def react_app(path: str = "") -> FileResponse:
+        index_path = REACT_DIST_DIR / "index.html"
+        if not index_path.is_file():
+            raise HTTPException(
+                status_code=503,
+                detail="El build de React no está disponible; ejecuta `pnpm build`.",
+            )
+        return FileResponse(index_path)
 
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:

@@ -1224,9 +1224,15 @@ async function loadSessions({ restore = false } = {}) {
       initialSessionLoadId === state.sessionLoadId &&
       initialChatRequestId === state.chatRequestId
     ) {
-      const saved = localStorage.getItem(activeSessionKey());
+      const requested = new URLSearchParams(location.search).get("session");
+      const saved = requested || localStorage.getItem(activeSessionKey());
       if (saved && state.sessions.some((item) => item.id === saved)) {
         await openSession(saved, { navigate: false });
+        if (requested) {
+          const cleanUrl = new URL(location.href);
+          cleanUrl.searchParams.delete("session");
+          history.replaceState(null, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+        }
       }
     }
   } catch (error) {

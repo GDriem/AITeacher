@@ -226,3 +226,10 @@ __marimo__/
 /docs/*
 !/docs/english-curriculum.md
 !/docs/google-auth-student-profiles-plan.md
+
+# React frontend build and test artifacts
+/frontend/node_modules/
+/frontend/dist/
+/frontend/coverage/
+/frontend/playwright-report/
+/frontend/test-results/
