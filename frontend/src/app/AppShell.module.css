@@ -28,10 +28,33 @@
 .header {
   min-height: 6.5rem;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: var(--space-5);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.sessionsButton {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  color: var(--content-default);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.sessionsButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
 }
 
 .brand {
@@ -153,6 +176,9 @@
     padding-inline: var(--space-3);
   }
 
+  .sessionsButton { width: 2.75rem; padding: 0; justify-content: center; }
+  .sessionsButton span { display: none; }
+
   .main {
     padding-block-start: var(--space-5);
   }
@@ -166,9 +192,11 @@
 }
 
 @media (max-width: 23.99rem) {
-  .brand > span:last-child {
-    display: none;
-  }
+  .header { grid-template-columns: 1fr auto auto; }
+
+  .brand { display: none; }
+
+  .nav { justify-content: flex-start; }
 
   .nav a {
     padding-inline: var(--space-2);

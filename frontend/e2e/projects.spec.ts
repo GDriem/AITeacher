@@ -16,6 +16,9 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/projects/*/evaluate", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(projectEvaluationFixture) }),
   );
+  await page.route("**/api/sessions**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ sessions: [], retention_days: 365 }) }),
+  );
 });
 
 for (const width of [320, 768, 1024, 1440]) {

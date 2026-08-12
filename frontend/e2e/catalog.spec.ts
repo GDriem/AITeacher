@@ -13,6 +13,9 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/topics**", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(catalogFixture) }),
   );
+  await page.route("**/api/sessions**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ sessions: [], retention_days: 365 }) }),
+  );
 });
 
 for (const width of [320, 768, 1024, 1440]) {

@@ -34,4 +34,14 @@ export const projectsHandler = http.get("http://localhost:4173/api/projects", ()
   HttpResponse.json(projectsFixture),
 );
 
-export const server = setupServer(capabilitiesHandler, authStatusHandler, catalogHandler, projectsHandler);
+export const sessionsHandler = http.get("http://localhost:4173/api/sessions", () =>
+  HttpResponse.json({ sessions: [], retention_days: 365 }),
+);
+
+export const server = setupServer(
+  capabilitiesHandler,
+  authStatusHandler,
+  catalogHandler,
+  projectsHandler,
+  sessionsHandler,
+);

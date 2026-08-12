@@ -410,7 +410,7 @@ Al comenzar una fase:
 | R1 | Completada | Catálogo React en `/app`, contrato tipado y handoff al tutor heredado |
 | R2 | Completada | Proyectos React en `/app/proyectos`, workspace accesible y evaluación por rúbrica |
 | R3 | Completada | Identidad común, bootstrap paralelo, gate Google, perfil, logout y recuperación `401` |
-| R4 | Pendiente | — |
+| R4 | Completada | Drawer accesible, continuidad versionada y administración completa de sesiones |
 | R5 | Pendiente | — |
 | R6 | Pendiente | — |
 | R7 | Pendiente | — |
@@ -566,6 +566,74 @@ búsqueda y apertura, restaurando la sesión activa desde el adaptador versionad
 existente. Después implementar crear, renombrar, archivar, restaurar y eliminar
 con invalidaciones explícitas y protección contra respuestas tardías. No tocar
 todavía feed, composer, Markdown, evaluación, práctica ni voz.
+
+### Handoff de R4 — 12 de agosto de 2026
+
+**Resultado entregado.** El `AppShell` incorpora una bitácora de conversaciones
+como drawer modal accesible. Consulta `GET /api/sessions` con la identidad de
+`useAppSession`, separa activas y archivadas, busca por título o tema y cubre
+carga, vacío, sin coincidencias, error/reintento y éxito. Permite iniciar una
+conversación limpia, abrir, renombrar, archivar, restaurar y eliminar con una
+confirmación explícita. Abrir recupera primero el detalle tipado y sólo después
+entrega la sesión al tutor heredado; React aún no representa mensajes ni
+composer.
+
+La sesión activa se restaura tras recargar mediante un adaptador mínimo
+versionado compatible con la clave heredada. Una sesión ausente o archivada
+invalida esa continuidad. Cada apertura recibe un request ID y las respuestas
+tardías no pueden reemplazar la selección vigente ni disparar un handoff. El
+drawer contiene el foco, cierra con Escape o scrim, restaura el control de
+origen y mueve el foco al contenido principal al comenzar de cero.
+
+**Verificaciones ejecutadas.** Se confirmó primero R3 con typecheck, lint, 16
+Vitest, build, OpenAPI, 16 Playwright y 10 pruebas Python de auth/hosting. Para
+R4 pasaron TypeScript estricto y ESLint sin advertencias; 21 pruebas Vitest;
+build Vite de producción; esquema OpenAPI y tipos sin drift; 22 pruebas
+Playwright de catálogo, proyectos, auth y sesiones con teclado, foco, axe,
+consola, recarga y responsive en 320, 768, 1024 y 1440 px; y 25 pruebas Python
+de repositorios local/Firestore, API de sesiones, auth, hosting, accesibilidad y
+rendimiento heredados. También se inspeccionó visualmente el gate móvil del
+host local; el drawer se revisó en navegador con fixtures deterministas porque
+el entorno local exige Google auth.
+
+**Decisiones tomadas.** TanStack Query es el único dueño de listado y detalles;
+las mutaciones actualizan el detalle conocido e invalidan explícitamente el
+listado. El contexto expone datos y estados primitivos en vez del objeto
+completo de `useQuery`, evitando snapshots obsoletos bajo React Compiler. La
+búsqueda, conteos y selección visible se derivan durante render; no hay store
+global ni memoización manual. El adaptador persiste sólo `studentId` y
+`sessionId`, ambos versionados y protegidos ante almacenamiento no disponible.
+Las acciones son controles nativos visibles, sin biblioteca de menús ni
+dialogs. Visualmente, la bitácora compacta usa fecha, tema y actividad; una
+única línea guía señala la conversación activa. En 320 px ocupa todo el ancho
+y el header cede la marca antes que navegación, sesiones o cuenta.
+
+**Deuda deliberada.** El feed, Markdown, fuentes, composer y envío cancelable
+pertenecen a R5; por eso abrir continúa entregando a `/?session={id}#tutor` y
+“Nueva conversación” vuelve al catálogo sin crear un registro vacío. El
+backend no ofrece endpoint de creación independiente: la sesión nace con el
+primer `POST /api/chat`. El listado se solicita con archivadas incluidas para
+administrarlas en un solo drawer; paginación o búsqueda de servidor requieren
+un contrato futuro y no se simulan en cliente. Los presupuestos automáticos de
+bundle y Web Vitals siguen en R9.
+
+**Riesgos pendientes.** Un estudiante con muchas conversaciones recibe hoy el
+listado completo conforme al contrato actual y la retención configurada. El
+handoff mantiene una navegación completa a la UI heredada hasta R5, aunque el
+identificador versionado evita perder continuidad. Si dos mutaciones sobre la
+misma conversación se envían simultáneamente, prevalece el orden del servidor;
+la interfaz deshabilita las acciones del elemento durante cada operación, pero
+no implementa control de versión porque el API no expone uno.
+
+**Punto exacto para comenzar R5.** Crear
+`frontend/src/features/tutor/` y una ruta diferida `/tutor` dentro del
+`AppShell`. Consumir primero el identificador activo y
+`sessionDetailOptions(studentId, sessionId)` ya existentes para representar el
+feed restaurado con Markdown seguro, fuentes y traza pública. Después añadir el
+composer y `POST /api/chat` cancelable, usando el mismo `session_id` y
+actualizando/invalidando las claves de sesiones. Sustituir el handoff
+heredado sólo cuando conversación nueva y restaurada tengan paridad. No tocar
+todavía evaluación, práctica, voz u observabilidad.
 
 ## Riesgos y respuestas
 

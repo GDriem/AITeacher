@@ -8,7 +8,7 @@ import { CatalogFilters } from "./CatalogFilters";
 import { catalogOptions, filterTopics, filtersFromParams, paramsFromFilters } from "./catalogFilterState";
 import { LearningPath } from "./LearningPath";
 import { topicCatalogKey, topicCatalogOptions } from "./catalogQueries";
-import { legacySessionUrl, rememberStartedSession } from "./studentIdentity";
+import { legacySessionUrl, rememberActiveSession } from "../sessions/activeSession";
 import { TopicGrid } from "./TopicGrid";
 import styles from "./CatalogScreen.module.css";
 
@@ -28,7 +28,7 @@ export function CatalogScreen({ studentId, legacyHandoff = defaultHandoff }: Pro
   const startMutation = useMutation({
     mutationFn: (topic: TopicCatalogItem) => startTopic(studentId, topic.title),
     onSuccess: (response) => {
-      rememberStartedSession(studentId, response.session_id);
+      rememberActiveSession(studentId, response.session_id);
       void queryClient.invalidateQueries({ queryKey: topicCatalogKey(studentId) });
       legacyHandoff(legacySessionUrl(response.session_id));
     },

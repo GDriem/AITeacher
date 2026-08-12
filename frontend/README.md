@@ -4,11 +4,11 @@ Este directorio contiene la interfaz React que convive con la aplicación
 estática durante la migración descrita en
 `docs/react-frontend-migration-plan.md`. R1 publica el catálogo y la acción de
 iniciar un tema; R2 incorpora los proyectos integradores; R3 establece el
-bootstrap, la identidad común, Google Login, perfil y cierre de sesión.
-Sesiones, tutor, evaluación pedagógica, práctica, voz, observabilidad y autoría
-permanecen en la interfaz vigente.
+bootstrap y la identidad común; R4 añade administración y continuidad de
+conversaciones. El feed y composer del tutor, evaluación pedagógica, práctica,
+voz, observabilidad y autoría permanecen en la interfaz vigente.
 
-## Arquitectura de R1–R3
+## Arquitectura de R1–R4
 
 ```text
 src/
@@ -17,6 +17,7 @@ src/
 ├── features/auth/          # bootstrap, identidad, gate, perfil y recuperación 401
 ├── features/catalog/       # consulta, filtros, ruta y acción de inicio
 ├── features/projects/      # catálogo, workspace, evaluación y rúbrica
+├── features/sessions/      # listado, continuidad, mutaciones y drawer accesible
 ├── routes/                 # ensamblaje y división por ruta
 ├── styles/                 # tokens semánticos y reset global
 └── test/                   # MSW, fixtures y render de integración
@@ -60,6 +61,14 @@ el contrato generado. El workspace conserva la propuesta tras un fallo para
 permitir reintentar, mueve el foco al reto y al resultado, y lo restaura al
 botón de origen al cerrar.
 
+R4 incorpora un drawer de conversaciones en el shell. TanStack Query conserva
+el listado, los detalles y las invalidaciones explícitas de renombrar,
+archivar, restaurar y eliminar. La búsqueda y la vista activa/archivada se
+derivan durante render; el identificador activo es el único dato de
+continuidad persistido y usa un esquema versionado compatible con la UI
+heredada. Las aperturas tardías se descartan mediante un request ID y sólo la
+solicitud vigente puede realizar el handoff al tutor heredado.
+
 ## Dirección visual
 
 Los tokens parten del inventario heredado: canvas `#07111f`, superficies azul
@@ -76,6 +85,11 @@ La pieza distintiva de R2 es la mesa de proyecto: el catálogo numerado conduce
 de reto a entregables y rúbrica sin recurrir a un grid de tarjetas decorativas.
 La expresividad sigue concentrada en el recorrido de aprendizaje y el resto
 usa las superficies y acentos semánticos definidos en R1.
+
+En R4 el drawer funciona como bitácora compacta, no como un dashboard de
+tarjetas: fecha, tema y número de mensajes explican cada entrada, mientras una
+línea azul identifica la continuidad activa. A 320 px ocupa todo el ancho y la
+marca cede espacio a navegación, conversaciones y cuenta.
 
 ## Desarrollo
 
@@ -114,7 +128,8 @@ pnpm test:e2e
 ```
 
 Vitest usa Testing Library, MSW y axe. Playwright comprueba teclado, consola,
-axe en navegador y ausencia de overflow en los cuatro anchos de referencia.
+axe en navegador, continuidad tras recarga y ausencia de overflow en los
+cuatro anchos de referencia.
 El build usa React Compiler y separa catálogo y proyectos por ruta. Google
 Identity queda además en un chunk condicional fuera de la carga sin auth.
 
@@ -122,17 +137,21 @@ FastAPI sirve `frontend/dist` bajo `/app`, con fallback de SPA para rutas
 profundas y caché inmutable para `/app/assets/*`. El Dockerfile construye esos
 recursos en una etapa Node y copia solamente `dist` a la imagen Python final.
 
-## Deuda deliberada al cerrar R3
+## Deuda deliberada al cerrar R4
 
 - No se define todavía un presupuesto automático de bundle por ruta; R9 lo
   fijará con medición de Web Vitals y perfiles reales.
 - No se incorpora una biblioteca de primitivas: R1 sólo necesita controles
   HTML nativos. La decisión se reevalúa cuando aparezcan dialogs y drawers.
 - El feed, composer y contenido de la sesión se muestran en la UI heredada
-  hasta R4/R5; React sólo crea y entrega la sesión.
+  hasta R5; React administra la continuidad y entrega la sesión seleccionada.
+- “Nueva conversación” limpia la selección y vuelve al catálogo; el primer
+  mensaje creará la sesión cuando R5 incorpore el composer.
+- El endpoint actual devuelve el listado completo, incluidas archivadas; no se
+  inventa paginación del lado cliente sin un contrato de servidor.
 - Capacidades ya se consultan, pero voz y autoría permanecen ocultas hasta R7 y
   R8.
-- El menú de cuenta se limita a perfil y cierre de sesión; su relación con el
-  futuro drawer de sesiones se decidirá en R4.
+- El drawer se aloja en el shell y el menú de cuenta continúa limitado a perfil
+  y cierre de sesión.
 - Las evaluaciones de proyecto no se guardan ni se restauran al recargar porque
   el contrato vigente tampoco ofrece persistencia para este dominio.
