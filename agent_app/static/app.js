@@ -14,6 +14,7 @@ const state = {
   studentName: identity.name,
   studentId: identity.name || identity.autoId,
   authEnabled: false,
+  authResolved: false,
   authenticated: false,
   googleClientId: null,
   studentProfile: null,
@@ -43,6 +44,7 @@ const state = {
   sessionLoadId: 0,
   chatRequestId: 0,
   chatAbortController: null,
+  voiceAvailable: false,
 };
 
 const voice = {
@@ -105,6 +107,7 @@ function setActiveView(view, { scroll = true } = {}) {
     viewTabs[name].tabIndex = active ? 0 : -1;
   });
   document.body.classList.toggle("chat-active", view === "tutor");
+  if (view === "tutor" && state.voiceAvailable) maybeShowVoiceGuide();
   if (location.hash.slice(1) !== view) {
     history.replaceState(null, "", `#${view}`);
   }
@@ -196,6 +199,7 @@ renderStudentLabel();
 let googleIdentityScript;
 
 async function initializeAuthentication() {
+  state.authResolved = false;
   setAuthError("");
   $("auth-retry").classList.add("hidden");
   try {
@@ -204,6 +208,7 @@ async function initializeAuthentication() {
     state.authenticated = status.authenticated;
     state.googleClientId = status.google_client_id;
     state.studentProfile = status.profile;
+    state.authResolved = true;
     if (!status.enabled) {
       showAuthGate(false);
       renderStudentLabel();
@@ -219,6 +224,7 @@ async function initializeAuthentication() {
     return false;
   } catch (error) {
     state.authEnabled = true;
+    state.authResolved = true;
     state.authenticated = false;
     showAuthGate(true);
     setAuthError(`No pudimos preparar el acceso. ${error.message}`);
@@ -233,6 +239,7 @@ function applyAuthenticatedProfile(profile) {
   state.studentName = profile.display_name;
   state.studentId = profile.student_id;
   renderStudentLabel();
+  maybeShowVoiceGuide();
 }
 
 function showAuthGate(show) {
@@ -240,6 +247,8 @@ function showAuthGate(show) {
   gate.classList.toggle("hidden", !show);
   gate.setAttribute("aria-hidden", String(!show));
   document.body.classList.toggle("auth-required", show);
+  if (show) hideVoiceGuide();
+  else maybeShowVoiceGuide();
   [
     document.querySelector(".skip-link"),
     document.querySelector("header"),
@@ -490,6 +499,8 @@ document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   if (state.openDrawerName) {
     closeDrawer();
+  } else if (!$('voice-guide').classList.contains("hidden")) {
+    dismissVoiceGuide();
   } else if (!$("student-menu").classList.contains("hidden")) {
     $("student-menu").classList.add("hidden");
     $("student-toggle").setAttribute("aria-expanded", "false");
@@ -669,8 +680,7 @@ $("continue-learning").addEventListener("click", () => {
   $("quiz-answer").value = "";
   $("feedback").classList.add("hidden");
   quizForm.classList.remove("hidden");
-  $("quiz-answer").focus();
-  $("quiz-card").scrollIntoView({ behavior: "smooth", block: "center" });
+  focusTutorElement("quiz-answer", "nearest");
 });
 
 $("clear-trace").addEventListener("click", () => {
@@ -880,8 +890,15 @@ function renderSessionList() {
 }
 
 $("mic").addEventListener("click", async () => {
+  dismissVoiceGuide({ restoreFocus: false });
   if (voice.state !== "idle") stopVoice();
   else await startVoice();
+});
+$("voice-guide-close").addEventListener("click", dismissVoiceGuide);
+$("voice-guide-dismiss").addEventListener("click", dismissVoiceGuide);
+$("voice-guide-start").addEventListener("click", async () => {
+  dismissVoiceGuide({ restoreFocus: false });
+  await startVoice();
 });
 $("voice-close").addEventListener("click", stopVoice);
 $("voice-end").addEventListener("click", stopVoice);
@@ -913,13 +930,17 @@ async function refreshStudentWorkspace({ restore = false } = {}) {
 async function initializeCapabilities() {
   try {
     const capabilities = await fetch("/api/capabilities").then(readResponse);
-    $("mic").disabled = !capabilities.voice;
+    state.voiceAvailable = Boolean(capabilities.voice);
+    $("mic").disabled = !state.voiceAvailable;
     $("mic").title = capabilities.voice
       ? "Iniciar conversación por voz"
       : "Voz no configurada; el modo texto sigue disponible";
     $("authoring-toggle").classList.toggle("hidden", !capabilities.authoring);
+    if (state.voiceAvailable) maybeShowVoiceGuide();
   } catch {
+    state.voiceAvailable = false;
     $("mic").disabled = true;
+    hideVoiceGuide();
     $("authoring-toggle").classList.add("hidden");
   }
 }
@@ -2289,8 +2310,52 @@ function closeDrawer({ restore = true } = {}) {
 function focusTutorElement(id, block = "nearest") {
   if (state.activeView !== "tutor") return;
   const element = $(id);
-  element.scrollIntoView({ behavior: "smooth", block });
-  element.focus();
+  const feed = $("conversation-feed");
+  element.focus({ preventScroll: true });
+  const feedRect = feed.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  const top = elementRect.top - feedRect.top + feed.scrollTop;
+  const bottom = top + elementRect.height;
+  let nextTop = feed.scrollTop;
+  if (block === "center") {
+    nextTop = top - (feed.clientHeight - elementRect.height) / 2;
+  } else if (top < feed.scrollTop) {
+    nextTop = top;
+  } else if (bottom > feed.scrollTop + feed.clientHeight) {
+    nextTop = bottom - feed.clientHeight;
+  }
+  feed.scrollTo({
+    top: Math.max(0, nextTop),
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+  });
+}
+
+const VOICE_GUIDE_KEY = "voiceGuideDismissed:v1";
+
+function maybeShowVoiceGuide() {
+  if (
+    !state.authResolved
+    || (state.authEnabled && !state.authenticated)
+    || state.activeView !== "tutor"
+    || localStorage.getItem(VOICE_GUIDE_KEY)
+  ) return;
+  const guide = $("voice-guide");
+  guide.classList.remove("hidden");
+  guide.setAttribute("aria-hidden", "false");
+  $("mic").setAttribute("aria-describedby", "voice-guide-copy");
+}
+
+function hideVoiceGuide() {
+  $("voice-guide").classList.add("hidden");
+  $("voice-guide").setAttribute("aria-hidden", "true");
+  $("mic").removeAttribute("aria-describedby");
+}
+
+function dismissVoiceGuide({ restoreFocus = true } = {}) {
+  if ($("voice-guide").classList.contains("hidden")) return;
+  localStorage.setItem(VOICE_GUIDE_KEY, "true");
+  hideVoiceGuide();
+  if (restoreFocus) $("mic").focus({ preventScroll: true });
 }
 
 function trapFocus(container, event) {

@@ -12,7 +12,7 @@ COPY pyproject.toml README.md ./
 COPY agent_app ./agent_app
 COPY mcp_learning_server ./mcp_learning_server
 
-RUN python -m pip install --no-cache-dir ".[agents,cloud,foundry]"
+RUN python -m pip install --no-cache-dir ".[agents,cloud]"
 
 RUN mkdir /data && chown app:app /data
 USER app

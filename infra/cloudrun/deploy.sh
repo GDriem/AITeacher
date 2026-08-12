@@ -2,13 +2,20 @@
 set -euo pipefail
 
 : "${PROJECT_ID:?Set PROJECT_ID}"
+: "${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID}"
+: "${APP_SESSION_SECRET:?Set APP_SESSION_SECRET}"
 REGION="${REGION:-us-central1}"
 REPOSITORY="${REPOSITORY:-agent-mcp-run}"
 TAG="${TAG:-$(date +%Y%m%d-%H%M%S)}"
+SESSION_SECRET_NAME="${SESSION_SECRET_NAME:-learning-agent-session-secret}"
+GEMINI_MODEL="${GEMINI_MODEL:-gemini-2.5-flash}"
+GEMINI_LIVE_MODEL="${GEMINI_LIVE_MODEL:-gemini-live-2.5-flash-native-audio}"
+GEMINI_LIVE_VOICE="${GEMINI_LIVE_VOICE:-Kore}"
 
 gcloud config set project "${PROJECT_ID}"
 gcloud services enable run.googleapis.com artifactregistry.googleapis.com \
-  cloudbuild.googleapis.com firestore.googleapis.com aiplatform.googleapis.com
+  cloudbuild.googleapis.com firestore.googleapis.com aiplatform.googleapis.com \
+  secretmanager.googleapis.com
 
 gcloud artifacts repositories describe "${REPOSITORY}" --location "${REGION}" \
   >/dev/null 2>&1 || gcloud artifacts repositories create "${REPOSITORY}" \
@@ -28,6 +35,14 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member "serviceAccount:learning-agent@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role roles/datastore.user
+
+gcloud secrets describe "${SESSION_SECRET_NAME}" >/dev/null 2>&1 || \
+  gcloud secrets create "${SESSION_SECRET_NAME}" --replication-policy automatic
+printf '%s' "${APP_SESSION_SECRET}" | \
+  gcloud secrets versions add "${SESSION_SECRET_NAME}" --data-file=-
+gcloud secrets add-iam-policy-binding "${SESSION_SECRET_NAME}" \
+  --member "serviceAccount:learning-agent@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role roles/secretmanager.secretAccessor
 
 MCP_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/mcp-server:${TAG}"
 AGENT_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/agent-app:${TAG}"
@@ -57,8 +72,10 @@ gcloud run services add-iam-policy-binding learning-mcp --region "${REGION}" \
 
 gcloud run deploy learning-agent --image "${AGENT_IMAGE}" --region "${REGION}" \
   --service-account "learning-agent@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --allow-unauthenticated --max-instances 3 --set-env-vars \
-"MODEL_PROVIDER=gemini,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GEMINI_LIVE_MODEL=gemini-live-2.5-flash-native-audio,APP_SESSIONS_BACKEND=firestore,FIRESTORE_SESSIONS_COLLECTION=learning_sessions,APP_SESSION_RETENTION_DAYS=365,MCP_USE_LOCAL_ADAPTER=false,MCP_SERVER_URL=${MCP_URI}/mcp/,MCP_AUTH_AUDIENCE=${MCP_URI}" \
+  --allow-unauthenticated --max-instances 3 \
+  --set-secrets "APP_SESSION_SECRET=${SESSION_SECRET_NAME}:latest" \
+  --set-env-vars \
+"MODEL_PROVIDER=gemini,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GEMINI_MODEL=${GEMINI_MODEL},GEMINI_LIVE_MODEL=${GEMINI_LIVE_MODEL},GEMINI_LIVE_VOICE=${GEMINI_LIVE_VOICE},APP_SESSIONS_BACKEND=firestore,FIRESTORE_SESSIONS_COLLECTION=learning_sessions,APP_SESSION_RETENTION_DAYS=365,APP_STUDENT_PROFILES_BACKEND=firestore,FIRESTORE_STUDENT_PROFILES_COLLECTION=student_profiles,GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID},APP_AUTH_COOKIE_SECURE=true,MCP_USE_LOCAL_ADAPTER=false,MCP_SERVER_URL=${MCP_URI}/mcp/,MCP_AUTH_AUDIENCE=${MCP_URI}" \
   --startup-probe httpGet.path=/healthz --liveness-probe httpGet.path=/healthz
 
 gcloud run services describe learning-agent --region "${REGION}" --format='value(status.url)'

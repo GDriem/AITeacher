@@ -97,6 +97,8 @@ def test_page_exposes_keyboard_and_screen_reader_landmarks() -> None:
     assert 'id="voice-transcript" class="voice-transcript" aria-live="polite"' in html
     assert 'id="voice-mute" class="voice-control" type="button" aria-pressed="false"' in html
     assert 'id="voice-end" class="voice-control voice-end" type="button"' in html
+    assert 'id="voice-guide" class="voice-guide hidden" role="dialog"' in html
+    assert 'aria-labelledby="voice-guide-title" aria-describedby="voice-guide-copy"' in html
     assert 'id="student-menu" class="student-menu hidden" role="menu"' in html
     assert 'id="student-logout" type="button" role="menuitem"' in html
 
@@ -140,3 +142,5 @@ def test_client_manages_focus_loading_retries_and_reconnection() -> None:
     assert 'trapFocus($("voice-panel"), event)' in script
     assert 'track.enabled = !voice.muted' in script
     assert 'source.stop()' in script
+    assert 'element.focus({ preventScroll: true })' in script
+    assert 'const VOICE_GUIDE_KEY = "voiceGuideDismissed:v1"' in script

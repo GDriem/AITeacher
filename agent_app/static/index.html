@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#07111f" />
     <title>AITeacher</title>
-    <link rel="stylesheet" href="/static/styles.css?v=16" />
+    <link rel="stylesheet" href="/static/styles.css?v=17" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
@@ -104,9 +104,6 @@
       <button id="authoring-toggle" class="authoring-toggle hidden" type="button">
         Panel de autoría
       </button>
-      <div class="status" role="status" aria-label="Servicio disponible">
-        <i aria-hidden="true"></i><span>Aprendizaje adaptativo</span>
-      </div>
     </header>
 
     <section id="authoring-panel" class="authoring-panel panel hidden" aria-labelledby="authoring-title">
@@ -447,6 +444,19 @@
         </div>
 
         <form id="chat-form" class="composer">
+          <div id="voice-guide" class="voice-guide hidden" role="dialog"
+            aria-labelledby="voice-guide-title" aria-describedby="voice-guide-copy" aria-hidden="true">
+            <div class="voice-guide-heading">
+              <span><i aria-hidden="true"></i> También puedes hablar</span>
+              <button id="voice-guide-close" type="button" aria-label="Cerrar guía de voz">×</button>
+            </div>
+            <h3 id="voice-guide-title">Conversa con tu tutor</h3>
+            <p id="voice-guide-copy">Pulsa el micrófono y habla con naturalidad. Puedes interrumpir, silenciar o volver al texto cuando quieras.</p>
+            <div class="voice-guide-actions">
+              <button id="voice-guide-dismiss" type="button">Ahora no</button>
+              <button id="voice-guide-start" type="button">Probar voz <b>→</b></button>
+            </div>
+          </div>
           <label class="sr-only" for="message">Mensaje</label>
           <textarea id="message" rows="2" maxlength="4000" placeholder="Ejemplo: Explícame embeddings o quiero aprender inglés">Explícame qué son los embeddings</textarea>
           <div class="composer-actions">
@@ -544,6 +554,6 @@
       <div id="session-list" class="session-list" role="list"></div>
     </aside>
 
-    <script src="/static/app.js?v=16" defer></script>
+    <script src="/static/app.js?v=17" defer></script>
   </body>
 </html>

@@ -1,0 +1,15 @@
+.gcloudignore
+.git
+.git/**
+.env
+.env.*
+!.env.example
+.venv
+.azure
+.claude
+.data
+.pytest_cache
+**/__pycache__
+**/*.pyc
+output
+tmp
