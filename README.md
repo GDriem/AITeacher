@@ -239,3 +239,7 @@ La dirección `MCP_SERVER_URL` se configura internamente como
 Consulte el [índice de documentación](docs/README.md) para navegar la
 arquitectura, la hoja de ruta completada, las guías de cada capacidad, el guion
 de demo y el despliegue.
+
+La evolución de la interfaz se organiza en el
+[plan de migración a React](docs/react-frontend-migration-plan.md), con una
+sesión independiente por fase y convivencia gradual con la UI vigente.

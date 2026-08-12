@@ -18,6 +18,10 @@ export const router = createBrowserRouter(
           lazy: () => import("../routes/CatalogRoute"),
         },
         {
+          path: "proyectos",
+          lazy: () => import("../routes/ProjectsRoute"),
+        },
+        {
           path: "*",
           Component: NotFoundRoute,
         },

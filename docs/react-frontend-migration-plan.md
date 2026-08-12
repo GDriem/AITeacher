@@ -408,8 +408,8 @@ Al comenzar una fase:
 | Fase | Estado | Handoff |
 |---|---|---|
 | R1 | Completada | Catálogo React en `/app`, contrato tipado y handoff al tutor heredado |
-| R2 | Pendiente | Iniciar en la ruta diferida `/proyectos` sin ampliar auth, tutor o sesiones |
-| R3 | Pendiente | — |
+| R2 | Completada | Proyectos React en `/app/proyectos`, workspace accesible y evaluación por rúbrica |
+| R3 | Pendiente | Iniciar bootstrap paralelo de capacidades y autenticación sin tocar sesiones ni tutor |
 | R4 | Pendiente | — |
 | R5 | Pendiente | — |
 | R6 | Pendiente | — |
@@ -456,6 +456,60 @@ diferida `/proyectos` hija del `AppShell`; consumir primero `GET /api/projects`
 con el cliente generado, y luego implementar selección, formulario y
 `POST /api/projects/{project_id}/evaluate` con estados y pruebas. No modificar
 catálogo, identidad, handoff, sesiones ni tutor al comenzar R2.
+
+### Handoff de R2 — 12 de agosto de 2026
+
+**Resultado entregado.** `/app/proyectos` queda como ruta diferida hija del
+`AppShell`. Consulta el catálogo real, presenta carga, vacío, error/reintento y
+éxito, permite seleccionar un proyecto, revisar reto, entregables y rúbrica,
+enviar una propuesta y recibir el mismo puntaje, estado, feedback, modo y
+criterios que devuelve la UI vigente. Un fallo de evaluación conserva el texto
+para reintentar. El foco se mueve al workspace y al resultado, y vuelve al
+botón de apertura al cerrar. La navegación de R1 fue ajustada para conservar
+el shell sin overflow a 320 px.
+
+También se corrigió una regresión directamente relacionada en
+`test_practice_and_projects_are_available_without_losing_main_quiz`: ahora el
+repositorio de sesiones de esa prueba usa `tmp_path` en vez del archivo
+compartido `.data/sessions.json`, evitando fallos de reemplazo en Windows sin
+cambiar producción.
+
+**Verificaciones ejecutadas.** TypeScript estricto y ESLint sin advertencias;
+11 pruebas Vitest; build Vite de producción con chunk independiente de
+proyectos; contrato OpenAPI y tipos generados sin drift; 10 pruebas Playwright
+para catálogo y proyectos, incluidos teclado, foco, axe, consola y responsive
+en 320, 768, 1024 y 1440 px; y 20 pruebas Python relevantes de hosting React,
+API, actividades y contratos de la UI heredada.
+
+**Decisiones tomadas.** TanStack Query posee únicamente el catálogo remoto y
+la mutación de evaluación; selección y propuesta son estado local. No se añadió
+store global, biblioteca visual, formulario externo ni memoización manual. La
+mesa de proyecto numerada concentra la jerarquía visual en la secuencia real
+reto → entregables → rúbrica; reutiliza los tokens nocturnos de R1, controles
+nativos, movimiento reducido y carga selectiva por ruta. Los imports son
+directos y el formulario no duplica datos del servidor.
+
+**Deuda deliberada.** La ruta reutiliza provisionalmente el adaptador de
+identidad anónima creado en catálogo; R3 lo sustituirá por el bootstrap común.
+El resultado de proyecto no se restaura al recargar porque el contrato actual
+no persiste evaluaciones de proyecto. Presupuestos automáticos de bundle y Web
+Vitals permanecen en R9. No se adelantaron autenticación, sesiones, tutor,
+práctica, voz, autoría u observabilidad.
+
+**Riesgos pendientes.** Hasta R3, una sesión con autenticación puede cambiar la
+identidad resuelta por el servidor respecto del identificador anónimo enviado
+por el formulario, aunque el backend conserva hoy la misma regla de resolución
+que la UI heredada. La evaluación puede usar el fallback determinista si el
+proveedor falla; la interfaz lo comunica, pero no ofrece historial porque no
+existe endpoint para recuperarlo.
+
+**Punto exacto para comenzar R3.** Crear `frontend/src/features/auth/` y una
+capa de bootstrap común al `AppShell`; iniciar en paralelo `GET
+/api/capabilities` y `GET /api/auth/status`, tipar los dos resultados con el
+cliente generado y cubrir primero los modos autenticación deshabilitada,
+invitado y `401`. Después integrar Google Identity de forma diferida, perfil y
+cierre de sesión. No tocar todavía listado de sesiones, chat, voz ni proyectos
+salvo para consumir la identidad común resultante.
 
 ## Riesgos y respuestas
 

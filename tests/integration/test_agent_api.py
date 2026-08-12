@@ -431,9 +431,11 @@ async def test_session_can_be_renamed_archived_restored_and_deleted(
 @pytest.mark.asyncio
 async def test_practice_and_projects_are_available_without_losing_main_quiz(
     learning_service,
+    tmp_path,
 ) -> None:
+    sessions_path = tmp_path / "sessions.json"
     app = create_app(
-        Settings(),
+        Settings(app_sessions_path=str(sessions_path)),
         tools=LocalLearningTools(learning_service),
         provider=MockModelProvider(),
     )

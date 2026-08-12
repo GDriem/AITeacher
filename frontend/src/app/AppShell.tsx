@@ -22,16 +22,17 @@ export function AppShell() {
         </a>
         <nav className={styles.nav} aria-label="Navegación principal">
           <NavLink to="/" end>
-            Explorar temas
+            Temas
           </NavLink>
-          <a href="/">Tutor actual</a>
+          <NavLink to="/proyectos">Proyectos</NavLink>
+          <a className={styles.legacyNav} href="/">Tutor actual</a>
         </nav>
       </header>
       <main id="main-content" className={styles.main} tabIndex={-1}>
         <Outlet />
       </main>
       <footer className={styles.footer}>
-        <span>AITeacher · Base React R1</span>
+        <span>AITeacher · Base React R2</span>
         <a href="/">Volver a la interfaz completa</a>
       </footer>
     </div>

@@ -2,17 +2,19 @@
 
 Este directorio contiene la interfaz React que convive con la aplicación
 estática durante la migración descrita en
-`docs/react-frontend-migration-plan.md`. R1 publica únicamente el catálogo y
-la acción de iniciar un tema. Login, proyectos, sesiones, tutor, evaluación,
-práctica, voz, observabilidad y autoría permanecen en la interfaz vigente.
+`docs/react-frontend-migration-plan.md`. R1 publica el catálogo y la acción de
+iniciar un tema; R2 incorpora los proyectos integradores. Login, sesiones,
+tutor, evaluación pedagógica, práctica, voz, observabilidad y autoría
+permanecen en la interfaz vigente.
 
-## Arquitectura de R1
+## Arquitectura de R1–R2
 
 ```text
 src/
 ├── app/                    # router, shell, QueryClient y límites de error
 ├── api/                    # cliente HTTP, errores y contrato generado
 ├── features/catalog/       # consulta, filtros, ruta y acción de inicio
+├── features/projects/      # catálogo, workspace, evaluación y rúbrica
 ├── routes/                 # ensamblaje y división por ruta
 ├── styles/                 # tokens semánticos y reset global
 └── test/                   # MSW, fixtures y render de integración
@@ -39,6 +41,14 @@ Al iniciar un tema, React conserva el contrato funcional existente:
 Así R1 prueba la vertical completa sin implementar anticipadamente el tutor de
 R5 ni la administración de sesiones de R4.
 
+R2 añade `/app/proyectos` como un chunk de ruta independiente. TanStack Query
+posee el catálogo remoto; la selección, la propuesta y el estado de la
+mutación permanecen locales a la pantalla. `GET /api/projects` y
+`POST /api/projects/{project_id}/evaluate` se consumen exclusivamente mediante
+el contrato generado. El workspace conserva la propuesta tras un fallo para
+permitir reintentar, mueve el foco al reto y al resultado, y lo restaura al
+botón de origen al cerrar.
+
 ## Dirección visual
 
 Los tokens parten del inventario heredado: canvas `#07111f`, superficies azul
@@ -50,6 +60,11 @@ el resto evita gradientes decorativos, sombras pesadas y tarjetas uniformes.
 Los layouts se prueban en 320, 768, 1024 y 1440 px. Incluyen skip link, foco
 visible, contraste elevado, movimiento reducido, estados de carga, vacío,
 error/reintento y nombres accesibles.
+
+La pieza distintiva de R2 es la mesa de proyecto: el catálogo numerado conduce
+de reto a entregables y rúbrica sin recurrir a un grid de tarjetas decorativas.
+La expresividad sigue concentrada en el recorrido de aprendizaje y el resto
+usa las superficies y acentos semánticos definidos en R1.
 
 ## Desarrollo
 
@@ -89,13 +104,13 @@ pnpm test:e2e
 
 Vitest usa Testing Library, MSW y axe. Playwright comprueba teclado, consola,
 axe en navegador y ausencia de overflow en los cuatro anchos de referencia.
-El build usa React Compiler y separa el catálogo por ruta.
+El build usa React Compiler y separa catálogo y proyectos por ruta.
 
 FastAPI sirve `frontend/dist` bajo `/app`, con fallback de SPA para rutas
 profundas y caché inmutable para `/app/assets/*`. El Dockerfile construye esos
 recursos en una etapa Node y copia solamente `dist` a la imagen Python final.
 
-## Deuda deliberada de R1
+## Deuda deliberada al cerrar R2
 
 - La pantalla React no implementa Google Identity ni perfil; eso corresponde a
   R3. El backend sigue resolviendo la cookie existente y el handoff por sesión
@@ -106,3 +121,8 @@ recursos en una etapa Node y copia solamente `dist` a la imagen Python final.
   HTML nativos. La decisión se reevalúa cuando aparezcan dialogs y drawers.
 - El feed, composer y contenido de la sesión se muestran en la UI heredada
   hasta R4/R5; React sólo crea y entrega la sesión.
+- Proyectos reutiliza temporalmente el adaptador de identidad anónima de R1;
+  R3 establecerá una identidad única y el bootstrap autenticado para todas las
+  rutas.
+- Las evaluaciones de proyecto no se guardan ni se restauran al recargar porque
+  el contrato vigente tampoco ofrece persistencia para este dominio.

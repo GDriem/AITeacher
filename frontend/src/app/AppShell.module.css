@@ -143,7 +143,7 @@
   }
 
   .brand small,
-  .nav a:first-child {
+  .legacyNav {
     display: none;
   }
 
@@ -160,5 +160,15 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
+  }
+}
+
+@media (max-width: 23.99rem) {
+  .brand > span:last-child {
+    display: none;
+  }
+
+  .nav a {
+    padding-inline: var(--space-2);
   }
 }
