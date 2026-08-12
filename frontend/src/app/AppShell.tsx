@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 
+import { StudentAccount } from "../features/auth/StudentAccount";
 import styles from "./AppShell.module.css";
 
 export function AppShell() {
@@ -27,12 +28,13 @@ export function AppShell() {
           <NavLink to="/proyectos">Proyectos</NavLink>
           <a className={styles.legacyNav} href="/">Tutor actual</a>
         </nav>
+        <StudentAccount />
       </header>
       <main id="main-content" className={styles.main} tabIndex={-1}>
         <Outlet />
       </main>
       <footer className={styles.footer}>
-        <span>AITeacher · Base React R2</span>
+        <span>AITeacher · Base React R3</span>
         <a href="/">Volver a la interfaz completa</a>
       </footer>
     </div>

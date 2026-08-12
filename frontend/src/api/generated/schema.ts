@@ -386,6 +386,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AppCapabilities */
+        AppCapabilities: {
+            /** Authoring */
+            authoring: boolean;
+            /** Text */
+            text: boolean;
+            /** Voice */
+            voice: boolean;
+            /** Voice Model */
+            voice_model?: string | null;
+        };
         /** Assessment */
         Assessment: {
             /**
@@ -1410,9 +1421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AppCapabilities"];
                 };
             };
         };

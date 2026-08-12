@@ -1,5 +1,7 @@
 import { ProjectsScreen } from "../features/projects/ProjectsScreen";
+import { useAppSession } from "../features/auth/appSession";
 
 export function Component() {
-  return <ProjectsScreen />;
+  const { studentId } = useAppSession();
+  return <ProjectsScreen studentId={studentId} />;
 }

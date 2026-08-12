@@ -1,6 +1,40 @@
 {
   "components": {
     "schemas": {
+      "AppCapabilities": {
+        "properties": {
+          "authoring": {
+            "title": "Authoring",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "boolean"
+          },
+          "voice": {
+            "title": "Voice",
+            "type": "boolean"
+          },
+          "voice_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Model"
+          }
+        },
+        "required": [
+          "text",
+          "voice",
+          "authoring"
+        ],
+        "title": "AppCapabilities",
+        "type": "object"
+      },
       "Assessment": {
         "additionalProperties": false,
         "properties": {
@@ -2541,9 +2575,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Capabilities Api Capabilities Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/AppCapabilities"
                 }
               }
             },

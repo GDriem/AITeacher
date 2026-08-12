@@ -73,6 +73,7 @@ from agent_app.services.auth import (
     SessionSigner,
     StudentProfileRepository,
 )
+from agent_app.models.capabilities import AppCapabilities
 from agent_app.services.authoring import (
     AuthoringGateway,
     LocalAuthoringGateway,
@@ -395,14 +396,16 @@ def create_app(
     async def observability_summary() -> dict:
         return observability.snapshot()
 
-    @app.get("/api/capabilities")
-    async def capabilities() -> dict:
-        return {
-            "text": True,
-            "voice": settings.voice_enabled,
-            "voice_model": settings.gemini_live_model if settings.voice_enabled else None,
-            "authoring": bool(settings.app_authoring_token and authoring),
-        }
+    @app.get("/api/capabilities", response_model=AppCapabilities)
+    async def capabilities() -> AppCapabilities:
+        return AppCapabilities(
+            text=True,
+            voice=settings.voice_enabled,
+            voice_model=(
+                settings.gemini_live_model if settings.voice_enabled else None
+            ),
+            authoring=bool(settings.app_authoring_token and authoring),
+        )
 
     def authenticated_profile(request: Request):
         if auth_service is None:

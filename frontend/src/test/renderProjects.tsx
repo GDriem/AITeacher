@@ -3,7 +3,14 @@ import { render } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 
 import { AppShell } from "../app/AppShell";
+import { AuthProvider } from "../features/auth/AuthProvider";
+import { useAppSession } from "../features/auth/appSession";
 import { ProjectsScreen } from "../features/projects/ProjectsScreen";
+
+function ProjectsUnderTest() {
+  const { studentId } = useAppSession();
+  return <ProjectsScreen studentId={studentId} />;
+}
 
 export function renderProjects() {
   const queryClient = new QueryClient({
@@ -13,13 +20,15 @@ export function renderProjects() {
     },
   });
   const router = createMemoryRouter(
-    [{ path: "/", Component: AppShell, children: [{ path: "proyectos", element: <ProjectsScreen /> }] }],
+    [{ path: "/", Component: AppShell, children: [{ path: "proyectos", element: <ProjectsUnderTest /> }] }],
     { basename: "/app", initialEntries: ["/app/proyectos"] },
   );
 
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </QueryClientProvider>,
   );
 

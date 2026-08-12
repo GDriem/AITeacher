@@ -3,16 +3,18 @@
 Este directorio contiene la interfaz React que convive con la aplicación
 estática durante la migración descrita en
 `docs/react-frontend-migration-plan.md`. R1 publica el catálogo y la acción de
-iniciar un tema; R2 incorpora los proyectos integradores. Login, sesiones,
-tutor, evaluación pedagógica, práctica, voz, observabilidad y autoría
+iniciar un tema; R2 incorpora los proyectos integradores; R3 establece el
+bootstrap, la identidad común, Google Login, perfil y cierre de sesión.
+Sesiones, tutor, evaluación pedagógica, práctica, voz, observabilidad y autoría
 permanecen en la interfaz vigente.
 
-## Arquitectura de R1–R2
+## Arquitectura de R1–R3
 
 ```text
 src/
 ├── app/                    # router, shell, QueryClient y límites de error
 ├── api/                    # cliente HTTP, errores y contrato generado
+├── features/auth/          # bootstrap, identidad, gate, perfil y recuperación 401
 ├── features/catalog/       # consulta, filtros, ruta y acción de inicio
 ├── features/projects/      # catálogo, workspace, evaluación y rúbrica
 ├── routes/                 # ensamblaje y división por ruta
@@ -24,7 +26,16 @@ TanStack Query es dueño del catálogo remoto. La búsqueda, materia, categoría
 nivel viven en los search params; los resultados y la recomendación por
 materia se derivan durante el render. No existe store global ni una copia local
 del catálogo. La identidad anónima usa un adaptador versionado que comparte el
-identificador mínimo con la UI heredada durante la convivencia.
+identificador mínimo con la UI heredada durante la convivencia. R3 la resuelve
+una sola vez en `AuthProvider`; catálogo y proyectos reciben el `studentId`
+común y nunca leen cookies, tokens o perfiles del almacenamiento local.
+
+El bootstrap inicia `GET /api/capabilities` y `GET /api/auth/status` en
+paralelo. Con autenticación deshabilitada crea una identidad local versionada;
+con autenticación habilitada abre un gate modal que contiene el foco y carga
+Google Identity Services sólo entonces. El perfil público vive en la caché de
+TanStack Query, el token permanece exclusivamente en la cookie HttpOnly y un
+`401` de cualquier cliente abre el mismo flujo de recuperación.
 
 El cliente de `src/api/client.ts` consume tipos generados desde el OpenAPI de
 FastAPI. Todos los fallos HTTP se convierten a `ApiError`, con estado,
@@ -104,25 +115,24 @@ pnpm test:e2e
 
 Vitest usa Testing Library, MSW y axe. Playwright comprueba teclado, consola,
 axe en navegador y ausencia de overflow en los cuatro anchos de referencia.
-El build usa React Compiler y separa catálogo y proyectos por ruta.
+El build usa React Compiler y separa catálogo y proyectos por ruta. Google
+Identity queda además en un chunk condicional fuera de la carga sin auth.
 
 FastAPI sirve `frontend/dist` bajo `/app`, con fallback de SPA para rutas
 profundas y caché inmutable para `/app/assets/*`. El Dockerfile construye esos
 recursos en una etapa Node y copia solamente `dist` a la imagen Python final.
 
-## Deuda deliberada al cerrar R2
+## Deuda deliberada al cerrar R3
 
-- La pantalla React no implementa Google Identity ni perfil; eso corresponde a
-  R3. El backend sigue resolviendo la cookie existente y el handoff por sesión
-  funciona con autenticación habilitada.
 - No se define todavía un presupuesto automático de bundle por ruta; R9 lo
   fijará con medición de Web Vitals y perfiles reales.
 - No se incorpora una biblioteca de primitivas: R1 sólo necesita controles
   HTML nativos. La decisión se reevalúa cuando aparezcan dialogs y drawers.
 - El feed, composer y contenido de la sesión se muestran en la UI heredada
   hasta R4/R5; React sólo crea y entrega la sesión.
-- Proyectos reutiliza temporalmente el adaptador de identidad anónima de R1;
-  R3 establecerá una identidad única y el bootstrap autenticado para todas las
-  rutas.
+- Capacidades ya se consultan, pero voz y autoría permanecen ocultas hasta R7 y
+  R8.
+- El menú de cuenta se limita a perfil y cierre de sesión; su relación con el
+  futuro drawer de sesiones se decidirá en R4.
 - Las evaluaciones de proyecto no se guardan ni se restauran al recargar porque
   el contrato vigente tampoco ofrece persistencia para este dominio.

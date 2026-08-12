@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 
@@ -9,18 +8,18 @@ import { CatalogFilters } from "./CatalogFilters";
 import { catalogOptions, filterTopics, filtersFromParams, paramsFromFilters } from "./catalogFilterState";
 import { LearningPath } from "./LearningPath";
 import { topicCatalogKey, topicCatalogOptions } from "./catalogQueries";
-import { getBrowserStudentId, legacySessionUrl, rememberStartedSession } from "./studentIdentity";
+import { legacySessionUrl, rememberStartedSession } from "./studentIdentity";
 import { TopicGrid } from "./TopicGrid";
 import styles from "./CatalogScreen.module.css";
 
 interface Props {
+  studentId: string;
   legacyHandoff?: (url: string) => void;
 }
 
 const defaultHandoff = (url: string) => window.location.assign(url);
 
-export function CatalogScreen({ legacyHandoff = defaultHandoff }: Props) {
-  const [studentId] = useState(getBrowserStudentId);
+export function CatalogScreen({ studentId, legacyHandoff = defaultHandoff }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const catalog = useQuery(topicCatalogOptions(studentId));

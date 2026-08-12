@@ -1,0 +1,204 @@
+.bootstrap {
+  min-height: 100dvh;
+  width: min(100% - var(--space-8), 42rem);
+  display: grid;
+  place-content: center;
+  justify-items: start;
+  gap: var(--space-3);
+  margin-inline: auto;
+}
+
+.bootstrap p,
+.bootstrap h1 {
+  margin-block-end: 0;
+}
+
+.bootstrap button,
+.error button {
+  min-height: 2.75rem;
+  padding-inline: var(--space-4);
+  color: var(--content-inverse);
+  background: var(--action-primary);
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+}
+
+.bootstrapMark {
+  width: 3rem;
+  height: 0.25rem;
+  background: var(--status-guide);
+  box-shadow: 1rem 0 var(--status-mastery), 2rem 0 var(--status-attention);
+}
+
+.gateBackdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  min-width: 20rem;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: var(--space-5);
+  background: var(--canvas-default);
+}
+
+.gate {
+  width: min(100%, 34rem);
+  padding: var(--space-8);
+  border-block: 1px solid var(--border-default);
+}
+
+.eyebrow {
+  margin-block-end: var(--space-3);
+  color: var(--status-guide);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gate h1 {
+  margin-block-end: var(--space-4);
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  letter-spacing: -0.045em;
+}
+
+.gate > p:not(.eyebrow),
+.gate > small {
+  color: var(--content-muted);
+}
+
+.identityRule {
+  display: grid;
+  grid-template-columns: 3fr 2fr 1fr;
+  gap: var(--space-2);
+  margin-block: var(--space-7);
+}
+
+.identityRule i {
+  height: 0.2rem;
+  background: var(--status-guide);
+}
+
+.identityRule i:nth-child(2) { background: var(--status-mastery); }
+.identityRule i:nth-child(3) { background: var(--status-attention); }
+
+.googleButton {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  margin-block-end: var(--space-4);
+  color: var(--content-muted);
+}
+
+.gate[aria-busy="true"] .googleButton {
+  pointer-events: none;
+  opacity: 0.68;
+}
+
+.status {
+  margin-block-end: var(--space-4);
+}
+
+.error {
+  margin-block: var(--space-4);
+  color: var(--status-danger);
+}
+
+.error p { margin-block-end: var(--space-3); }
+
+.account {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.accountToggle,
+.localAccount {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  color: var(--content-default);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.accountToggle > span,
+.accountToggle img,
+.localAccount > span {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--content-inverse);
+  background: var(--status-mastery);
+  border-radius: 50%;
+  object-fit: cover;
+  font-size: var(--font-size-sm);
+  font-weight: 900;
+}
+
+.accountToggle small,
+.localAccount small {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountMenu {
+  position: absolute;
+  z-index: 20;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  width: min(18rem, calc(100vw - var(--space-5)));
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.accountMenu span {
+  overflow-wrap: anywhere;
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+}
+
+.accountMenu button {
+  min-height: 2.75rem;
+  margin-block-start: var(--space-2);
+  color: var(--status-danger);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+}
+
+.accountError {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  width: 18rem;
+  padding: var(--space-3);
+  color: var(--status-danger);
+  background: var(--surface-raised);
+  border: 1px solid var(--status-danger);
+}
+
+@media (max-width: 63.99rem) {
+  .accountToggle small,
+  .localAccount small {
+    display: none;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .gate { padding: var(--space-7) 0; }
+  .localAccount { display: none; }
+}

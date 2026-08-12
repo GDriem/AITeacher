@@ -27,9 +27,9 @@
 
 .header {
   min-height: 6.5rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-5);
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -89,6 +89,7 @@
 .nav {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
 }
 
@@ -140,6 +141,7 @@
 
   .header {
     min-height: 5.5rem;
+    gap: var(--space-2);
   }
 
   .brand small,

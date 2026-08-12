@@ -4,6 +4,12 @@ import { expect, test } from "@playwright/test";
 import { catalogFixture } from "../src/test/fixtures/catalog";
 
 test.beforeEach(async ({ page }) => {
+  await page.route("**/api/capabilities", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ text: true, voice: false, voice_model: null, authoring: false }) }),
+  );
+  await page.route("**/api/auth/status", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ enabled: false, authenticated: false, google_client_id: null, profile: null }) }),
+  );
   await page.route("**/api/topics**", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(catalogFixture) }),
   );

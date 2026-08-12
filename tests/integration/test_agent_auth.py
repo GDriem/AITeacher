@@ -2,7 +2,7 @@ import httpx
 import pytest
 
 from agent_app.api.main import create_app
-from agent_app.config import Settings
+from agent_app.config import ModelProviderName, Settings
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.auth import (
     AuthService,
@@ -108,6 +108,79 @@ async def test_google_session_owns_student_routes_and_rejects_spoofing(
     assert after_logout.status_code == 401
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_auth_bootstrap_contracts_support_disabled_guest_and_expired_session(
+    learning_service,
+) -> None:
+    disabled_app = create_app(
+        Settings(
+            google_client_id=None,
+            app_session_secret=None,
+            model_provider=ModelProviderName.MOCK,
+        ),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=disabled_app),
+        base_url="http://agent.local",
+    ) as client:
+        disabled_status = await client.get("/api/auth/status")
+        capabilities = await client.get("/api/capabilities")
+
+    enabled_app = create_app(
+        Settings(
+            google_client_id="web-client.apps.googleusercontent.com",
+            app_session_secret="s" * 32,
+        ),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+        auth_service=AuthService(
+            FakeGoogleVerifier(),
+            InMemoryStudentProfileRepository(),
+            SessionSigner("s" * 32),
+        ),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=enabled_app),
+        base_url="http://agent.local",
+    ) as client:
+        guest_status = await client.get("/api/auth/status")
+        client.cookies.set("ait_session", "expired-or-invalid")
+        expired_status = await client.get("/api/auth/status")
+        protected = await client.get(
+            "/api/topics",
+            params={"student_id": "browser-student"},
+        )
+
+    assert disabled_status.json() == {
+        "enabled": False,
+        "authenticated": False,
+        "google_client_id": None,
+        "profile": None,
+    }
+    assert capabilities.json() == {
+        "text": True,
+        "voice": False,
+        "voice_model": None,
+        "authoring": False,
+    }
+    assert guest_status.json() == expired_status.json() == {
+        "enabled": True,
+        "authenticated": False,
+        "google_client_id": "web-client.apps.googleusercontent.com",
+        "profile": None,
+    }
+    assert protected.status_code == 401
+    assert protected.json()["detail"] == "La sesión no es válida"
+
+
 def test_google_auth_requires_a_session_secret() -> None:
     with pytest.raises(RuntimeError, match="APP_SESSION_SECRET"):
-        create_app(Settings(google_client_id="configured-client"))
+        create_app(
+            Settings(
+                google_client_id="configured-client",
+                app_session_secret=None,
+            )
+        )

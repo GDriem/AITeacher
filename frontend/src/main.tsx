@@ -6,6 +6,7 @@ import { RouterProvider } from "react-router-dom";
 import { AppErrorBoundary } from "./app/AppErrorBoundary";
 import { queryClient } from "./app/queryClient";
 import { router } from "./app/router";
+import { AuthProvider } from "./features/auth/AuthProvider";
 import "./styles/tokens.css";
 import "./styles/global.css";
 
@@ -19,7 +20,9 @@ createRoot(root).render(
   <StrictMode>
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
       </QueryClientProvider>
     </AppErrorBoundary>
   </StrictMode>,

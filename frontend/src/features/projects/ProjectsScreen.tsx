@@ -2,15 +2,13 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { ApiError } from "../../api/ApiError";
-import { getBrowserStudentId } from "../catalog/studentIdentity";
 import { ProjectCatalog } from "./ProjectCatalog";
 import { ProjectWorkspace } from "./ProjectWorkspace";
 import { evaluateProject } from "./projectsApi";
 import { projectsOptions } from "./projectsQueries";
 import styles from "./ProjectsScreen.module.css";
 
-export function ProjectsScreen() {
-  const [studentId] = useState(getBrowserStudentId);
+export function ProjectsScreen({ studentId }: { studentId: string }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const returnFocusRef = useRef<HTMLButtonElement | null>(null);
   const projects = useQuery(projectsOptions());

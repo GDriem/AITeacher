@@ -33,6 +33,7 @@ export default tseslint.config(
   {
     files: ["**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"],
     rules: {
+      "react-refresh/only-export-components": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
     },

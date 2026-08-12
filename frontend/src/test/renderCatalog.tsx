@@ -3,7 +3,14 @@ import { render } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 
 import { AppShell } from "../app/AppShell";
+import { AuthProvider } from "../features/auth/AuthProvider";
+import { useAppSession } from "../features/auth/appSession";
 import { CatalogScreen } from "../features/catalog/CatalogScreen";
+
+function CatalogUnderTest({ legacyHandoff }: { legacyHandoff?: (url: string) => void }) {
+  const { studentId } = useAppSession();
+  return <CatalogScreen studentId={studentId} legacyHandoff={legacyHandoff} />;
+}
 
 export function renderCatalog({
   initialEntry = "/app/",
@@ -26,7 +33,7 @@ export function renderCatalog({
         children: [
           {
             index: true,
-            element: <CatalogScreen legacyHandoff={legacyHandoff} />,
+            element: <CatalogUnderTest legacyHandoff={legacyHandoff} />,
           },
         ],
       },
@@ -36,7 +43,9 @@ export function renderCatalog({
 
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </QueryClientProvider>,
   );
 

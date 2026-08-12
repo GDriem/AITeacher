@@ -409,7 +409,7 @@ Al comenzar una fase:
 |---|---|---|
 | R1 | Completada | Catálogo React en `/app`, contrato tipado y handoff al tutor heredado |
 | R2 | Completada | Proyectos React en `/app/proyectos`, workspace accesible y evaluación por rúbrica |
-| R3 | Pendiente | Iniciar bootstrap paralelo de capacidades y autenticación sin tocar sesiones ni tutor |
+| R3 | Completada | Identidad común, bootstrap paralelo, gate Google, perfil, logout y recuperación `401` |
 | R4 | Pendiente | — |
 | R5 | Pendiente | — |
 | R6 | Pendiente | — |
@@ -510,6 +510,62 @@ cliente generado y cubrir primero los modos autenticación deshabilitada,
 invitado y `401`. Después integrar Google Identity de forma diferida, perfil y
 cierre de sesión. No tocar todavía listado de sesiones, chat, voz ni proyectos
 salvo para consumir la identidad común resultante.
+
+### Handoff de R3 — 12 de agosto de 2026
+
+**Resultado entregado.** El árbol React inicia `GET /api/capabilities` y
+`GET /api/auth/status` en paralelo antes de montar rutas. Con auth deshabilitada
+conserva una identidad invitada versionada; con auth habilitada presenta un
+gate modal que contiene y restaura el foco, carga Google Identity Services sólo
+cuando hace falta, intercambia la credencial por una cookie HttpOnly y muestra
+el perfil mínimo en el shell. El cierre de sesión vuelve al gate y cualquier
+respuesta `401` del cliente generado activa la misma recuperación uniforme.
+Catálogo y proyectos reciben el `studentId` común y no guardan tokens ni PII en
+`localStorage`. El contrato de capacidades ahora usa `AppCapabilities` como
+modelo OpenAPI en vez de un diccionario sin tipo.
+
+**Verificaciones ejecutadas.** TypeScript estricto y ESLint sin advertencias;
+16 pruebas Vitest para concurrencia del bootstrap, modos deshabilitado y
+autenticado, login, PII, perfil, logout, `401`, foco, error/reintento y axe;
+build Vite de producción con `googleIdentity` en un chunk diferido de 0.94 kB;
+OpenAPI y tipos sin drift; 16 recorridos Playwright completados para catálogo,
+proyectos y auth, con teclado, foco, axe, consola y responsive en 320, 768,
+1024 y 1440 px; inspección visual manual en escritorio y 320 px sin overflow;
+10 pruebas Python de auth/hosting y 14 de API y contratos heredados. En este
+host se ejecutó Playwright contra Vite ya levantado para aislar el ciclo de vida
+del servidor: 16/16 casos pasaron con código de salida limpio.
+
+**Decisiones tomadas.** TanStack Query posee capacidades, estado de auth y
+perfil; un contexto pequeño expone identidad resuelta, capacidades y logout.
+Un único suscriptor del cliente normaliza `401`; no se añadió store global ni
+dependencia de auth. GIS usa import dinámico, una inicialización por client ID
+y callback vigente para respetar StrictMode sin advertencias. La caché de temas
+se elimina sólo cuando cambia la identidad; reautenticar el mismo perfil
+conserva el árbol y permite restaurar foco. Visualmente, el gate es un umbral
+sobrio que reutiliza la línea semántica guía → dominio → atención sin competir
+con la ruta viva.
+
+**Deuda deliberada.** Capacidades ya se consultan, pero voz y autoría
+permanecen ocultas hasta R7 y R8. El menú de cuenta no incorpora sesiones: el
+drawer, búsqueda y continuidad pertenecen a R4. Presupuestos de bundle y Web
+Vitals siguen en R9. El adaptador invitado conserva las claves heredadas
+durante convivencia; su limpieza corresponde al retiro de la UI antigua.
+
+**Riesgos pendientes.** Google Identity depende del script externo y su
+iframe; el gate ofrece error/reintento, pero una política corporativa que lo
+bloquee impide continuar cuando auth es obligatoria. El perfil se recupera del
+servidor tras recargar y nunca se persiste localmente, por lo que un backend no
+disponible bloquea correctamente el bootstrap. El runner de este host no cerró
+Vite cuando lo creó como hijo; usar un servidor preexistente produjo una salida
+limpia, por lo que conviene vigilar el ciclo de vida del web server en CI.
+
+**Punto exacto para comenzar R4.** Crear
+`frontend/src/features/sessions/` y tipar primero `GET /api/sessions` usando el
+`studentId` de `useAppSession`; añadir una ruta o drawer accesible para listado,
+búsqueda y apertura, restaurando la sesión activa desde el adaptador versionado
+existente. Después implementar crear, renombrar, archivar, restaurar y eliminar
+con invalidaciones explícitas y protección contra respuestas tardías. No tocar
+todavía feed, composer, Markdown, evaluación, práctica ni voz.
 
 ## Riesgos y respuestas
 
