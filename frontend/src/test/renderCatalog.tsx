@@ -7,18 +7,17 @@ import { AuthProvider } from "../features/auth/AuthProvider";
 import { useAppSession } from "../features/auth/appSession";
 import { CatalogScreen } from "../features/catalog/CatalogScreen";
 
-function CatalogUnderTest({ legacyHandoff }: { legacyHandoff?: (url: string) => void }) {
+function CatalogUnderTest() {
   const { studentId } = useAppSession();
-  return <CatalogScreen studentId={studentId} legacyHandoff={legacyHandoff} />;
+  return <CatalogScreen studentId={studentId} />;
 }
 
 export function renderCatalog({
   initialEntry = "/app/",
-  legacyHandoff,
 }: {
   initialEntry?: string;
-  legacyHandoff?: (url: string) => void;
 } = {}) {
+  window.localStorage.setItem("studentAutoId", "student-test");
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -33,8 +32,9 @@ export function renderCatalog({
         children: [
           {
             index: true,
-            element: <CatalogUnderTest legacyHandoff={legacyHandoff} />,
+            element: <CatalogUnderTest />,
           },
+          { path: "tutor", element: <h1>Tutor React</h1> },
         ],
       },
     ],

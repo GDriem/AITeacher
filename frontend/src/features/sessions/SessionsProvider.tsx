@@ -8,6 +8,7 @@ import {
   rememberActiveSession,
 } from "./activeSession";
 import { deleteSession as deleteSessionRequest, updateSession } from "./sessionsApi";
+import { notifySessionSelection } from "./sessionSelectionEvents";
 import { SessionsContext } from "./sessionsContext";
 import {
   sessionDetailKey,
@@ -24,10 +25,15 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
   const [activeSessionId, setActiveSessionId] = useState(() => readActiveSession(studentId));
   const [openingSessionId, setOpeningSessionId] = useState<string | null>(null);
   const openRequestRef = useRef(0);
+  const [pendingActivation, setPendingActivation] = useState<{ id: string; dataUpdatedAt: number } | null>(null);
   const activeSession = activeSessionId
     ? sessionsQuery.data?.sessions.find((item) => item.id === activeSessionId)
     : null;
-  const resolvedActiveSessionId = !sessionsQuery.data || (activeSession && !activeSession.archived_at)
+  const awaitingActivatedSession = pendingActivation?.id === activeSessionId
+    && sessionsQuery.dataUpdatedAt <= pendingActivation.dataUpdatedAt;
+  const resolvedActiveSessionId = !sessionsQuery.data
+    || (activeSession && !activeSession.archived_at)
+    || awaitingActivatedSession
     ? activeSessionId
     : null;
 
@@ -58,10 +64,21 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
 
   const startNewSession = () => {
     openRequestRef.current += 1;
+    setPendingActivation(null);
     void queryClient.cancelQueries({ queryKey: [...sessionsKey(studentId), "detail"] });
     clearActiveSession(studentId);
+    notifySessionSelection(null);
     setOpeningSessionId(null);
     setActiveSessionId(null);
+  };
+
+  const activateSession = (sessionId: string) => {
+    openRequestRef.current += 1;
+    setPendingActivation({ id: sessionId, dataUpdatedAt: sessionsQuery.dataUpdatedAt });
+    rememberActiveSession(studentId, sessionId);
+    notifySessionSelection(sessionId);
+    setOpeningSessionId(null);
+    setActiveSessionId(sessionId);
   };
 
   const openSession = async (sessionId: string) => {
@@ -72,6 +89,7 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
       if (requestId !== openRequestRef.current) return false;
       if (session.archived_at) throw new Error("Restaura la conversación antes de continuar.");
       rememberActiveSession(studentId, session.id);
+      notifySessionSelection(session.id);
       setActiveSessionId(session.id);
       return true;
     } finally {
@@ -104,6 +122,7 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
       sessionsStatus: sessionsQuery.status,
       refetchSessions: sessionsQuery.refetch,
       startNewSession,
+      activateSession,
       openSession,
       renameSession,
       setArchived,

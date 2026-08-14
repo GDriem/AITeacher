@@ -67,8 +67,3 @@ export function clearActiveSession(studentId: string) {
     // A failed cleanup must not block starting another conversation.
   }
 }
-
-export function legacySessionUrl(sessionId: string) {
-  const params = new URLSearchParams({ session: sessionId });
-  return `/?${params.toString()}#tutor`;
-}

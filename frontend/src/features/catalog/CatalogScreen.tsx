@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { ApiError } from "../../api/ApiError";
 import type { TopicCatalogItem, TopicCatalogResponse } from "./catalogApi";
@@ -8,29 +8,31 @@ import { CatalogFilters } from "./CatalogFilters";
 import { catalogOptions, filterTopics, filtersFromParams, paramsFromFilters } from "./catalogFilterState";
 import { LearningPath } from "./LearningPath";
 import { topicCatalogKey, topicCatalogOptions } from "./catalogQueries";
-import { legacySessionUrl, rememberActiveSession } from "../sessions/activeSession";
+import { useSessions } from "../sessions/sessionsContext";
+import { sessionListKey } from "../sessions/sessionsQueries";
 import { TopicGrid } from "./TopicGrid";
 import styles from "./CatalogScreen.module.css";
 
 interface Props {
   studentId: string;
-  legacyHandoff?: (url: string) => void;
 }
 
-const defaultHandoff = (url: string) => window.location.assign(url);
-
-export function CatalogScreen({ studentId, legacyHandoff = defaultHandoff }: Props) {
+export function CatalogScreen({ studentId }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { activateSession } = useSessions();
   const catalog = useQuery(topicCatalogOptions(studentId));
   const filters = filtersFromParams(searchParams);
 
   const startMutation = useMutation({
     mutationFn: (topic: TopicCatalogItem) => startTopic(studentId, topic.title),
-    onSuccess: (response) => {
-      rememberActiveSession(studentId, response.session_id);
+    onSuccess: (response, topic) => {
+      const message = `Quiero aprender sobre ${topic.title}`;
+      activateSession(response.session_id);
       void queryClient.invalidateQueries({ queryKey: topicCatalogKey(studentId) });
-      legacyHandoff(legacySessionUrl(response.session_id));
+      void queryClient.invalidateQueries({ queryKey: sessionListKey(studentId) });
+      void navigate("/tutor", { state: { tutorExchange: { message, response } } });
     },
   });
 

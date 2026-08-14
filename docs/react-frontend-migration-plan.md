@@ -411,9 +411,9 @@ Al comenzar una fase:
 | R2 | Completada | Proyectos React en `/app/proyectos`, workspace accesible y evaluación por rúbrica |
 | R3 | Completada | Identidad común, bootstrap paralelo, gate Google, perfil, logout y recuperación `401` |
 | R4 | Completada | Drawer accesible, continuidad versionada y administración completa de sesiones |
-| R5 | Pendiente | — |
-| R6 | Pendiente | — |
-| R7 | Pendiente | — |
+| R5 | Completada | Tutor React en `/app/tutor`, Markdown seguro, envío cancelable y continuidad sin handoff heredado |
+| R6 | Completada | Evaluación, rúbrica, práctica reanudable y dominio por tema dentro del tutor React |
+| R7 | Completada | Voz diferida con WebSocket, AudioWorklet, interrupción, mute, reconexión y fallback a texto |
 | R8 | Pendiente | — |
 | R9 | Pendiente | — |
 | R10 | Pendiente | — |
@@ -634,6 +634,225 @@ composer y `POST /api/chat` cancelable, usando el mismo `session_id` y
 actualizando/invalidando las claves de sesiones. Sustituir el handoff
 heredado sólo cuando conversación nueva y restaurada tengan paridad. No tocar
 todavía evaluación, práctica, voz u observabilidad.
+
+### Handoff de R5 — 13 de agosto de 2026
+
+**Resultado entregado.** `/app/tutor` queda como ruta diferida hija del
+`AppShell` y sustituye el handoff al tutor heredado tanto al iniciar un tema
+como al abrir o crear una conversación desde la bitácora. Una sesión restaurada
+se representa desde `ConversationDetail`; una sesión nueva conserva la
+secuencia usuario → tutor mientras el detalle persistido se sincroniza. El feed
+incluye Markdown GFM seguro sin HTML crudo, enlaces externos limitados a HTTP y
+HTTPS, fuentes, notas y la traza pública de la respuesta vigente con una
+aclaración explícita de que no muestra razonamiento interno.
+
+El composer valida el contrato de 2 a 4,000 caracteres, admite Ctrl/⌘ + Enter,
+impide envíos simultáneos, ofrece cancelación visible y restaura el borrador al
+cancelar o fallar. `AbortController`, request IDs y seguimiento del scroll viven
+en referencias; una respuesta tardía no puede sustituir la vigente. El foco se
+mueve al título al entrar o cambiar de conversación y vuelve al editor después
+de responder. El historial sigue la cola sólo cuando el estudiante está cerca
+del final, usa `content-visibility` para conversaciones largas y expone un
+control de teclado para llegar al mensaje más reciente.
+
+**Verificaciones ejecutadas.** Antes de modificar se reconfirmó R4 con
+TypeScript, ESLint, 21 Vitest, build, OpenAPI sin drift, 25 pruebas Python y 22
+recorridos Playwright; todos los casos pasaron y el wrapper volvió a agotar el
+timeout únicamente por el ciclo de vida conocido de Vite. Para R5 pasaron
+TypeScript estricto, ESLint sin advertencias, 26 pruebas Vitest, build Vite de
+producción, OpenAPI y tipos sin drift, 25 pruebas Python relevantes y 27
+recorridos Playwright contra un Vite controlado. Los E2E cubren XSS, Markdown,
+fuentes, traza, foco, teclado, envío único, continuidad, respuestas tardías,
+consola, axe y 320, 768, 1024 y 1440 px. La inspección visual adicional en el
+navegador confirmó cero overflow y consola limpia en los cuatro anchos. El
+build conserva un chunk independiente de tutor de 168.19 kB (51.37 kB gzip).
+
+**Decisiones tomadas.** TanStack Query continúa como dueño de listados y
+detalles; el intercambio todavía no reflejado por el GET es un estado local
+efímero y desaparece al reconocer el par persistido. La activación de una
+sesión recién creada tolera sólo el snapshot anterior del listado y vuelve a
+validarse al recibir una versión nueva. `react-markdown@10.1.0` y
+`remark-gfm@4.0.1` se fijaron en el lockfile; no se usa
+`dangerouslySetInnerHTML`, HTML embebido ni carga de imágenes remotas. La traza
+permanece local porque el contrato de sesiones no la persiste. No se añadió
+store global, memoización manual, biblioteca visual ni virtualizador: CSS
+`content-visibility` es suficiente para el contrato actual.
+
+**Deuda deliberada.** Pregunta pendiente, evaluación, rúbrica, práctica,
+progreso y acciones pedagógicas pertenecen a R6 y no se representaron en R5.
+Voz, autoría y observabilidad permanecen en R7, R8 y R9. Fuentes sigue siendo
+una lista de referencias textuales porque el API no entrega metadatos ni URL
+tipada. La persistencia histórica de la traza requeriría ampliar el contrato y
+no se simula en cliente. Presupuestos automáticos del chunk Markdown, Web
+Vitals y perfilado de render siguen en R9.
+
+**Riesgos pendientes.** `ConversationDetail` todavía entrega el historial
+completo y no existe paginación de mensajes. Abortar `fetch` detiene la espera
+del navegador, pero el contrato de `POST /api/chat` no ofrece clave de
+idempotencia: si el servidor ya aceptó la petición puede terminarla después de
+la cancelación; la próxima sincronización recuperará ese resultado, pero un
+reenvío manual inmediato podría repetir el texto. El cliente sí bloquea dobles
+submits y descarta respuestas fuera de orden. El runner sólo cierra limpiamente
+cuando Playwright reutiliza un Vite administrado por separado; el `webServer`
+que crea Playwright sigue pudiendo dejar vivo el proceso hijo en este host.
+
+**Punto exacto para comenzar R6.** Crear
+`frontend/src/features/evaluation/` y consumir primero
+`pending_quiz` del `ConversationDetail` activo dentro de `/tutor`; implementar
+`POST /api/evaluate`, rúbrica, feedback y recuperación tras recarga usando las
+claves de sesión existentes. Después crear `frontend/src/features/practice/`
+para inicio, evaluación y reanudación de práctica, y finalmente refrescar
+progreso y dominio por tema. No tocar voz, autoría, observabilidad ni el corte
+de rutas al comenzar R6.
+
+### Handoff de R6 — 14 de agosto de 2026
+
+**Resultado entregado.** `/app/tutor` completa el ciclo pedagógico principal.
+La conversación activa representa `pending_quiz`, valida y envía la respuesta
+a `POST /api/evaluate`, conserva el borrador ante error y presenta puntuación,
+estado, feedback accionable, fortalezas, mejoras y las cuatro dimensiones de la
+rúbrica. El resultado mueve el foco a su título y ofrece continuar con la
+siguiente pregunta, pedir otro ejemplo, solicitar una explicación más simple o
+practicar todos los conceptos pendientes o uno específico.
+
+La práctica adaptativa usa `POST /api/practice/start` y
+`POST /api/practice/evaluate`, comunica dificultad, ronda, conceptos, consigna
+y pista, preserva la respuesta al fallar y permite avanzar al siguiente
+ejercicio o volver a la pregunta principal. `pending_practice` se recupera del
+detalle persistido: recargar y reabrir la conversación expone “Reanudar
+práctica” en la ronda exacta. Un riel lateral consulta el catálogo mediante la
+caché compartida y muestra progreso global, nivel, intentos, mejor puntaje y
+conceptos dominados o pendientes por tema. La estación pregunta → rúbrica →
+práctica concentra la ruta de aprendizaje viva sin convertir el tutor en una
+cuadrícula genérica.
+
+**Verificaciones ejecutadas.** Antes de modificar se reconfirmó R5 con
+TypeScript, ESLint, 26 Vitest, build, OpenAPI sin drift, 21 pruebas Python de
+los modos invitado y autenticado y 27 Playwright; el primer intento Python
+recibió `401` porque el `.env` local define `GOOGLE_CLIENT_ID`, y la repetición
+aislada del modo invitado pasó sin cambiar código. Para R6 pasaron TypeScript
+estricto, ESLint sin advertencias, 29 pruebas Vitest, build Vite de producción,
+esquema OpenAPI y tipos sin drift, 93 pruebas Python relevantes de API,
+orquestación, evaluación híbrida, progreso, sesiones, accesibilidad y
+rendimiento heredado, y 28 recorridos Playwright. Los E2E cubren teclado, foco,
+error/reintento, rúbrica, práctica dirigida, siguiente ejercicio, recarga,
+reanudación, consola limpia, axe sin hallazgos críticos o serios y ausencia de
+overflow en 320, 768, 1024 y 1440 px. El chunk diferido del tutor queda en
+194.00 kB, 59.42 kB gzip.
+
+**Decisiones tomadas.** TanStack Query sigue siendo el único dueño de catálogo
+y detalles de sesión; las respuestas vigentes de evaluación y práctica son
+estado local efímero y las tres invalidaciones independientes —listado,
+detalle y catálogo— se ejecutan en paralelo. La pregunta y el ejercicio
+restaurables proceden exclusivamente de `ConversationDetail`; no se creó un
+store global ni una copia persistida en el navegador. Los envíos de chat,
+evaluación y práctica se excluyen mutuamente, abortan al desmontar y bloquean
+dobles submits. `TutorScreen` quedó dividido en presentación y hooks enfocados,
+con imports directos, valores derivados durante render y sin memoización
+manual. La UI conserva tokens, tipografía, radios, foco y movimiento reducido
+de las fases anteriores; la rúbrica usa controles nativos `meter` y el progreso
+usa `progress` con nombres accesibles.
+
+**Deuda deliberada.** El servidor persiste los mensajes, la siguiente pregunta
+y el siguiente ejercicio, pero `ConversationDetail` no conserva el último
+objeto estructurado de rúbrica o resultado de práctica. Por eso una recarga
+restaura el feedback narrativo en el feed y el punto exacto para continuar,
+pero no reconstruye la visualización enriquecida del intento anterior. No se
+inventó almacenamiento cliente ni se amplió el contrato backend dentro de esta
+fase. Paginación del historial, virtualización medida, presupuestos automáticos
+de bundle y Web Vitals continúan en R9. Voz, autoría, observabilidad y el corte
+de rutas permanecen en R7–R10.
+
+**Riesgos pendientes.** `POST /api/evaluate` y los endpoints de práctica no
+ofrecen clave de idempotencia: la interfaz impide envíos simultáneos, pero una
+pérdida de red después de que el servidor acepte la respuesta puede hacer que
+un reintento manual cuente otro intento. El detalle de conversación sigue
+entregando el historial completo. El chunk del tutor creció por la vertical de
+R6 y debe vigilarse cuando R7 incorpore audio; voz tendrá que permanecer en un
+chunk independiente y cargarse sólo al activarla. El runner Playwright de este
+host continúa necesitando un Vite administrado por separado para cerrar con
+código limpio; con ese modo los 28 casos terminaron correctamente.
+
+**Punto exacto para comenzar R7.** Crear `frontend/src/features/voice/` y tipar
+primero el protocolo público de `/ws/live` junto con una máquina explícita de
+estados desconectado → conectando → escuchando → respondiendo → error. Añadir
+el control de activación al tutor sólo cuando `capabilities.voice` sea
+verdadero, mediante import dinámico que deje WebSocket, AudioWorklet, captura y
+reproducción fuera del chunk actual. Después implementar interrupción, mute,
+reconexión, fallback a texto y limpieza completa, manteniendo socket, buffers,
+analyser, nodos y tracks en referencias. No tocar autoría, observabilidad,
+presupuestos globales ni rutas predeterminadas al comenzar R7.
+
+### Handoff de R7 — 14 de agosto de 2026
+
+**Resultado entregado.** El tutor muestra “Conversar por voz” únicamente cuando
+`capabilities.voice` está habilitado. El primer clic importa de forma dinámica
+un módulo aislado que abre un diálogo modal accesible y conecta `/ws/live` con
+la identidad y conversación activas. La sesión captura PCM mono mediante el
+AudioWorklet existente, reduce a 16 kHz/16 bits, reproduce PCM de 24 kHz y
+representa el protocolo público con una máquina explícita desconectado →
+conectando → escuchando → respondiendo → error. Transcripción reciente, mute
+real de tracks, interrupción inmediata de reproducción, reconexión explícita,
+finalización y fallback al composer funcionan sin perder el contexto textual.
+
+El cierre, error, fallback, cambio de montaje y repetición de StrictMode limpian
+tracks, socket, listeners, `MessagePort`, contexto, nodos, analyser y fuentes de
+reproducción. El diálogo contiene el foco, cierra con Escape, restaura el botón
+de origen o lleva el foco al editor al caer a texto, vuelve inerte el árbol de
+la aplicación y respeta movimiento reducido. Vite proxifica `/static` para que
+el AudioWorklet servido por FastAPI también funcione en desarrollo.
+
+**Verificaciones ejecutadas.** Antes de modificar se confirmó R6 con
+TypeScript, ESLint, 29 Vitest, build, OpenAPI sin drift, 100 pruebas Python
+relevantes en modo invitado aislado del `.env` local y 28 Playwright. Para R7
+pasaron TypeScript estricto y ESLint sin advertencias; 32 pruebas Vitest;
+build Vite de producción; esquema OpenAPI y tipos sin drift; 105 pruebas Python
+relevantes, incluidas las cinco del puente/configuración de voz; y 33 recorridos
+Playwright. Los E2E prueban que el módulo no se solicita antes de activarlo,
+permiso y captura, URL del socket, AudioWorklet, transcripción, reproducción,
+mute, interrupción, desconexión, reconexión, limpieza, Escape/foco, fallback y
+consola limpia. Axe no reportó hallazgos críticos o serios y no hubo overflow
+en 320, 768, 1024 o 1440 px. Voz queda en un chunk independiente de 13.68 kB
+(5.27 kB gzip) más 6.07 kB de CSS (1.76 kB gzip); el chunk del tutor queda en
+192.26 kB (58.51 kB gzip).
+
+**Decisiones tomadas.** La activación usa `import()` desde el evento del botón,
+no una ruta o `lazy` que descargue voz al renderizar. Un reducer posee sólo los
+hitos visibles; una referencia de fase evita despachar por cada bloque PCM.
+Socket, stream, contexto, analyser, nodos, fuentes, cursor de reproducción y
+generaciones de conexión viven en referencias agrupadas en un runtime sin
+estado global. Las respuestas tardías se descartan por generación y una
+reconexión adquiere recursos nuevos después de limpiar los anteriores. Se
+reutilizó el AudioWorklet público del backend y no se duplicó en el bundle. La
+señal visual azul/verde concentra el gesto expresivo de la ruta de aprendizaje;
+el resto conserva tokens y jerarquía del tutor.
+
+**Deuda deliberada.** La transcripción de voz es efímera porque `/ws/live` no
+la incorpora al historial HTTP ni confirma progreso; no se inventó persistencia
+en el navegador. La reconexión requiere una acción explícita y no añade backoff
+automático. Navegadores sin AudioWorklet caen al chat en vez de usar el API
+obsoleto `ScriptProcessor`. La prueba automatizada usa dispositivos, Audio API
+y WebSocket deterministas; una sesión real con hardware y Gemini Live requiere
+credenciales y pertenece al smoke del entorno desplegado. Autoría,
+observabilidad, presupuestos globales y corte de rutas continúan en R8–R10.
+
+**Riesgos pendientes.** La disponibilidad final depende de permiso de
+micrófono, políticas del navegador, conectividad WebSocket y Gemini Live. El
+botón de interrupción detiene el audio local de inmediato y el micrófono sigue
+abierto; la cancelación del turno del modelo depende de que el proveedor
+detecte la nueva voz, igual que el protocolo heredado. El endpoint no persiste
+audio ni transcripciones, por lo que una desconexión no puede reconstruir el
+último turno hablado. El AudioWorklet continúa servido desde `/static` y debe
+conservarse hasta R11.
+
+**Punto exacto para comenzar R8.** Crear
+`frontend/src/features/authoring/` y una ruta diferida `/app/autoria` visible
+sólo cuando `capabilities.authoring` sea verdadera. Implementar primero un gate
+de acceso que mantenga `x-authoring-token` sólo en memoria y tipar el listado de
+`GET /api/authoring/lessons`; cubrir carga, vacío, error/reintento y búsqueda.
+Después separar navegador y editor para creación, edición, validación, preview,
+publicación, despublicación, historial y reversión. No modificar voz ni iniciar
+observabilidad, presupuestos globales o el corte de rutas durante R8.
 
 ## Riesgos y respuestas
 

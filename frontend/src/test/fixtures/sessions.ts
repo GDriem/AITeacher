@@ -44,7 +44,26 @@ export function sessionDetail(sessionId: string): ConversationDetail {
   return {
     ...session,
     student_id: "student-test",
-    messages: [],
+    messages: [
+      {
+        id: `${session.id}-user-1`,
+        role: "user",
+        label: "Tú",
+        content: "Explícame los embeddings",
+        sources: [],
+        note: "",
+        created_at: "2026-08-12T15:00:00Z",
+      },
+      {
+        id: `${session.id}-assistant-1`,
+        role: "assistant",
+        label: "Tutor Agent",
+        content: "## Idea central\n\nUn **embedding** representa significado con números.\n\n<script>window.__xss = true</script>\n\n[Enlace bloqueado](javascript:alert(1))",
+        sources: ["Currículo AITeacher · Embeddings"],
+        note: "Continúa con un ejemplo propio.",
+        created_at: "2026-08-12T15:00:01Z",
+      },
+    ],
     pending_practice: null,
   };
 }

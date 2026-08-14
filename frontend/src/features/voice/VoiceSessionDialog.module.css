@@ -1,0 +1,83 @@
+.voiceOpen { overflow: hidden; }
+
+.backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background: rgba(3, 10, 19, 0.88);
+  backdrop-filter: blur(14px);
+}
+
+.dialog {
+  width: min(42rem, 100%);
+  max-height: calc(100dvh - 2.5rem);
+  overflow: auto;
+  padding: var(--space-6);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  color: var(--content-default);
+  background: var(--surface-default);
+  box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.42);
+}
+
+.header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: flex-start; }
+.header h2 { margin: var(--space-1) 0 0; color: var(--content-strong); font-size: clamp(1.5rem, 5vw, 2.25rem); }
+.kicker { margin: 0; color: var(--status-mastery); font-size: var(--font-size-xs); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.kicker span { display: inline-block; width: 0.45rem; height: 0.45rem; margin-right: var(--space-2); border-radius: 50%; background: currentColor; }
+.close { width: 2.75rem; height: 2.75rem; border: 1px solid var(--border-default); border-radius: 50%; color: var(--content-default); background: var(--surface-subtle); font-size: 1.6rem; line-height: 1; }
+
+.stage { display: grid; justify-items: center; gap: var(--space-6); padding: var(--space-8) 0 var(--space-6); text-align: center; }
+.signal { position: relative; width: 11rem; height: 11rem; display: grid; place-items: center; }
+.signal > i { position: absolute; inset: 0; border: 1px solid color-mix(in srgb, var(--status-mastery) 38%, transparent); border-radius: 50%; animation: breathe 3.4s ease-in-out infinite; }
+.signal > i:nth-child(2) { inset: var(--space-4); border-color: color-mix(in srgb, var(--status-guide) 42%, transparent); animation-delay: -1.1s; }
+.signal > span { width: 7rem; height: 7rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: 1px solid var(--border-default); border-radius: 50%; background: var(--status-mastery); box-shadow: inset -1rem -1.2rem 2.5rem rgba(7, 17, 31, 0.38), 0 1rem 3rem rgba(98, 217, 162, 0.2); transition: background 180ms ease, filter 180ms ease, transform 180ms ease; }
+.signal b { width: 0.25rem; height: 2.4rem; border-radius: 1rem; background: var(--canvas-default); opacity: 0.76; transform: scaleY(0.35); animation: wave 0.9s ease-in-out infinite alternate; }
+.signal b:nth-child(2), .signal b:nth-child(4) { animation-delay: -0.35s; }
+.signal b:nth-child(3) { animation-delay: -0.7s; }
+.signal[data-state="connecting"] > span { filter: saturate(0.45); }
+.signal[data-state="responding"] > span { background: var(--status-guide); transform: scale(1.05); }
+.signal[data-state="error"] > span { background: var(--status-danger); filter: saturate(0.65); }
+.signal[data-state="disconnected"] > span { filter: saturate(0.15) brightness(0.7); }
+.stateCopy { display: grid; gap: var(--space-2); }
+.stateCopy strong { color: var(--content-strong); font-size: var(--font-size-lg); }
+.stateCopy span { max-width: 28rem; color: var(--content-muted); line-height: 1.55; }
+
+.transcript { min-height: 7rem; display: grid; align-content: end; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface-sunken); }
+.transcript p { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); gap: var(--space-3); margin: 0; line-height: 1.5; }
+.transcript p span { color: var(--status-mastery); font-size: var(--font-size-xs); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.transcript p:nth-of-type(2) span { color: var(--status-guide); }
+.transcript q { min-width: 0; quotes: none; overflow-wrap: anywhere; }
+.transcript .helper { display: block; align-self: center; color: var(--content-muted); text-align: center; font-size: var(--font-size-sm); }
+
+.controls, .recovery { display: flex; justify-content: center; gap: var(--space-4); padding-top: var(--space-5); }
+.controls button { min-width: 7rem; display: grid; justify-items: center; gap: var(--space-2); border: 0; color: var(--content-muted); background: transparent; font-size: var(--font-size-xs); font-weight: 750; }
+.controls button > span { width: 3.25rem; height: 3.25rem; display: grid; place-items: center; border: 1px solid var(--border-default); border-radius: 50%; color: var(--content-strong); background: var(--surface-subtle); font-size: var(--font-size-lg); }
+.controls button[aria-pressed="true"] > span { color: var(--status-attention); border-color: color-mix(in srgb, var(--status-attention) 46%, transparent); }
+.controls button:disabled { opacity: 0.42; }
+.controls .end { color: #ffd9dc; }
+.controls .end > span { border-color: color-mix(in srgb, var(--status-danger) 50%, transparent); background: color-mix(in srgb, var(--status-danger) 16%, transparent); }
+.recovery button { min-height: 2.75rem; padding: 0 var(--space-4); border: 1px solid var(--border-default); border-radius: var(--radius-sm); color: var(--content-strong); background: var(--surface-raised); font: inherit; font-weight: 750; }
+.recovery button:first-child { color: var(--content-inverse); border-color: transparent; background: var(--action-primary); }
+.privacy { margin: var(--space-4) 0 0; color: var(--content-muted); text-align: center; font-size: var(--font-size-xs); }
+
+@keyframes breathe { 0%, 100% { opacity: 0.45; transform: scale(0.94); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes wave { from { transform: scaleY(0.25); } to { transform: scaleY(0.9); } }
+
+@media (max-width: 36rem) {
+  .backdrop { padding: 0; place-items: stretch; }
+  .dialog { width: 100%; max-height: 100dvh; min-height: 100dvh; padding: max(var(--space-5), env(safe-area-inset-top)) var(--space-4) max(var(--space-5), env(safe-area-inset-bottom)); border: 0; border-radius: 0; }
+  .stage { padding-block: var(--space-6); }
+  .signal { width: 9rem; height: 9rem; }
+  .signal > span { width: 6rem; height: 6rem; }
+  .controls { gap: var(--space-2); }
+  .controls button { min-width: 0; flex: 1; }
+  .recovery { display: grid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal > i, .signal b { animation: none; }
+  .signal b { transform: scaleY(0.5); }
+}

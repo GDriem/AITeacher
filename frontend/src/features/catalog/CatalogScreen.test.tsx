@@ -2,11 +2,13 @@ import axe from "axe-core";
 import { http, HttpResponse } from "msw";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { renderCatalog } from "../../test/renderCatalog";
 import { server } from "../../test/server";
 import { catalogFixture } from "../../test/fixtures/catalog";
+import { sessionsFixture } from "../../test/fixtures/sessions";
+import { chatResponseFixture } from "../../test/fixtures/tutor";
 
 describe("CatalogScreen", () => {
   it("explora temas reales y mantiene los filtros en la URL", async () => {
@@ -44,21 +46,27 @@ describe("CatalogScreen", () => {
     expect(await screen.findByRole("heading", { name: "Elige qué quieres aprender" })).toBeVisible();
   });
 
-  it("inicia el tema real y entrega la sesión a la interfaz heredada", async () => {
-    const handoff = vi.fn();
+  it("inicia el tema real y entrega la sesión al tutor React", async () => {
     let requestBody: unknown;
+    let created = false;
     server.use(
+      http.get("http://localhost:4173/api/sessions", () => HttpResponse.json(created ? {
+        ...sessionsFixture,
+        sessions: [{ ...sessionsFixture.sessions[0], id: "session-r1" }],
+      } : { sessions: [], retention_days: 365 })),
       http.post("http://localhost:4173/api/chat", async ({ request }) => {
         requestBody = await request.json();
-        return HttpResponse.json({ session_id: "session-r1" });
+        created = true;
+        return HttpResponse.json({ ...chatResponseFixture, session_id: "session-r1" });
       }),
     );
     const user = userEvent.setup();
-    renderCatalog({ legacyHandoff: handoff });
+    const { router } = renderCatalog();
 
     await user.click(await screen.findByRole("button", { name: /Continuar/ }));
 
-    await waitFor(() => expect(handoff).toHaveBeenCalledWith("/?session=session-r1#tutor"));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/app/tutor"));
+    expect(window.localStorage.getItem("activeSession:student-test")).toBe("session-r1");
     expect(requestBody).toMatchObject({
       message: "Quiero aprender sobre Introducción a la inteligencia artificial",
     });

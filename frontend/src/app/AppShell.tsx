@@ -7,16 +7,16 @@ import { SessionDrawer } from "../features/sessions/SessionDrawer";
 import { SessionsProvider } from "../features/sessions/SessionsProvider";
 import styles from "./AppShell.module.css";
 
-export function AppShell({ legacyHandoff }: { legacyHandoff?: (url: string) => void } = {}) {
+export function AppShell() {
   const { studentId } = useAppSession();
   return (
     <SessionsProvider key={studentId}>
-      <Shell legacyHandoff={legacyHandoff} />
+      <Shell />
     </SessionsProvider>
   );
 }
 
-function Shell({ legacyHandoff }: { legacyHandoff?: (url: string) => void }) {
+function Shell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const sessionsButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -43,7 +43,7 @@ function Shell({ legacyHandoff }: { legacyHandoff?: (url: string) => void }) {
             Temas
           </NavLink>
           <NavLink to="/proyectos">Proyectos</NavLink>
-          <a className={styles.legacyNav} href="/">Tutor actual</a>
+          <NavLink to="/tutor">Tutor</NavLink>
         </nav>
         <button
           ref={sessionsButtonRef}
@@ -65,7 +65,7 @@ function Shell({ legacyHandoff }: { legacyHandoff?: (url: string) => void }) {
         <Outlet />
       </main>
       <footer className={styles.footer}>
-        <span>AITeacher · Base React R4</span>
+        <span>AITeacher · Base React R6</span>
         <a href="/">Volver a la interfaz completa</a>
       </footer>
     </div>
@@ -73,7 +73,6 @@ function Shell({ legacyHandoff }: { legacyHandoff?: (url: string) => void }) {
       open={drawerOpen}
       returnFocusRef={sessionsButtonRef}
       onClose={() => setDrawerOpen(false)}
-      legacyHandoff={legacyHandoff}
     />
     </>
   );

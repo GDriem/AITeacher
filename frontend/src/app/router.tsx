@@ -22,6 +22,10 @@ export const router = createBrowserRouter(
           lazy: () => import("../routes/ProjectsRoute"),
         },
         {
+          path: "tutor",
+          lazy: () => import("../routes/TutorRoute"),
+        },
+        {
           path: "*",
           Component: NotFoundRoute,
         },

@@ -11,6 +11,7 @@ export interface SessionsContextValue {
   sessionsStatus: "error" | "success" | "pending";
   refetchSessions: () => Promise<unknown>;
   startNewSession: () => void;
+  activateSession: (sessionId: string) => void;
   openSession: (sessionId: string) => Promise<boolean>;
   renameSession: (sessionId: string, title: string) => Promise<void>;
   setArchived: (sessionId: string, archived: boolean) => Promise<void>;

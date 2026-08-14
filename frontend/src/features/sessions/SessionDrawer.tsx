@@ -2,7 +2,6 @@ import { useEffect, useEffectEvent, useRef, useState, type RefObject } from "rea
 import { useNavigate } from "react-router-dom";
 
 import { ApiError } from "../../api/ApiError";
-import { legacySessionUrl } from "./activeSession";
 import { SessionItem } from "./SessionItem";
 import { SessionsEmptyState, SessionsErrorState, SessionsLoadingState } from "./SessionStates";
 import { useSessions } from "./sessionsContext";
@@ -12,7 +11,6 @@ interface Props {
   open: boolean;
   returnFocusRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
-  legacyHandoff?: (url: string) => void;
 }
 
 const focusableSelector = [
@@ -30,7 +28,6 @@ export function SessionDrawer({
   open,
   returnFocusRef,
   onClose,
-  legacyHandoff = (url) => window.location.assign(url),
 }: Props) {
   const navigate = useNavigate();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -100,14 +97,15 @@ export function SessionDrawer({
 
   const handleNew = () => {
     startNewSession();
-    void navigate("/");
+    void navigate("/tutor");
     onClose();
-    requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById("main-content")?.focus()));
   };
 
   const handleOpen = async (sessionId: string) => {
     const isCurrent = await openSession(sessionId);
-    if (isCurrent) legacyHandoff(legacySessionUrl(sessionId));
+    if (!isCurrent) return;
+    onClose();
+    void navigate("/tutor");
   };
 
   return (

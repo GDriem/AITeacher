@@ -1,0 +1,454 @@
+.station {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-top: 1px solid var(--border-default);
+  background: color-mix(in srgb, var(--status-guide) 4%, var(--surface-sunken));
+}
+
+.stationHeader,
+.quiz > header,
+.practiceHeading,
+.resultHeader,
+.rubricHeading,
+.rubricScore,
+.formFooter,
+.resultActions,
+.startError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.stationHeader > span:first-child {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  color: var(--status-guide);
+  border: 1px solid color-mix(in srgb, var(--status-guide) 44%, transparent);
+  border-radius: 50%;
+  font-size: var(--font-size-xs);
+  font-weight: 900;
+}
+
+.stationHeader > div {
+  flex: 1 1 auto;
+}
+
+.station h2,
+.station h3,
+.station h4,
+.practice h3,
+.practice h4 {
+  color: var(--content-strong);
+}
+
+.stationHeader h2,
+.quiz h3,
+.practiceHeading h3,
+.resultHeader h3 {
+  margin: var(--space-1) 0 0;
+  letter-spacing: -0.025em;
+}
+
+.stationHeader h2 {
+  font-size: var(--font-size-lg);
+}
+
+.stationHeader button,
+.resultActions button,
+.feedbackColumns button,
+.formError button,
+.startError button,
+.returnAction {
+  min-height: 2.5rem;
+  padding-inline: var(--space-3);
+  color: var(--content-strong);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  font-weight: 800;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--status-attention);
+  font-size: var(--font-size-xs);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.quiz,
+.practice,
+.result {
+  min-width: 0;
+  padding: var(--space-5);
+  border-inline-start: 2px solid var(--status-attention);
+  background: var(--surface-default);
+}
+
+.quiz > header > span,
+.practiceHeading > span {
+  flex: 0 0 auto;
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.question {
+  margin: var(--space-5) 0;
+  color: var(--content-strong);
+  font-size: clamp(1.125rem, 2vw, 1.45rem);
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.quiz form,
+.practice form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.quiz label,
+.practice label {
+  color: var(--content-strong);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+}
+
+.quiz textarea,
+.practice textarea {
+  width: 100%;
+  resize: vertical;
+  padding: var(--space-3);
+  color: var(--content-strong);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font: inherit;
+  line-height: 1.55;
+}
+
+.quiz textarea::placeholder,
+.practice textarea::placeholder {
+  color: var(--content-muted);
+}
+
+.formFooter {
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+}
+
+.formFooter > span:first-child {
+  flex: 1 1 auto;
+}
+
+.primaryAction {
+  color: var(--content-inverse) !important;
+  border-color: var(--action-primary) !important;
+  background: var(--action-primary) !important;
+}
+
+.primaryAction:hover:not(:disabled) {
+  background: var(--action-primary-hover) !important;
+}
+
+.formError,
+.startError {
+  padding: var(--space-3);
+  color: var(--content-default);
+  border: 1px solid color-mix(in srgb, var(--status-danger) 48%, transparent);
+  background: color-mix(in srgb, var(--status-danger) 8%, transparent);
+}
+
+.formError p,
+.startError p {
+  margin: 0;
+}
+
+.result {
+  border-inline-start-color: var(--status-guide);
+}
+
+.result[data-status="mastered"],
+.practiceResult[data-status="mastered"] {
+  border-inline-start-color: var(--status-mastery);
+}
+
+.result[data-status="reinforce"],
+.practiceResult[data-status="reinforce"] {
+  border-inline-start-color: var(--status-attention);
+}
+
+.resultHeader {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-block-end: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.resultHeader > div:last-child {
+  max-width: 42rem;
+}
+
+.resultHeader h3:focus,
+.practiceResult h4:focus {
+  outline: none;
+}
+
+.resultHeader h3:focus-visible,
+.practiceResult h4:focus-visible {
+  border-radius: var(--radius-xs);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.resultHeader p:last-child {
+  margin: var(--space-2) 0 0;
+  color: var(--content-default);
+  line-height: 1.6;
+}
+
+.score {
+  display: flex;
+  align-items: baseline;
+  min-width: 6.5rem;
+  color: var(--status-guide);
+  font-variant-numeric: tabular-nums;
+}
+
+.result[data-status="mastered"] .score {
+  color: var(--status-mastery);
+}
+
+.result[data-status="reinforce"] .score {
+  color: var(--status-attention);
+}
+
+.score strong {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+.score span {
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.feedbackColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-block: var(--space-5);
+}
+
+.feedbackColumns section {
+  padding: var(--space-4);
+  border-block-start: 2px solid var(--status-mastery);
+  background: var(--surface-subtle);
+}
+
+.feedbackColumns section:last-child {
+  border-block-start-color: var(--status-attention);
+}
+
+.feedbackColumns h4,
+.rubricHeading h4 {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.feedbackColumns ul {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding-inline-start: var(--space-5);
+}
+
+.feedbackColumns li {
+  color: var(--content-default);
+  line-height: 1.5;
+}
+
+.feedbackColumns li > span {
+  display: block;
+}
+
+.feedbackColumns button {
+  margin-block-start: var(--space-2);
+  color: var(--status-attention);
+  font-size: var(--font-size-xs);
+}
+
+.rubric {
+  margin-block: var(--space-5);
+  padding-block: var(--space-4);
+  border-block: 1px solid var(--border-subtle);
+}
+
+.rubricHeading span {
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+}
+
+.rubricList {
+  display: grid;
+  gap: 0;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rubricList li {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.65fr) minmax(7rem, 0.5fr) minmax(12rem, 1fr);
+  gap: var(--space-4);
+  align-items: center;
+  padding-block: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.rubricScore span {
+  color: var(--content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rubricList meter {
+  width: 100%;
+  height: 0.75rem;
+  accent-color: var(--status-guide);
+}
+
+.rubricList p {
+  margin: 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.learningContext {
+  padding-inline-start: var(--space-4);
+  color: var(--content-default);
+  border-inline-start: 2px solid var(--status-guide);
+  line-height: 1.6;
+}
+
+.resultActions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-block-start: var(--space-5);
+}
+
+.practice {
+  border-inline-start-color: var(--status-mastery);
+}
+
+.practicePrompt {
+  margin-block: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-subtle);
+}
+
+.practicePrompt p {
+  margin: 0;
+  color: var(--content-default);
+  line-height: 1.6;
+}
+
+.practicePrompt p + p {
+  margin-block-start: var(--space-3);
+  color: var(--content-muted);
+}
+
+.practicePrompt ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.practicePrompt li {
+  padding: var(--space-1) var(--space-2);
+  color: var(--status-mastery);
+  border: 1px solid color-mix(in srgb, var(--status-mastery) 38%, transparent);
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xs);
+}
+
+.practiceResult {
+  padding: var(--space-4);
+  border-inline-start: 2px solid var(--status-guide);
+  background: var(--surface-sunken);
+}
+
+.practiceResult > h4 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.practiceResult > p {
+  color: var(--content-default);
+  line-height: 1.6;
+}
+
+.returnAction {
+  justify-self: start;
+  margin-block-start: var(--space-2);
+  background: transparent;
+}
+
+@media (max-width: 47.99rem) {
+  .station,
+  .quiz,
+  .practice,
+  .result {
+    padding: var(--space-4);
+  }
+
+  .stationHeader,
+  .quiz > header,
+  .practiceHeading,
+  .resultHeader,
+  .rubricHeading,
+  .formFooter,
+  .startError {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .stationHeader > span:first-child {
+    display: none;
+  }
+
+  .feedbackColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rubricList li {
+    grid-template-columns: minmax(0, 1fr) 5rem;
+  }
+
+  .rubricList p {
+    grid-column: 1 / -1;
+  }
+
+  .formFooter .primaryAction {
+    width: 100%;
+  }
+
+  .resultActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resultActions button {
+    width: 100%;
+  }
+}

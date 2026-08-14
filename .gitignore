@@ -247,3 +247,5 @@ pnpm-debug.log*
 # pnpm local stores
 /.pnpm/
 /frontend/.pnpm/
+/.pnpm-store/
+/frontend/.pnpm-store-local/

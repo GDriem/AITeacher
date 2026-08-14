@@ -4,7 +4,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { delay, http, HttpResponse } from "msw";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { AppShell } from "../../app/AppShell";
 import { AuthProvider } from "../auth/AuthProvider";
@@ -13,12 +13,8 @@ import type { ConversationSummary } from "./sessionsApi";
 import { server } from "../../test/server";
 import { sessionDetail, sessionsFixture } from "../../test/fixtures/sessions";
 
-function renderSessions({
-  activeSessionId,
-  legacyHandoff,
-}: {
+function renderSessions({ activeSessionId }: {
   activeSessionId?: string;
-  legacyHandoff?: (url: string) => void;
 } = {}) {
   window.localStorage.setItem("studentAutoId", "student-test");
   if (activeSessionId) rememberActiveSession("student-test", activeSessionId);
@@ -28,8 +24,11 @@ function renderSessions({
   const router = createMemoryRouter(
     [{
       path: "/",
-      element: <AppShell legacyHandoff={legacyHandoff} />,
-      children: [{ index: true, element: <h1>Punto de partida</h1> }],
+      element: <AppShell />,
+      children: [
+        { index: true, element: <h1>Punto de partida</h1> },
+        { path: "tutor", element: <h1>Tutor React</h1> },
+      ],
     }],
     { basename: "/app", initialEntries: ["/app/"] },
   );
@@ -102,8 +101,7 @@ describe("SessionDrawer", () => {
       }),
     );
     const user = userEvent.setup();
-    const handoff = vi.fn();
-    renderSessions({ activeSessionId: "session-vectors", legacyHandoff: handoff });
+    const { router } = renderSessions({ activeSessionId: "session-vectors" });
     await openDrawer(user);
 
     await screen.findByText("Vectores semánticos");
@@ -118,9 +116,8 @@ describe("SessionDrawer", () => {
     await user.click(within(vectors).getByRole("button", { name: "Continuar" }));
     const agents = sessionRow("Agentes y herramientas");
     await user.click(within(agents).getByRole("button", { name: "Abrir" }));
-    await waitFor(() => expect(handoff).toHaveBeenCalledWith("/?session=session-agents#tutor"));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/app/tutor"));
     releaseFirst();
-    await waitFor(() => expect(handoff).toHaveBeenCalledTimes(1));
     expect(window.localStorage.getItem("activeSession:student-test")).toBe("session-agents");
   });
 
@@ -183,12 +180,12 @@ describe("SessionDrawer", () => {
   it("nueva conversación limpia sólo la continuidad de la identidad vigente", async () => {
     server.use(http.get("http://localhost:4173/api/sessions", () => HttpResponse.json(sessionsFixture)));
     const user = userEvent.setup();
-    renderSessions({ activeSessionId: "session-vectors" });
+    const { router } = renderSessions({ activeSessionId: "session-vectors" });
     await openDrawer(user);
 
     await user.click(screen.getByRole("button", { name: "Nueva conversación" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(window.localStorage.getItem("activeSession:student-test")).toBeNull();
-    await waitFor(() => expect(document.getElementById("main-content")).toHaveFocus());
+    await waitFor(() => expect(router.state.location.pathname).toBe("/app/tutor"));
   });
 });
