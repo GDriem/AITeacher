@@ -155,7 +155,7 @@
   color: var(--status-guide);
 }
 
-@media (max-width: 47.99rem) {
+@media (max-width: 48rem) {
   .header,
   .main,
   .footer {
@@ -163,9 +163,25 @@
   }
 
   .header {
-    min-height: 5.5rem;
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: var(--space-2);
+    padding-block: var(--space-3);
   }
+
+  .brand { grid-column: 1; grid-row: 1; }
+
+  .nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-block-start: var(--space-1);
+  }
+
+  .sessionsButton { grid-column: 2; grid-row: 1; }
+
+  .accountSlot { grid-column: 3; grid-row: 1; }
 
   .brand small {
     display: none;
@@ -191,11 +207,7 @@
 }
 
 @media (max-width: 23.99rem) {
-  .header { grid-template-columns: 1fr auto auto; }
-
   .brand { display: none; }
-
-  .nav { justify-content: flex-start; }
 
   .nav a {
     padding-inline: var(--space-2);

@@ -414,7 +414,7 @@ Al comenzar una fase:
 | R5 | Completada | Tutor React en `/app/tutor`, Markdown seguro, envío cancelable y continuidad sin handoff heredado |
 | R6 | Completada | Evaluación, rúbrica, práctica reanudable y dominio por tema dentro del tutor React |
 | R7 | Completada | Voz diferida con WebSocket, AudioWorklet, interrupción, mute, reconexión y fallback a texto |
-| R8 | Pendiente | — |
+| R8 | Completada | Mesa editorial React protegida, versionada y diferida en `/app/autoria` |
 | R9 | Pendiente | — |
 | R10 | Pendiente | — |
 | R11 | Pendiente | — |
@@ -853,6 +853,90 @@ de acceso que mantenga `x-authoring-token` sólo en memoria y tipar el listado d
 Después separar navegador y editor para creación, edición, validación, preview,
 publicación, despublicación, historial y reversión. No modificar voz ni iniciar
 observabilidad, presupuestos globales o el corte de rutas durante R8.
+
+### Handoff de R8 — 14 de agosto de 2026
+
+**Resultado entregado.** `/app/autoria` queda como ruta diferida y sólo aparece
+en la navegación cuando `capabilities.authoring` está habilitada; una entrada
+profunda sin esa capacidad vuelve al catálogo. El gate valida nombre y
+credencial contra `GET /api/authoring/lessons`, mantiene
+`x-authoring-token` únicamente en memoria y lo elimina al cerrar o abandonar
+la ruta. Credenciales inválidas, carga, error/reintento, lista vacía, búsqueda
+y selección tienen estados explícitos.
+
+La mesa editorial separa un archivo de lecciones del editor cargado bajo
+demanda. Permite crear y editar borradores tipados, valida identificador,
+tema, nivel, longitud, fuente y palabras clave antes de enviar, previsualiza
+Markdown seguro, publica —guardando primero cuando hay cambios—, despublica,
+representa el historial completo y revierte cualquier versión anterior. La
+despublicación y la reversión requieren confirmación en dos pasos, enfocan la
+decisión principal y restauran el control de origen al cancelar. Publicar,
+despublicar o revertir refresca el catálogo del estudiante para no conservar
+contenido público obsoleto.
+
+**Verificaciones ejecutadas.** Antes de modificar se reconfirmó R7 con
+TypeScript, ESLint, 32 Vitest, OpenAPI sin drift, build, 141 pruebas Python
+relevantes y 33 Playwright; voz conservó conexión, mute, interrupción,
+reconexión, limpieza, fallback, axe y responsive. Para R8 pasaron TypeScript
+estricto y ESLint sin advertencias; 36 pruebas Vitest; esquema OpenAPI y tipos
+sin drift; build Vite de producción; 141 pruebas Python de unidad y de API,
+auth y hosting; y 39 recorridos Playwright. Los seis casos nuevos cubren gate,
+capacidad deshabilitada, carga diferida, búsqueda, validación, preview, ciclo
+crear → publicar → despublicar → revertir, confirmación, foco, teclado,
+credencial no persistida, consola limpia, axe sin hallazgos críticos o serios
+y ausencia de overflow en 320, 768, 1024 y 1440 px. La revisión visual
+adicional en 320 y 1440 px confirmó la jerarquía y el apilado. El build deja
+`AuthoringRoute` en 14.89 kB (5.45 kB gzip), `LessonEditor` en 15.27 kB
+(6.10 kB gzip) y el renderer Markdown compartido en un chunk solicitado sólo
+por las rutas que lo necesitan.
+
+**Decisiones tomadas.** Autoría usa un cliente OpenAPI aislado: un `401` de
+su credencial no abre por error el gate de identidad estudiantil. TanStack
+Query es el único dueño de la lista; su clave no contiene el secreto, `gcTime`
+es cero y el token vive sólo en el estado efímero de la ruta. Las mutaciones
+reemplazan el objeto versionado devuelto por el servidor y las invalidaciones
+del catálogo se hacen únicamente cuando cambia el contenido público. El
+editor conserva estado local de formulario, deriva filtros y selección durante
+render y no introduce store global, formulario externo ni memoización manual.
+La ruta y el editor son imports dinámicos separados; imports directos y el
+chunk Markdown compartido evitan duplicación. La validación nativa se completa
+con reglas de unicidad y límites para palabras clave antes de publicar.
+
+Visualmente se mantuvieron los tokens, tipografía y superficies azul noche. La
+mesa usa una composición asimétrica de archivo y manuscrito; la única señal
+expresiva nueva es una espina ámbar que conecta el estado publicado con su
+historial real. A 768 px el shell pasa deliberadamente a dos filas para que la
+nueva cuarta ruta no comprima navegación, conversaciones o cuenta.
+
+**Deuda deliberada.** El API no ofrece eliminación de lecciones, paginación,
+búsqueda de servidor ni control de versión optimista, por lo que R8 no inventa
+esas capacidades. Cambiar de lección descarta un borrador local no guardado,
+igual que la UI vigente; una advertencia de cambios pendientes requerirá una
+política de navegación común. La vista previa representa el formulario actual
+en cliente para poder revisar cambios aún no guardados; el endpoint de preview
+del servidor sigue disponible para integraciones, pero no puede representar
+ese estado local. Presupuestos automatizados, Web Vitals y perfilado quedan en
+R9.
+
+**Riesgos pendientes.** Dos editores pueden guardar sobre la misma lección y
+prevalece el último cambio porque el contrato no expone ETag ni versión
+esperada. Publicar un contenido nuevo son dos operaciones: si guardar funciona
+y publicar falla, queda un borrador válido recuperable, pero el usuario debe
+reintentar la publicación. El listado entrega cada historial completo; un
+archivo con muchas revisiones necesitará paginación de contrato antes de crecer
+sin límite en memoria o red. La seguridad final de la credencial depende de
+TLS, configuración del secreto y controles del servidor, aunque el frontend no
+la persiste ni la incluye en URLs o claves de caché.
+
+**Punto exacto para comenzar R9.** Crear
+`frontend/src/features/observability/` y migrar primero el panel de salud y
+telemetría vigente usando sus endpoints tipados, sin tocar todavía las rutas
+predeterminadas. Después centralizar estado online/offline, anuncios y foco
+global, ejecutar la auditoría axe de todas las rutas y automatizar los mismos
+recorridos Playwright en 320, 768, 1024 y 1440 px. Medir Web Vitals, tamaños por
+ruta y perfiles de render antes de fijar presupuestos o añadir optimizaciones;
+usar como línea base los chunks registrados en este handoff. No iniciar el
+corte de `/`, CSP de producción ni rollback de R10.
 
 ## Riesgos y respuestas
 

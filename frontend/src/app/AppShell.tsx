@@ -17,6 +17,7 @@ export function AppShell() {
 }
 
 function Shell() {
+  const { capabilities } = useAppSession();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const sessionsButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -44,6 +45,7 @@ function Shell() {
           </NavLink>
           <NavLink to="/proyectos">Proyectos</NavLink>
           <NavLink to="/tutor">Tutor</NavLink>
+          {capabilities.authoring ? <NavLink to="/autoria">Autoría</NavLink> : null}
         </nav>
         <button
           ref={sessionsButtonRef}
@@ -65,7 +67,7 @@ function Shell() {
         <Outlet />
       </main>
       <footer className={styles.footer}>
-        <span>AITeacher · Base React R6</span>
+        <span>AITeacher · Frontend React R8</span>
         <a href="/">Volver a la interfaz completa</a>
       </footer>
     </div>

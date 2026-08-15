@@ -26,6 +26,10 @@ export const router = createBrowserRouter(
           lazy: () => import("../routes/TutorRoute"),
         },
         {
+          path: "autoria",
+          lazy: () => import("../routes/AuthoringRoute"),
+        },
+        {
           path: "*",
           Component: NotFoundRoute,
         },
