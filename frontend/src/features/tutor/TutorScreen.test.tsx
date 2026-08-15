@@ -4,6 +4,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
+import { observabilityFixture } from "../../test/fixtures/observability";
 import { sessionDetail, sessionsFixture } from "../../test/fixtures/sessions";
 import { chatResponseFixture } from "../../test/fixtures/tutor";
 import {
@@ -271,5 +272,33 @@ describe("TutorScreen", () => {
     await user.click(await screen.findByRole("button", { name: "Reanudar práctica · ronda 2" }));
     expect(screen.getByRole("heading", { name: "Diseña una búsqueda semántica" })).toBeVisible();
     expect(screen.getByRole("textbox", { name: "Tu resolución" })).toBeVisible();
+  });
+
+  it("muestra las señales de operación, recupera un fallo y permite actualizar manualmente", async () => {
+    let calls = 0;
+    server.use(
+      http.get("http://localhost:4173/api/sessions", () => HttpResponse.json(sessionsFixture)),
+      http.get("http://localhost:4173/api/sessions/:sessionId", ({ params }) =>
+        HttpResponse.json(sessionDetail(String(params.sessionId))),
+      ),
+      http.get("http://localhost:4173/api/observability", () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json({ detail: "No disponible" }, { status: 503 })
+          : HttpResponse.json(observabilityFixture);
+      }),
+    );
+    const user = userEvent.setup();
+    renderTutor({ activeSessionId: "session-vectors" });
+
+    expect(await screen.findByText("No pudimos consultar las señales.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByRole("heading", { name: "Operación" })).toBeVisible();
+    expect(screen.getByText("Servicio disponible")).toBeVisible();
+    expect(screen.getByText("Explicaciones")).toBeVisible();
+    expect(screen.getByText("5/5")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Actualizar" }));
+    expect(calls).toBe(3);
   });
 });

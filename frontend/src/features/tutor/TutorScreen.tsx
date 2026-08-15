@@ -6,6 +6,7 @@ import { useAppSession } from "../auth/appSession";
 import { useSessions } from "../sessions/sessionsContext";
 import { sessionDetailOptions } from "../sessions/sessionsQueries";
 import { LearningCycle } from "../evaluation/LearningCycle";
+import { HealthPanel } from "../observability/HealthPanel";
 import { LearningProgressPanel } from "../progress/LearningProgressPanel";
 import { TutorComposer } from "./TutorComposer";
 import { TutorConversation } from "./TutorConversation";
@@ -196,6 +197,7 @@ export function TutorScreen({ studentId }: Props) {
         </TutorConversation>
         <div className={styles.insightRail}>
           <LearningProgressPanel studentId={studentId} latestProgress={latestProgress} />
+          <HealthPanel />
           <TutorTrace events={trace} />
         </div>
       </div>

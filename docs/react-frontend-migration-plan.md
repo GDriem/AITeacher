@@ -415,7 +415,7 @@ Al comenzar una fase:
 | R6 | Completada | Evaluación, rúbrica, práctica reanudable y dominio por tema dentro del tutor React |
 | R7 | Completada | Voz diferida con WebSocket, AudioWorklet, interrupción, mute, reconexión y fallback a texto |
 | R8 | Completada | Mesa editorial React protegida, versionada y diferida en `/app/autoria` |
-| R9 | Pendiente | — |
+| R9 | Completada | Observabilidad tipada, conectividad y anuncios globales, foco global entre rutas y presupuestos de bundle automatizados |
 | R10 | Pendiente | — |
 | R11 | Pendiente | — |
 
@@ -937,6 +937,98 @@ recorridos Playwright en 320, 768, 1024 y 1440 px. Medir Web Vitals, tamaños po
 ruta y perfiles de render antes de fijar presupuestos o añadir optimizaciones;
 usar como línea base los chunks registrados en este handoff. No iniciar el
 corte de `/`, CSP de producción ni rollback de R10.
+
+### Handoff de R9 — 15 de agosto de 2026
+
+**Resultado entregado.** El panel de salud y telemetría de la UI heredada
+queda migrado a `frontend/src/features/observability/` y se integra en el
+riel de `/app/tutor` entre el progreso y la traza, en el mismo orden que el
+`insights-drawer` heredado. `GET /api/observability` dejó de responder un
+`dict` sin tipo: ahora expone `ObservabilitySnapshot` (y submodelos
+`HttpMetrics`, `ModelMetrics`, `ActivityMetrics`, `LatencySummary`) como
+`response_model` de FastAPI, siguiendo el precedente de `AppCapabilities` de
+R3; el JSON no cambió, sólo quedó documentado y tipado en el cliente
+generado. El panel cubre carga, error con reintento y éxito, actualiza cada
+30 s como la UI vigente y ofrece un botón "Actualizar" manual.
+
+El `AppShell` incorpora tres capacidades transversales nuevas sin tocar
+features ya completadas: un banner de conexión perdida/recuperada
+(`useOnlineStatus`) que anuncia el cambio por una región `aria-live`
+compartida (`useLiveAnnouncer`), y un mecanismo de foco global
+(`useRouteFocus`) que mueve el foco al `h1` de cada ruta al navegar dentro de
+la aplicación —usando un `MutationObserver` porque el encabezado real no
+siempre está en el DOM en el mismo commit en que cambia la ruta— sin romper
+que la primera carga completa del documento deje el enlace "Saltar al
+contenido principal" como primera parada de tabulación. Catálogo, Proyectos y
+Autoría heredan este foco sin necesitar cambios propios; Tutor conserva su
+gestión de foco específica para cambios de conversación sin ruta nueva.
+
+Se añadió un presupuesto de carga automatizado y sin dependencias nuevas:
+`frontend/bundle-budget.json` declara un tope en KB gzip por grupo de ruta y
+`frontend/scripts/check-bundle-budget.mjs` (`pnpm budget:check`) mide cada
+build real y falla si algún grupo lo excede; se verificó deliberadamente que
+el script sí falla ante un presupuesto imposible antes de fijar los valores
+reales. Como línea base para R9 se midieron también Web Vitals aproximados
+(FCP, DOMContentLoaded, tamaño de transferencia) contra el build de
+producción servido con `vite preview` en las cuatro rutas — una medición
+puntual, no una funcionalidad en tiempo de ejecución.
+
+**Verificaciones ejecutadas.** Antes de modificar código se reconfirmó R8:
+TypeScript, ESLint, 36 Vitest, build, OpenAPI sin drift y 148 pruebas Python
+en modo invitado; la primera corrida completa de Vitest tuvo un timeout
+aislado en el arranque del entorno (no relacionado con código) y dos
+repeticiones limpias lo confirmaron. Para R9 pasaron TypeScript estricto y
+ESLint sin advertencias; 37 pruebas Vitest (dos nuevas cubren carga, error,
+reintento y éxito del panel de salud); build Vite de producción; esquema
+OpenAPI y tipos regenerados sin drift; 148 pruebas Python relevantes,
+incluida la nueva prueba de contrato de `ObservabilitySnapshot`; y 46
+recorridos Playwright, ejecutados dos veces completos sin fallas. Los nuevos
+casos (`operations.spec.ts`) cubren navegación entre rutas con foco, primera
+carga con enlace de salto intacto, banner y anuncio de conexión con axe y sin
+desbordes en 320/768/1024/1440 px, y un fallo persistente del panel de
+operación con reintentos reales de producción activos y reintento manual;
+`tutor.spec.ts` y `sessions.spec.ts` se ajustaron para simular
+`/api/observability` y no filtrar peticiones reales de red hacia un backend
+inexistente durante la suite. Se inspeccionó visualmente el panel de salud y
+el banner de conexión en las cuatro anchuras.
+
+**Decisiones tomadas.** El panel de salud reutiliza TanStack Query con
+`refetchInterval: 30_000` y confía en su comportamiento por defecto para
+pausar sondeos sin red o con la pestaña oculta, sin reimplementar esa lógica
+a mano. El foco global y el anunciador viven como estado local de `AppShell`
+—sin contexto ni store nuevo— porque hoy sólo ese componente los necesita.
+Los presupuestos de bundle se fijaron con un margen de ~1.7–2.3× sobre la
+medición real de esta fase para no generar ruido inmediato; cualquier chunk
+nuevo sin grupo asignado se reporta como advertencia en vez de fallar en
+silencio. No se añadió ninguna dependencia nueva para telemetría, gráficos de
+bundle ni Web Vitals en tiempo de ejecución.
+
+**Deuda deliberada.** La medición de Web Vitals es manual y puntual contra
+`vite preview` en `localhost`, sin latencia de red real ni CPU throttling;
+no se instrumentó RUM ni analítica de producto, coherente con que esa
+capacidad queda fuera de toda la migración. El anunciador de accesibilidad
+sólo cubre conectividad global: no se retrofiteó a auth, sesiones, tutor,
+práctica, voz o autoría, que ya gestionan su propio `aria-live` y foco desde
+sus fases correspondientes. El polling del panel de salud no replica el
+chequeo manual `!document.hidden` de la UI heredada porque el comportamiento
+por defecto de TanStack Query ya es equivalente.
+
+**Riesgos pendientes.** El panel de salud sigue siendo agregado por todo el
+servicio, no por estudiante, igual que en la UI heredada. El chunk de voz y
+el renderer Markdown compartido concentran ahora el mayor peso por ruta y
+deben vigilarse al fijar la ruta predeterminada en R10. Los números de Web
+Vitals medidos en este host sólo sirven como referencia relativa entre
+rutas, no como línea base de producción.
+
+**Punto exacto para comenzar R10.** Releer el criterio de salida de R10 antes
+de tocar rutas. Cambiar `basename` de `frontend/src/app/router.tsx` de
+`/app` a `/`, mover el hosting de la UI heredada en `agent_app/api/main.py`
+a `/legacy` conservando sus pruebas Python vigentes, actualizar CSP, caché y
+Dockerfile para el nuevo corte, y preparar la matriz manual de paridad antes
+de cualquier cambio de tráfico. No adelantar el retiro de `index.html`/
+`app.js` (R11) ni tocar el panel de observabilidad, conectividad o foco
+global recién entregados salvo que la matriz de paridad detecte una
+regresión directa.
 
 ## Riesgos y respuestas
 

@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { catalogFixture } from "../src/test/fixtures/catalog";
+import { observabilityFixture } from "../src/test/fixtures/observability";
 import { sessionDetail, sessionsFixture } from "../src/test/fixtures/sessions";
 import type { ConversationSummary } from "../src/features/sessions/sessionsApi";
 
@@ -25,6 +26,9 @@ async function routeShell(page: Page) {
     const id = new URL(route.request().url()).pathname.split("/").at(-1) ?? "session-vectors";
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(sessionDetail(id)) });
   });
+  await page.route("**/api/observability", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(observabilityFixture) }),
+  );
 }
 
 for (const width of [320, 768, 1024, 1440]) {

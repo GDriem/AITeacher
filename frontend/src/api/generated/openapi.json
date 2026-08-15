@@ -1,6 +1,39 @@
 {
   "components": {
     "schemas": {
+      "ActivityMetrics": {
+        "properties": {
+          "completed": {
+            "title": "Completed",
+            "type": "integer"
+          },
+          "completion_rate": {
+            "title": "Completion Rate",
+            "type": "number"
+          },
+          "errors": {
+            "title": "Errors",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "started": {
+            "title": "Started",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "started",
+          "completed",
+          "errors",
+          "completion_rate"
+        ],
+        "title": "ActivityMetrics",
+        "type": "object"
+      },
       "AppCapabilities": {
         "properties": {
           "authoring": {
@@ -844,6 +877,41 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HttpMetrics": {
+        "properties": {
+          "error_rate": {
+            "title": "Error Rate",
+            "type": "number"
+          },
+          "errors": {
+            "title": "Errors",
+            "type": "integer"
+          },
+          "latency_ms": {
+            "$ref": "#/components/schemas/LatencySummary"
+          },
+          "requests": {
+            "title": "Requests",
+            "type": "integer"
+          },
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/RouteMetrics"
+            },
+            "title": "Routes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "requests",
+          "errors",
+          "error_rate",
+          "latency_ms",
+          "routes"
+        ],
+        "title": "HttpMetrics",
+        "type": "object"
+      },
       "IntegrativeProject": {
         "additionalProperties": false,
         "properties": {
@@ -916,6 +984,24 @@
           "estimated_minutes"
         ],
         "title": "IntegrativeProject",
+        "type": "object"
+      },
+      "LatencySummary": {
+        "properties": {
+          "average": {
+            "title": "Average",
+            "type": "number"
+          },
+          "p95": {
+            "title": "P95",
+            "type": "number"
+          }
+        },
+        "required": [
+          "average",
+          "p95"
+        ],
+        "title": "LatencySummary",
         "type": "object"
       },
       "LearningContent": {
@@ -1087,6 +1173,102 @@
         ],
         "title": "MessageRole",
         "type": "string"
+      },
+      "ModelMetrics": {
+        "properties": {
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "errors": {
+            "title": "Errors",
+            "type": "integer"
+          },
+          "estimated_cost_usd": {
+            "title": "Estimated Cost Usd",
+            "type": "number"
+          },
+          "input_tokens": {
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "latency_ms": {
+            "$ref": "#/components/schemas/LatencySummary"
+          },
+          "output_tokens": {
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "pricing_configured": {
+            "title": "Pricing Configured",
+            "type": "boolean"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "tokens_estimated": {
+            "title": "Tokens Estimated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "provider",
+          "calls",
+          "errors",
+          "input_tokens",
+          "output_tokens",
+          "tokens_estimated",
+          "estimated_cost_usd",
+          "pricing_configured",
+          "latency_ms"
+        ],
+        "title": "ModelMetrics",
+        "type": "object"
+      },
+      "ObservabilitySnapshot": {
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityMetrics"
+            },
+            "title": "Activities",
+            "type": "array"
+          },
+          "generated_at": {
+            "title": "Generated At",
+            "type": "string"
+          },
+          "http": {
+            "$ref": "#/components/schemas/HttpMetrics"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelMetrics"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "uptime_seconds": {
+            "title": "Uptime Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "status",
+          "generated_at",
+          "started_at",
+          "uptime_seconds",
+          "http",
+          "model",
+          "activities"
+        ],
+        "title": "ObservabilitySnapshot",
+        "type": "object"
       },
       "PendingPracticeResponse": {
         "additionalProperties": false,
@@ -1538,6 +1720,38 @@
           "question"
         ],
         "title": "Quiz",
+        "type": "object"
+      },
+      "RouteMetrics": {
+        "properties": {
+          "error_rate": {
+            "title": "Error Rate",
+            "type": "number"
+          },
+          "errors": {
+            "title": "Errors",
+            "type": "integer"
+          },
+          "latency_ms": {
+            "$ref": "#/components/schemas/LatencySummary"
+          },
+          "requests": {
+            "title": "Requests",
+            "type": "integer"
+          },
+          "route": {
+            "title": "Route",
+            "type": "string"
+          }
+        },
+        "required": [
+          "route",
+          "requests",
+          "errors",
+          "error_rate",
+          "latency_ms"
+        ],
+        "title": "RouteMetrics",
         "type": "object"
       },
       "RubricCriterion": {
@@ -2669,9 +2883,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Observability Summary Api Observability Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ObservabilitySnapshot"
                 }
               }
             },

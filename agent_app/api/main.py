@@ -74,6 +74,7 @@ from agent_app.services.auth import (
     StudentProfileRepository,
 )
 from agent_app.models.capabilities import AppCapabilities
+from agent_app.models.observability import ObservabilitySnapshot
 from agent_app.services.authoring import (
     AuthoringGateway,
     LocalAuthoringGateway,
@@ -392,7 +393,7 @@ def create_app(
             "mcp_mode": "local" if settings.mcp_use_local_adapter else "remote",
         }
 
-    @app.get("/api/observability")
+    @app.get("/api/observability", response_model=ObservabilitySnapshot)
     async def observability_summary() -> dict:
         return observability.snapshot()
 

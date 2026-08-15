@@ -386,6 +386,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActivityMetrics */
+        ActivityMetrics: {
+            /** Completed */
+            completed: number;
+            /** Completion Rate */
+            completion_rate: number;
+            /** Errors */
+            errors: number;
+            /** Name */
+            name: string;
+            /** Started */
+            started: number;
+        };
         /** AppCapabilities */
         AppCapabilities: {
             /** Authoring */
@@ -668,6 +681,18 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HttpMetrics */
+        HttpMetrics: {
+            /** Error Rate */
+            error_rate: number;
+            /** Errors */
+            errors: number;
+            latency_ms: components["schemas"]["LatencySummary"];
+            /** Requests */
+            requests: number;
+            /** Routes */
+            routes: components["schemas"]["RouteMetrics"][];
+        };
         /** IntegrativeProject */
         IntegrativeProject: {
             /** Challenge */
@@ -686,6 +711,13 @@ export interface components {
             title: string;
             /** Topics */
             topics: components["schemas"]["Topic"][];
+        };
+        /** LatencySummary */
+        LatencySummary: {
+            /** Average */
+            average: number;
+            /** P95 */
+            p95: number;
         };
         /** LearningContent */
         LearningContent: {
@@ -748,6 +780,41 @@ export interface components {
          * @enum {string}
          */
         MessageRole: "user" | "assistant";
+        /** ModelMetrics */
+        ModelMetrics: {
+            /** Calls */
+            calls: number;
+            /** Errors */
+            errors: number;
+            /** Estimated Cost Usd */
+            estimated_cost_usd: number;
+            /** Input Tokens */
+            input_tokens: number;
+            latency_ms: components["schemas"]["LatencySummary"];
+            /** Output Tokens */
+            output_tokens: number;
+            /** Pricing Configured */
+            pricing_configured: boolean;
+            /** Provider */
+            provider: string;
+            /** Tokens Estimated */
+            tokens_estimated: boolean;
+        };
+        /** ObservabilitySnapshot */
+        ObservabilitySnapshot: {
+            /** Activities */
+            activities: components["schemas"]["ActivityMetrics"][];
+            /** Generated At */
+            generated_at: string;
+            http: components["schemas"]["HttpMetrics"];
+            model: components["schemas"]["ModelMetrics"];
+            /** Started At */
+            started_at: string;
+            /** Status */
+            status: string;
+            /** Uptime Seconds */
+            uptime_seconds: number;
+        };
         /** PendingPracticeResponse */
         PendingPracticeResponse: {
             exercise: components["schemas"]["PracticeExercise"];
@@ -888,6 +955,18 @@ export interface components {
         Quiz: {
             /** Question */
             question: string;
+        };
+        /** RouteMetrics */
+        RouteMetrics: {
+            /** Error Rate */
+            error_rate: number;
+            /** Errors */
+            errors: number;
+            latency_ms: components["schemas"]["LatencySummary"];
+            /** Requests */
+            requests: number;
+            /** Route */
+            route: string;
         };
         /** RubricCriterion */
         RubricCriterion: {
@@ -1507,9 +1586,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ObservabilitySnapshot"];
                 };
             };
         };

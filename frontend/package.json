@@ -15,7 +15,8 @@
     "api:schema": "node scripts/run-python.mjs scripts/export-openapi.py",
     "api:types": "openapi-typescript src/api/generated/openapi.json -o src/api/generated/schema.ts",
     "api:generate": "node scripts/run-python.mjs scripts/export-openapi.py && openapi-typescript src/api/generated/openapi.json -o src/api/generated/schema.ts",
-    "api:check": "node scripts/run-python.mjs scripts/export-openapi.py --check && openapi-typescript src/api/generated/openapi.json -o src/api/generated/schema.ts --check"
+    "api:check": "node scripts/run-python.mjs scripts/export-openapi.py --check && openapi-typescript src/api/generated/openapi.json -o src/api/generated/schema.ts --check",
+    "budget:check": "node scripts/check-bundle-budget.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.101.4",

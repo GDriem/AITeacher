@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 
 import { catalogFixture } from "./fixtures/catalog";
+import { observabilityFixture } from "./fixtures/observability";
 import { projectsFixture } from "./fixtures/projects";
 
 export const capabilitiesFixture = {
@@ -38,10 +39,15 @@ export const sessionsHandler = http.get("http://localhost:4173/api/sessions", ()
   HttpResponse.json({ sessions: [], retention_days: 365 }),
 );
 
+export const observabilityHandler = http.get("http://localhost:4173/api/observability", () =>
+  HttpResponse.json(observabilityFixture),
+);
+
 export const server = setupServer(
   capabilitiesHandler,
   authStatusHandler,
   catalogHandler,
   projectsHandler,
   sessionsHandler,
+  observabilityHandler,
 );

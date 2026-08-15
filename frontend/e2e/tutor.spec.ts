@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { catalogFixture } from "../src/test/fixtures/catalog";
+import { observabilityFixture } from "../src/test/fixtures/observability";
 import { sessionDetail, sessionsFixture } from "../src/test/fixtures/sessions";
 import { chatResponseFixture } from "../src/test/fixtures/tutor";
 import {
@@ -34,6 +35,9 @@ async function routeTutor(page: Page, { restored = true, voice = false }: { rest
   );
   await page.route("**/api/sessions/*?**", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(sessionDetail("session-vectors")) }),
+  );
+  await page.route("**/api/observability", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(observabilityFixture) }),
   );
 }
 
