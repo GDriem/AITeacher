@@ -66,9 +66,6 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         topics = await client.get(
             "/api/topics", params={"student_id": "student-1"}
         )
-        page = await client.get("/")
-        styles = await client.get("/static/styles.css")
-        script = await client.get("/static/app.js")
         voice_worklet = await client.get("/static/pcm-capture-worklet.js")
         assert health.status_code == 200
         assert readiness.json()["status"] == "ready"
@@ -111,28 +108,14 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert embedding["prerequisites"] == ["tokens"]
         assert embedding["unmet_prerequisites"] == ["tokens"]
         assert embedding["available_levels"] == ["beginner", "intermediate"]
-        assert page.status_code == 200
-        assert page.headers["cache-control"] == "no-cache"
-        assert "microphone=(self)" in page.headers["permissions-policy"]
-        assert "AITeacher" in page.text
-        assert 'id="category-filter"' in page.text
-        assert 'id="level-filter"' in page.text
-        assert 'id="learning-path-card"' in page.text
-        assert 'id="project-grid"' in page.text
-        assert 'id="practice-card"' in page.text
-        assert 'id="authoring-panel"' in page.text
-        assert styles.status_code == 200
-        assert styles.headers["content-encoding"] == "gzip"
-        assert styles.headers["cache-control"].startswith("public, max-age=3600")
-        assert styles.headers["x-content-type-options"] == "nosniff"
-        assert script.status_code == 200
+        assert "microphone=(self)" in topics.headers["permissions-policy"]
+        assert topics.headers["content-encoding"] == "gzip"
         assert voice_worklet.status_code == 200
+        assert voice_worklet.headers["cache-control"].startswith(
+            "public, max-age=3600"
+        )
+        assert voice_worklet.headers["x-content-type-options"] == "nosniff"
         assert 'registerProcessor("pcm-capture"' in voice_worklet.text
-        assert "data-start-topic" in script.text
-        assert "/api/practice/start" in script.text
-        assert "/api/authoring/lessons" in script.text
-        assert "/api/projects" in script.text
-        assert "const totalTopics = 23" not in script.text
         chat = await client.post(
             "/api/chat",
             headers={"x-correlation-id": "demo-123"},
@@ -185,7 +168,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         observability = metrics.json()
         assert metrics.status_code == 200
         assert observability["status"] == "ok"
-        assert observability["http"]["requests"] >= 7
+        assert observability["http"]["requests"] >= 6
         assert observability["model"]["provider"] == "mock"
         assert observability["model"]["calls"] >= 2
         assert observability["model"]["input_tokens"] > 0

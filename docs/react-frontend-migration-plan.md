@@ -416,8 +416,8 @@ Al comenzar una fase:
 | R7 | Completada | Voz diferida con WebSocket, AudioWorklet, interrupción, mute, reconexión y fallback a texto |
 | R8 | Completada | Mesa editorial React protegida, versionada y diferida en `/app/autoria` |
 | R9 | Completada | Observabilidad tipada, conectividad y anuncios globales, foco global entre rutas y presupuestos de bundle automatizados |
-| R10 | Pendiente | — |
-| R11 | Pendiente | — |
+| R10 | Completada | React predeterminado en `/`, UI heredada temporalmente en `/legacy`, rollback inmediato por variable de entorno y smoke test post-despliegue |
+| R11 | Completada | UI heredada retirada por completo; React es la única interfaz servida y documentada |
 
 ### Handoff de R1 — 11 de agosto de 2026
 
@@ -1029,6 +1029,259 @@ de cualquier cambio de tráfico. No adelantar el retiro de `index.html`/
 `app.js` (R11) ni tocar el panel de observabilidad, conectividad o foco
 global recién entregados salvo que la matriz de paridad detecte una
 regresión directa.
+
+### Handoff de R10 — 15 de agosto de 2026
+
+**Resultado entregado.** React es ahora la interfaz predeterminada: el
+`basename` de `frontend/src/app/router.tsx` y el `base` de Vite pasaron de
+`/app` a `/`, por lo que el build genera `dist/index.html` con
+`<script src="/assets/...">` en vez de `/app/assets/...`. En el backend,
+`agent_app/api/main.py` monta los assets con hash en `/assets`, sirve la UI
+heredada de forma permanente durante la ventana de estabilidad en `/legacy`
+(y `/legacy/{path}`) y declara un catch-all `GET /` + `GET /{path:path}` al
+final de `create_app` —después de todas las rutas `/api/*`, el WebSocket de
+voz y los mounts estáticos— para no ocultar ninguna ruta existente y para que
+cualquier ruta profunda de React (`/tutor`, `/proyectos`, `/autoria`, o una
+desconocida que el propio `NotFoundRoute` de React resuelva) sobreviva a un
+recargado del navegador.
+
+La variable `APP_DEFAULT_UI` (`react` por defecto, `legacy` para revertir)
+decide qué `index.html` entrega ese catch-all, sin condicionar `/legacy`, que
+permanece disponible en ambos estados. Esto entrega el "rollback inmediato"
+del objetivo de la fase: cambiar la variable y reiniciar el servicio revierte
+la interfaz predeterminada sin reconstruir la imagen ni desplegar una revisión
+nueva. `docker-compose.yml` expone `APP_DEFAULT_UI` con el mismo valor por
+defecto y `infra/cloudrun/agent-service.yaml` la documenta explícitamente como
+plantilla auditable (el script `deploy.sh` no necesita fijarla porque ya
+coincide con el valor por defecto de `Settings`).
+
+La cabecera `cache-control` se simplificó: en vez de enumerar cada prefijo de
+ruta de la UI, ahora todo lo que no empieza con `/api/`, `/ws/`, `/healthz` o
+`/readyz` (es decir, cualquier shell HTML, React o heredado) recibe
+`no-cache`; `/assets/` conserva caché inmutable de un año y `/static/`
+conserva la caché corta con revalidación. Esto evita tener que tocar la
+cabecera cada vez que React gane una ruta nueva. El resto de cabeceras de
+seguridad (CSP, `permissions-policy`, `referrer-policy`,
+`cross-origin-opener-policy`, `x-content-type-options`) se revisaron y no
+cambiaron: todas usan `'self'` o rutas explícitas, y ninguna dependía de que
+React viviera bajo `/app`.
+
+Se añadió `infra/cloudrun/smoke-test.sh`, un script de sólo lectura que recibe
+`AGENT_URL` y confirma que `/`, `/tutor` y `/legacy` respondan `200`, que `/`
+entregue el shell de React y que `/legacy` entregue la interfaz heredada
+completa; termina con código distinto de cero e imprime el comando de
+rollback si algo falla. `docs/deployment.md` documenta el smoke test, el
+rollback inmediato por variable de entorno y aclara que el rollback de
+revisión de Cloud Run sigue vigente cuando el problema no es la interfaz.
+
+**Matriz manual de paridad ejecutada antes del corte.** Como la sesión no
+dispone de un navegador con inspección visual, la matriz se ejecutó con la
+combinación de evidencia disponible: la suite Playwright completa (46
+recorridos reales de navegador, sin mocks de motor de render) contra los
+nuevos `baseURL`/rutas, más una verificación manual con `curl` contra una
+instancia local real de `agent_app.api.main` en los tres modos relevantes
+(`APP_DEFAULT_UI=react` por defecto, `APP_DEFAULT_UI=legacy` para probar el
+rollback, y una petición a una ruta desconocida). Ambas capas cubren cada
+punto de la matriz:
+
+| Punto de la matriz | Cómo se verificó |
+|---|---|
+| `/` sirve React y no la UI heredada | Playwright (`catalog.spec.ts`, `operations.spec.ts`) + `curl` (`<div id="root">`) |
+| Rutas profundas (`/tutor`, `/proyectos`, `/autoria`) sobreviven al recargar | Playwright navega con `page.goto("./ruta")` (recarga completa, no navegación cliente) en las 46 pruebas + `curl` a `/tutor` |
+| Ruta desconocida no rompe el servidor | `curl /una-ruta-desconocida` devuelve el mismo shell que `/` (React resuelve `NotFoundRoute` del lado del cliente) |
+| `/legacy` conserva la interfaz completa | `curl /legacy` contiene `id="category-filter"`; `test_agent_api.py` reconfirma cabeceras y contenido |
+| Assets con hash cachean de forma inmutable | `curl` al asset real del build (`/assets/index-*.js`) → `cache-control: public, max-age=31536000, immutable` |
+| `APP_DEFAULT_UI=legacy` revierte `/` sin rebuild | Instancia local relanzada con la variable; `/` pasa a contener `id="category-filter"` |
+| Accesibilidad y responsive por ruta | Los 46 recorridos Playwright incluyen axe y 320/768/1024/1440 px sin cambios de comportamiento |
+| Teclado, foco y consola limpia por dominio | Cubiertos por la misma suite Playwright (auth, sesiones, tutor, proyectos, autoría, operación) sin regresiones |
+
+No se realizó una inspección visual humana en un navegador real dentro de
+esta sesión (la herramienta no está disponible en este entorno); antes de
+mover tráfico de producción real se recomienda repetir al menos la fila de
+`/`, `/legacy` y una ruta profunda con un navegador real, como refuerzo de la
+evidencia automatizada anterior.
+
+**Verificaciones ejecutadas.** TypeScript estricto y ESLint sin advertencias
+(`tsc -b`, `eslint src e2e vite.config.ts playwright.config.ts`); 37 pruebas
+Vitest; build de producción con Vite (`dist/index.html` referenciando
+`/assets/...`); presupuesto de bundle (`check-bundle-budget.mjs`) dentro de
+los límites de R9 sin chunks nuevos sin gobernar; esquema OpenAPI y tipos
+generados sin drift; 149 pruebas Python relevantes en modo invitado aislado
+del `.env` local (que define `GOOGLE_CLIENT_ID`, igual que en R6/R7, y produce
+`401` si no se aísla); y 46 recorridos Playwright completos contra un Vite de
+desarrollo administrado por separado, sin fallas. Adicionalmente se levantó
+`agent_app.api.main` real tres veces (modo React por defecto, modo
+`APP_DEFAULT_UI=legacy`, y para ejecutar `infra/cloudrun/smoke-test.sh`) y se
+verificaron con `curl` las cabeceras y el contenido de `/`, `/legacy`,
+`/tutor`, una ruta desconocida, el asset con hash y `/healthz`.
+
+**Decisiones tomadas.** El catch-all se declaró al final de `create_app` en
+vez de mantenerlo junto a `/legacy` para eliminar cualquier ambigüedad de
+orden de coincidencia de rutas de Starlette frente a `/api/*` y el WebSocket.
+Se prefirió una variable de entorno (`APP_DEFAULT_UI`) sobre depender
+únicamente del rollback de revisión de Cloud Run porque el objetivo de la
+fase pide "rollback inmediato": cambiar una variable y reiniciar es más
+rápido que reconstruir o recuperar una imagen anterior, y no excluye ese
+rollback de revisión cuando el problema es del backend. `/legacy` se dejó
+sin condicionar a `APP_DEFAULT_UI` para poder comparar ambas interfaces en
+cualquier momento durante la ventana de estabilidad. El enlace de convivencia
+en el pie de página de React ahora apunta a `/legacy` con la copia "Ver la
+interfaz anterior" en vez de "Volver a la interfaz completa", porque React ya
+no es la superficie parcial. No se tocaron contratos de API, autenticación,
+sesiones, tutor, práctica, voz, autoría ni observabilidad.
+
+**Deuda deliberada.** El retiro definitivo de `index.html`/`app.js` y de sus
+pruebas asociadas queda para R11, igual que decidir cuánto dura la ventana de
+estabilidad antes de eliminar `/legacy`. La matriz de paridad se ejecutó con
+Playwright y `curl` reales pero sin inspección visual humana, según se
+detalla arriba; no se simuló esa inspección con una herramienta que no está
+disponible en este entorno. `infra/cloudrun/deploy.sh` no fue ejecutado (haría
+un despliegue real con costo) ni tampoco lo será hasta que el usuario lo
+confirme explícitamente; `smoke-test.sh` se probó contra instancias locales,
+no contra Cloud Run real.
+
+**Riesgos pendientes.** El corte real de tráfico de producción (ejecutar
+`deploy.sh` y apuntar dominios/usuarios a la nueva interfaz) no ha ocurrido
+todavía; esta fase deja la aplicación lista para ese corte pero no lo realiza.
+Un despliegue real debe ejecutar `smoke-test.sh` contra la URL de Cloud Run
+antes de anunciar el cambio a usuarios reales. El enlace “Ver la interfaz
+anterior” seguirá visible mientras `/legacy` exista; su retiro en R11 debe ir
+acompañado de quitar ese enlace del pie de página. El catch-all de React
+devuelve `503` si `frontend/dist` no existe (mismo comportamiento que el
+`/app` anterior); cualquier proceso que ejecute `agent_app.api.main` sin haber
+construido el frontend primero verá ese error en `/` en vez de en `/app`,
+por lo que ahora es más visible tenerlo presente en runbooks de desarrollo.
+
+**Punto exacto para comenzar R11.** Confirmar primero que la ventana de
+estabilidad acordada con el usuario haya transcurrido y que ningún riesgo
+pendiente de R10 siga abierto. Luego eliminar `agent_app/static/index.html` y
+`agent_app/static/app.js` (y el resto de `agent_app/static` que sólo sirva a
+la UI heredada), las rutas `/legacy` y `/legacy/{path:path}` de
+`agent_app/api/main.py`, el enlace “Ver la interfaz anterior” de
+`AppShell.tsx`, `APP_DEFAULT_UI` de `Settings` (y de `docker-compose.yml` /
+`infra/cloudrun/agent-service.yaml`), y las pruebas Python que sólo ejercitan
+la interfaz heredada (`test_legacy_ui_accepts_explicit_react_session_handoff`,
+las aserciones de `/legacy` en `test_agent_api.py` y
+`test_react_frontend_hosting.py`, y `test_frontend_accessibility.py` /
+`test_frontend_performance.py` si sólo cubren archivos heredados). Conservar
+únicamente el AudioWorklet en `/static` si la implementación de voz de React
+lo sigue usando. No adelantar cambios de CSP, caché o Docker más allá de lo
+que el retiro exija.
+
+### Handoff de R11 — 16 de agosto de 2026
+
+**Resultado entregado.** La UI heredada quedó retirada por completo. Se
+eliminaron `agent_app/static/index.html`, `agent_app/static/app.js` y
+`agent_app/static/styles.css`; `agent_app/static/` sólo conserva
+`pcm-capture-worklet.js`, que la voz de React sigue sirviendo desde
+`/static`. En `agent_app/api/main.py` se retiraron las rutas `/legacy` y
+`/legacy/{path:path}`, y el catch-all final volvió a un único `react_app` que
+siempre sirve `frontend/dist/index.html` (o `503` si el build no existe),
+sin la rama condicional de `APP_DEFAULT_UI`. Ese campo se eliminó de
+`Settings` (`agent_app/config.py`), de `docker-compose.yml` y de
+`infra/cloudrun/agent-service.yaml`. `infra/cloudrun/smoke-test.sh` ya no
+verifica `/legacy` ni imprime el comando de rollback por variable de entorno;
+comprueba capacidades, `/` y `/tutor`, e imprime el rollback de revisión de
+Cloud Run si algo falla. El enlace “Ver la interfaz anterior” desapareció del
+pie de página de `AppShell.tsx` (que ahora sólo muestra “AITeacher”, sin la
+distinción “Frontend React” que ya no tiene sentido con una sola interfaz), y
+el proxy de desarrollo de Vite dejó de reenviar `/legacy`.
+
+Se retiraron las pruebas Python que sólo ejercitaban la interfaz heredada:
+`tests/unit/test_frontend_accessibility.py`,
+`tests/unit/test_frontend_performance.py` y, dentro de
+`tests/integration/test_react_frontend_hosting.py`, los casos de
+`APP_DEFAULT_UI=legacy` y del handoff de sesión vía `app.js`. El caso
+restante de ese archivo se renombró a
+`test_react_serves_root_deep_and_unknown_routes` y ya no recibe el parámetro
+`app_default_ui`. En `tests/integration/test_agent_api.py` se quitaron las
+peticiones y aserciones sobre `/legacy`, `/static/styles.css` y
+`/static/app.js`; las verificaciones de cabeceras genéricas
+(`permissions-policy`, `content-encoding: gzip`, `cache-control` de
+`/static/`, `x-content-type-options`) se reubicaron sobre respuestas que
+siguen existiendo (`/api/topics` y `/static/pcm-capture-worklet.js`) en vez de
+perderse, y el conteo esperado de `observability["http"]["requests"]` bajó de
+7 a 6 al desaparecer la petición a `/legacy`.
+
+La documentación quedó actualizada para declarar una sola interfaz: esta
+tabla de estado, `docs/deployment.md` (smoke test y rollback ya no mencionan
+`/legacy` ni `APP_DEFAULT_UI`; el rollback documentado es únicamente el de
+revisión de Cloud Run), `frontend/README.md` (introducción reescrita, sección
+de arquitectura de R1–R4 marcada como histórica con una nota de que el
+handoff a la UI heredada dejó de existir, y el párrafo de hosting de R10
+corregido) y `.claude/CLAUDE.md` (la entrada de `agent_app/static/` ahora
+describe sólo el AudioWorklet, se agregó `frontend/` a la estructura del
+repositorio, y las filas de “Interfaz web” y “Accesibilidad/performance de
+UI” apuntan a `frontend/src` y a los recorridos Playwright/presupuesto de
+bundle en vez de a los archivos Python eliminados).
+
+**Verificaciones ejecutadas.** Antes de modificar código se reconfirmó que el
+trabajo de R10 —dejado sin commit por la sesión anterior— cumplía realmente
+su criterio de salida: TypeScript estricto y ESLint sin advertencias, 37
+pruebas Vitest, build de producción con `dist/assets/...` sin prefijo `/app`,
+presupuesto de bundle dentro de los límites de R9, esquema OpenAPI y tipos
+sin drift, 149 pruebas Python en modo invitado aislado del `.env` local (que
+define `GOOGLE_CLIENT_ID`), y 46 recorridos Playwright completos. No se
+encontró ninguna regresión directamente relacionada; no fue necesario
+corregir nada de R10 antes de empezar R11. Para R11 volvieron a pasar
+TypeScript estricto y ESLint sin advertencias; 37 pruebas Vitest; build de
+producción; presupuesto de bundle (`core` bajó ligeramente a 116.87 kB al
+quitar el enlace del pie de página); esquema OpenAPI y tipos sin drift; 141
+pruebas Python relevantes en modo invitado (149 menos las 8 pruebas retiradas
+por ser exclusivas de la UI heredada); y 46 recorridos Playwright completos,
+sin ningún caso que dependiera del enlace o la ruta retirados.
+
+**Decisiones tomadas.** El AudioWorklet se conservó en `agent_app/static/`
+porque la voz de React (`frontend/src/features/voice/voiceAudioRuntime.ts`)
+lo sigue solicitando desde esa ruta; no se movió a `frontend/public` para no
+tocar el contrato de despliegue fuera de lo que el retiro exigía. Los
+adaptadores versionados de identidad y sesión activa
+(`frontend/src/features/auth/anonymousIdentity.ts`,
+`frontend/src/features/sessions/activeSession.ts`) que todavía leen claves de
+`localStorage` con nombres heredados (`studentName`, `studentAutoId`, la
+clave de sesión pre-R4) se dejaron intactos a propósito: esas claves viven en
+el navegador de estudiantes reales que usaron la UI antigua antes del corte,
+no en el servidor, así que retirar el servidor no las hace desaparecer; el
+plan tampoco las listó como entregable de R11. Se optó por simplificar el pie
+de página a sólo “AITeacher” en vez de dejar “AITeacher · Frontend React”
+huérfano, porque esa distinción sólo tenía sentido mientras existían dos
+interfaces que comparar. El resto de cabeceras de seguridad (CSP,
+`permissions-policy`, `referrer-policy`, `cross-origin-opener-policy`,
+`x-content-type-options`) no cambió: ninguna dependía de `/legacy` ni de
+`APP_DEFAULT_UI`.
+
+**Deuda deliberada.** Ninguna: R11 era el cierre de la migración y no dejó
+trabajo pendiente dentro de su propio alcance. `docs/architecture.md` sigue
+sin un diagrama dedicado a la arquitectura del frontend (nunca lo tuvo desde
+R1); no se creó en esta fase porque no es un artefacto de la UI heredada y
+ampliarlo habría excedido el retiro solicitado. La sección histórica de
+`frontend/README.md` sobre R1–R4 se anotó como histórica en vez de
+reescribirse por completo, porque su contenido sigue siendo un registro fiel
+de decisiones ya tomadas, no una afirmación sobre el comportamiento actual.
+
+**Riesgos pendientes.** El plan pedía confirmar primero que la ventana de
+estabilidad acordada con el usuario hubiera transcurrido antes de retirar
+`/legacy`. En este repositorio esa ventana nunca llegó a abrirse: R10 dejó
+documentado explícitamente que `infra/cloudrun/deploy.sh` no se había
+ejecutado y que el corte real de tráfico de producción no había ocurrido, por
+lo que no existe ningún despliegue vivo de Cloud Run sirviendo tráfico real
+donde `/legacy` funcionara como red de seguridad. Se interpretó que la
+ventana de estabilidad aplica a un despliegue real y no a este repositorio de
+desarrollo, y se procedió con el retiro en el código; un equipo que sí tenga
+`learning-agent` desplegado con tráfico real debe evaluar su propia ventana
+de estabilidad antes de llevar este mismo commit a producción, y puede
+recuperar la UI heredada desde el historial de Git si la necesitara de
+vuelta. El AudioWorklet sigue siendo el único artefacto de
+`agent_app/static/` con acoplamiento entre frontend y backend; si una futura
+migración a otro backend cambia cómo se sirven estáticos, ese archivo deberá
+moverse junto con el resto del contrato de voz.
+
+**Estado de la migración.** Con R11 completada, `docs/react-frontend-migration-plan.md`
+cierra sus once fases: React es la única interfaz de AITeacher, sin código de
+ejecución duplicado y con toda capacidad —catálogo, proyectos, identidad,
+sesiones, tutor, evaluación, práctica, voz, autoría y observabilidad—
+cubierta por el árbol `frontend/`. No queda una fase Rn pendiente en este
+documento.
 
 ## Riesgos y respuestas
 

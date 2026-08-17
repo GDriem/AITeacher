@@ -7,22 +7,22 @@
       "budgetKb": 180
     },
     "catalogRoute": {
-      "description": "Catálogo de temas (/app), ruta por defecto.",
+      "description": "Catálogo de temas (/), ruta por defecto.",
       "chunks": ["CatalogRoute"],
       "budgetKb": 16
     },
     "projectsRoute": {
-      "description": "Proyectos integradores (/app/proyectos).",
+      "description": "Proyectos integradores (/proyectos).",
       "chunks": ["ProjectsRoute"],
       "budgetKb": 14
     },
     "tutorRoute": {
-      "description": "Tutor, evaluación, práctica, progreso y salud (/app/tutor).",
+      "description": "Tutor, evaluación, práctica, progreso y salud (/tutor).",
       "chunks": ["TutorRoute"],
       "budgetKb": 30
     },
     "authoringRoute": {
-      "description": "Mesa editorial y editor de lecciones (/app/autoria).",
+      "description": "Mesa editorial y editor de lecciones (/autoria).",
       "chunks": ["AuthoringRoute", "LessonEditor"],
       "budgetKb": 24
     },

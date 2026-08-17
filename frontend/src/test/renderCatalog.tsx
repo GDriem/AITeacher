@@ -13,7 +13,7 @@ function CatalogUnderTest() {
 }
 
 export function renderCatalog({
-  initialEntry = "/app/",
+  initialEntry = "/",
 }: {
   initialEntry?: string;
 } = {}) {
@@ -38,7 +38,7 @@ export function renderCatalog({
         ],
       },
     ],
-    { basename: "/app", initialEntries: [initialEntry] },
+    { initialEntries: [initialEntry] },
   );
 
   const result = render(

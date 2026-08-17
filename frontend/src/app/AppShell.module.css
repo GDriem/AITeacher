@@ -166,15 +166,10 @@
   min-height: 4.5rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-4);
   color: var(--content-muted);
   border-top: 1px solid var(--border-subtle);
   font-size: var(--font-size-xs);
-}
-
-.footer a {
-  color: var(--status-guide);
 }
 
 @media (max-width: 48rem) {
@@ -218,13 +213,6 @@
 
   .main {
     padding-block-start: var(--space-5);
-  }
-
-  .footer {
-    min-height: 5.5rem;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
   }
 }
 

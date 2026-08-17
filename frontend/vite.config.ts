@@ -3,7 +3,7 @@ import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  base: "/app/",
+  base: "/",
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] }),
@@ -34,7 +34,7 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     environment: "jsdom",
     environmentOptions: {
-      jsdom: { url: "http://localhost:4173/app/" },
+      jsdom: { url: "http://localhost:4173/" },
     },
     setupFiles: ["./src/test/setup.ts"],
     css: true,

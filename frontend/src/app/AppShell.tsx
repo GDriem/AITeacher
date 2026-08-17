@@ -53,7 +53,7 @@ function Shell() {
         Saltar al contenido principal
       </a>
       <header className={styles.header}>
-        <a className={styles.brand} href="/app/" aria-label="AITeacher, inicio">
+        <a className={styles.brand} href="/" aria-label="AITeacher, inicio">
           <span className={styles.brandMark} aria-hidden="true">
             <i />
             <i />
@@ -92,8 +92,7 @@ function Shell() {
         <Outlet />
       </main>
       <footer className={styles.footer}>
-        <span>AITeacher · Frontend React R9</span>
-        <a href="/">Volver a la interfaz completa</a>
+        <span>AITeacher</span>
       </footer>
     </div>
     <SessionDrawer

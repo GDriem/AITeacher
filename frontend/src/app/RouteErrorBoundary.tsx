@@ -14,7 +14,7 @@ export function RouteErrorBoundary() {
         <p className={styles.eyebrow}>Interrupción de ruta</p>
         <h1>No pudimos abrir esta sección.</h1>
         <p>{message}</p>
-        <a href="/app/">Volver al catálogo</a>
+        <a href="/">Volver al catálogo</a>
       </section>
     </main>
   );

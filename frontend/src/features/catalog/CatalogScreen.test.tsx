@@ -65,7 +65,7 @@ describe("CatalogScreen", () => {
 
     await user.click(await screen.findByRole("button", { name: /Continuar/ }));
 
-    await waitFor(() => expect(router.state.location.pathname).toBe("/app/tutor"));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/tutor"));
     expect(window.localStorage.getItem("activeSession:student-test")).toBe("session-r1");
     expect(requestBody).toMatchObject({
       message: "Quiero aprender sobre Introducción a la inteligencia artificial",

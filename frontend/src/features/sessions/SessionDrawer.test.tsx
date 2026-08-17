@@ -30,7 +30,7 @@ function renderSessions({ activeSessionId }: {
         { path: "tutor", element: <h1>Tutor React</h1> },
       ],
     }],
-    { basename: "/app", initialEntries: ["/app/"] },
+    { initialEntries: ["/"] },
   );
   const result = render(
     <QueryClientProvider client={queryClient}>
@@ -116,7 +116,7 @@ describe("SessionDrawer", () => {
     await user.click(within(vectors).getByRole("button", { name: "Continuar" }));
     const agents = sessionRow("Agentes y herramientas");
     await user.click(within(agents).getByRole("button", { name: "Abrir" }));
-    await waitFor(() => expect(router.state.location.pathname).toBe("/app/tutor"));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/tutor"));
     releaseFirst();
     expect(window.localStorage.getItem("activeSession:student-test")).toBe("session-agents");
   });
@@ -186,6 +186,6 @@ describe("SessionDrawer", () => {
     await user.click(screen.getByRole("button", { name: "Nueva conversación" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(window.localStorage.getItem("activeSession:student-test")).toBeNull();
-    await waitFor(() => expect(router.state.location.pathname).toBe("/app/tutor"));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/tutor"));
   });
 });

@@ -21,7 +21,7 @@ export function renderTutor({ activeSessionId }: { activeSessionId?: string } = 
   });
   const router = createMemoryRouter(
     [{ path: "/", Component: AppShell, children: [{ path: "tutor", element: <TutorUnderTest /> }] }],
-    { basename: "/app", initialEntries: ["/app/tutor"] },
+    { initialEntries: ["/tutor"] },
   );
   const result = render(
     <QueryClientProvider client={queryClient}>

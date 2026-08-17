@@ -256,7 +256,7 @@ def create_app(
     app.state.auth_service = auth_service
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.mount(
-        "/app/assets",
+        "/assets",
         StaticFiles(directory=REACT_DIST_DIR / "assets", check_dir=False),
         name="react-assets",
     )
@@ -271,7 +271,7 @@ def create_app(
         except Exception:
             duration_ms = (time.perf_counter() - started) * 1_000
             route = getattr(request.scope.get("route"), "path", "<unmatched>")
-            if not request.url.path.startswith(("/static/", "/app/assets/")):
+            if not request.url.path.startswith(("/static/", "/assets/")):
                 observability.record_http(
                     method=request.method,
                     route=route,
@@ -291,7 +291,7 @@ def create_app(
             raise
         duration_ms = (time.perf_counter() - started) * 1_000
         route = getattr(request.scope.get("route"), "path", "<unmatched>")
-        if not request.url.path.startswith(("/static/", "/app/assets/")):
+        if not request.url.path.startswith(("/static/", "/assets/")):
             observability.record_http(
                 method=request.method,
                 route=route,
@@ -308,7 +308,7 @@ def create_app(
                 "duration_ms": round(duration_ms, 2),
             },
         )
-        if request.url.path.startswith("/app/assets/"):
+        if request.url.path.startswith("/assets/"):
             response.headers.setdefault(
                 "cache-control",
                 "public, max-age=31536000, immutable",
@@ -318,7 +318,9 @@ def create_app(
                 "cache-control",
                 "public, max-age=3600, stale-while-revalidate=86400",
             )
-        elif request.url.path == "/" or request.url.path.startswith("/app"):
+        elif not request.url.path.startswith(
+            ("/api/", "/ws/", "/healthz", "/readyz")
+        ):
             response.headers.setdefault("cache-control", "no-cache")
         response.headers.setdefault("x-content-type-options", "nosniff")
         response.headers.setdefault(
@@ -737,21 +739,6 @@ def create_app(
             except RuntimeError:
                 pass
 
-    @app.get("/", include_in_schema=False)
-    async def index() -> FileResponse:
-        return FileResponse(STATIC_DIR / "index.html")
-
-    @app.get("/app", include_in_schema=False)
-    @app.get("/app/{path:path}", include_in_schema=False)
-    async def react_app(path: str = "") -> FileResponse:
-        index_path = REACT_DIST_DIR / "index.html"
-        if not index_path.is_file():
-            raise HTTPException(
-                status_code=503,
-                detail="El build de React no está disponible; ejecuta `pnpm build`.",
-            )
-        return FileResponse(index_path)
-
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         payload = payload.model_copy(
@@ -820,6 +807,21 @@ def create_app(
                 project,
                 payload.submission,
             )
+
+    # Catch-all: se declara al final para no ocultar rutas /api, /static,
+    # /assets, /healthz, /readyz ni el websocket de voz. Sirve el shell de
+    # React tanto en "/" como en cualquier ruta profunda para que el
+    # recargado del navegador funcione con enrutamiento del lado del cliente.
+    @app.get("/", include_in_schema=False)
+    @app.get("/{path:path}", include_in_schema=False)
+    async def react_app(path: str = "") -> FileResponse:
+        index_path = REACT_DIST_DIR / "index.html"
+        if not index_path.is_file():
+            raise HTTPException(
+                status_code=503,
+                detail="El build de React no está disponible; ejecuta `pnpm build`.",
+            )
+        return FileResponse(index_path)
 
     return app
 

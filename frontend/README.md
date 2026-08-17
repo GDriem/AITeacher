@@ -1,14 +1,19 @@
 # Frontend React de AITeacher
 
-Este directorio contiene la interfaz React que convive con la aplicación
-estática durante la migración descrita en
-`docs/react-frontend-migration-plan.md`. R1 publica el catálogo y la acción de
-iniciar un tema; R2 incorpora los proyectos integradores; R3 establece el
-bootstrap y la identidad común; R4 añade administración y continuidad de
-conversaciones. El feed y composer del tutor, evaluación pedagógica, práctica,
-voz, observabilidad y autoría permanecen en la interfaz vigente.
+Este directorio contiene la única interfaz de AITeacher, construida en React
+y TypeScript sobre Vite. Es el resultado de la migración por fases descrita en
+`docs/react-frontend-migration-plan.md`: catálogo, proyectos integradores,
+identidad y autenticación, sesiones, tutor conversacional, evaluación y
+práctica adaptativa, voz en tiempo real, autoría editorial y observabilidad
+viven todos en este árbol; la aplicación estática heredada se retiró en R11.
 
-## Arquitectura de R1–R4
+## Arquitectura de R1–R4 (histórico)
+
+Registro de cómo se construyeron las primeras fases. El patrón de propiedad
+de estado (TanStack Query, search params, adaptador versionado) sigue vigente;
+el detalle de handoff a la UI heredada descrito en el paso a paso de abajo fue
+reemplazado por el tutor nativo de R5 y dejó de existir por completo cuando
+R11 retiró `agent_app/static/index.html` y `app.js`.
 
 ```text
 src/
@@ -101,7 +106,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Vite publica `http://127.0.0.1:4173/app/` y reenvía `/api` y `/ws` a
+Vite publica `http://127.0.0.1:4173/` y reenvía `/api`, `/static` y `/ws` a
 `http://127.0.0.1:8000`. FastAPI continúa siendo el único servidor público en
 producción.
 
@@ -133,9 +138,11 @@ cuatro anchos de referencia.
 El build usa React Compiler y separa catálogo y proyectos por ruta. Google
 Identity queda además en un chunk condicional fuera de la carga sin auth.
 
-FastAPI sirve `frontend/dist` bajo `/app`, con fallback de SPA para rutas
-profundas y caché inmutable para `/app/assets/*`. El Dockerfile construye esos
-recursos en una etapa Node y copia solamente `dist` a la imagen Python final.
+FastAPI sirve `frontend/dist` como única interfaz bajo `/`, con fallback de
+SPA para rutas profundas y caché inmutable para `/assets/*`. El Dockerfile
+construye esos recursos en una etapa Node y copia solamente `dist` a la
+imagen Python final; sólo el AudioWorklet de voz sigue sirviéndose desde
+`agent_app/static`.
 
 ## Deuda deliberada al cerrar R4
 

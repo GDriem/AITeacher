@@ -68,7 +68,7 @@ test("teclado, búsqueda, continuidad y consola cubren el drawer completo", asyn
   await search.fill("");
 
   await page.getByRole("button", { name: "Abrir" }).first().click();
-  await page.waitForURL("**/app/tutor");
+  await page.waitForURL("**/tutor");
   expect(await page.evaluate(() => localStorage.getItem("activeSession:student-e2e"))).toBe("session-vectors");
 
   await page.goto("./");

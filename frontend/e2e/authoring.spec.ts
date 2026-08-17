@@ -117,7 +117,7 @@ test("la capacidad deshabilitada oculta autoría y devuelve la ruta al catálogo
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ text: true, voice: false, voice_model: null, authoring: false }) }),
   );
   await page.goto("./autoria");
-  await expect(page).toHaveURL(/\/app\/?$/);
+  await expect(page).toHaveURL("http://127.0.0.1:4173/");
   await expect(page.getByRole("link", { name: "Autoría" })).toHaveCount(0);
 });
 

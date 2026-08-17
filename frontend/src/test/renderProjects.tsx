@@ -21,7 +21,7 @@ export function renderProjects() {
   });
   const router = createMemoryRouter(
     [{ path: "/", Component: AppShell, children: [{ path: "proyectos", element: <ProjectsUnderTest /> }] }],
-    { basename: "/app", initialEntries: ["/app/proyectos"] },
+    { initialEntries: ["/proyectos"] },
   );
 
   const result = render(

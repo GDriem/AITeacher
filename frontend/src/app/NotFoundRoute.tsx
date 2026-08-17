@@ -6,7 +6,7 @@ export function NotFoundRoute() {
       <p className={styles.eyebrow}>Ruta no disponible</p>
       <h1>Esta sección todavía no existe.</h1>
       <p>Vuelve al catálogo para continuar con un tema real.</p>
-      <a href="/app/">Explorar temas</a>
+      <a href="/">Explorar temas</a>
     </section>
   );
 }

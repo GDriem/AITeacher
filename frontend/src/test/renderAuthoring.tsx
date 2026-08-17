@@ -23,7 +23,7 @@ export function renderAuthoring() {
   });
   const router = createMemoryRouter(
     [{ path: "/", Component: AppShell, children: [{ path: "autoria", element: <AuthoringUnderTest /> }] }],
-    { basename: "/app", initialEntries: ["/app/autoria"] },
+    { initialEntries: ["/autoria"] },
   );
   const result = render(
     <QueryClientProvider client={queryClient}>
