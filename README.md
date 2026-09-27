@@ -142,6 +142,12 @@ modelo Live se seleccionan con `GEMINI_LIVE_VOICE` y `GEMINI_LIVE_MODEL`. En
 producción el sitio debe servirse por HTTPS para que el navegador permita el
 micrófono; `localhost` también se considera un contexto seguro.
 
+En Vertex AI, `GOOGLE_CLOUD_LOCATION` configura el modelo de texto y
+`GOOGLE_CLOUD_LIVE_LOCATION` el modelo de voz. Los valores predeterminados son
+`us` para `gemini-3.5-flash-lite` y `us-central1` para
+`gemini-live-2.5-flash-native-audio`, porque ambos modelos tienen distinta
+disponibilidad regional.
+
 La aplicación expone `GET /api/topics` para consultar el
 catálogo, la ruta y el estado del estudiante. La respuesta incluye
 `total_topics`, una recomendación explicada y el estado de cada tema

@@ -31,7 +31,7 @@ class GeminiLiveBridge:
             self.client = genai.Client(
                 vertexai=True,
                 project=settings.google_cloud_project,
-                location=settings.google_cloud_location,
+                location=settings.google_cloud_live_location,
             )
         else:
             self.client = genai.Client(api_key=settings.google_api_key)
@@ -151,4 +151,3 @@ class GeminiLiveBridge:
                     await websocket.send_json({"type": "turn_complete"})
             if not received_message:
                 return
-

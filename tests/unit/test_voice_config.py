@@ -34,6 +34,15 @@ def test_voice_can_be_enabled_for_gemini_without_exposing_key() -> None:
     }
 
 
+def test_vertex_text_and_live_models_use_compatible_default_locations() -> None:
+    settings = Settings(_env_file=None)
+
+    assert settings.gemini_model == "gemini-3.5-flash-lite"
+    assert settings.google_cloud_location == "us"
+    assert settings.gemini_live_model == "gemini-live-2.5-flash-native-audio"
+    assert settings.google_cloud_live_location == "us-central1"
+
+
 def test_voice_prompt_is_conversational_and_receives_bounded_session_context() -> None:
     settings = Settings(
         model_provider=ModelProviderName.GEMINI,

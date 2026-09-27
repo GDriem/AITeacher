@@ -24,9 +24,11 @@ spec:
             - name: GOOGLE_CLOUD_PROJECT
               value: PROJECT_ID
             - name: GOOGLE_CLOUD_LOCATION
+              value: us
+            - name: GOOGLE_CLOUD_LIVE_LOCATION
               value: REGION
             - name: GEMINI_MODEL
-              value: gemini-2.5-flash
+              value: gemini-3.5-flash-lite
             - name: APP_SESSIONS_BACKEND
               value: firestore
             - name: FIRESTORE_SESSIONS_COLLECTION

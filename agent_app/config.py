@@ -45,12 +45,13 @@ class Settings(BaseSettings):
     mcp_use_local_adapter: bool = True
     mcp_auth_audience: str | None = None
 
-    gemini_model: str = "gemini-2.5-flash"
-    gemini_live_model: str = "gemini-3.1-flash-live-preview"
+    gemini_model: str = "gemini-3.5-flash-lite"
+    gemini_live_model: str = "gemini-live-2.5-flash-native-audio"
     gemini_live_voice: str = "Kore"
     google_api_key: str | None = None
     google_cloud_project: str | None = None
-    google_cloud_location: str = "us-central1"
+    google_cloud_location: str = "us"
+    google_cloud_live_location: str = "us-central1"
     google_genai_use_vertexai: bool = False
 
     @property
