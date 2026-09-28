@@ -149,6 +149,8 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
 .envrc
 .venv
 env/
@@ -161,6 +163,23 @@ venv.bak/
 .data/
 output/
 tmp/
+
+# Local Google Cloud tooling, CLI state, and credentials
+/y/
+/.gcloud/
+/.config/gcloud/
+**/application_default_credentials.json
+**/gcloud/access_tokens.db
+**/gcloud/credentials.db
+**/gcloud/legacy_credentials/
+**/gcloud/configurations/config_*
+client_secret*.json
+service-account*.json
+*-service-account.json
+
+# Local Docker overrides and runtime artifacts
+/docker-compose.override.yml
+/.docker/
 
 # Spyder project settings
 .spyderproject
