@@ -227,6 +227,20 @@ GOOGLE_GENAI_USE_VERTEXAI=false
 GOOGLE_API_KEY=su-api-key
 ```
 
+Para usar Vertex AI con las credenciales locales de `gcloud`, cree ADC y use el
+archivo Compose adicional. La credencial se monta como sólo lectura y nunca se
+copia al repositorio ni a la imagen:
+
+```bash
+gcloud auth application-default login
+docker compose -f docker-compose.yml -f docker-compose.gcp.yml up --build
+```
+
+El montaje busca ADC en `$HOME/.config/gcloud/application_default_credentials.json`.
+Defina `GCP_ADC_PATH` en `.env` únicamente si el archivo vive en otra ruta. Para
+Vertex AI, configure `MODEL_PROVIDER=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true` y
+`GOOGLE_CLOUD_PROJECT`.
+
 La dirección `MCP_SERVER_URL` se configura internamente como
 `http://mcp-server:8080/mcp/`, aunque el servidor MCP se publique en el puerto
 `8001` del host.
