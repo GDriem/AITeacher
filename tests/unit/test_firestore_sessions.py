@@ -1,19 +1,23 @@
-from google.api_core.exceptions import AlreadyExists
+from datetime import UTC, datetime, timedelta
 
-from agent_app.models.chat import Quiz
+from google.api_core.exceptions import AlreadyExists, FailedPrecondition
+import pytest
+
+from agent_app.models.chat import ChatResponse, Quiz
 from agent_app.services.sessions import (
     FirestoreSessionRepository,
     PendingEvaluation,
     StoredConversation,
 )
-from mcp_learning_server.models import Topic
+from mcp_learning_server.models import LearningLevel, StudentProgress, Topic
 
 
 class FakeSnapshot:
-    def __init__(self, document, data):
+    def __init__(self, document, data, update_time=None):
         self.reference = document
         self._data = data
         self.exists = data is not None
+        self.update_time = update_time
 
     def to_dict(self):
         return self._data
@@ -27,20 +31,40 @@ class FakeDocument:
 
     def get(self):
         return FakeSnapshot(
-            self, self.client.collections[self.collection].get(self.document_id)
+            self,
+            self.client.collections[self.collection].get(self.document_id),
+            self.client.versions.get((self.collection, self.document_id)),
         )
 
-    def set(self, data):
+    def set(self, data, option=None):
+        key = (self.collection, self.document_id)
+        if (
+            option is not None
+            and option._last_update_time != self.client.versions.get(key)
+        ):
+            raise FailedPrecondition("stale write")
         self.client.collections[self.collection][self.document_id] = data
+        self.client.bump_version(key)
+
+    def update(self, data, option=None):
+        self.set(data, option=option)
 
     def create(self, data):
         collection = self.client.collections[self.collection]
         if self.document_id in collection:
             raise AlreadyExists("already exists")
         collection[self.document_id] = data
+        self.client.bump_version((self.collection, self.document_id))
 
-    def delete(self):
+    def delete(self, option=None):
+        key = (self.collection, self.document_id)
+        if (
+            option is not None
+            and option._last_update_time != self.client.versions.get(key)
+        ):
+            raise FailedPrecondition("stale delete")
         self.client.collections[self.collection].pop(self.document_id, None)
+        self.client.versions.pop(key, None)
 
 
 class FakeQuery:
@@ -52,7 +76,9 @@ class FakeQuery:
     def stream(self):
         return [
             FakeSnapshot(
-                FakeDocument(self.client, self.collection, session_id), data
+                FakeDocument(self.client, self.collection, session_id),
+                data,
+                self.client.versions.get((self.collection, session_id)),
             )
             for session_id, data in self.client.collections[self.collection].items()
             if data["student_id"] == self.value
@@ -79,6 +105,12 @@ class FakeFirestoreClient:
             "learning_sessions": {},
             "learning_sessions_chat_requests": {},
         }
+        self.versions = {}
+        self.next_version = 1
+
+    def bump_version(self, key):
+        self.versions[key] = self.next_version
+        self.next_version += 1
 
     def collection(self, name):
         assert name in self.collections
@@ -99,6 +131,24 @@ def make_session() -> StoredConversation:
                 expected_keywords=["vector", "significado"],
             ),
         ),
+    )
+
+
+def make_chat_response() -> ChatResponse:
+    return ChatResponse(
+        correlation_id="correlation-1",
+        session_id="session-1",
+        topic=Topic.EMBEDDINGS,
+        level=LearningLevel.BEGINNER,
+        answer="Los embeddings representan significado mediante vectores.",
+        sources=["lesson.md"],
+        progress=StudentProgress(student_id="student-1"),
+        quiz=Quiz(
+            question="¿Qué representa?",
+            expected_keywords=["vector", "significado"],
+        ),
+        quiz_attempt=1,
+        trace=[],
     )
 
 
@@ -137,16 +187,92 @@ def test_firestore_chat_request_claim_is_atomic_and_scoped_by_student() -> None:
     repository = FirestoreSessionRepository(FakeFirestoreClient())
 
     first = repository.claim_chat_request(
-        "browser-send-1", "student-1", "session-1"
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
     )
     retry = repository.claim_chat_request(
-        "browser-send-1", "student-1", "different-session"
+        "browser-send-1", "student-1", "different-session", "fingerprint", 60
     )
     other_student = repository.claim_chat_request(
-        "browser-send-1", "student-2", "session-2"
+        "browser-send-1", "student-2", "session-2", "fingerprint", 60
     )
 
     assert first.acquired is True
     assert retry.acquired is False
     assert retry.session_id == "session-1"
     assert other_student.acquired is True
+
+
+def test_firestore_chat_request_atomically_recovers_expired_lease() -> None:
+    now = datetime(2026, 9, 28, tzinfo=UTC)
+    repository = FirestoreSessionRepository(FakeFirestoreClient(), clock=lambda: now)
+    first = repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 30
+    )
+
+    now += timedelta(seconds=31)
+    recovered = repository.claim_chat_request(
+        "browser-send-1", "student-1", "different-session", "fingerprint", 30
+    )
+
+    assert recovered.acquired is True
+    assert recovered.session_id == "session-1"
+    assert recovered.claim_token != first.claim_token
+
+
+def test_firestore_chat_request_rejects_request_id_reuse_for_other_payload() -> None:
+    repository = FirestoreSessionRepository(FakeFirestoreClient())
+    repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint-1", 60
+    )
+
+    with pytest.raises(ValueError, match="mensaje o una sesión diferente"):
+        repository.claim_chat_request(
+            "browser-send-1", "student-1", "session-1", "fingerprint-2", 60
+        )
+
+
+def test_firestore_chat_request_fences_previous_lease_owner() -> None:
+    now = datetime(2026, 9, 28, tzinfo=UTC)
+    repository = FirestoreSessionRepository(FakeFirestoreClient(), clock=lambda: now)
+    first = repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 30
+    )
+    now += timedelta(seconds=31)
+    recovered = repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 30
+    )
+    response = make_chat_response()
+
+    with pytest.raises(PermissionError, match="lease"):
+        repository.complete_chat_request(
+            "browser-send-1",
+            "student-1",
+            first.claim_token or "",
+            response,
+        )
+    repository.complete_chat_request(
+        "browser-send-1",
+        "student-1",
+        recovered.claim_token or "",
+        response,
+    )
+
+    record = repository.get_chat_request("browser-send-1", "student-1")
+    assert record is not None
+    assert record.response == response
+
+
+def test_firestore_chat_request_reconciles_persisted_session_response() -> None:
+    repository = FirestoreSessionRepository(FakeFirestoreClient())
+    repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+    response = make_chat_response()
+
+    repository.reconcile_chat_request(
+        "browser-send-1", "student-1", response
+    )
+
+    record = repository.get_chat_request("browser-send-1", "student-1")
+    assert record is not None
+    assert record.response == response

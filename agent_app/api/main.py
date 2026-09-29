@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import logging
 import secrets
 import time
@@ -81,6 +83,7 @@ from agent_app.services.authoring import (
     RemoteAuthoringGateway,
 )
 from agent_app.services.sessions import (
+    ChatRequestLeaseLost,
     ChatRequestStatus,
     ConversationDetail,
     ConversationListResponse,
@@ -104,6 +107,38 @@ logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parents[1] / "static"
 REACT_DIST_DIR = Path(__file__).parents[2] / "frontend" / "dist"
 AUTH_COOKIE_NAME = "ait_session"
+
+
+def _chat_request_fingerprint(payload: ChatRequest) -> str:
+    canonical = json.dumps(
+        {"message": payload.message, "session_id": payload.session_id},
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _reconcile_persisted_chat_response(
+    sessions: SessionRepository,
+    request_id: str,
+    student_id: str,
+    session_id: str,
+) -> ChatResponse | None:
+    try:
+        session = sessions.get(session_id, student_id)
+    except KeyError:
+        return None
+    response = session.completed_chat_requests.get(request_id)
+    if response is None:
+        return None
+    try:
+        sessions.reconcile_chat_request(request_id, student_id, response)
+    except KeyError:
+        # El dueño puede haber liberado el claim entre la lectura de la sesión
+        # y la reconciliación. La respuesta persistida sigue siendo autoritativa.
+        pass
+    return response
 
 
 def build_session_repository(settings: Settings) -> SessionRepository:
@@ -758,14 +793,35 @@ def create_app(
                         f"ait-chat:{payload.student_id}:{payload.request_id}",
                     )
                 )
+                request_fingerprint = _chat_request_fingerprint(payload)
+                lease_seconds = max(
+                    60.0,
+                    settings.model_timeout_seconds
+                    + (2 * settings.mcp_timeout_seconds)
+                    + 30.0,
+                )
                 claim = sessions.claim_chat_request(
-                    payload.request_id, payload.student_id, session_id
+                    payload.request_id,
+                    payload.student_id,
+                    session_id,
+                    request_fingerprint,
+                    lease_seconds,
                 )
                 if claim.response is not None:
                     result = claim.response
                 elif not claim.acquired:
+                    recovered = _reconcile_persisted_chat_response(
+                        sessions,
+                        payload.request_id,
+                        payload.student_id,
+                        claim.session_id,
+                    )
+                    if recovered is not None:
+                        result = recovered
+                    else:
+                        result = None
                     deadline = time.monotonic() + settings.model_timeout_seconds + 5
-                    while time.monotonic() < deadline:
+                    while result is None and time.monotonic() < deadline:
                         await asyncio.sleep(0.05)
                         record = sessions.get_chat_request(
                             payload.request_id, payload.student_id
@@ -777,7 +833,16 @@ def create_app(
                         ):
                             result = record.response
                             break
-                    else:
+                        recovered = _reconcile_persisted_chat_response(
+                            sessions,
+                            payload.request_id,
+                            payload.student_id,
+                            claim.session_id,
+                        )
+                        if recovered is not None:
+                            result = recovered
+                            break
+                    if result is None:
                         raise HTTPException(
                             status_code=409,
                             detail=(
@@ -786,6 +851,8 @@ def create_app(
                             ),
                         )
                 else:
+                    if claim.claim_token is None:
+                        raise RuntimeError("El claim adquirido no contiene token")
                     idempotent_payload = payload.model_copy(
                         update={"session_id": claim.session_id}
                     )
@@ -795,12 +862,26 @@ def create_app(
                             correlation_id,
                             create_session_if_missing=creates_session,
                         )
-                        sessions.complete_chat_request(
-                            payload.request_id, payload.student_id, result
-                        )
+                        try:
+                            sessions.complete_chat_request(
+                                payload.request_id,
+                                payload.student_id,
+                                claim.claim_token,
+                                result,
+                            )
+                        except ChatRequestLeaseLost:
+                            # El lease expiró y otro proceso reclamó la solicitud.
+                            # El orquestador ya persistió la respuesta en la sesión,
+                            # así que devolverla es correcto y evita un 403 espurio.
+                            logger.warning(
+                                "chat_lease_lost",
+                                extra={"correlation_id": correlation_id},
+                            )
                     except BaseException:
                         sessions.release_chat_request(
-                            payload.request_id, payload.student_id
+                            payload.request_id,
+                            payload.student_id,
+                            claim.claim_token,
                         )
                         raise
         logger.info("chat_completed", extra={"correlation_id": correlation_id})

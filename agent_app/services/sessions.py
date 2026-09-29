@@ -7,6 +7,7 @@ import os
 import tempfile
 import threading
 import uuid
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
@@ -73,7 +74,10 @@ class ChatRequestRecord(SessionModel):
     request_id: str
     student_id: str
     session_id: str
+    request_fingerprint: str = ""
     status: ChatRequestStatus = ChatRequestStatus.PENDING
+    claim_token: str | None = None
+    lease_expires_at: datetime | None = None
     response: ChatResponse | None = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
@@ -82,6 +86,7 @@ class ChatRequestRecord(SessionModel):
 class ChatRequestClaim(SessionModel):
     acquired: bool
     session_id: str
+    claim_token: str | None = None
     response: ChatResponse | None = None
 
 
@@ -138,7 +143,12 @@ class SessionRepository(Protocol):
     def delete(self, session_id: str, student_id: str) -> None: ...
 
     def claim_chat_request(
-        self, request_id: str, student_id: str, session_id: str
+        self,
+        request_id: str,
+        student_id: str,
+        session_id: str,
+        request_fingerprint: str,
+        lease_seconds: float,
     ) -> ChatRequestClaim: ...
 
     def get_chat_request(
@@ -146,10 +156,29 @@ class SessionRepository(Protocol):
     ) -> ChatRequestRecord | None: ...
 
     def complete_chat_request(
+        self,
+        request_id: str,
+        student_id: str,
+        claim_token: str,
+        response: ChatResponse,
+    ) -> None: ...
+
+    def reconcile_chat_request(
         self, request_id: str, student_id: str, response: ChatResponse
     ) -> None: ...
 
-    def release_chat_request(self, request_id: str, student_id: str) -> None: ...
+    def release_chat_request(
+        self, request_id: str, student_id: str, claim_token: str
+    ) -> None: ...
+
+
+class ChatRequestLeaseLost(PermissionError):
+    """El lease de una solicitud de chat expiró y otro proceso la reclamó.
+
+    Hereda de `PermissionError` para conservar la respuesta 403 de la API
+    cuando nadie la trata de forma explícita, pero permite distinguirla de un
+    intento real de acceder a la solicitud de otro estudiante.
+    """
 
 
 class SessionRepositoryError(RuntimeError):
@@ -245,32 +274,60 @@ class LocalSessionRepository:
             self._write_all(sessions)
 
     def claim_chat_request(
-        self, request_id: str, student_id: str, session_id: str
+        self,
+        request_id: str,
+        student_id: str,
+        session_id: str,
+        request_fingerprint: str,
+        lease_seconds: float,
     ) -> ChatRequestClaim:
         normalized_student = _validate_student_id(student_id)
         storage_key = _chat_request_storage_key(normalized_student, request_id)
-        with self._lock:
+        now = self._clock()
+        with self._chat_requests_lock():
             requests = self._read_chat_requests()
             existing = requests.get(storage_key)
             if existing is not None:
                 _authorize_chat_request(existing, normalized_student)
+                _validate_chat_request_fingerprint(existing, request_fingerprint)
+                if (
+                    existing.status == ChatRequestStatus.PENDING
+                    and _lease_expired(existing, now)
+                ):
+                    existing.claim_token = str(uuid.uuid4())
+                    existing.lease_expires_at = now + timedelta(seconds=lease_seconds)
+                    existing.updated_at = now
+                    if not existing.request_fingerprint:
+                        existing.request_fingerprint = request_fingerprint
+                    self._write_chat_requests(requests)
+                    return ChatRequestClaim(
+                        acquired=True,
+                        session_id=existing.session_id,
+                        claim_token=existing.claim_token,
+                    )
                 return ChatRequestClaim(
                     acquired=False,
                     session_id=existing.session_id,
                     response=existing.response,
                 )
+            claim_token = str(uuid.uuid4())
             requests[storage_key] = ChatRequestRecord(
                 request_id=request_id,
                 student_id=normalized_student,
                 session_id=session_id,
+                request_fingerprint=request_fingerprint,
+                claim_token=claim_token,
+                lease_expires_at=now + timedelta(seconds=lease_seconds),
             )
             self._write_chat_requests(requests)
-            return ChatRequestClaim(acquired=True, session_id=session_id)
+            return ChatRequestClaim(
+                acquired=True, session_id=session_id, claim_token=claim_token
+            )
 
     def get_chat_request(
         self, request_id: str, student_id: str
     ) -> ChatRequestRecord | None:
-        with self._lock:
+        with self._chat_requests_lock():
             record = self._read_chat_requests().get(
                 _chat_request_storage_key(student_id, request_id)
             )
@@ -280,21 +337,40 @@ class LocalSessionRepository:
             return record.model_copy(deep=True)
 
     def complete_chat_request(
-        self, request_id: str, student_id: str, response: ChatResponse
+        self,
+        request_id: str,
+        student_id: str,
+        claim_token: str,
+        response: ChatResponse,
     ) -> None:
-        with self._lock:
+        with self._chat_requests_lock():
             requests = self._read_chat_requests()
             record = requests.get(_chat_request_storage_key(student_id, request_id))
             if record is None:
                 raise KeyError("No existe la solicitud de chat")
             _authorize_chat_request(record, _validate_student_id(student_id))
-            record.status = ChatRequestStatus.COMPLETED
-            record.response = response
-            record.updated_at = self._clock()
+            if record.status == ChatRequestStatus.COMPLETED:
+                return
+            _authorize_chat_request_claim(record, claim_token)
+            _complete_chat_request_record(record, response, self._clock())
             self._write_chat_requests(requests)
 
-    def release_chat_request(self, request_id: str, student_id: str) -> None:
-        with self._lock:
+    def reconcile_chat_request(
+        self, request_id: str, student_id: str, response: ChatResponse
+    ) -> None:
+        with self._chat_requests_lock():
+            requests = self._read_chat_requests()
+            record = requests.get(_chat_request_storage_key(student_id, request_id))
+            if record is None:
+                raise KeyError("No existe la solicitud de chat")
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            _complete_chat_request_record(record, response, self._clock())
+            self._write_chat_requests(requests)
+
+    def release_chat_request(
+        self, request_id: str, student_id: str, claim_token: str
+    ) -> None:
+        with self._chat_requests_lock():
             requests = self._read_chat_requests()
             storage_key = _chat_request_storage_key(student_id, request_id)
             record = requests.get(storage_key)
@@ -302,8 +378,29 @@ class LocalSessionRepository:
                 return
             _authorize_chat_request(record, _validate_student_id(student_id))
             if record.status == ChatRequestStatus.PENDING:
+                if record.claim_token != claim_token:
+                    return
                 del requests[storage_key]
                 self._write_chat_requests(requests)
+
+    @contextmanager
+    def _chat_requests_lock(self):
+        lock_path = self.chat_requests_path.with_suffix(
+            f"{self.chat_requests_path.suffix}.lock"
+        )
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with self._lock, lock_path.open("a+") as lock_file:
+            try:
+                import fcntl
+            except ImportError:  # pragma: no cover - Windows usa el lock del proceso
+                yield
+                return
+
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     def _read_chat_requests(self) -> dict[str, ChatRequestRecord]:
         if not self.chat_requests_path.exists():
@@ -440,24 +537,52 @@ class InMemorySessionRepository:
             del self._items[session_id]
 
     def claim_chat_request(
-        self, request_id: str, student_id: str, session_id: str
+        self,
+        request_id: str,
+        student_id: str,
+        session_id: str,
+        request_fingerprint: str,
+        lease_seconds: float,
     ) -> ChatRequestClaim:
         with self._lock:
             storage_key = _chat_request_storage_key(student_id, request_id)
             existing = self._chat_requests.get(storage_key)
             if existing is not None:
                 _authorize_chat_request(existing, _validate_student_id(student_id))
+                _validate_chat_request_fingerprint(existing, request_fingerprint)
+                if (
+                    existing.status == ChatRequestStatus.PENDING
+                    and _lease_expired(existing, utc_now())
+                ):
+                    existing.claim_token = str(uuid.uuid4())
+                    existing.lease_expires_at = utc_now() + timedelta(
+                        seconds=lease_seconds
+                    )
+                    existing.updated_at = utc_now()
+                    if not existing.request_fingerprint:
+                        existing.request_fingerprint = request_fingerprint
+                    return ChatRequestClaim(
+                        acquired=True,
+                        session_id=existing.session_id,
+                        claim_token=existing.claim_token,
+                    )
                 return ChatRequestClaim(
                     acquired=False,
                     session_id=existing.session_id,
                     response=existing.response,
                 )
+            claim_token = str(uuid.uuid4())
             self._chat_requests[storage_key] = ChatRequestRecord(
                 request_id=request_id,
                 student_id=_validate_student_id(student_id),
                 session_id=session_id,
+                request_fingerprint=request_fingerprint,
+                claim_token=claim_token,
+                lease_expires_at=utc_now() + timedelta(seconds=lease_seconds),
             )
-            return ChatRequestClaim(acquired=True, session_id=session_id)
+            return ChatRequestClaim(
+                acquired=True, session_id=session_id, claim_token=claim_token
+            )
 
     def get_chat_request(
         self, request_id: str, student_id: str
@@ -472,6 +597,23 @@ class InMemorySessionRepository:
             return record.model_copy(deep=True)
 
     def complete_chat_request(
+        self,
+        request_id: str,
+        student_id: str,
+        claim_token: str,
+        response: ChatResponse,
+    ) -> None:
+        with self._lock:
+            record = self._chat_requests[
+                _chat_request_storage_key(student_id, request_id)
+            ]
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            if record.status == ChatRequestStatus.COMPLETED:
+                return
+            _authorize_chat_request_claim(record, claim_token)
+            _complete_chat_request_record(record, response, utc_now())
+
+    def reconcile_chat_request(
         self, request_id: str, student_id: str, response: ChatResponse
     ) -> None:
         with self._lock:
@@ -479,11 +621,11 @@ class InMemorySessionRepository:
                 _chat_request_storage_key(student_id, request_id)
             ]
             _authorize_chat_request(record, _validate_student_id(student_id))
-            record.status = ChatRequestStatus.COMPLETED
-            record.response = response
-            record.updated_at = utc_now()
+            _complete_chat_request_record(record, response, utc_now())
 
-    def release_chat_request(self, request_id: str, student_id: str) -> None:
+    def release_chat_request(
+        self, request_id: str, student_id: str, claim_token: str
+    ) -> None:
         with self._lock:
             storage_key = _chat_request_storage_key(student_id, request_id)
             record = self._chat_requests.get(storage_key)
@@ -491,6 +633,8 @@ class InMemorySessionRepository:
                 return
             _authorize_chat_request(record, _validate_student_id(student_id))
             if record.status == ChatRequestStatus.PENDING:
+                if record.claim_token != claim_token:
+                    return
                 del self._chat_requests[storage_key]
 
 
@@ -572,28 +716,81 @@ class FirestoreSessionRepository:
         self._document(session_id).delete()
 
     def claim_chat_request(
-        self, request_id: str, student_id: str, session_id: str
+        self,
+        request_id: str,
+        student_id: str,
+        session_id: str,
+        request_fingerprint: str,
+        lease_seconds: float,
     ) -> ChatRequestClaim:
-        from google.api_core.exceptions import AlreadyExists
+        from google.api_core.exceptions import (
+            AlreadyExists,
+            FailedPrecondition,
+            NotFound,
+        )
+        from google.cloud.firestore_v1 import LastUpdateOption
 
         document = self._chat_request_document(student_id, request_id)
+        now = self._clock()
+        claim_token = str(uuid.uuid4())
         record = ChatRequestRecord(
             request_id=request_id,
             student_id=_validate_student_id(student_id),
             session_id=session_id,
+            request_fingerprint=request_fingerprint,
+            claim_token=claim_token,
+            lease_expires_at=now + timedelta(seconds=lease_seconds),
         )
         try:
             document.create(record.model_dump(mode="json"))
-            return ChatRequestClaim(acquired=True, session_id=session_id)
+            return ChatRequestClaim(
+                acquired=True, session_id=session_id, claim_token=claim_token
+            )
         except AlreadyExists:
+            pass
+
+        for _ in range(5):
             snapshot = document.get()
+            if not snapshot.exists:
+                try:
+                    document.create(record.model_dump(mode="json"))
+                    return ChatRequestClaim(
+                        acquired=True,
+                        session_id=session_id,
+                        claim_token=claim_token,
+                    )
+                except AlreadyExists:
+                    continue
             existing = ChatRequestRecord.model_validate(snapshot.to_dict())
             _authorize_chat_request(existing, record.student_id)
-            return ChatRequestClaim(
-                acquired=False,
-                session_id=existing.session_id,
-                response=existing.response,
-            )
+            _validate_chat_request_fingerprint(existing, request_fingerprint)
+            if (
+                existing.status != ChatRequestStatus.PENDING
+                or not _lease_expired(existing, now)
+            ):
+                return ChatRequestClaim(
+                    acquired=False,
+                    session_id=existing.session_id,
+                    response=existing.response,
+                )
+            existing.claim_token = claim_token
+            existing.lease_expires_at = now + timedelta(seconds=lease_seconds)
+            existing.updated_at = now
+            if not existing.request_fingerprint:
+                existing.request_fingerprint = request_fingerprint
+            try:
+                document.update(
+                    _serialize_chat_request(existing),
+                    option=LastUpdateOption(snapshot.update_time),
+                )
+                return ChatRequestClaim(
+                    acquired=True,
+                    session_id=existing.session_id,
+                    claim_token=claim_token,
+                )
+            except (FailedPrecondition, NotFound):
+                continue
+        raise SessionRepositoryError("No se pudo reclamar la solicitud de chat")
 
     def get_chat_request(
         self, request_id: str, student_id: str
@@ -606,22 +803,81 @@ class FirestoreSessionRepository:
         return record
 
     def complete_chat_request(
+        self,
+        request_id: str,
+        student_id: str,
+        claim_token: str,
+        response: ChatResponse,
+    ) -> None:
+        from google.api_core.exceptions import FailedPrecondition, NotFound
+        from google.cloud.firestore_v1 import LastUpdateOption
+
+        document = self._chat_request_document(student_id, request_id)
+        for _ in range(5):
+            snapshot = document.get()
+            if not snapshot.exists:
+                raise KeyError("No existe la solicitud de chat")
+            record = ChatRequestRecord.model_validate(snapshot.to_dict())
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            if record.status == ChatRequestStatus.COMPLETED:
+                return
+            _authorize_chat_request_claim(record, claim_token)
+            _complete_chat_request_record(record, response, self._clock())
+            try:
+                document.update(
+                    _serialize_chat_request(record),
+                    option=LastUpdateOption(snapshot.update_time),
+                )
+                return
+            except (FailedPrecondition, NotFound):
+                continue
+        raise SessionRepositoryError("No se pudo completar la solicitud de chat")
+
+    def reconcile_chat_request(
         self, request_id: str, student_id: str, response: ChatResponse
     ) -> None:
-        record = self.get_chat_request(request_id, student_id)
-        if record is None:
-            raise KeyError("No existe la solicitud de chat")
-        record.status = ChatRequestStatus.COMPLETED
-        record.response = response
-        record.updated_at = self._clock()
-        self._chat_request_document(student_id, request_id).set(
-            _serialize_chat_request(record)
-        )
+        from google.api_core.exceptions import FailedPrecondition, NotFound
+        from google.cloud.firestore_v1 import LastUpdateOption
 
-    def release_chat_request(self, request_id: str, student_id: str) -> None:
-        record = self.get_chat_request(request_id, student_id)
-        if record is not None and record.status == ChatRequestStatus.PENDING:
-            self._chat_request_document(student_id, request_id).delete()
+        document = self._chat_request_document(student_id, request_id)
+        for _ in range(5):
+            snapshot = document.get()
+            if not snapshot.exists:
+                raise KeyError("No existe la solicitud de chat")
+            record = ChatRequestRecord.model_validate(snapshot.to_dict())
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            if record.status == ChatRequestStatus.COMPLETED:
+                return
+            _complete_chat_request_record(record, response, self._clock())
+            try:
+                document.update(
+                    _serialize_chat_request(record),
+                    option=LastUpdateOption(snapshot.update_time),
+                )
+                return
+            except (FailedPrecondition, NotFound):
+                continue
+        raise SessionRepositoryError("No se pudo reconciliar la solicitud de chat")
+
+    def release_chat_request(
+        self, request_id: str, student_id: str, claim_token: str
+    ) -> None:
+        from google.api_core.exceptions import FailedPrecondition, NotFound
+        from google.cloud.firestore_v1 import LastUpdateOption
+
+        document = self._chat_request_document(student_id, request_id)
+        snapshot = document.get()
+        if not snapshot.exists:
+            return
+        record = ChatRequestRecord.model_validate(snapshot.to_dict())
+        _authorize_chat_request(record, _validate_student_id(student_id))
+        if record.status == ChatRequestStatus.PENDING:
+            if record.claim_token != claim_token:
+                return
+            try:
+                document.delete(option=LastUpdateOption(snapshot.update_time))
+            except (FailedPrecondition, NotFound):
+                return
 
     def _document(self, session_id: str):
         return self.client.collection(self.collection).document(session_id)
@@ -732,6 +988,44 @@ def _authorize(session: StoredConversation, student_id: str) -> None:
 def _authorize_chat_request(record: ChatRequestRecord, student_id: str) -> None:
     if record.student_id != student_id:
         raise PermissionError("La solicitud de chat pertenece a otro estudiante")
+
+
+def _validate_chat_request_fingerprint(
+    record: ChatRequestRecord, request_fingerprint: str
+) -> None:
+    if (
+        record.request_fingerprint
+        and record.request_fingerprint != request_fingerprint
+    ):
+        raise ValueError(
+            "request_id ya fue utilizado con un mensaje o una sesión diferente"
+        )
+
+
+def _authorize_chat_request_claim(
+    record: ChatRequestRecord, claim_token: str
+) -> None:
+    if record.claim_token != claim_token:
+        raise ChatRequestLeaseLost(
+            "El lease de la solicitud de chat ya no pertenece al proceso"
+        )
+
+
+def _lease_expired(record: ChatRequestRecord, now: datetime) -> bool:
+    return (
+        record.lease_expires_at is None
+        or _as_utc(record.lease_expires_at) <= _as_utc(now)
+    )
+
+
+def _complete_chat_request_record(
+    record: ChatRequestRecord, response: ChatResponse, now: datetime
+) -> None:
+    record.status = ChatRequestStatus.COMPLETED
+    record.response = response
+    record.claim_token = None
+    record.lease_expires_at = None
+    record.updated_at = now
 
 
 def _chat_request_storage_key(student_id: str, request_id: str) -> str:
