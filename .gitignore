@@ -149,6 +149,8 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
 .envrc
 .venv
 env/
@@ -161,6 +163,23 @@ venv.bak/
 .data/
 output/
 tmp/
+
+# Local Google Cloud tooling, CLI state, and credentials
+/y/
+/.gcloud/
+/.config/gcloud/
+**/application_default_credentials.json
+**/gcloud/access_tokens.db
+**/gcloud/credentials.db
+**/gcloud/legacy_credentials/
+**/gcloud/configurations/config_*
+client_secret*.json
+service-account*.json
+*-service-account.json
+
+# Local Docker overrides and runtime artifacts
+/docker-compose.override.yml
+/.docker/
 
 # Spyder project settings
 .spyderproject
@@ -226,3 +245,26 @@ __marimo__/
 /docs/*
 !/docs/english-curriculum.md
 !/docs/google-auth-student-profiles-plan.md
+!/docs/react-frontend-migration-plan.md
+
+# React frontend build and test artifacts
+/frontend/node_modules/
+/frontend/dist/
+/frontend/coverage/
+/frontend/playwright-report/
+/frontend/test-results/
+/frontend/.vite/
+/frontend/.eslintcache
+/frontend/*.tsbuildinfo
+
+# Node.js package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# pnpm local stores
+/.pnpm/
+/frontend/.pnpm/
+/.pnpm-store/
+/frontend/.pnpm-store-local/

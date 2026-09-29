@@ -2,7 +2,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from agent_app.config import ModelProviderName, Settings
+from agent_app.config import (
+    DEVELOPER_GEMINI_LIVE_MODEL,
+    VERTEX_GEMINI_LIVE_MODEL,
+    ModelProviderName,
+    Settings,
+)
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
 from agent_app.services.learning_tools import RemoteMcpLearningTools
 
@@ -23,10 +28,12 @@ def test_voice_is_disabled_by_default_without_credentials(monkeypatch) -> None:
 
 def test_voice_can_be_enabled_for_gemini_without_exposing_key() -> None:
     settings = Settings(
+        _env_file=None,
         model_provider=ModelProviderName.GEMINI,
         google_api_key="test-only-key",
     )
     assert settings.voice_enabled is True
+    assert settings.resolved_gemini_live_model == DEVELOPER_GEMINI_LIVE_MODEL
     assert "google_api_key" not in {
         "text": True,
         "voice": settings.voice_enabled,
@@ -34,8 +41,81 @@ def test_voice_can_be_enabled_for_gemini_without_exposing_key() -> None:
     }
 
 
+def test_vertex_text_and_live_models_use_compatible_default_locations() -> None:
+    settings = Settings(_env_file=None, google_genai_use_vertexai=True)
+
+    assert settings.gemini_model == "gemini-3.5-flash-lite"
+    assert settings.google_cloud_location == "us"
+    assert settings.resolved_gemini_live_model == VERTEX_GEMINI_LIVE_MODEL
+    assert settings.google_cloud_live_location == "us-central1"
+
+
+def test_voice_is_disabled_when_vertex_project_is_missing() -> None:
+    settings = Settings(
+        _env_file=None,
+        model_provider=ModelProviderName.GEMINI,
+        google_genai_use_vertexai=True,
+    )
+
+    assert settings.voice_enabled is False
+
+
+@pytest.mark.parametrize(
+    ("use_vertex", "credentials"),
+    [(False, {"google_api_key": "   "}), (True, {"google_cloud_project": "   "})],
+)
+def test_voice_is_disabled_when_credentials_are_blank(
+    use_vertex: bool, credentials: dict[str, str]
+) -> None:
+    settings = Settings(
+        _env_file=None,
+        model_provider=ModelProviderName.GEMINI,
+        google_genai_use_vertexai=use_vertex,
+        **credentials,
+    )
+
+    assert settings.voice_enabled is False
+
+
+@pytest.mark.parametrize("use_vertex", [False, True])
+def test_explicit_live_model_overrides_backend_default(use_vertex: bool) -> None:
+    settings = Settings(
+        _env_file=None,
+        google_genai_use_vertexai=use_vertex,
+        gemini_live_model="gemini-live-custom-release",
+    )
+
+    assert settings.resolved_gemini_live_model == "gemini-live-custom-release"
+
+
+def test_bridge_uses_developer_api_default_with_api_key() -> None:
+    bridge = GeminiLiveBridge(
+        Settings(
+            _env_file=None,
+            model_provider=ModelProviderName.GEMINI,
+            google_api_key="test-only-key",
+        )
+    )
+
+    assert bridge.model == DEVELOPER_GEMINI_LIVE_MODEL
+
+
+def test_bridge_uses_vertex_default_with_cloud_project() -> None:
+    bridge = GeminiLiveBridge(
+        Settings(
+            _env_file=None,
+            model_provider=ModelProviderName.GEMINI,
+            google_genai_use_vertexai=True,
+            google_cloud_project="test-project",
+        )
+    )
+
+    assert bridge.model == VERTEX_GEMINI_LIVE_MODEL
+
+
 def test_voice_prompt_is_conversational_and_receives_bounded_session_context() -> None:
     settings = Settings(
+        _env_file=None,
         model_provider=ModelProviderName.GEMINI,
         google_api_key="test-only-key",
     )

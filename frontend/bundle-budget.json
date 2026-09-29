@@ -1,0 +1,40 @@
+{
+  "$schema": "Presupuestos de carga en KB gzip, por grupo de chunk. La línea base se midió en R9 (docs/react-frontend-migration-plan.md).",
+  "groups": {
+    "core": {
+      "description": "Vendor + shell compartido por todas las rutas (siempre descargado).",
+      "chunks": ["index", "compiler-runtime", "catalogQueries", "catalogLabels", "googleIdentity"],
+      "budgetKb": 180
+    },
+    "catalogRoute": {
+      "description": "Catálogo de temas (/), ruta por defecto.",
+      "chunks": ["CatalogRoute"],
+      "budgetKb": 16
+    },
+    "projectsRoute": {
+      "description": "Proyectos integradores (/proyectos).",
+      "chunks": ["ProjectsRoute"],
+      "budgetKb": 14
+    },
+    "tutorRoute": {
+      "description": "Tutor, evaluación, práctica, progreso y salud (/tutor).",
+      "chunks": ["TutorRoute"],
+      "budgetKb": 30
+    },
+    "authoringRoute": {
+      "description": "Mesa editorial y editor de lecciones (/autoria).",
+      "chunks": ["AuthoringRoute", "LessonEditor"],
+      "budgetKb": 24
+    },
+    "voice": {
+      "description": "Voz en tiempo real, sólo se descarga al activarla.",
+      "chunks": ["VoiceSessionDialog"],
+      "budgetKb": 14
+    },
+    "markdownShared": {
+      "description": "Renderer Markdown compartido por tutor y vista previa de autoría.",
+      "chunks": ["TutorMarkdown"],
+      "budgetKb": 70
+    }
+  }
+}

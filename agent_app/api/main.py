@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import logging
 import secrets
 import time
@@ -73,12 +75,16 @@ from agent_app.services.auth import (
     SessionSigner,
     StudentProfileRepository,
 )
+from agent_app.models.capabilities import AppCapabilities
+from agent_app.models.observability import ObservabilitySnapshot
 from agent_app.services.authoring import (
     AuthoringGateway,
     LocalAuthoringGateway,
     RemoteAuthoringGateway,
 )
 from agent_app.services.sessions import (
+    ChatRequestLeaseLost,
+    ChatRequestStatus,
     ConversationDetail,
     ConversationListResponse,
     FirestoreSessionRepository,
@@ -99,7 +105,40 @@ from mcp_learning_server.server import build_learning_service
 
 logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parents[1] / "static"
+REACT_DIST_DIR = Path(__file__).parents[2] / "frontend" / "dist"
 AUTH_COOKIE_NAME = "ait_session"
+
+
+def _chat_request_fingerprint(payload: ChatRequest) -> str:
+    canonical = json.dumps(
+        {"message": payload.message, "session_id": payload.session_id},
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _reconcile_persisted_chat_response(
+    sessions: SessionRepository,
+    request_id: str,
+    student_id: str,
+    session_id: str,
+) -> ChatResponse | None:
+    try:
+        session = sessions.get(session_id, student_id)
+    except KeyError:
+        return None
+    response = session.completed_chat_requests.get(request_id)
+    if response is None:
+        return None
+    try:
+        sessions.reconcile_chat_request(request_id, student_id, response)
+    except KeyError:
+        # El dueño puede haber liberado el claim entre la lectura de la sesión
+        # y la reconciliación. La respuesta persistida sigue siendo autoritativa.
+        pass
+    return response
 
 
 def build_session_repository(settings: Settings) -> SessionRepository:
@@ -252,6 +291,11 @@ def create_app(
     app.state.observability = observability
     app.state.auth_service = auth_service
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    app.mount(
+        "/assets",
+        StaticFiles(directory=REACT_DIST_DIR / "assets", check_dir=False),
+        name="react-assets",
+    )
 
     @app.middleware("http")
     async def correlation_middleware(request: Request, call_next):
@@ -263,7 +307,7 @@ def create_app(
         except Exception:
             duration_ms = (time.perf_counter() - started) * 1_000
             route = getattr(request.scope.get("route"), "path", "<unmatched>")
-            if not request.url.path.startswith("/static/"):
+            if not request.url.path.startswith(("/static/", "/assets/")):
                 observability.record_http(
                     method=request.method,
                     route=route,
@@ -283,7 +327,7 @@ def create_app(
             raise
         duration_ms = (time.perf_counter() - started) * 1_000
         route = getattr(request.scope.get("route"), "path", "<unmatched>")
-        if not request.url.path.startswith("/static/"):
+        if not request.url.path.startswith(("/static/", "/assets/")):
             observability.record_http(
                 method=request.method,
                 route=route,
@@ -300,12 +344,19 @@ def create_app(
                 "duration_ms": round(duration_ms, 2),
             },
         )
-        if request.url.path.startswith("/static/"):
+        if request.url.path.startswith("/assets/") and response.status_code == 200:
+            response.headers.setdefault(
+                "cache-control",
+                "public, max-age=31536000, immutable",
+            )
+        elif request.url.path.startswith("/static/"):
             response.headers.setdefault(
                 "cache-control",
                 "public, max-age=3600, stale-while-revalidate=86400",
             )
-        elif request.url.path == "/":
+        elif not request.url.path.startswith(
+            ("/api/", "/ws/", "/healthz", "/readyz")
+        ):
             response.headers.setdefault("cache-control", "no-cache")
         response.headers.setdefault("x-content-type-options", "nosniff")
         response.headers.setdefault(
@@ -380,18 +431,20 @@ def create_app(
             "mcp_mode": "local" if settings.mcp_use_local_adapter else "remote",
         }
 
-    @app.get("/api/observability")
+    @app.get("/api/observability", response_model=ObservabilitySnapshot)
     async def observability_summary() -> dict:
         return observability.snapshot()
 
-    @app.get("/api/capabilities")
-    async def capabilities() -> dict:
-        return {
-            "text": True,
-            "voice": settings.voice_enabled,
-            "voice_model": settings.gemini_live_model if settings.voice_enabled else None,
-            "authoring": bool(settings.app_authoring_token and authoring),
-        }
+    @app.get("/api/capabilities", response_model=AppCapabilities)
+    async def capabilities() -> AppCapabilities:
+        return AppCapabilities(
+            text=True,
+            voice=settings.voice_enabled,
+            voice_model=(
+                settings.resolved_gemini_live_model if settings.voice_enabled else None
+            ),
+            authoring=bool(settings.app_authoring_token and authoring),
+        )
 
     def authenticated_profile(request: Request):
         if auth_service is None:
@@ -722,19 +775,115 @@ def create_app(
             except RuntimeError:
                 pass
 
-    @app.get("/", include_in_schema=False)
-    async def index() -> FileResponse:
-        return FileResponse(STATIC_DIR / "index.html")
-
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
+        creates_session = payload.session_id is None
         payload = payload.model_copy(
             update={"student_id": resolve_student_id(request, payload.student_id)}
         )
         correlation_id = request.state.correlation_id
         logger.info("chat_started", extra={"correlation_id": correlation_id})
         with observability.activity("guided_explanation"):
-            result = await orchestrator.chat(payload, correlation_id)
+            if payload.request_id is None:
+                result = await orchestrator.chat(payload, correlation_id)
+            else:
+                session_id = payload.session_id or str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_URL,
+                        f"ait-chat:{payload.student_id}:{payload.request_id}",
+                    )
+                )
+                request_fingerprint = _chat_request_fingerprint(payload)
+                lease_seconds = max(
+                    60.0,
+                    settings.model_timeout_seconds
+                    + (2 * settings.mcp_timeout_seconds)
+                    + 30.0,
+                )
+                claim = sessions.claim_chat_request(
+                    payload.request_id,
+                    payload.student_id,
+                    session_id,
+                    request_fingerprint,
+                    lease_seconds,
+                )
+                if claim.response is not None:
+                    result = claim.response
+                elif not claim.acquired:
+                    recovered = _reconcile_persisted_chat_response(
+                        sessions,
+                        payload.request_id,
+                        payload.student_id,
+                        claim.session_id,
+                    )
+                    if recovered is not None:
+                        result = recovered
+                    else:
+                        result = None
+                    deadline = time.monotonic() + settings.model_timeout_seconds + 5
+                    while result is None and time.monotonic() < deadline:
+                        await asyncio.sleep(0.05)
+                        record = sessions.get_chat_request(
+                            payload.request_id, payload.student_id
+                        )
+                        if (
+                            record is not None
+                            and record.status == ChatRequestStatus.COMPLETED
+                            and record.response is not None
+                        ):
+                            result = record.response
+                            break
+                        recovered = _reconcile_persisted_chat_response(
+                            sessions,
+                            payload.request_id,
+                            payload.student_id,
+                            claim.session_id,
+                        )
+                        if recovered is not None:
+                            result = recovered
+                            break
+                    if result is None:
+                        raise HTTPException(
+                            status_code=409,
+                            detail=(
+                                "El envío original sigue procesándose; reintenta "
+                                "con el mismo request_id."
+                            ),
+                        )
+                else:
+                    if claim.claim_token is None:
+                        raise RuntimeError("El claim adquirido no contiene token")
+                    idempotent_payload = payload.model_copy(
+                        update={"session_id": claim.session_id}
+                    )
+                    try:
+                        result = await orchestrator.chat(
+                            idempotent_payload,
+                            correlation_id,
+                            create_session_if_missing=creates_session,
+                        )
+                        try:
+                            sessions.complete_chat_request(
+                                payload.request_id,
+                                payload.student_id,
+                                claim.claim_token,
+                                result,
+                            )
+                        except ChatRequestLeaseLost:
+                            # El lease expiró y otro proceso reclamó la solicitud.
+                            # El orquestador ya persistió la respuesta en la sesión,
+                            # así que devolverla es correcto y evita un 403 espurio.
+                            logger.warning(
+                                "chat_lease_lost",
+                                extra={"correlation_id": correlation_id},
+                            )
+                    except BaseException:
+                        sessions.release_chat_request(
+                            payload.request_id,
+                            payload.student_id,
+                            claim.claim_token,
+                        )
+                        raise
         logger.info("chat_completed", extra={"correlation_id": correlation_id})
         return result
 
@@ -794,6 +943,23 @@ def create_app(
                 project,
                 payload.submission,
             )
+
+    # Catch-all: se declara al final para no ocultar rutas /api, /static,
+    # /assets, /healthz, /readyz ni el websocket de voz. Sirve el shell de
+    # React tanto en "/" como en cualquier ruta profunda para que el
+    # recargado del navegador funcione con enrutamiento del lado del cliente.
+    @app.get("/", include_in_schema=False)
+    @app.get("/{path:path}", include_in_schema=False)
+    async def react_app(path: str = "") -> FileResponse:
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        index_path = REACT_DIST_DIR / "index.html"
+        if not index_path.is_file():
+            raise HTTPException(
+                status_code=503,
+                detail="El build de React no está disponible; ejecuta `pnpm build`.",
+            )
+        return FileResponse(index_path)
 
     return app
 

@@ -1,23 +1,314 @@
+import asyncio
+from datetime import UTC, datetime, timedelta
+
 import httpx
 import pytest
 
-from agent_app.api.main import create_app
+from agent_app.api.main import _chat_request_fingerprint, create_app
 from agent_app.config import ModelProviderName, Settings
+from agent_app.models.chat import ChatRequest, ChatResponse
 from agent_app.providers.mock import MockModelProvider
-from agent_app.services.learning_tools import LocalLearningTools
 from agent_app.services.authoring import LocalAuthoringGateway
+from agent_app.services.learning_tools import LocalLearningTools
+from agent_app.services.sessions import LocalSessionRepository, utc_now
 from mcp_learning_server.models import LearningContent
 from mcp_learning_server.repositories.content_authoring import (
     LocalContentAuthoringRepository,
 )
 from mcp_learning_server.services.authoring import ContentAuthoringService
 from mcp_learning_server.services.content_store import InMemoryContentStore
-from agent_app.services.sessions import LocalSessionRepository
 
 
 class UnavailableLearningTools(LocalLearningTools):
     async def list_available_topics(self):
         raise RuntimeError("MCP unavailable")
+
+
+class BlockingMockModelProvider(MockModelProvider):
+    def __init__(self) -> None:
+        self.calls = 0
+        self.started = asyncio.Event()
+        self.release = asyncio.Event()
+
+    async def generate(self, request):
+        self.calls += 1
+        self.started.set()
+        await self.release.wait()
+        return await super().generate(request)
+
+
+class CrashAfterSessionSaveRepository(LocalSessionRepository):
+    def __init__(self, path) -> None:
+        super().__init__(path)
+        self._simulate_crash = True
+        self._skip_release = False
+
+    def complete_chat_request(
+        self,
+        request_id: str,
+        student_id: str,
+        claim_token: str,
+        response: ChatResponse,
+    ) -> None:
+        if self._simulate_crash:
+            self._simulate_crash = False
+            self._skip_release = True
+            raise RuntimeError("simulated process crash after session save")
+        super().complete_chat_request(
+            request_id, student_id, claim_token, response
+        )
+
+    def release_chat_request(
+        self, request_id: str, student_id: str, claim_token: str
+    ) -> None:
+        if self._skip_release:
+            self._skip_release = False
+            return
+        super().release_chat_request(request_id, student_id, claim_token)
+
+
+class StolenLeaseRepository(LocalSessionRepository):
+    """Simula que el lease vence y otro proceso reclama la misma solicitud."""
+
+    def __init__(self, path) -> None:
+        self._now = utc_now()
+        super().__init__(path, clock=lambda: self._now)
+        self._steal = True
+
+    def complete_chat_request(
+        self,
+        request_id: str,
+        student_id: str,
+        claim_token: str,
+        response: ChatResponse,
+    ) -> None:
+        if self._steal:
+            self._steal = False
+            record = super().get_chat_request(request_id, student_id)
+            assert record is not None
+            assert record.lease_expires_at is not None
+            self._now = record.lease_expires_at + timedelta(seconds=1)
+            super().claim_chat_request(
+                request_id,
+                student_id,
+                record.session_id,
+                record.request_fingerprint,
+                60.0,
+            )
+        super().complete_chat_request(
+            request_id, student_id, claim_token, response
+        )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_chat_returns_result_when_lease_is_stolen_mid_flight(
+    learning_service, tmp_path
+) -> None:
+    provider = BlockingMockModelProvider()
+    provider.release.set()
+    sessions = StolenLeaseRepository(tmp_path / "sessions.json")
+    app = create_app(
+        Settings(model_timeout_seconds=2),
+        tools=LocalLearningTools(learning_service),
+        provider=provider,
+        sessions=sessions,
+    )
+    body = {
+        "student_id": "retry-student",
+        "message": "Quiero aprender embeddings",
+        "request_id": "browser-send-stolen-lease",
+    }
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="http://agent.local",
+    ) as client:
+        stolen = await client.post("/api/chat", json=body)
+        retried = await client.post("/api/chat", json=body)
+
+    # El trabajo terminó y el orquestador ya persistió la respuesta: perder el
+    # lease no debe convertirse en un 403 para el alumno.
+    assert stolen.status_code == 200
+    assert retried.status_code == 200
+    assert retried.json()["answer"] == stolen.json()["answer"]
+    assert provider.calls == 1
+    record = sessions.get_chat_request(body["request_id"], body["student_id"])
+    assert record is not None
+    assert record.status.value == "completed"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_chat_retry_reuses_persisted_idempotent_result(
+    learning_service, tmp_path
+) -> None:
+    provider = BlockingMockModelProvider()
+    sessions_path = tmp_path / "sessions.json"
+    sessions = LocalSessionRepository(sessions_path)
+    app = create_app(
+        Settings(model_timeout_seconds=2),
+        tools=LocalLearningTools(learning_service),
+        provider=provider,
+        sessions=sessions,
+    )
+    body = {
+        "student_id": "retry-student",
+        "message": "Quiero aprender embeddings",
+        "request_id": "browser-send-1",
+    }
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+    ) as client:
+        original = asyncio.create_task(client.post("/api/chat", json=body))
+        await provider.started.wait()
+        retry = asyncio.create_task(client.post("/api/chat", json=body))
+        await asyncio.sleep(0.01)
+        provider.release.set()
+        original_response, retry_response = await asyncio.gather(original, retry)
+        sessions.chat_requests_path.unlink()
+        recovered_after_interrupted_completion = await client.post(
+            "/api/chat", json=body
+        )
+
+    assert original_response.status_code == 200
+    assert retry_response.status_code == 200
+    assert retry_response.json() == original_response.json()
+    assert recovered_after_interrupted_completion.json() == original_response.json()
+    assert provider.calls == 1
+    session_id = original_response.json()["session_id"]
+    recovered = LocalSessionRepository(sessions_path).get(
+        session_id, "retry-student"
+    )
+    assert [message.content for message in recovered.messages].count(
+        "Quiero aprender embeddings"
+    ) == 1
+    record = LocalSessionRepository(sessions_path).get_chat_request(
+        "browser-send-1", "retry-student"
+    )
+    assert record is not None
+    assert record.response is not None
+    assert record.response.session_id == session_id
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_chat_retry_recovers_claim_left_before_session_save(
+    learning_service, tmp_path
+) -> None:
+    now = datetime(2026, 9, 28, tzinfo=UTC)
+    sessions = LocalSessionRepository(tmp_path / "sessions.json", clock=lambda: now)
+    body = {
+        "student_id": "retry-student",
+        "message": "Quiero aprender embeddings",
+        "request_id": "browser-send-before-save",
+    }
+    fingerprint = _chat_request_fingerprint(ChatRequest.model_validate(body))
+    abandoned = sessions.claim_chat_request(
+        body["request_id"], body["student_id"], "stable-session", fingerprint, 30
+    )
+    now += timedelta(seconds=31)
+    provider = BlockingMockModelProvider()
+    provider.release.set()
+    app = create_app(
+        Settings(model_timeout_seconds=2),
+        tools=LocalLearningTools(learning_service),
+        provider=provider,
+        sessions=sessions,
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+    ) as client:
+        response = await client.post("/api/chat", json=body)
+
+    assert response.status_code == 200
+    assert response.json()["session_id"] == "stable-session"
+    assert provider.calls == 1
+    recovered = sessions.get_chat_request(
+        body["request_id"], body["student_id"]
+    )
+    assert recovered is not None
+    assert recovered.response is not None
+    assert recovered.claim_token is None
+    assert recovered.claim_token != abandoned.claim_token
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_chat_retry_reconciles_crash_after_session_save(
+    learning_service, tmp_path
+) -> None:
+    provider = BlockingMockModelProvider()
+    provider.release.set()
+    sessions = CrashAfterSessionSaveRepository(tmp_path / "sessions.json")
+    app = create_app(
+        Settings(model_timeout_seconds=2),
+        tools=LocalLearningTools(learning_service),
+        provider=provider,
+        sessions=sessions,
+    )
+    body = {
+        "student_id": "retry-student",
+        "message": "Quiero aprender embeddings",
+        "request_id": "browser-send-after-save",
+    }
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="http://agent.local",
+    ) as client:
+        interrupted = await client.post("/api/chat", json=body)
+        recovered = await client.post("/api/chat", json=body)
+
+    assert interrupted.status_code == 500
+    assert recovered.status_code == 200
+    assert provider.calls == 1
+    record = sessions.get_chat_request(
+        body["request_id"], body["student_id"]
+    )
+    assert record is not None
+    assert record.response is not None
+    assert record.status.value == "completed"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_chat_rejects_reused_request_id_with_different_payload(
+    learning_service, tmp_path
+) -> None:
+    sessions = LocalSessionRepository(tmp_path / "sessions.json")
+    app = create_app(
+        Settings(model_timeout_seconds=2),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+        sessions=sessions,
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+    ) as client:
+        first = await client.post(
+            "/api/chat",
+            json={
+                "student_id": "retry-student",
+                "message": "Quiero aprender embeddings",
+                "request_id": "reused-browser-send",
+            },
+        )
+        conflict = await client.post(
+            "/api/chat",
+            json={
+                "student_id": "retry-student",
+                "message": "Quiero aprender agentes",
+                "request_id": "reused-browser-send",
+            },
+        )
+
+    assert first.status_code == 200
+    assert conflict.status_code == 422
+    assert "mensaje o una sesión diferente" in conflict.json()["detail"]
 
 
 @pytest.mark.integration
@@ -66,9 +357,6 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         topics = await client.get(
             "/api/topics", params={"student_id": "student-1"}
         )
-        page = await client.get("/")
-        styles = await client.get("/static/styles.css")
-        script = await client.get("/static/app.js")
         voice_worklet = await client.get("/static/pcm-capture-worklet.js")
         assert health.status_code == 200
         assert readiness.json()["status"] == "ready"
@@ -111,28 +399,14 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         assert embedding["prerequisites"] == ["tokens"]
         assert embedding["unmet_prerequisites"] == ["tokens"]
         assert embedding["available_levels"] == ["beginner", "intermediate"]
-        assert page.status_code == 200
-        assert page.headers["cache-control"] == "no-cache"
-        assert "microphone=(self)" in page.headers["permissions-policy"]
-        assert "AITeacher" in page.text
-        assert 'id="category-filter"' in page.text
-        assert 'id="level-filter"' in page.text
-        assert 'id="learning-path-card"' in page.text
-        assert 'id="project-grid"' in page.text
-        assert 'id="practice-card"' in page.text
-        assert 'id="authoring-panel"' in page.text
-        assert styles.status_code == 200
-        assert styles.headers["content-encoding"] == "gzip"
-        assert styles.headers["cache-control"].startswith("public, max-age=3600")
-        assert styles.headers["x-content-type-options"] == "nosniff"
-        assert script.status_code == 200
+        assert "microphone=(self)" in topics.headers["permissions-policy"]
+        assert topics.headers["content-encoding"] == "gzip"
         assert voice_worklet.status_code == 200
+        assert voice_worklet.headers["cache-control"].startswith(
+            "public, max-age=3600"
+        )
+        assert voice_worklet.headers["x-content-type-options"] == "nosniff"
         assert 'registerProcessor("pcm-capture"' in voice_worklet.text
-        assert "data-start-topic" in script.text
-        assert "/api/practice/start" in script.text
-        assert "/api/authoring/lessons" in script.text
-        assert "/api/projects" in script.text
-        assert "const totalTopics = 23" not in script.text
         chat = await client.post(
             "/api/chat",
             headers={"x-correlation-id": "demo-123"},
@@ -185,7 +459,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         observability = metrics.json()
         assert metrics.status_code == 200
         assert observability["status"] == "ok"
-        assert observability["http"]["requests"] >= 7
+        assert observability["http"]["requests"] >= 6
         assert observability["model"]["provider"] == "mock"
         assert observability["model"]["calls"] >= 2
         assert observability["model"]["input_tokens"] > 0
@@ -431,9 +705,11 @@ async def test_session_can_be_renamed_archived_restored_and_deleted(
 @pytest.mark.asyncio
 async def test_practice_and_projects_are_available_without_losing_main_quiz(
     learning_service,
+    tmp_path,
 ) -> None:
+    sessions_path = tmp_path / "sessions.json"
     app = create_app(
-        Settings(),
+        Settings(app_sessions_path=str(sessions_path)),
         tools=LocalLearningTools(learning_service),
         provider=MockModelProvider(),
     )

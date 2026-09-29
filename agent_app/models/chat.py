@@ -55,6 +55,7 @@ class ChatRequest(AppModel):
     student_id: str = Field(min_length=1, max_length=100)
     message: str = Field(min_length=2, max_length=4_000)
     session_id: str | None = Field(default=None, min_length=1, max_length=100)
+    request_id: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class TopicCatalogItem(AppModel):

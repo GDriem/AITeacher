@@ -23,8 +23,11 @@ agent_app/            App multiagente (FastAPI + Google ADK 2.x)
   services/            Cliente MCP, sesiones, evaluación/actividades, autoría,
                        voz, logging y observabilidad
   models/               Contratos HTTP de chat y actividades
-  static/               UI (HTML/CSS/JS servidos por FastAPI)
+  static/               AudioWorklet de voz (pcm-capture-worklet.js) servido por FastAPI
   Dockerfile            Imagen del servicio learning-agent
+
+frontend/             UI React + TypeScript (Vite); FastAPI sirve `dist/` en `/`
+                       (ver `docs/react-frontend-migration-plan.md`)
 
 mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable HTTP)
   server.py             Punto de entrada ASGI, monta /mcp, /healthz y /admin
@@ -173,7 +176,7 @@ pytest para pruebas que combinan componentes sin credenciales cloud.
 | Práctica y proyectos | `agent_app/services/activities.py` |
 | Proxy de autoría | `agent_app/services/authoring.py` |
 | Métricas agregadas | `agent_app/services/observability.py` |
-| Interfaz web | `agent_app/static/` |
+| Interfaz web | `frontend/src/` (React); `agent_app/static/` sólo sirve el AudioWorklet de voz |
 | TF-IDF / recuperación | `mcp_learning_server/services/retrieval.py` |
 | Currículo y prerrequisitos | `mcp_learning_server/curriculum.py` |
 | Contratos MCP validados | `mcp_learning_server/tools/learning_tools.py` |
@@ -181,7 +184,7 @@ pytest para pruebas que combinan componentes sin credenciales cloud.
 | Versionado editorial | `mcp_learning_server/repositories/content_authoring.py` |
 | Despliegue reproducible | `infra/cloudrun/deploy.sh` |
 | Pruebas manuales de API/MCP | `postman/agent-mcp-run.postman_collection.json` |
-| Accesibilidad/performance de UI | `tests/unit/test_frontend_accessibility.py`, `test_frontend_performance.py` |
+| Accesibilidad/performance de UI | `frontend/e2e/*.spec.ts` (axe, teclado, responsive) y `frontend/bundle-budget.json` |
 | Integración contra MCP remoto real | `tests/integration/test_agent_mcp_remote.py` |
 
 ## Postman

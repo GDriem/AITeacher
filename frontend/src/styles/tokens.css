@@ -1,0 +1,53 @@
+:root {
+  color-scheme: dark;
+  --canvas-default: #07111f;
+  --surface-default: #0d1b2d;
+  --surface-raised: #10243c;
+  --surface-subtle: rgba(237, 245, 255, 0.04);
+  --surface-sunken: #091725;
+  --content-strong: #edf5ff;
+  --content-default: #d7e5f5;
+  --content-muted: #a9bbcf;
+  --content-inverse: #07111f;
+  --border-subtle: rgba(148, 177, 209, 0.14);
+  --border-default: rgba(148, 177, 209, 0.24);
+  --action-primary: #7cb0ff;
+  --action-primary-hover: #9bc2ff;
+  --status-guide: #6ca7ff;
+  --status-mastery: #62d9a2;
+  --status-attention: #ffd36e;
+  --status-danger: #ff8c96;
+  --focus-ring: #9bc2ff;
+
+  --font-body: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: clamp(1.75rem, 4vw, 3.25rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 2.5rem;
+  --space-10: 3rem;
+  --space-12: 4rem;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --content-max: 90rem;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --content-muted: #d1dceb;
+    --border-subtle: rgba(237, 245, 255, 0.38);
+    --border-default: rgba(237, 245, 255, 0.58);
+  }
+}

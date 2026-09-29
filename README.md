@@ -138,9 +138,20 @@ key al navegador.
 
 Configure `MODEL_PROVIDER=gemini` y una de estas opciones: `GOOGLE_API_KEY`, o
 `GOOGLE_GENAI_USE_VERTEXAI=true` junto con `GOOGLE_CLOUD_PROJECT`. La voz y el
-modelo Live se seleccionan con `GEMINI_LIVE_VOICE` y `GEMINI_LIVE_MODEL`. En
+modelo Live se seleccionan con `GEMINI_LIVE_VOICE` y, opcionalmente,
+`GEMINI_LIVE_MODEL`. Si no se define el modelo, la aplicación usa
+`gemini-2.5-flash-native-audio-preview-12-2025` con Gemini Developer API y
+`gemini-live-2.5-flash-native-audio` con Vertex AI. Un override debe ser un
+identificador Live válido para el backend elegido. Sin las credenciales del
+backend, `/api/capabilities` no anuncia la voz. En
 producción el sitio debe servirse por HTTPS para que el navegador permita el
 micrófono; `localhost` también se considera un contexto seguro.
+
+En Vertex AI, `GOOGLE_CLOUD_LOCATION` configura el modelo de texto y
+`GOOGLE_CLOUD_LIVE_LOCATION` el modelo de voz. Los valores predeterminados son
+`us` para `gemini-3.5-flash-lite` y `us-central1` para
+`gemini-live-2.5-flash-native-audio`, porque ambos modelos tienen distinta
+disponibilidad regional.
 
 La aplicación expone `GET /api/topics` para consultar el
 catálogo, la ruta y el estado del estudiante. La respuesta incluye
@@ -159,6 +170,25 @@ navegador guarda sólo el identificador activo; mensajes, tema y evaluación pen
 sincronizan con el backend. `PATCH /api/sessions/{id}` permite renombrar o
 archivar y `DELETE /api/sessions/{id}` elimina de inmediato. La retención
 predeterminada es de 365 días.
+
+Los clientes nuevos incluyen un `request_id` único
+en cada `POST /api/chat`; Local y Firestore deduplican los reintentos y devuelven
+la respuesta persistida, por lo que dejar de esperar en el navegador no crea un
+segundo turno ni una segunda llamada al modelo. El campo es opcional para
+mantener compatibilidad con clientes anteriores.
+
+Estos registros idempotentes caducan a las 24 horas
+(`CHAT_REQUEST_RETENTION_HOURS`), que cubre de sobra un reintento del navegador.
+El backend local los purga al leerlos y el de Firestore los retira en cuanto se
+consultan. Para que Firestore además los borre por su cuenta, habilite una vez
+la política TTL sobre el campo `expires_at` —que se escribe como Timestamp
+nativo justamente para eso:
+
+```bash
+gcloud firestore fields ttls update expires_at \
+  --collection-group=learning_sessions_chat_requests \
+  --enable-ttl
+```
 
 Cada resultado de `POST /api/evaluate` incluye una rúbrica de precisión,
 comprensión, aplicación y claridad. Con Gemini, la salida se solicita mediante
@@ -219,7 +249,24 @@ AI Studio dentro del contenedor:
 MODEL_PROVIDER=gemini
 GOOGLE_GENAI_USE_VERTEXAI=false
 GOOGLE_API_KEY=su-api-key
+# GEMINI_LIVE_MODEL=gemini-2.5-flash-native-audio-preview-12-2025
 ```
+
+Para usar Vertex AI con las credenciales locales de `gcloud`, cree ADC y use el
+archivo Compose adicional. La credencial se monta como sólo lectura y nunca se
+copia al repositorio ni a la imagen:
+
+```bash
+gcloud auth application-default login
+docker compose -f docker-compose.yml -f docker-compose.gcp.yml up --build
+```
+
+El montaje busca ADC en `$HOME/.config/gcloud/application_default_credentials.json`.
+Defina `GCP_ADC_PATH` en `.env` únicamente si el archivo vive en otra ruta. Para
+Vertex AI, configure `MODEL_PROVIDER=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true` y
+`GOOGLE_CLOUD_PROJECT`. Cloud Run fija explícitamente
+`gemini-live-2.5-flash-native-audio`; puede reemplazarlo mediante la variable
+`GEMINI_LIVE_MODEL` al ejecutar `infra/cloudrun/deploy.sh`.
 
 La dirección `MCP_SERVER_URL` se configura internamente como
 `http://mcp-server:8080/mcp/`, aunque el servidor MCP se publique en el puerto
@@ -239,3 +286,7 @@ La dirección `MCP_SERVER_URL` se configura internamente como
 Consulte el [índice de documentación](docs/README.md) para navegar la
 arquitectura, la hoja de ruta completada, las guías de cada capacidad, el guion
 de demo y el despliegue.
+
+La evolución de la interfaz se organiza en el
+[plan de migración a React](docs/react-frontend-migration-plan.md), con una
+sesión independiente por fase y convivencia gradual con la UI vigente.
