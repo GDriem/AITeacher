@@ -78,6 +78,7 @@ class ChatRequestRecord(SessionModel):
     status: ChatRequestStatus = ChatRequestStatus.PENDING
     claim_token: str | None = None
     lease_expires_at: datetime | None = None
+    expires_at: datetime | None = None
     response: ChatResponse | None = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
@@ -170,6 +171,22 @@ class SessionRepository(Protocol):
     def release_chat_request(
         self, request_id: str, student_id: str, claim_token: str
     ) -> None: ...
+
+
+CHAT_REQUEST_RETENTION_HOURS = 24.0
+"""Cuánto sobrevive un registro idempotente antes de purgarse.
+
+Sólo sirve para deduplicar reintentos del navegador, que ocurren en segundos o
+minutos. Un día cubre de sobra ese caso sin dejar crecer el almacenamiento.
+"""
+
+LEGACY_LEASE_GRACE_SECONDS = 300.0
+"""Gracia para registros PENDING escritos antes de que existieran los leases.
+
+Durante un rollout conviven registros sin `lease_expires_at`. Tratarlos como
+vencidos de inmediato permitiría robarle el lease a una petición que sigue en
+vuelo, así que se les concede una ventana contada desde su última escritura.
+"""
 
 
 class ChatRequestLeaseLost(PermissionError):
@@ -296,6 +313,7 @@ class LocalSessionRepository:
                 ):
                     existing.claim_token = str(uuid.uuid4())
                     existing.lease_expires_at = now + timedelta(seconds=lease_seconds)
+                    existing.expires_at = _chat_request_expires_at(now)
                     existing.updated_at = now
                     if not existing.request_fingerprint:
                         existing.request_fingerprint = request_fingerprint
@@ -318,6 +336,9 @@ class LocalSessionRepository:
                 request_fingerprint=request_fingerprint,
                 claim_token=claim_token,
                 lease_expires_at=now + timedelta(seconds=lease_seconds),
+                expires_at=_chat_request_expires_at(now),
+                created_at=now,
+                updated_at=now,
             )
             self._write_chat_requests(requests)
             return ChatRequestClaim(
@@ -403,6 +424,25 @@ class LocalSessionRepository:
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     def _read_chat_requests(self) -> dict[str, ChatRequestRecord]:
+        """Lee los registros idempotentes vigentes y purga los caducados.
+
+        Sigue el mismo patrón que `_read_current` para las conversaciones: sin
+        esta purga el archivo crecería sin límite, porque un registro
+        completado nunca se borra por sí solo.
+        """
+
+        requests = self._read_all_chat_requests()
+        now = self._clock()
+        retained = {
+            storage_key: record
+            for storage_key, record in requests.items()
+            if not _chat_request_is_purgeable(record, now)
+        }
+        if len(retained) != len(requests):
+            self._write_chat_requests(retained)
+        return retained
+
+    def _read_all_chat_requests(self) -> dict[str, ChatRequestRecord]:
         if not self.chat_requests_path.exists():
             return {}
         try:
@@ -558,6 +598,7 @@ class InMemorySessionRepository:
                     existing.lease_expires_at = utc_now() + timedelta(
                         seconds=lease_seconds
                     )
+                    existing.expires_at = _chat_request_expires_at(utc_now())
                     existing.updated_at = utc_now()
                     if not existing.request_fingerprint:
                         existing.request_fingerprint = request_fingerprint
@@ -579,6 +620,9 @@ class InMemorySessionRepository:
                 request_fingerprint=request_fingerprint,
                 claim_token=claim_token,
                 lease_expires_at=utc_now() + timedelta(seconds=lease_seconds),
+                expires_at=_chat_request_expires_at(utc_now()),
+                created_at=utc_now(),
+                updated_at=utc_now(),
             )
             return ChatRequestClaim(
                 acquired=True, session_id=session_id, claim_token=claim_token
@@ -740,9 +784,12 @@ class FirestoreSessionRepository:
             request_fingerprint=request_fingerprint,
             claim_token=claim_token,
             lease_expires_at=now + timedelta(seconds=lease_seconds),
+            expires_at=_chat_request_expires_at(now),
+            created_at=now,
+            updated_at=now,
         )
         try:
-            document.create(record.model_dump(mode="json"))
+            document.create(_serialize_chat_request_for_firestore(record))
             return ChatRequestClaim(
                 acquired=True, session_id=session_id, claim_token=claim_token
             )
@@ -753,7 +800,7 @@ class FirestoreSessionRepository:
             snapshot = document.get()
             if not snapshot.exists:
                 try:
-                    document.create(record.model_dump(mode="json"))
+                    document.create(_serialize_chat_request_for_firestore(record))
                     return ChatRequestClaim(
                         acquired=True,
                         session_id=session_id,
@@ -775,12 +822,13 @@ class FirestoreSessionRepository:
                 )
             existing.claim_token = claim_token
             existing.lease_expires_at = now + timedelta(seconds=lease_seconds)
+            existing.expires_at = _chat_request_expires_at(now)
             existing.updated_at = now
             if not existing.request_fingerprint:
                 existing.request_fingerprint = request_fingerprint
             try:
                 document.update(
-                    _serialize_chat_request(existing),
+                    _serialize_chat_request_for_firestore(existing),
                     option=LastUpdateOption(snapshot.update_time),
                 )
                 return ChatRequestClaim(
@@ -795,12 +843,28 @@ class FirestoreSessionRepository:
     def get_chat_request(
         self, request_id: str, student_id: str
     ) -> ChatRequestRecord | None:
-        snapshot = self._chat_request_document(student_id, request_id).get()
+        document = self._chat_request_document(student_id, request_id)
+        snapshot = document.get()
         if not snapshot.exists:
             return None
         record = ChatRequestRecord.model_validate(snapshot.to_dict())
         _authorize_chat_request(record, _validate_student_id(student_id))
+        if _chat_request_is_purgeable(record, self._clock()):
+            # La política TTL de Firestore borra en diferido; aquí el registro
+            # caducado se retira en cuanto se lee, igual que las sesiones.
+            self._delete_chat_request(document, snapshot)
+            return None
         return record
+
+    def _delete_chat_request(self, document, snapshot) -> None:
+        from google.api_core.exceptions import FailedPrecondition, NotFound
+        from google.cloud.firestore_v1 import LastUpdateOption
+
+        try:
+            document.delete(option=LastUpdateOption(snapshot.update_time))
+        except (FailedPrecondition, NotFound):
+            # Otro proceso lo reescribió o lo borró: no hay nada que purgar.
+            return
 
     def complete_chat_request(
         self,
@@ -825,7 +889,7 @@ class FirestoreSessionRepository:
             _complete_chat_request_record(record, response, self._clock())
             try:
                 document.update(
-                    _serialize_chat_request(record),
+                    _serialize_chat_request_for_firestore(record),
                     option=LastUpdateOption(snapshot.update_time),
                 )
                 return
@@ -851,7 +915,7 @@ class FirestoreSessionRepository:
             _complete_chat_request_record(record, response, self._clock())
             try:
                 document.update(
-                    _serialize_chat_request(record),
+                    _serialize_chat_request_for_firestore(record),
                     option=LastUpdateOption(snapshot.update_time),
                 )
                 return
@@ -947,6 +1011,19 @@ def _serialize_chat_request(record: ChatRequestRecord) -> dict:
     return payload
 
 
+def _serialize_chat_request_for_firestore(record: ChatRequestRecord) -> dict:
+    """Serializa el registro dejando `expires_at` como Timestamp nativo.
+
+    Firestore sólo aplica su política TTL sobre campos de tipo Timestamp, y
+    `model_dump(mode="json")` produce cadenas ISO. Ver el README para
+    habilitar la política con `gcloud firestore fields ttls update`.
+    """
+
+    payload = _serialize_chat_request(record)
+    payload["expires_at"] = record.expires_at
+    return payload
+
+
 def _atomic_json_write(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path: str | None = None
@@ -1012,10 +1089,27 @@ def _authorize_chat_request_claim(
 
 
 def _lease_expired(record: ChatRequestRecord, now: datetime) -> bool:
-    return (
-        record.lease_expires_at is None
-        or _as_utc(record.lease_expires_at) <= _as_utc(now)
-    )
+    lease_expires_at = record.lease_expires_at
+    if lease_expires_at is None:
+        # Registro heredado, sin lease: se cuenta la gracia desde su última
+        # escritura en lugar de declararlo vencido al instante.
+        lease_expires_at = _as_utc(record.updated_at) + timedelta(
+            seconds=LEGACY_LEASE_GRACE_SECONDS
+        )
+    return _as_utc(lease_expires_at) <= _as_utc(now)
+
+
+def _chat_request_expires_at(now: datetime) -> datetime:
+    return _as_utc(now) + timedelta(hours=CHAT_REQUEST_RETENTION_HOURS)
+
+
+def _chat_request_is_purgeable(record: ChatRequestRecord, now: datetime) -> bool:
+    expires_at = record.expires_at
+    if expires_at is None:
+        # Registro heredado, sin caducidad declarada: se deduce de su última
+        # escritura para que el rollout también purgue lo anterior.
+        expires_at = _chat_request_expires_at(record.updated_at)
+    return _as_utc(expires_at) <= _as_utc(now)
 
 
 def _complete_chat_request_record(
@@ -1025,6 +1119,7 @@ def _complete_chat_request_record(
     record.response = response
     record.claim_token = None
     record.lease_expires_at = None
+    record.expires_at = _chat_request_expires_at(now)
     record.updated_at = now
 
 

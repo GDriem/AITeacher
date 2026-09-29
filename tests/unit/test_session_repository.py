@@ -4,8 +4,10 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from agent_app.models.activities import PracticeDifficulty, PracticeExercise
-from agent_app.models.chat import Quiz
+from agent_app.models.chat import ChatResponse, Quiz
 from agent_app.services.sessions import (
+    CHAT_REQUEST_RETENTION_HOURS,
+    LEGACY_LEASE_GRACE_SECONDS,
     ConversationMessage,
     LocalSessionRepository,
     MessageRole,
@@ -13,7 +15,7 @@ from agent_app.services.sessions import (
     PendingPractice,
     StoredConversation,
 )
-from mcp_learning_server.models import Topic
+from mcp_learning_server.models import LearningLevel, StudentProgress, Topic
 
 
 def make_session(session_id: str = "session-1") -> StoredConversation:
@@ -123,3 +125,96 @@ def test_local_session_repository_applies_retention(tmp_path) -> None:
 
     assert repository.list("student-1", include_archived=True) == []
     assert json.loads(repository.path.read_text(encoding="utf-8")) == {}
+
+
+def make_chat_response() -> ChatResponse:
+    return ChatResponse(
+        correlation_id="correlation-1",
+        session_id="session-1",
+        topic=Topic.EMBEDDINGS,
+        level=LearningLevel.BEGINNER,
+        answer="Los embeddings representan significado mediante vectores.",
+        sources=["lesson.md"],
+        progress=StudentProgress(student_id="student-1"),
+        quiz=Quiz(
+            question="¿Qué representa?",
+            expected_keywords=["vector", "significado"],
+        ),
+        quiz_attempt=1,
+        trace=[],
+    )
+
+
+def test_local_chat_requests_are_purged_when_they_expire(tmp_path) -> None:
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    repository = LocalSessionRepository(
+        tmp_path / "sessions.json", clock=lambda: now
+    )
+    claim = repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+    repository.complete_chat_request(
+        "browser-send-1", "student-1", claim.claim_token or "", make_chat_response()
+    )
+
+    now += timedelta(hours=CHAT_REQUEST_RETENTION_HOURS - 1)
+    assert repository.get_chat_request("browser-send-1", "student-1") is not None
+
+    now += timedelta(hours=2)
+    assert repository.get_chat_request("browser-send-1", "student-1") is None
+    # La purga no sólo oculta el registro: lo borra del archivo, que si no
+    # crecería sin límite.
+    assert json.loads(
+        repository.chat_requests_path.read_text(encoding="utf-8")
+    ) == {}
+
+
+def test_local_chat_requests_purge_records_without_expiry(tmp_path) -> None:
+    """Los registros escritos antes de que existiera `expires_at` también se purgan."""
+
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    repository = LocalSessionRepository(
+        tmp_path / "sessions.json", clock=lambda: now
+    )
+    claim = repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+    repository.complete_chat_request(
+        "browser-send-1", "student-1", claim.claim_token or "", make_chat_response()
+    )
+    stored = json.loads(repository.chat_requests_path.read_text(encoding="utf-8"))
+    for record in stored.values():
+        del record["expires_at"]
+    repository.chat_requests_path.write_text(json.dumps(stored), encoding="utf-8")
+
+    now += timedelta(hours=CHAT_REQUEST_RETENTION_HOURS + 1)
+    assert repository.get_chat_request("browser-send-1", "student-1") is None
+
+
+def test_local_legacy_pending_request_keeps_a_grace_period(tmp_path) -> None:
+    """Un registro heredado sin lease no se puede robar de inmediato."""
+
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    repository = LocalSessionRepository(
+        tmp_path / "sessions.json", clock=lambda: now
+    )
+    repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+    stored = json.loads(repository.chat_requests_path.read_text(encoding="utf-8"))
+    for record in stored.values():
+        record["lease_expires_at"] = None
+    repository.chat_requests_path.write_text(json.dumps(stored), encoding="utf-8")
+
+    now += timedelta(seconds=LEGACY_LEASE_GRACE_SECONDS - 1)
+    contended = repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+    assert contended.acquired is False
+
+    now += timedelta(seconds=2)
+    recovered = repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+    assert recovered.acquired is True
+    assert recovered.claim_token is not None

@@ -177,6 +177,19 @@ la respuesta persistida, por lo que dejar de esperar en el navegador no crea un
 segundo turno ni una segunda llamada al modelo. El campo es opcional para
 mantener compatibilidad con clientes anteriores.
 
+Estos registros idempotentes caducan a las 24 horas
+(`CHAT_REQUEST_RETENTION_HOURS`), que cubre de sobra un reintento del navegador.
+El backend local los purga al leerlos y el de Firestore los retira en cuanto se
+consultan. Para que Firestore además los borre por su cuenta, habilite una vez
+la política TTL sobre el campo `expires_at` —que se escribe como Timestamp
+nativo justamente para eso:
+
+```bash
+gcloud firestore fields ttls update expires_at \
+  --collection-group=learning_sessions_chat_requests \
+  --enable-ttl
+```
+
 Cada resultado de `POST /api/evaluate` incluye una rúbrica de precisión,
 comprensión, aplicación y claridad. Con Gemini, la salida se solicita mediante
 un esquema JSON nativo y después se valida; si el proveedor falla o incumple el

@@ -5,6 +5,8 @@ import pytest
 
 from agent_app.models.chat import ChatResponse, Quiz
 from agent_app.services.sessions import (
+    CHAT_REQUEST_RETENTION_HOURS,
+    LEGACY_LEASE_GRACE_SECONDS,
     FirestoreSessionRepository,
     PendingEvaluation,
     StoredConversation,
@@ -276,3 +278,65 @@ def test_firestore_chat_request_reconciles_persisted_session_response() -> None:
     record = repository.get_chat_request("browser-send-1", "student-1")
     assert record is not None
     assert record.response == response
+
+
+def test_firestore_chat_request_writes_native_timestamp_for_ttl() -> None:
+    """`expires_at` debe ser Timestamp: la política TTL ignora cadenas ISO."""
+
+    now = datetime(2026, 9, 28, tzinfo=UTC)
+    client = FakeFirestoreClient()
+    repository = FirestoreSessionRepository(client, clock=lambda: now)
+    repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+
+    stored = next(iter(client.collections["learning_sessions_chat_requests"].values()))
+    assert isinstance(stored["expires_at"], datetime)
+    assert stored["expires_at"] == now + timedelta(
+        hours=CHAT_REQUEST_RETENTION_HOURS
+    )
+    # El resto del documento sigue siendo JSON, como antes.
+    assert isinstance(stored["created_at"], str)
+
+
+def test_firestore_chat_request_is_purged_when_it_expires() -> None:
+    now = datetime(2026, 9, 28, tzinfo=UTC)
+    client = FakeFirestoreClient()
+    repository = FirestoreSessionRepository(client, clock=lambda: now)
+    claim = repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+    repository.complete_chat_request(
+        "browser-send-1", "student-1", claim.claim_token or "", make_chat_response()
+    )
+
+    now += timedelta(hours=CHAT_REQUEST_RETENTION_HOURS + 1)
+    assert repository.get_chat_request("browser-send-1", "student-1") is None
+    assert client.collections["learning_sessions_chat_requests"] == {}
+
+
+def test_firestore_legacy_pending_request_keeps_a_grace_period() -> None:
+    now = datetime(2026, 9, 28, tzinfo=UTC)
+    client = FakeFirestoreClient()
+    repository = FirestoreSessionRepository(client, clock=lambda: now)
+    repository.claim_chat_request(
+        "browser-send-1", "student-1", "session-1", "fingerprint", 60
+    )
+    for stored in client.collections["learning_sessions_chat_requests"].values():
+        stored["lease_expires_at"] = None
+
+    now += timedelta(seconds=LEGACY_LEASE_GRACE_SECONDS - 1)
+    assert (
+        repository.claim_chat_request(
+            "browser-send-1", "student-1", "session-1", "fingerprint", 60
+        ).acquired
+        is False
+    )
+
+    now += timedelta(seconds=2)
+    assert (
+        repository.claim_chat_request(
+            "browser-send-1", "student-1", "session-1", "fingerprint", 60
+        ).acquired
+        is True
+    )
