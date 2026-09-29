@@ -138,7 +138,12 @@ key al navegador.
 
 Configure `MODEL_PROVIDER=gemini` y una de estas opciones: `GOOGLE_API_KEY`, o
 `GOOGLE_GENAI_USE_VERTEXAI=true` junto con `GOOGLE_CLOUD_PROJECT`. La voz y el
-modelo Live se seleccionan con `GEMINI_LIVE_VOICE` y `GEMINI_LIVE_MODEL`. En
+modelo Live se seleccionan con `GEMINI_LIVE_VOICE` y, opcionalmente,
+`GEMINI_LIVE_MODEL`. Si no se define el modelo, la aplicación usa
+`gemini-2.5-flash-native-audio-preview-12-2025` con Gemini Developer API y
+`gemini-live-2.5-flash-native-audio` con Vertex AI. Un override debe ser un
+identificador Live válido para el backend elegido. Sin las credenciales del
+backend, `/api/capabilities` no anuncia la voz. En
 producción el sitio debe servirse por HTTPS para que el navegador permita el
 micrófono; `localhost` también se considera un contexto seguro.
 
@@ -225,6 +230,7 @@ AI Studio dentro del contenedor:
 MODEL_PROVIDER=gemini
 GOOGLE_GENAI_USE_VERTEXAI=false
 GOOGLE_API_KEY=su-api-key
+# GEMINI_LIVE_MODEL=gemini-2.5-flash-native-audio-preview-12-2025
 ```
 
 Para usar Vertex AI con las credenciales locales de `gcloud`, cree ADC y use el
@@ -239,7 +245,9 @@ docker compose -f docker-compose.yml -f docker-compose.gcp.yml up --build
 El montaje busca ADC en `$HOME/.config/gcloud/application_default_credentials.json`.
 Defina `GCP_ADC_PATH` en `.env` únicamente si el archivo vive en otra ruta. Para
 Vertex AI, configure `MODEL_PROVIDER=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true` y
-`GOOGLE_CLOUD_PROJECT`.
+`GOOGLE_CLOUD_PROJECT`. Cloud Run fija explícitamente
+`gemini-live-2.5-flash-native-audio`; puede reemplazarlo mediante la variable
+`GEMINI_LIVE_MODEL` al ejecutar `infra/cloudrun/deploy.sh`.
 
 La dirección `MCP_SERVER_URL` se configura internamente como
 `http://mcp-server:8080/mcp/`, aunque el servidor MCP se publique en el puerto

@@ -35,7 +35,7 @@ class GeminiLiveBridge:
             )
         else:
             self.client = genai.Client(api_key=settings.google_api_key)
-        self.model = settings.gemini_live_model
+        self.model = settings.resolved_gemini_live_model
         self.voice = settings.gemini_live_voice
         self.session_context = (
             " ".join(session_context.split())[:2_000] if session_context else ""

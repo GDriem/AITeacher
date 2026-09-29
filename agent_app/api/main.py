@@ -405,7 +405,7 @@ def create_app(
             text=True,
             voice=settings.voice_enabled,
             voice_model=(
-                settings.gemini_live_model if settings.voice_enabled else None
+                settings.resolved_gemini_live_model if settings.voice_enabled else None
             ),
             authoring=bool(settings.app_authoring_token and authoring),
         )

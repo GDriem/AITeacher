@@ -12,6 +12,10 @@ class ModelProviderName(StrEnum):
     MOCK = "mock"
 
 
+VERTEX_GEMINI_LIVE_MODEL = "gemini-live-2.5-flash-native-audio"
+DEVELOPER_GEMINI_LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
@@ -46,13 +50,25 @@ class Settings(BaseSettings):
     mcp_auth_audience: str | None = None
 
     gemini_model: str = "gemini-3.5-flash-lite"
-    gemini_live_model: str = "gemini-live-2.5-flash-native-audio"
+    # Cuando no se define, se selecciona un identificador compatible con el
+    # backend de autenticación. Un valor explícito permite adoptar versiones
+    # nuevas sin esperar una actualización de la aplicación.
+    gemini_live_model: str | None = None
     gemini_live_voice: str = "Kore"
     google_api_key: str | None = None
     google_cloud_project: str | None = None
     google_cloud_location: str = "us"
     google_cloud_live_location: str = "us-central1"
     google_genai_use_vertexai: bool = False
+
+    @property
+    def resolved_gemini_live_model(self) -> str:
+        configured = (self.gemini_live_model or "").strip()
+        if configured:
+            return configured
+        if self.google_genai_use_vertexai:
+            return VERTEX_GEMINI_LIVE_MODEL
+        return DEVELOPER_GEMINI_LIVE_MODEL
 
     @property
     def voice_enabled(self) -> bool:
