@@ -309,7 +309,7 @@ def create_app(
                 "duration_ms": round(duration_ms, 2),
             },
         )
-        if request.url.path.startswith("/assets/"):
+        if request.url.path.startswith("/assets/") and response.status_code == 200:
             response.headers.setdefault(
                 "cache-control",
                 "public, max-age=31536000, immutable",

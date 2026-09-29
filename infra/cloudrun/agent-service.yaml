@@ -26,7 +26,7 @@ spec:
             - name: GOOGLE_CLOUD_LOCATION
               value: us
             - name: GOOGLE_CLOUD_LIVE_LOCATION
-              value: REGION
+              value: us-central1
             - name: GEMINI_MODEL
               value: gemini-3.5-flash-lite
             - name: APP_SESSIONS_BACKEND

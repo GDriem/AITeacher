@@ -316,6 +316,12 @@ test("voz conecta, silencia, interrumpe, reconecta, limpia y vuelve al texto", a
   await voiceServer(page, { type: "turn_complete" });
   await voiceServer(page, "audio");
   expect(await page.evaluate(() => (window as unknown as { __voiceMetrics: { sourceStarts: number } }).__voiceMetrics.sourceStarts)).toBe(2);
+  await voiceServer(page, { type: "interrupted" });
+  await voiceServer(page, "audio");
+  expect(await page.evaluate(() => (window as unknown as { __voiceMetrics: { sourceStarts: number } }).__voiceMetrics.sourceStarts)).toBe(2);
+  await voiceServer(page, { type: "transcript", role: "user", text: "Continúa, por favor." });
+  await voiceServer(page, "audio");
+  expect(await page.evaluate(() => (window as unknown as { __voiceMetrics: { sourceStarts: number } }).__voiceMetrics.sourceStarts)).toBe(3);
 
   await page.evaluate(() => (window as unknown as { __voiceSocket: { drop: () => void } }).__voiceSocket.drop());
   await expect(page.getByText("La voz no está disponible", { exact: true })).toBeVisible();

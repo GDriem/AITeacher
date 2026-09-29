@@ -75,8 +75,8 @@ class Settings(BaseSettings):
         if self.model_provider != ModelProviderName.GEMINI:
             return False
         if self.google_genai_use_vertexai:
-            return bool(self.google_cloud_project)
-        return bool(self.google_api_key)
+            return bool((self.google_cloud_project or "").strip())
+        return bool((self.google_api_key or "").strip())
 
     @property
     def google_auth_enabled(self) -> bool:

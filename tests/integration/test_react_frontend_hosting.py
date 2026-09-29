@@ -68,6 +68,7 @@ async def test_react_serves_root_deep_and_unknown_routes(
     assert asset.status_code == 200
     assert asset.headers["cache-control"] == "public, max-age=31536000, immutable"
     assert missing_asset.status_code == 404
+    assert "immutable" not in missing_asset.headers.get("cache-control", "")
     assert missing_api.status_code == 404
     assert missing_api.headers["content-type"].startswith("application/json")
     assert missing_api.json() == {"detail": "Not Found"}

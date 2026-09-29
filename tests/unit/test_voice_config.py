@@ -60,6 +60,23 @@ def test_voice_is_disabled_when_vertex_project_is_missing() -> None:
     assert settings.voice_enabled is False
 
 
+@pytest.mark.parametrize(
+    ("use_vertex", "credentials"),
+    [(False, {"google_api_key": "   "}), (True, {"google_cloud_project": "   "})],
+)
+def test_voice_is_disabled_when_credentials_are_blank(
+    use_vertex: bool, credentials: dict[str, str]
+) -> None:
+    settings = Settings(
+        _env_file=None,
+        model_provider=ModelProviderName.GEMINI,
+        google_genai_use_vertexai=use_vertex,
+        **credentials,
+    )
+
+    assert settings.voice_enabled is False
+
+
 @pytest.mark.parametrize("use_vertex", [False, True])
 def test_explicit_live_model_overrides_backend_default(use_vertex: bool) -> None:
     settings = Settings(

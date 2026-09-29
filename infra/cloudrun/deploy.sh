@@ -12,7 +12,7 @@ GEMINI_MODEL="${GEMINI_MODEL:-gemini-3.5-flash-lite}"
 GEMINI_LIVE_MODEL="${GEMINI_LIVE_MODEL:-gemini-live-2.5-flash-native-audio}"
 GEMINI_LIVE_VOICE="${GEMINI_LIVE_VOICE:-Kore}"
 GEMINI_LOCATION="${GEMINI_LOCATION:-us}"
-GEMINI_LIVE_LOCATION="${GEMINI_LIVE_LOCATION:-${REGION}}"
+GEMINI_LIVE_LOCATION="${GEMINI_LIVE_LOCATION:-us-central1}"
 
 gcloud config set project "${PROJECT_ID}"
 gcloud services enable run.googleapis.com artifactregistry.googleapis.com \
