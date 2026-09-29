@@ -18,6 +18,7 @@ export function useVoiceSession(studentId: string, sessionId: string | null) {
   const runRef = useRef(0);
   const stoppingRef = useRef(false);
   const mutedRef = useRef(false);
+  const discardTurnAudioRef = useRef(false);
   const outputSampleRateRef = useRef(24_000);
   const phaseRef = useRef<VoicePhase>("disconnected");
   const moveTo = useCallback((phase: "connecting" | "listening" | "responding") => {
@@ -45,7 +46,7 @@ export function useVoiceSession(studentId: string, sessionId: string | null) {
   }, [cleanup]);
 
   const playPcm = useCallback((runId: number, data: ArrayBuffer) => {
-    if (runId !== runRef.current) return;
+    if (runId !== runRef.current || discardTurnAudioRef.current) return;
     const runtime = runtimeRef.current;
     enqueuePcm(runtime, data, outputSampleRateRef.current, () => {
       if (runId === runRef.current && runtime.playbackSources.size === 0) moveTo("listening");
@@ -73,6 +74,7 @@ export function useVoiceSession(studentId: string, sessionId: string | null) {
     const runId = runRef.current;
     stoppingRef.current = false;
     mutedRef.current = false;
+    discardTurnAudioRef.current = false;
     moveTo("connecting");
     try {
       const mediaDevices = (navigator as unknown as { mediaDevices?: MediaDevices }).mediaDevices;
@@ -110,17 +112,23 @@ export function useVoiceSession(studentId: string, sessionId: string | null) {
         }
         if (message.type === "ready") {
           outputSampleRateRef.current = message.sampleRate;
+          discardTurnAudioRef.current = false;
           void beginCapture(runId).then(
             () => moveTo("listening"),
             (error: unknown) => fail(runId, error instanceof Error ? error.message : "No pudimos iniciar el micrófono."),
           );
         } else if (message.type === "transcript") {
+          if (message.role === "user") discardTurnAudioRef.current = false;
           dispatch({ type: "transcript", role: message.role, text: message.text });
-          moveTo(message.role === "tutor" ? "responding" : "listening");
+          if (message.role !== "tutor" || !discardTurnAudioRef.current) {
+            moveTo(message.role === "tutor" ? "responding" : "listening");
+          }
         } else if (message.type === "interrupted") {
+          discardTurnAudioRef.current = true;
           stopPlayback();
           moveTo("listening");
         } else if (message.type === "turn_complete") {
+          discardTurnAudioRef.current = false;
           moveTo(runtimeRef.current.playbackSources.size > 0 ? "responding" : "listening");
         } else {
           fail(runId, message.message);
@@ -167,6 +175,7 @@ export function useVoiceSession(studentId: string, sessionId: string | null) {
       dispatch({ type: "mute", muted });
     },
     interrupt: () => {
+      discardTurnAudioRef.current = true;
       stopPlayback();
       moveTo("listening");
     },

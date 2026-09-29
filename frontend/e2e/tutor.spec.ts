@@ -43,14 +43,14 @@ async function routeTutor(page: Page, { restored = true, voice = false }: { rest
 
 async function installVoiceBrowserMocks(page: Page) {
   await page.addInitScript(() => {
-    const metrics = { audioModules: [] as string[], closes: 0, disconnects: 0, getUserMedia: 0, sent: [] as unknown[], sourceStops: 0, trackStops: 0 };
+    const metrics = { audioModules: [] as string[], closes: 0, disconnects: 0, getUserMedia: 0, sent: [] as unknown[], sourceStarts: 0, sourceStops: 0, trackStops: 0 };
     class FakeNode extends EventTarget {
       connect() { return this; }
       disconnect() { metrics.disconnects += 1; }
     }
     class FakeSource extends FakeNode {
       buffer: unknown = null;
-      start() { /* Playback remains active until interrupted. */ }
+      start() { metrics.sourceStarts += 1; /* Playback remains active until interrupted. */ }
       stop() { metrics.sourceStops += 1; this.dispatchEvent(new Event("ended")); }
     }
     class FakeAudioContext {
@@ -311,6 +311,11 @@ test("voz conecta, silencia, interrumpe, reconecta, limpia y vuelve al texto", a
   await page.getByRole("button", { name: "Interrumpir audio" }).click();
   await expect(page.getByText("Te escucho", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __voiceMetrics: { sourceStops: number } }).__voiceMetrics.sourceStops)).toBe(1);
+  await voiceServer(page, "audio");
+  expect(await page.evaluate(() => (window as unknown as { __voiceMetrics: { sourceStarts: number } }).__voiceMetrics.sourceStarts)).toBe(1);
+  await voiceServer(page, { type: "turn_complete" });
+  await voiceServer(page, "audio");
+  expect(await page.evaluate(() => (window as unknown as { __voiceMetrics: { sourceStarts: number } }).__voiceMetrics.sourceStarts)).toBe(2);
 
   await page.evaluate(() => (window as unknown as { __voiceSocket: { drop: () => void } }).__voiceSocket.drop());
   await expect(page.getByText("La voz no está disponible", { exact: true })).toBeVisible();
