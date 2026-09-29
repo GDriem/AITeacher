@@ -870,6 +870,8 @@ def create_app(
     @app.get("/", include_in_schema=False)
     @app.get("/{path:path}", include_in_schema=False)
     async def react_app(path: str = "") -> FileResponse:
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
         index_path = REACT_DIST_DIR / "index.html"
         if not index_path.is_file():
             raise HTTPException(

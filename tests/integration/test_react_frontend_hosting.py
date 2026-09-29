@@ -57,6 +57,9 @@ async def test_react_serves_root_deep_and_unknown_routes(
         deep_route = await client.get("/tutor")
         unknown_route = await client.get("/una-ruta-desconocida")
         asset = await client.get("/assets/app-r1.js")
+        missing_asset = await client.get("/assets/no-existe.js")
+        missing_api = await client.get("/api/no-existe")
+        api_namespace = await client.get("/api")
 
     assert root.status_code == 200
     assert "React R11" in root.text
@@ -64,3 +67,9 @@ async def test_react_serves_root_deep_and_unknown_routes(
     assert root.headers["cache-control"] == "no-cache"
     assert asset.status_code == 200
     assert asset.headers["cache-control"] == "public, max-age=31536000, immutable"
+    assert missing_asset.status_code == 404
+    assert missing_api.status_code == 404
+    assert missing_api.headers["content-type"].startswith("application/json")
+    assert missing_api.json() == {"detail": "Not Found"}
+    assert api_namespace.status_code == 404
+    assert api_namespace.json() == {"detail": "Not Found"}
