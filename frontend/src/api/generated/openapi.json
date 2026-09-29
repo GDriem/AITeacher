@@ -256,6 +256,19 @@
             "title": "Message",
             "type": "string"
           },
+          "request_id": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
           "session_id": {
             "anyOf": [
               {

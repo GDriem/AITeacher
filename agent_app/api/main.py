@@ -81,6 +81,7 @@ from agent_app.services.authoring import (
     RemoteAuthoringGateway,
 )
 from agent_app.services.sessions import (
+    ChatRequestStatus,
     ConversationDetail,
     ConversationListResponse,
     FirestoreSessionRepository,
@@ -741,13 +742,67 @@ def create_app(
 
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
+        creates_session = payload.session_id is None
         payload = payload.model_copy(
             update={"student_id": resolve_student_id(request, payload.student_id)}
         )
         correlation_id = request.state.correlation_id
         logger.info("chat_started", extra={"correlation_id": correlation_id})
         with observability.activity("guided_explanation"):
-            result = await orchestrator.chat(payload, correlation_id)
+            if payload.request_id is None:
+                result = await orchestrator.chat(payload, correlation_id)
+            else:
+                session_id = payload.session_id or str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_URL,
+                        f"ait-chat:{payload.student_id}:{payload.request_id}",
+                    )
+                )
+                claim = sessions.claim_chat_request(
+                    payload.request_id, payload.student_id, session_id
+                )
+                if claim.response is not None:
+                    result = claim.response
+                elif not claim.acquired:
+                    deadline = time.monotonic() + settings.model_timeout_seconds + 5
+                    while time.monotonic() < deadline:
+                        await asyncio.sleep(0.05)
+                        record = sessions.get_chat_request(
+                            payload.request_id, payload.student_id
+                        )
+                        if (
+                            record is not None
+                            and record.status == ChatRequestStatus.COMPLETED
+                            and record.response is not None
+                        ):
+                            result = record.response
+                            break
+                    else:
+                        raise HTTPException(
+                            status_code=409,
+                            detail=(
+                                "El envío original sigue procesándose; reintenta "
+                                "con el mismo request_id."
+                            ),
+                        )
+                else:
+                    idempotent_payload = payload.model_copy(
+                        update={"session_id": claim.session_id}
+                    )
+                    try:
+                        result = await orchestrator.chat(
+                            idempotent_payload,
+                            correlation_id,
+                            create_session_if_missing=creates_session,
+                        )
+                        sessions.complete_chat_request(
+                            payload.request_id, payload.student_id, result
+                        )
+                    except BaseException:
+                        sessions.release_chat_request(
+                            payload.request_id, payload.student_id
+                        )
+                        raise
         logger.info("chat_completed", extra={"correlation_id": correlation_id})
         return result
 

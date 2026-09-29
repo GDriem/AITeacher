@@ -472,6 +472,8 @@ export interface components {
         ChatRequest: {
             /** Message */
             message: string;
+            /** Request Id */
+            request_id?: string | null;
             /** Session Id */
             session_id?: string | null;
             /** Student Id */

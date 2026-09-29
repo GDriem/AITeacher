@@ -171,6 +171,12 @@ sincronizan con el backend. `PATCH /api/sessions/{id}` permite renombrar o
 archivar y `DELETE /api/sessions/{id}` elimina de inmediato. La retención
 predeterminada es de 365 días.
 
+Los clientes nuevos incluyen un `request_id` único
+en cada `POST /api/chat`; Local y Firestore deduplican los reintentos y devuelven
+la respuesta persistida, por lo que dejar de esperar en el navegador no crea un
+segundo turno ni una segunda llamada al modelo. El campo es opcional para
+mantener compatibilidad con clientes anteriores.
+
 Cada resultado de `POST /api/evaluate` incluye una rúbrica de precisión,
 comprensión, aplicación y claridad. Con Gemini, la salida se solicita mediante
 un esquema JSON nativo y después se valida; si el proveedor falla o incumple el

@@ -15,7 +15,7 @@ from typing import Protocol
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
 from agent_app.models.activities import PracticeExercise
-from agent_app.models.chat import Quiz
+from agent_app.models.chat import ChatResponse, Quiz
 from mcp_learning_server.models import Topic, utc_now
 
 
@@ -58,9 +58,31 @@ class StoredConversation(SessionModel):
     messages: list[ConversationMessage] = Field(default_factory=list)
     pending_evaluation: PendingEvaluation
     pending_practice: PendingPractice | None = None
+    completed_chat_requests: dict[str, ChatResponse] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     archived_at: datetime | None = None
+
+
+class ChatRequestStatus(StrEnum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+
+
+class ChatRequestRecord(SessionModel):
+    request_id: str
+    student_id: str
+    session_id: str
+    status: ChatRequestStatus = ChatRequestStatus.PENDING
+    response: ChatResponse | None = None
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class ChatRequestClaim(SessionModel):
+    acquired: bool
+    session_id: str
+    response: ChatResponse | None = None
 
 
 class PendingQuizResponse(SessionModel):
@@ -115,12 +137,27 @@ class SessionRepository(Protocol):
 
     def delete(self, session_id: str, student_id: str) -> None: ...
 
+    def claim_chat_request(
+        self, request_id: str, student_id: str, session_id: str
+    ) -> ChatRequestClaim: ...
+
+    def get_chat_request(
+        self, request_id: str, student_id: str
+    ) -> ChatRequestRecord | None: ...
+
+    def complete_chat_request(
+        self, request_id: str, student_id: str, response: ChatResponse
+    ) -> None: ...
+
+    def release_chat_request(self, request_id: str, student_id: str) -> None: ...
+
 
 class SessionRepositoryError(RuntimeError):
     """La persistencia de sesiones es inválida o no se pudo escribir."""
 
 
 _session_map = TypeAdapter(dict[str, StoredConversation])
+_chat_request_map = TypeAdapter(dict[str, ChatRequestRecord])
 
 
 class LocalSessionRepository:
@@ -136,6 +173,9 @@ class LocalSessionRepository:
         if retention_days < 1:
             raise ValueError("retention_days debe ser al menos 1")
         self.path = Path(path)
+        self.chat_requests_path = self.path.with_suffix(
+            f"{self.path.suffix}.chat_requests.json"
+        )
         self.retention_days = retention_days
         self._clock = clock
         self._lock = threading.RLock()
@@ -204,6 +244,88 @@ class LocalSessionRepository:
             del sessions[session_id]
             self._write_all(sessions)
 
+    def claim_chat_request(
+        self, request_id: str, student_id: str, session_id: str
+    ) -> ChatRequestClaim:
+        normalized_student = _validate_student_id(student_id)
+        storage_key = _chat_request_storage_key(normalized_student, request_id)
+        with self._lock:
+            requests = self._read_chat_requests()
+            existing = requests.get(storage_key)
+            if existing is not None:
+                _authorize_chat_request(existing, normalized_student)
+                return ChatRequestClaim(
+                    acquired=False,
+                    session_id=existing.session_id,
+                    response=existing.response,
+                )
+            requests[storage_key] = ChatRequestRecord(
+                request_id=request_id,
+                student_id=normalized_student,
+                session_id=session_id,
+            )
+            self._write_chat_requests(requests)
+            return ChatRequestClaim(acquired=True, session_id=session_id)
+
+    def get_chat_request(
+        self, request_id: str, student_id: str
+    ) -> ChatRequestRecord | None:
+        with self._lock:
+            record = self._read_chat_requests().get(
+                _chat_request_storage_key(student_id, request_id)
+            )
+            if record is None:
+                return None
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            return record.model_copy(deep=True)
+
+    def complete_chat_request(
+        self, request_id: str, student_id: str, response: ChatResponse
+    ) -> None:
+        with self._lock:
+            requests = self._read_chat_requests()
+            record = requests.get(_chat_request_storage_key(student_id, request_id))
+            if record is None:
+                raise KeyError("No existe la solicitud de chat")
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            record.status = ChatRequestStatus.COMPLETED
+            record.response = response
+            record.updated_at = self._clock()
+            self._write_chat_requests(requests)
+
+    def release_chat_request(self, request_id: str, student_id: str) -> None:
+        with self._lock:
+            requests = self._read_chat_requests()
+            storage_key = _chat_request_storage_key(student_id, request_id)
+            record = requests.get(storage_key)
+            if record is None:
+                return
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            if record.status == ChatRequestStatus.PENDING:
+                del requests[storage_key]
+                self._write_chat_requests(requests)
+
+    def _read_chat_requests(self) -> dict[str, ChatRequestRecord]:
+        if not self.chat_requests_path.exists():
+            return {}
+        try:
+            return _chat_request_map.validate_python(
+                json.loads(self.chat_requests_path.read_text(encoding="utf-8"))
+            )
+        except (OSError, json.JSONDecodeError, ValidationError) as exc:
+            raise SessionRepositoryError(
+                f"No se pudieron leer las solicitudes en {self.chat_requests_path}"
+            ) from exc
+
+    def _write_chat_requests(self, requests: dict[str, ChatRequestRecord]) -> None:
+        _atomic_json_write(
+            self.chat_requests_path,
+            {
+                request_id: _serialize_chat_request(record)
+                for request_id, record in requests.items()
+            },
+        )
+
     def _read_current(self) -> dict[str, StoredConversation]:
         sessions = self._read_all()
         cutoff = self._clock() - timedelta(days=self.retention_days)
@@ -264,6 +386,7 @@ class InMemorySessionRepository:
 
     def __init__(self) -> None:
         self._items: dict[str, StoredConversation] = {}
+        self._chat_requests: dict[str, ChatRequestRecord] = {}
         self._lock = threading.RLock()
 
     def get(self, session_id: str, student_id: str) -> StoredConversation:
@@ -315,6 +438,60 @@ class InMemorySessionRepository:
         with self._lock:
             _get_authorized(self._items, session_id, student_id)
             del self._items[session_id]
+
+    def claim_chat_request(
+        self, request_id: str, student_id: str, session_id: str
+    ) -> ChatRequestClaim:
+        with self._lock:
+            storage_key = _chat_request_storage_key(student_id, request_id)
+            existing = self._chat_requests.get(storage_key)
+            if existing is not None:
+                _authorize_chat_request(existing, _validate_student_id(student_id))
+                return ChatRequestClaim(
+                    acquired=False,
+                    session_id=existing.session_id,
+                    response=existing.response,
+                )
+            self._chat_requests[storage_key] = ChatRequestRecord(
+                request_id=request_id,
+                student_id=_validate_student_id(student_id),
+                session_id=session_id,
+            )
+            return ChatRequestClaim(acquired=True, session_id=session_id)
+
+    def get_chat_request(
+        self, request_id: str, student_id: str
+    ) -> ChatRequestRecord | None:
+        with self._lock:
+            record = self._chat_requests.get(
+                _chat_request_storage_key(student_id, request_id)
+            )
+            if record is None:
+                return None
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            return record.model_copy(deep=True)
+
+    def complete_chat_request(
+        self, request_id: str, student_id: str, response: ChatResponse
+    ) -> None:
+        with self._lock:
+            record = self._chat_requests[
+                _chat_request_storage_key(student_id, request_id)
+            ]
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            record.status = ChatRequestStatus.COMPLETED
+            record.response = response
+            record.updated_at = utc_now()
+
+    def release_chat_request(self, request_id: str, student_id: str) -> None:
+        with self._lock:
+            storage_key = _chat_request_storage_key(student_id, request_id)
+            record = self._chat_requests.get(storage_key)
+            if record is None:
+                return
+            _authorize_chat_request(record, _validate_student_id(student_id))
+            if record.status == ChatRequestStatus.PENDING:
+                del self._chat_requests[storage_key]
 
 
 class FirestoreSessionRepository:
@@ -394,8 +571,65 @@ class FirestoreSessionRepository:
         self.get(session_id, student_id)
         self._document(session_id).delete()
 
+    def claim_chat_request(
+        self, request_id: str, student_id: str, session_id: str
+    ) -> ChatRequestClaim:
+        from google.api_core.exceptions import AlreadyExists
+
+        document = self._chat_request_document(student_id, request_id)
+        record = ChatRequestRecord(
+            request_id=request_id,
+            student_id=_validate_student_id(student_id),
+            session_id=session_id,
+        )
+        try:
+            document.create(record.model_dump(mode="json"))
+            return ChatRequestClaim(acquired=True, session_id=session_id)
+        except AlreadyExists:
+            snapshot = document.get()
+            existing = ChatRequestRecord.model_validate(snapshot.to_dict())
+            _authorize_chat_request(existing, record.student_id)
+            return ChatRequestClaim(
+                acquired=False,
+                session_id=existing.session_id,
+                response=existing.response,
+            )
+
+    def get_chat_request(
+        self, request_id: str, student_id: str
+    ) -> ChatRequestRecord | None:
+        snapshot = self._chat_request_document(student_id, request_id).get()
+        if not snapshot.exists:
+            return None
+        record = ChatRequestRecord.model_validate(snapshot.to_dict())
+        _authorize_chat_request(record, _validate_student_id(student_id))
+        return record
+
+    def complete_chat_request(
+        self, request_id: str, student_id: str, response: ChatResponse
+    ) -> None:
+        record = self.get_chat_request(request_id, student_id)
+        if record is None:
+            raise KeyError("No existe la solicitud de chat")
+        record.status = ChatRequestStatus.COMPLETED
+        record.response = response
+        record.updated_at = self._clock()
+        self._chat_request_document(student_id, request_id).set(
+            _serialize_chat_request(record)
+        )
+
+    def release_chat_request(self, request_id: str, student_id: str) -> None:
+        record = self.get_chat_request(request_id, student_id)
+        if record is not None and record.status == ChatRequestStatus.PENDING:
+            self._chat_request_document(student_id, request_id).delete()
+
     def _document(self, session_id: str):
         return self.client.collection(self.collection).document(session_id)
+
+    def _chat_request_document(self, student_id: str, request_id: str):
+        return self.client.collection(f"{self.collection}_chat_requests").document(
+            _chat_request_storage_key(student_id, request_id)
+        )
 
     def _expired(self, session: StoredConversation) -> bool:
         cutoff = self._clock() - timedelta(days=self.retention_days)
@@ -441,7 +675,43 @@ def _serialize_session(session: StoredConversation) -> dict:
         payload["pending_practice"]["quiz"]["expected_keywords"] = list(
             session.pending_practice.quiz.expected_keywords
         )
+    for request_id, response in session.completed_chat_requests.items():
+        payload["completed_chat_requests"][request_id]["quiz"][
+            "expected_keywords"
+        ] = list(response.quiz.expected_keywords)
     return payload
+
+
+def _serialize_chat_request(record: ChatRequestRecord) -> dict:
+    payload = record.model_dump(mode="json")
+    if record.response is not None:
+        payload["response"]["quiz"]["expected_keywords"] = list(
+            record.response.quiz.expected_keywords
+        )
+    return payload
+
+
+def _atomic_json_write(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.flush()
+            os.fsync(handle.fileno())
+            temporary_path = handle.name
+        os.replace(temporary_path, path)
+    except OSError as exc:
+        if temporary_path:
+            Path(temporary_path).unlink(missing_ok=True)
+        raise SessionRepositoryError(f"No se pudo guardar {path}") from exc
 
 
 def _get_authorized(
@@ -457,6 +727,15 @@ def _get_authorized(
 def _authorize(session: StoredConversation, student_id: str) -> None:
     if session.student_id != student_id:
         raise PermissionError("La conversación pertenece a otro estudiante")
+
+
+def _authorize_chat_request(record: ChatRequestRecord, student_id: str) -> None:
+    if record.student_id != student_id:
+        raise PermissionError("La solicitud de chat pertenece a otro estudiante")
+
+
+def _chat_request_storage_key(student_id: str, request_id: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"ait-chat:{student_id}:{request_id}"))
 
 
 def _validate_student_id(student_id: str) -> str:

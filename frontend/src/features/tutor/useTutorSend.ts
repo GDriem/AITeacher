@@ -21,6 +21,12 @@ interface Options {
   setLatestProgress: Dispatch<SetStateAction<StudentProgress | null>>;
 }
 
+interface PendingSubmission {
+  message: string;
+  requestId: string;
+  sessionId: string | null;
+}
+
 export function useTutorSend({
   studentId,
   activeSessionId,
@@ -37,6 +43,7 @@ export function useTutorSend({
   const [outgoing, setOutgoing] = useState<OutgoingMessage | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
+  const failedSubmissionRef = useRef<PendingSubmission | null>(null);
   const [status, setStatus] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -44,8 +51,8 @@ export function useTutorSend({
   const sendingRef = useRef(false);
   const traceSessionRef = useRef(initialExchange?.response.session_id ?? activeSessionId);
   const mutation = useMutation({
-    mutationFn: ({ message, sessionId, signal }: { message: string; sessionId: string | null; signal: AbortSignal }) =>
-      sendTutorMessage(studentId, message, sessionId, signal),
+    mutationFn: ({ message, sessionId, requestId, signal }: PendingSubmission & { signal: AbortSignal }) =>
+      sendTutorMessage(studentId, message, sessionId, requestId, signal),
   });
 
   useEffect(() => subscribeToSessionSelection((nextSessionId) => {
@@ -55,8 +62,7 @@ export function useTutorSend({
     abortRef.current = null;
     sendingRef.current = false;
     if (outgoing) {
-      setDraft((current) => current || outgoing.message);
-      setStatus("Envío cancelado al cambiar de conversación. Tu mensaje sigue en el editor.");
+      setStatus("Dejaste de esperar el envío anterior; puede completarse en su conversación original.");
     }
     traceSessionRef.current = nextSessionId;
     onTrace([]);
@@ -64,6 +70,7 @@ export function useTutorSend({
     setOutgoing(null);
     setSendError(null);
     setFailedMessage(null);
+    failedSubmissionRef.current = null;
     setLearningBusy(false);
     setLatestProgress(null);
   }), [onTrace, outgoing, setLatestProgress, setLearningBusy]);
@@ -78,15 +85,24 @@ export function useTutorSend({
     sendingRef.current = true;
     const requestId = ++requestIdRef.current;
     const controller = new AbortController();
+    const retry = failedSubmissionRef.current?.message === message
+      ? failedSubmissionRef.current
+      : null;
+    const submission: PendingSubmission = retry ?? {
+      message,
+      requestId: crypto.randomUUID(),
+      sessionId: activeSessionId,
+    };
     abortRef.current = controller;
     setDraft("");
     setSendError(null);
     setFailedMessage(null);
+    failedSubmissionRef.current = null;
     setStatus("Preparando respuesta…");
     setExchange(null);
     setOutgoing({ id: requestId, message, createdAt: new Date().toISOString() });
     try {
-      const response = await mutation.mutateAsync({ message, sessionId: activeSessionId, signal: controller.signal });
+      const response = await mutation.mutateAsync({ ...submission, signal: controller.signal });
       if (requestId !== requestIdRef.current) return;
       traceSessionRef.current = response.session_id;
       setOutgoing(null);
@@ -105,7 +121,10 @@ export function useTutorSend({
       setOutgoing(null);
       setDraft((current) => current || message);
       setFailedMessage(message);
-      setStatus(isAbortError(error) ? "Envío cancelado. Tu mensaje sigue en el editor." : "No se pudo enviar el mensaje.");
+      failedSubmissionRef.current = submission;
+      setStatus(isAbortError(error)
+        ? "Dejaste de esperar la respuesta. El envío puede completarse; reintentar recupera el mismo resultado."
+        : "No se pudo confirmar el envío. Reintentar usa la misma solicitud.");
       if (!isAbortError(error)) {
         setSendError(error instanceof ApiError ? error.message : "El tutor no está disponible en este momento.");
       }

@@ -92,8 +92,9 @@ describe("TutorScreen", () => {
     await waitFor(() => expect(input).toHaveFocus());
   });
 
-  it("cancela, restaura el borrador y una respuesta tardía no pisa el siguiente envío", async () => {
+  it("al dejar de esperar reintenta con la misma clave y descarta la respuesta tardía", async () => {
     let call = 0;
+    const requests: { request_id?: string; message?: string }[] = [];
     let releaseFirst: () => void = () => undefined;
     const firstPending = new Promise<void>((resolve) => { releaseFirst = resolve; });
     let created = false;
@@ -101,8 +102,9 @@ describe("TutorScreen", () => {
       http.get("http://localhost:4173/api/sessions", () =>
         HttpResponse.json(created ? sessionsFixture : { sessions: [], retention_days: 365 }),
       ),
-      http.get("http://localhost:4173/api/sessions/:sessionId", () => HttpResponse.json(detailForExchange("Segundo mensaje", "Respuesta vigente"))),
-      http.post("http://localhost:4173/api/chat", async () => {
+      http.get("http://localhost:4173/api/sessions/:sessionId", () => HttpResponse.json(detailForExchange("Primer mensaje", "Respuesta vigente"))),
+      http.post("http://localhost:4173/api/chat", async ({ request }) => {
+        requests.push(await request.json() as { request_id?: string; message?: string });
         call += 1;
         if (call === 1) {
           await firstPending;
@@ -118,20 +120,21 @@ describe("TutorScreen", () => {
     await user.type(input, "Primer mensaje");
     await user.click(screen.getByRole("button", { name: "Enviar" }));
     await user.click(screen.getByRole("button", { name: "Cancelar envío" }));
-    expect(await screen.findByText("Envío cancelado. Tu mensaje sigue en el editor.")).toBeInTheDocument();
+    expect(await screen.findByText("Dejaste de esperar la respuesta. El envío puede completarse; reintentar recupera el mismo resultado.")).toBeInTheDocument();
     expect(input).toHaveValue("Primer mensaje");
 
-    await user.clear(input);
-    await user.type(input, "Segundo mensaje");
     await user.click(screen.getByRole("button", { name: "Enviar" }));
     expect(await screen.findByText("Respuesta vigente")).toBeVisible();
     releaseFirst();
     await delay(10);
     expect(screen.queryByText("Respuesta obsoleta")).not.toBeInTheDocument();
     expect(call).toBe(2);
+    expect(requests[0]).toMatchObject({ message: "Primer mensaje" });
+    expect(requests[0]?.request_id).toBeTruthy();
+    expect(requests[1]?.request_id).toBe(requests[0]?.request_id);
   });
 
-  it("cambiar de conversación cancela el envío anterior sin perder el borrador", async () => {
+  it("al cambiar de conversación no afirma que el servidor canceló el envío", async () => {
     let releaseChat: () => void = () => undefined;
     const chatPending = new Promise<void>((resolve) => { releaseChat = resolve; });
     server.use(
@@ -155,8 +158,8 @@ describe("TutorScreen", () => {
     if (!agentsRow) throw new Error("No se encontró la conversación alternativa.");
     await user.click(within(agentsRow).getByRole("button", { name: "Abrir" }));
 
-    expect(await screen.findByText("Envío cancelado al cambiar de conversación. Tu mensaje sigue en el editor.")).toBeInTheDocument();
-    expect(input).toHaveValue("Mensaje pendiente al cambiar");
+    expect(await screen.findByText("Dejaste de esperar el envío anterior; puede completarse en su conversación original.")).toBeInTheDocument();
+    expect(input).toHaveValue("");
     expect(window.localStorage.getItem("activeSession:student-test")).toBe("session-agents");
     releaseChat();
     await delay(10);

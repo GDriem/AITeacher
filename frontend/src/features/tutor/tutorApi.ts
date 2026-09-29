@@ -14,12 +14,14 @@ export async function sendTutorMessage(
   studentId: string,
   message: string,
   sessionId: string | null,
+  requestId: string,
   signal: AbortSignal,
 ) {
   const result = await apiClient.POST("/api/chat", {
     body: {
       student_id: studentId,
       message,
+      request_id: requestId,
       ...(sessionId ? { session_id: sessionId } : {}),
     },
     signal,

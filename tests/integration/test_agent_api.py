@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 import pytest
 
@@ -18,6 +20,73 @@ from agent_app.services.sessions import LocalSessionRepository
 class UnavailableLearningTools(LocalLearningTools):
     async def list_available_topics(self):
         raise RuntimeError("MCP unavailable")
+
+
+class BlockingMockModelProvider(MockModelProvider):
+    def __init__(self) -> None:
+        self.calls = 0
+        self.started = asyncio.Event()
+        self.release = asyncio.Event()
+
+    async def generate(self, request):
+        self.calls += 1
+        self.started.set()
+        await self.release.wait()
+        return await super().generate(request)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_chat_retry_reuses_persisted_idempotent_result(
+    learning_service, tmp_path
+) -> None:
+    provider = BlockingMockModelProvider()
+    sessions_path = tmp_path / "sessions.json"
+    sessions = LocalSessionRepository(sessions_path)
+    app = create_app(
+        Settings(model_timeout_seconds=2),
+        tools=LocalLearningTools(learning_service),
+        provider=provider,
+        sessions=sessions,
+    )
+    body = {
+        "student_id": "retry-student",
+        "message": "Quiero aprender embeddings",
+        "request_id": "browser-send-1",
+    }
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+    ) as client:
+        original = asyncio.create_task(client.post("/api/chat", json=body))
+        await provider.started.wait()
+        retry = asyncio.create_task(client.post("/api/chat", json=body))
+        await asyncio.sleep(0.01)
+        provider.release.set()
+        original_response, retry_response = await asyncio.gather(original, retry)
+        sessions.chat_requests_path.unlink()
+        recovered_after_interrupted_completion = await client.post(
+            "/api/chat", json=body
+        )
+
+    assert original_response.status_code == 200
+    assert retry_response.status_code == 200
+    assert retry_response.json() == original_response.json()
+    assert recovered_after_interrupted_completion.json() == original_response.json()
+    assert provider.calls == 1
+    session_id = original_response.json()["session_id"]
+    recovered = LocalSessionRepository(sessions_path).get(
+        session_id, "retry-student"
+    )
+    assert [message.content for message in recovered.messages].count(
+        "Quiero aprender embeddings"
+    ) == 1
+    record = LocalSessionRepository(sessions_path).get_chat_request(
+        "browser-send-1", "retry-student"
+    )
+    assert record is not None
+    assert record.response is not None
+    assert record.response.session_id == session_id
 
 
 @pytest.mark.integration

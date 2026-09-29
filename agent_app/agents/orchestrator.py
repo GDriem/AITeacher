@@ -55,15 +55,28 @@ class LearningOrchestrator:
         self.sessions = sessions or InMemorySessionRepository()
 
     async def chat(
-        self, request: ChatRequest, correlation_id: str | None = None
+        self,
+        request: ChatRequest,
+        correlation_id: str | None = None,
+        *,
+        create_session_if_missing: bool = False,
     ) -> ChatResponse:
         correlation_id = correlation_id or str(uuid.uuid4())
         session_id = request.session_id or str(uuid.uuid4())
-        session = (
-            self.sessions.get(session_id, request.student_id)
-            if request.session_id
-            else None
-        )
+        try:
+            session = (
+                self.sessions.get(session_id, request.student_id)
+                if request.session_id
+                else None
+            )
+        except KeyError:
+            if not create_session_if_missing:
+                raise
+            session = None
+        if session is not None and request.request_id is not None:
+            completed = session.completed_chat_requests.get(request.request_id)
+            if completed is not None:
+                return completed
         if session is not None and session.archived_at is not None:
             raise ValueError("La conversación está archivada; restáurala para continuar")
         trace = [
@@ -207,6 +220,11 @@ class LearningOrchestrator:
                 ),
             ]
         )
+        if request.request_id is not None:
+            session.completed_chat_requests[request.request_id] = response
+            while len(session.completed_chat_requests) > 20:
+                oldest_request_id = next(iter(session.completed_chat_requests))
+                del session.completed_chat_requests[oldest_request_id]
         self.sessions.save(session)
         return response
 
