@@ -202,6 +202,15 @@ pytest para pruebas que combinan componentes sin credenciales cloud.
 Importar en Postman con "Import" → seleccionar el archivo. Requiere ambos
 servicios corriendo localmente.
 
+## Preparación para GCP
+
+La auditoría del 2026-09-28 dejó un backlog de remediación previo al despliegue
+en Cloud Run. Vive en la skill `gcp-readiness`
+(`.claude/skills/gcp-readiness/`): `QUEUE.md` tiene el estado de las 12 tareas y
+`tasks/` un prompt autocontenido por tarea. Invócala con `/gcp-readiness`; ella
+despacha cada tarea a un ejecutor aparte —Codex vía `dispatch-codex.sh`, o un
+subagente de Claude— para no cargar esta sesión.
+
 ## Documentación completa
 
 Use `docs/README.md` como índice. Incluye arquitectura, hoja de ruta cerrada,

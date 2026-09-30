@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["estado", "archivos_modificados", "verificacion", "supuestos", "notas"],
+  "properties": {
+    "estado": {
+      "type": "string",
+      "enum": ["done", "blocked", "partial"],
+      "description": "done: tarea completa y verificada. partial: parte aplicada. blocked: no se pudo avanzar."
+    },
+    "archivos_modificados": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Rutas relativas al raíz del repositorio."
+    },
+    "verificacion": {
+      "type": "string",
+      "description": "Salida literal de los comandos de la sección Verificación de la tarea."
+    },
+    "supuestos": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Decisiones que hubo que tomar por falta de información en la tarea."
+    },
+    "notas": {
+      "type": "string",
+      "description": "Desviaciones respecto al plan, trabajo pendiente, o lo que bloqueó."
+    }
+  }
+}
