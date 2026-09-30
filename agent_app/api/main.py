@@ -482,7 +482,8 @@ def create_app(
         }
 
     @app.get("/api/observability", response_model=ObservabilitySnapshot)
-    async def observability_summary() -> dict:
+    async def observability_summary(request: Request) -> dict:
+        await authenticated_profile(request)
         return observability.snapshot()
 
     @app.get("/api/capabilities", response_model=AppCapabilities)

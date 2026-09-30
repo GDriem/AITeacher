@@ -176,6 +176,56 @@ async def test_auth_bootstrap_contracts_support_disabled_guest_and_expired_sessi
     assert protected.json()["detail"] == "La sesión no es válida"
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_observability_requires_session_only_when_auth_is_enabled(
+    learning_service,
+) -> None:
+    disabled_app = create_app(
+        Settings(
+            google_client_id=None,
+            app_session_secret=None,
+            model_provider=ModelProviderName.MOCK,
+        ),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=disabled_app),
+        base_url="http://agent.local",
+    ) as client:
+        local_observability = await client.get("/api/observability")
+
+    enabled_app = create_app(
+        Settings(
+            google_client_id="web-client.apps.googleusercontent.com",
+            app_session_secret="s" * 32,
+        ),
+        tools=LocalLearningTools(learning_service),
+        provider=MockModelProvider(),
+        auth_service=AuthService(
+            FakeGoogleVerifier(),
+            InMemoryStudentProfileRepository(),
+            SessionSigner("s" * 32),
+        ),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=enabled_app),
+        base_url="http://agent.local",
+    ) as client:
+        anonymous_observability = await client.get("/api/observability")
+        login = await client.post(
+            "/api/auth/google",
+            json={"credential": "valid-google-credential-" + "x" * 100},
+        )
+        authenticated_observability = await client.get("/api/observability")
+
+    assert local_observability.status_code == 200
+    assert anonymous_observability.status_code == 401
+    assert login.status_code == 200
+    assert authenticated_observability.status_code == 200
+
+
 def test_google_auth_requires_a_session_secret() -> None:
     with pytest.raises(RuntimeError, match="APP_SESSION_SECRET"):
         create_app(
