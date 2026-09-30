@@ -29,7 +29,7 @@ versionada cubre el [currículo de inglés](docs/english-curriculum.md),
 - Repositorio JSON atómico para progreso y evaluaciones.
 - Seis herramientas MCP y un recurso de catálogo.
 - Streamable HTTP sin estado en `http://localhost:8001/mcp/`.
-- Health checks en `/healthz` y `/readyz`.
+- Health checks en `/health` y `/ready`.
 - Pruebas unitarias y de integración sin credenciales cloud.
 - Google ADK 2.x con orquestador y tres subagentes especialistas.
 - FastAPI, chat, evaluación y trazabilidad sin chain-of-thought.
@@ -113,7 +113,7 @@ python -m mcp_learning_server.server
 Verificación rápida:
 
 ```bash
-curl http://localhost:8001/healthz
+curl http://localhost:8001/health
 ```
 
 También puede conectar MCP Inspector a `http://localhost:8001/mcp/`.
@@ -211,7 +211,7 @@ administrativas del MCP. Las lecciones se guardan en
 `MCP_CONTENT_AUTHORING_PATH`; sólo el snapshot publicado alimenta la búsqueda del
 tutor. Los borradores no forman parte del corpus hasta que se publican.
 
-`GET /healthz` comprueba la vida del proceso y `GET /readyz` valida que Agent
+`GET /health` comprueba la vida del proceso y `GET /ready` valida que Agent
 App pueda consultar el catálogo MCP. `GET /api/observability` entrega métricas
 agregadas sin contenido del estudiante. El panel **Operación** muestra
 peticiones, tasa de error, latencia p95, llamadas al modelo, tokens estimados,
@@ -310,7 +310,7 @@ los fija el script; son los predeterminados de Cloud Run):
 | Concurrencia | 80 (*default*) | 40 (`--concurrency`) |
 | Timeout de request | 300 s (*default*) | 3600 s (el WebSocket de voz supera los 5 min) |
 | CPU / memoria | 1 vCPU / 512 MiB (*default*) | 1 vCPU / 512 MiB (*default*) |
-| Sondas | startup y liveness `GET /healthz` | startup y liveness `GET /healthz` |
+| Sondas | startup y liveness `GET /health` | startup y liveness `GET /health` |
 | Secretos | — | `APP_SESSION_SECRET` desde Secret Manager (`:latest`) |
 
 Los defaults de memoria bastan: en reposo el agent-app consume ~84 MiB y el
@@ -342,7 +342,7 @@ Variables del script que puede sobrescribir en el entorno: `PROJECT_ID`,
 `GEMINI_LOCATION` y `GEMINI_LIVE_LOCATION`.
 
 Tras el despliegue, `infra/cloudrun/smoke-test.sh` verifica el servicio público,
-incluidos `/healthz`, la conexión de Agent App con el MCP mediante `/readyz`, las
+incluidos `/health`, la conexión de Agent App con el MCP mediante `/ready`, las
 capacidades y las rutas de React, sin crear recursos. La comprobación de voz es
 opcional: use `EXPECT_VOICE=1` cuando el despliegue deba publicar esa capacidad.
 

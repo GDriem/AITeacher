@@ -17,7 +17,7 @@ Dos tareas del mismo carril **nunca** se despachan a la vez.
 | T07 | Reutilizar cliente MCP y cachear el ID token | `T07-cliente-mcp.md` | mcp-client | — | alta | done |
 | T08 | Proteger `/api/observability` | `T08-proteger-observabilidad.md` | api | T06 | media | done |
 | T09 | Límite de tasa en los endpoints que llaman al modelo | `T09-limite-de-tasa.md` | api | T08 | media | done |
-| T10 | Ampliar `smoke-test.sh` a `/readyz` y al camino MCP | `T10-smoke-test.md` | infra-3 | — | media | done |
+| T10 | Ampliar `smoke-test.sh` a `/ready` y al camino MCP | `T10-smoke-test.md` | infra-3 | — | media | done |
 | T11 | Honrar el `PORT` que inyecta Cloud Run | `T11-puerto-cloudrun.md` | arranque | T09 | baja | done |
 | T12 | Reconciliar README y CLAUDE.md con el repo real | `T12-docs-desincronizados.md` | docs | — | baja | done |
 
@@ -61,7 +61,7 @@ después de cada una (183 pruebas al final).
   `MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE` (default 30). El contador es por
   proceso: el límite efectivo en Cloud Run se multiplica por el número de
   instancias.
-- **T10** · Codex. `/healthz`, `/readyz` con reintento por arranque en frío y
+- **T10** · Codex. `/health`, `/ready` con reintento por arranque en frío y
   comprobación de capacidades. Verificado contra el stack local con el overlay
   `docker-compose.gcp.yml`, incluido el caso negativo (MCP apagado → salida 1).
 - **T11** · Codex. `AliasChoices("PORT", "APP_PORT", "app_port")` en

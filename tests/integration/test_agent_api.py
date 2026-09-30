@@ -346,7 +346,7 @@ async def test_readiness_reports_unavailable_learning_service(
         transport=httpx.ASGITransport(app=app),
         base_url="http://agent.local",
     ) as client:
-        response = await client.get("/readyz")
+        response = await client.get("/ready")
 
     assert response.status_code == 503
     assert response.json() == {
@@ -378,8 +378,8 @@ async def test_learning_tools_timeout_degrades_without_affecting_health(
                 "message": "Quiero aprender embeddings",
             },
         )
-        health = await client.get("/healthz")
-        readiness = await client.get("/readyz")
+        health = await client.get("/health")
+        readiness = await client.get("/ready")
 
     assert chat.status_code == 503
     assert "detail" in chat.json()
@@ -429,8 +429,8 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
     ) as client:
-        health = await client.get("/healthz")
-        readiness = await client.get("/readyz")
+        health = await client.get("/health")
+        readiness = await client.get("/ready")
         capabilities = await client.get("/api/capabilities")
         topics = await client.get(
             "/api/topics", params={"student_id": "student-1"}

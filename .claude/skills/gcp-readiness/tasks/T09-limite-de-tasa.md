@@ -45,7 +45,7 @@ Al exceder el límite: **429** con cuerpo JSON `{"detail": "..."}` en español y
 cabecera `Retry-After`. Reutiliza el patrón de `@app.exception_handler` que ya
 hay en `create_app`.
 
-No apliques el límite a `/healthz`, `/readyz`, `/api/capabilities`,
+No apliques el límite a `/health`, `/ready`, `/api/capabilities`,
 `/api/auth/*`, `/static/*` ni `/assets/*`.
 
 ## Verificación
@@ -54,7 +54,7 @@ No apliques el límite a `/healthz`, `/readyz`, `/api/capabilities`,
 - Test: el límite es por alumno, no global — dos `student_id` distintos no se
   estorban.
 - Test: con el límite en `0`, mil peticiones pasan.
-- Test: `/healthz` y `/api/capabilities` nunca reciben 429.
+- Test: `/health` y `/api/capabilities` nunca reciben 429.
 - `python -m pytest -q`
 
 ## Commit sugerido

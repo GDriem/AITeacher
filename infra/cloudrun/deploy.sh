@@ -71,7 +71,7 @@ gcloud run deploy learning-mcp --image "${MCP_IMAGE}" --region "${REGION}" \
   --service-account "learning-mcp@${PROJECT_ID}.iam.gserviceaccount.com" \
   --no-allow-unauthenticated --set-env-vars \
 "MCP_PROGRESS_BACKEND=firestore,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},FIRESTORE_PROGRESS_COLLECTION=student_progress" \
-  --startup-probe httpGet.path=/healthz --liveness-probe httpGet.path=/healthz
+  --startup-probe httpGet.path=/health --liveness-probe httpGet.path=/health
 
 MCP_URI="$(gcloud run services describe learning-mcp --region "${REGION}" --format='value(status.url)')"
 
@@ -96,6 +96,6 @@ gcloud run deploy learning-agent --image "${AGENT_IMAGE}" --region "${REGION}" \
   --set-secrets "APP_SESSION_SECRET=${SESSION_SECRET_NAME}:latest" \
   --set-env-vars \
 "MODEL_PROVIDER=gemini,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${GEMINI_LOCATION},GOOGLE_CLOUD_LIVE_LOCATION=${GEMINI_LIVE_LOCATION},GEMINI_MODEL=${GEMINI_MODEL},GEMINI_LIVE_MODEL=${GEMINI_LIVE_MODEL},GEMINI_LIVE_VOICE=${GEMINI_LIVE_VOICE},APP_SESSIONS_BACKEND=firestore,FIRESTORE_SESSIONS_COLLECTION=learning_sessions,APP_SESSION_RETENTION_DAYS=365,APP_STUDENT_PROFILES_BACKEND=firestore,FIRESTORE_STUDENT_PROFILES_COLLECTION=student_profiles,GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID},APP_AUTH_COOKIE_SECURE=true,MCP_USE_LOCAL_ADAPTER=false,MCP_SERVER_URL=${MCP_URI}/mcp/,MCP_AUTHORING_URL=${MCP_URI}/admin,MCP_TIMEOUT_SECONDS=${MCP_TIMEOUT_SECONDS},MCP_AUTH_AUDIENCE=${MCP_URI}" \
-  --startup-probe httpGet.path=/healthz --liveness-probe httpGet.path=/healthz
+  --startup-probe httpGet.path=/health --liveness-probe httpGet.path=/health
 
 gcloud run services describe learning-agent --region "${REGION}" --format='value(status.url)'

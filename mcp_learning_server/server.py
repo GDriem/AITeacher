@@ -251,8 +251,8 @@ def create_app(
 
     app = Starlette(
         routes=[
-            Route("/healthz", endpoint=health),
-            Route("/readyz", endpoint=health),
+            Route("/health", endpoint=health),
+            Route("/ready", endpoint=health),
             Route("/admin/lessons", endpoint=lessons, methods=["GET", "POST"]),
             Route(
                 "/admin/lessons/{lesson_id:str}",

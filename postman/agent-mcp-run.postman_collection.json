@@ -20,14 +20,14 @@
           "name": "Health",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{mcpBaseUrl}}/healthz", "host": ["{{mcpBaseUrl}}"], "path": ["healthz"] }
+            "url": { "raw": "{{mcpBaseUrl}}/health", "host": ["{{mcpBaseUrl}}"], "path": ["health"] }
           }
         },
         {
           "name": "Ready",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{mcpBaseUrl}}/readyz", "host": ["{{mcpBaseUrl}}"], "path": ["readyz"] }
+            "url": { "raw": "{{mcpBaseUrl}}/ready", "host": ["{{mcpBaseUrl}}"], "path": ["ready"] }
           }
         },
         {
@@ -206,7 +206,7 @@
           "name": "Health",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{agentBaseUrl}}/healthz", "host": ["{{agentBaseUrl}}"], "path": ["healthz"] }
+            "url": { "raw": "{{agentBaseUrl}}/health", "host": ["{{agentBaseUrl}}"], "path": ["health"] }
           }
         },
         {

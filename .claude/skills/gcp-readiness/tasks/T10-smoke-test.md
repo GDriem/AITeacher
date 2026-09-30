@@ -1,4 +1,4 @@
-# T10 — Ampliar `smoke-test.sh` a `/readyz` y al camino MCP
+# T10 — Ampliar `smoke-test.sh` a `/ready` y al camino MCP
 
 **Carril:** infra-3 · **Depende de:** — · **Prioridad:** media
 
@@ -14,7 +14,7 @@ probables del primer despliegue —`MCP_ALLOWED_HOSTS` sin el host de Cloud Run
 pasándose del timeout— **dan verde en el smoke test actual**, porque `/` y
 `/api/capabilities` no llaman al MCP.
 
-`/readyz` sí lo llama: devuelve 503 con `{"status":"not_ready","dependency":"learning-mcp"}`
+`/ready` sí lo llama: devuelve 503 con `{"status":"not_ready","dependency":"learning-mcp"}`
 cuando el MCP no responde. No está en el script.
 
 ## Archivos que puedes tocar
@@ -26,16 +26,16 @@ cuando el MCP no responde. No está en el script.
 
 Añade, usando los helpers `check` y `check_body_contains` que ya existen:
 
-1. **`GET /healthz` → 200.** Barato y confirma que el servicio arrancó.
-2. **`GET /readyz` → 200.** Es *la* comprobación que falta: si da 503, el camino
+1. **`GET /health` → 200.** Barato y confirma que el servicio arrancó.
+2. **`GET /ready` → 200.** Es *la* comprobación que falta: si da 503, el camino
    al MCP está roto y el despliegue no sirve, por muy bien que se vea la UI.
 3. **`GET /api/capabilities` con verificación del cuerpo**, no sólo del 200.
    Debe traer `"text":true`. Si se despliega con voz, también `"voice":true`;
    hazlo condicional a una variable de entorno (`EXPECT_VOICE=1`) para que el
    script sirva en despliegues sin voz.
 
-Sobre `/readyz` y el arranque en frío: con `learning-mcp` en `minScale 0`, la
-primera llamada puede tardar. Dale al `curl` de `/readyz` un timeout holgado
+Sobre `/ready` y el arranque en frío: con `learning-mcp` en `minScale 0`, la
+primera llamada puede tardar. Dale al `curl` de `/ready` un timeout holgado
 (`--max-time 30`) y, si falla, **reinténtalo una vez** antes de darlo por
 perdido. Un solo reintento: si hacen falta más, es que hay un problema de verdad
 y el script debe decirlo.
@@ -61,7 +61,7 @@ Y comprueba que **falla** cuando debe:
 
 ```bash
 docker compose stop mcp-server
-AGENT_URL=http://localhost:8000 bash infra/cloudrun/smoke-test.sh   # ✗ en /readyz, exit 1
+AGENT_URL=http://localhost:8000 bash infra/cloudrun/smoke-test.sh   # ✗ en /ready, exit 1
 docker compose -f docker-compose.yml -f docker-compose.gcp.yml up -d
 ```
 

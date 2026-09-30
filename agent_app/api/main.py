@@ -397,7 +397,7 @@ def create_app(
                 "public, max-age=3600, stale-while-revalidate=86400",
             )
         elif not request.url.path.startswith(
-            ("/api/", "/ws/", "/healthz", "/readyz")
+            ("/api/", "/ws/", "/health", "/ready")
         ):
             response.headers.setdefault("cache-control", "no-cache")
         response.headers.setdefault("x-content-type-options", "nosniff")
@@ -473,7 +473,7 @@ def create_app(
             },
         )
 
-    @app.get("/healthz")
+    @app.get("/health")
     async def health() -> dict:
         return {
             "status": "ok",
@@ -482,7 +482,7 @@ def create_app(
             "mcp_mode": "local" if settings.mcp_use_local_adapter else "remote",
         }
 
-    @app.get("/readyz", response_model=None)
+    @app.get("/ready", response_model=None)
     async def readiness() -> dict | Response:
         try:
             async with asyncio.timeout(settings.mcp_timeout_seconds):
@@ -1059,7 +1059,7 @@ def create_app(
             )
 
     # Catch-all: se declara al final para no ocultar rutas /api, /static,
-    # /assets, /healthz, /readyz ni el websocket de voz. Sirve el shell de
+    # /assets, /health, /ready ni el websocket de voz. Sirve el shell de
     # React tanto en "/" como en cualquier ruta profunda para que el
     # recargado del navegador funcione con enrutamiento del lado del cliente.
     @app.get("/", include_in_schema=False)

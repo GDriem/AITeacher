@@ -105,7 +105,7 @@ async def test_health_and_capabilities_never_receive_429(
         transport=httpx.ASGITransport(app=app),
         base_url="http://agent.local",
     ) as client:
-        health_responses = [await client.get("/healthz") for _ in range(3)]
+        health_responses = [await client.get("/health") for _ in range(3)]
         capabilities_responses = [
             await client.get("/api/capabilities") for _ in range(3)
         ]

@@ -1056,8 +1056,8 @@ plantilla auditable (el script `deploy.sh` no necesita fijarla porque ya
 coincide con el valor por defecto de `Settings`).
 
 La cabecera `cache-control` se simplificó: en vez de enumerar cada prefijo de
-ruta de la UI, ahora todo lo que no empieza con `/api/`, `/ws/`, `/healthz` o
-`/readyz` (es decir, cualquier shell HTML, React o heredado) recibe
+ruta de la UI, ahora todo lo que no empieza con `/api/`, `/ws/`, `/health` o
+`/ready` (es decir, cualquier shell HTML, React o heredado) recibe
 `no-cache`; `/assets/` conserva caché inmutable de un año y `/static/`
 conserva la caché corta con revalidación. Esto evita tener que tocar la
 cabecera cada vez que React gane una ruta nueva. El resto de cabeceras de
@@ -1113,7 +1113,7 @@ desarrollo administrado por separado, sin fallas. Adicionalmente se levantó
 `agent_app.api.main` real tres veces (modo React por defecto, modo
 `APP_DEFAULT_UI=legacy`, y para ejecutar `infra/cloudrun/smoke-test.sh`) y se
 verificaron con `curl` las cabeceras y el contenido de `/`, `/legacy`,
-`/tutor`, una ruta desconocida, el asset con hash y `/healthz`.
+`/tutor`, una ruta desconocida, el asset con hash y `/health`.
 
 **Decisiones tomadas.** El catch-all se declaró al final de `create_app` en
 vez de mantenerlo junto a `/legacy` para eliminar cualquier ambigüedad de

@@ -31,7 +31,7 @@ frontend/             UI React + TypeScript (Vite); FastAPI sirve `dist/` en `/`
                        (ver `docs/react-frontend-migration-plan.md`)
 
 mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable HTTP)
-  server.py             Punto de entrada ASGI, monta /mcp, /healthz y /admin
+  server.py             Punto de entrada ASGI, monta /mcp, /health y /admin
   content/learning_content.json  Corpus propio: 58 lecciones
   curriculum.py         CURRICULUM: grafo acíclico de temas y prerrequisitos (fuente única)
   models.py             Modelos de dominio Pydantic (Topic, TopicCategory, TopicStatus, etc.)
@@ -103,7 +103,7 @@ python -m pytest
 docker compose up --build
 ```
 
-Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
+Verificación rápida: `curl http://localhost:8001/health` (MCP) y
 `http://localhost:8000` (UI). MCP Inspector contra `http://localhost:8001/mcp/`.
 
 ## Variables de entorno relevantes
@@ -157,7 +157,7 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
   a `MCP_ALLOWED_HOSTS` (ver `mcp_learning_server/server.py:build_transport_security`).
   `docker-compose.yml` ya lo configura; `infra/cloudrun/deploy.sh` lo resuelve
   automáticamente tras el primer despliegue de `learning-mcp`. Los health
-  checks (`/healthz`, `/readyz`) no están afectados: viven fuera del mount
+  checks (`/health`, `/ready`) no están afectados: viven fuera del mount
   `/mcp/` y no pasan por esta validación.
 
 ## Pruebas
@@ -195,12 +195,12 @@ credenciales cloud.
 ## Postman
 
 `postman/agent-mcp-run.postman_collection.json` cubre ambos servicios:
-- **MCP Server** (`:8001`): `healthz`/`readyz` y JSON-RPC crudo sobre `/mcp/`
+- **MCP Server** (`:8001`): `health`/`ready` y JSON-RPC crudo sobre `/mcp/`
   (`initialize`, `tools/list`, `resources/list`, `resources/read`, y
   `tools/call` para las 6 herramientas, incluyendo un caso de tema
   desconocido). El servidor es stateless (`stateless_http=True`), así que no
   requiere manejar `Mcp-Session-Id`.
-- **Agent App** (`:8000`): `healthz`, `capabilities`, UI, y el flujo completo
+- **Agent App** (`:8000`): `health`, `capabilities`, UI, y el flujo completo
   `Chat` → `Evaluate` (el request de Chat guarda `session_id` en una variable
   de colección vía test script para que Evaluate lo reutilice automáticamente).
 

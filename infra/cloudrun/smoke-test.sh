@@ -40,12 +40,12 @@ check_body_contains() {
 echo "Smoke test contra ${AGENT_URL}"
 echo
 
-check "El proceso está saludable"          GET "/healthz" 200
-failed_before_readyz="$failed"
-if ! check "Agent puede consultar al MCP" GET "/readyz" 200 --max-time 30; then
-  echo "Reintentando /readyz una vez por posible arranque en frío del MCP..."
-  failed="$failed_before_readyz"
-  check "Agent puede consultar al MCP" GET "/readyz" 200 --max-time 30 || true
+check "El proceso está saludable"          GET "/health" 200
+failed_before_ready="$failed"
+if ! check "Agent puede consultar al MCP" GET "/ready" 200 --max-time 30; then
+  echo "Reintentando /ready una vez por posible arranque en frío del MCP..."
+  failed="$failed_before_ready"
+  check "Agent puede consultar al MCP" GET "/ready" 200 --max-time 30 || true
 fi
 check "Capacidades responden"             GET "/api/capabilities" 200
 check_body_contains "Las capacidades incluyen texto" "/api/capabilities" '"text":true'

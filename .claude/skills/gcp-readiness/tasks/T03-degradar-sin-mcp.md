@@ -17,13 +17,13 @@ configurado, `403` por IAM— la excepción sube sin capturar.
 Comportamiento reproducido con el MCP simulado caído:
 
 ```
-readyz  -> 503 {"status":"not_ready",...}      correcto
-healthz -> 200                                  Cloud Run sigue enviando tráfico
+ready  -> 503 {"status":"not_ready",...}      correcto
+health -> 200                                  Cloud Run sigue enviando tráfico
 chat    -> 500 Internal Server Error            texto plano, ni JSON
 ```
 
 El frontend espera JSON en todos los errores, así que el usuario ve un fallo
-opaco. Y como `/healthz` no mira el MCP, Cloud Run nunca retira la instancia.
+opaco. Y como `/health` no mira el MCP, Cloud Run nunca retira la instancia.
 
 ## Archivos que puedes tocar
 
@@ -61,9 +61,9 @@ opaco. Y como `/healthz` no mira el MCP, Cloud Run nunca retira la instancia.
    el `correlation_id` de `request.state`. (T05 arregla que la traza sobreviva al
    formateador; no dependas de esa tarea, sólo escribe el log bien.)
 
-4. **No cambies `/healthz`.** Es la sonda de arranque y de vida de Cloud Run: si
+4. **No cambies `/health`.** Es la sonda de arranque y de vida de Cloud Run: si
    empieza a depender del MCP, un MCP caído reinicia en bucle el agent-app y
-   pierdes también el chat. `/readyz` ya cubre la dependencia y está bien como está.
+   pierdes también el chat. `/ready` ya cubre la dependencia y está bien como está.
 
 ## Verificación
 
@@ -71,8 +71,8 @@ Escribe un test que sustituya las herramientas por un doble que levante
 `TimeoutError`, y que compruebe:
 
 - `POST /api/chat` → **503**, cuerpo JSON con clave `detail`
-- `GET /healthz` → **200** (no debe cambiar)
-- `GET /readyz` → **503**
+- `GET /health` → **200** (no debe cambiar)
+- `GET /ready` → **503**
 
 `create_app` acepta `tools=` por parámetro, así que puedes inyectar el doble sin
 tocar red. Mira cómo lo hacen los tests existentes en `tests/` antes de inventar
