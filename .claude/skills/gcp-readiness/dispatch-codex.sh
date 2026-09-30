@@ -21,11 +21,10 @@ mkdir -p "${RUNS}"
 #   < /dev/null       Sin esto Codex se queda en "Reading additional input from
 #                     stdin..." y cuelga para siempre en modo desatendido.
 #   -s workspace-write  Puede editar el repositorio, no el resto del disco.
-#   network_access=true `tests/integration/test_agent_mcp_remote.py` levanta un
-#                     servidor MCP real y se conecta por localhost. Con el
-#                     default (sin red) ese test muere con
-#                     "PermissionError: Operation not permitted" y la
-#                     verificación de cualquier tarea sale en falso negativo.
+#   network_access=false Mantiene una barrera real entre el checkout —que puede
+#                     contener configuración local— y cualquier salida de red.
+#                     La prueba que necesita localhost queda pendiente para el
+#                     orquestador, después de revisar el diff del agente.
 #   --output-schema   Obliga al agente a contestar con el contrato JSON. Ojo:
 #                     el modo estricto exige que *todas* las propiedades estén
 #                     en "required", si no la API responde 400.
@@ -34,13 +33,14 @@ CODEX_ARGS=(
   exec
   -C "${REPO_ROOT}"
   -s workspace-write
-  -c sandbox_workspace_write.network_access=true
+  -c sandbox_workspace_write.network_access=false
   --output-schema "${SCHEMA}"
 )
 
 if [ "${1:-}" = "--check" ]; then
   echo "Comprobando la conexión con Codex (sólo lectura, no toca el repo)…" >&2
   codex exec -C "${REPO_ROOT}" -s read-only \
+    -c sandbox_workspace_write.network_access=false \
     --output-schema "${SCHEMA}" -o "${RUNS}/check.json" \
     "Prueba de conectividad. No modifiques nada. Cuenta los archivos .md en
      .claude/skills/gcp-readiness/tasks/ y pon el número en 'verificacion'.
@@ -70,6 +70,9 @@ Reglas que no puedes saltarte:
   en la nube: genera costos reales en el proyecto del usuario.
 - No leas ni modifiques '.env': contiene credenciales del usuario.
 - No hagas commit. Deja los cambios en el árbol de trabajo.
+- Si la verificación pide la suite Python completa, excluye
+  'tests/integration/test_agent_mcp_remote.py': necesita un socket localhost y
+  el orquestador la ejecutará después de revisar tus cambios.
 - Español en comentarios, mensajes de dominio y documentación, como el resto del
   repositorio.
 

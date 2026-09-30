@@ -47,13 +47,15 @@ llamadas a Bash y `run_in_background: true`.
 Antes de la primera tarea del día, `dispatch-codex.sh --check` confirma la
 conexión sin tocar el repositorio (~10 s).
 
-El script encierra cuatro detalles que costaron descubrir; si algo falla, el
-motivo suele estar ahí y está comentado en el propio archivo. El resumen:
-Codex cuelga si no le cierras stdin, el esquema estricto exige *todas* las
-propiedades en `required`, y sin `network_access=true` el sandbox mata el socket
-local de `tests/integration/test_agent_mcp_remote.py` y la verificación sale en
-falso negativo. El log de Codex además escupe errores de un MCP de ClickUp sin
-autenticar: son ruido, ignóralos.
+El script encierra varios detalles que costaron descubrir; si algo falla, el
+motivo suele estar ahí y está comentado en el propio archivo. El resumen: Codex
+cuelga si no le cierras stdin y el esquema estricto exige *todas* las
+propiedades en `required`. El agente siempre trabaja sin red para que el checkout
+y la salida a Internet nunca compartan el mismo límite de seguridad. La prueba
+de transporte MCP que abre un servidor efímero en localhost queda fuera de su
+verificación. El orquestador revisa primero el diff y luego ejecuta la suite
+completa como paso separado; no se ejecuta código recién escrito por el agente
+con red antes de esa revisión.
 
 ### Subagente de Claude
 
@@ -106,10 +108,11 @@ agente y revertir es `git checkout -- <archivo>`.
    pedido commits, deja el árbol sucio y dilo.
 4. **Antes de despachar**: `git status --short` debe estar limpio, o el usuario
    debe confirmar que no importa.
-5. **Después de cada tarea**: revisa `git diff --stat`, corre
-   `.venv/bin/python -m pytest -q` aquí (barato, ~15 s) y actualiza `QUEUE.md`
-   con `done` o `blocked` + una línea de motivo. No te fíes sólo del informe del
-   ejecutor: verifica.
+5. **Después de cada tarea**: revisa el diff completo y sólo entonces corre
+   `.venv/bin/python -m pytest -q` desde el orquestador. Ese paso separado cubre
+   `tests/integration/test_agent_mcp_remote.py`, que necesita localhost y nunca
+   se habilita dentro del agente. Actualiza `QUEUE.md` con `done` o `blocked` +
+   una línea de motivo. No te fíes sólo del informe del ejecutor: verifica.
 
 ## Cola
 
