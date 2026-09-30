@@ -14,7 +14,7 @@ Dos tareas del mismo carril **nunca** se despachan a la vez.
 | T04 | Decidir el destino de `infra/cloudrun/*.yaml` | `T04-manifiestos-cloudrun.md` | infra | T01 | bloqueante | done |
 | T05 | Tracebacks y `severity` en el log JSON | `T05-logging-cloud.md` | logging | — | alta | pending |
 | T06 | Firestore fuera del event loop | `T06-firestore-no-bloqueante.md` | api | T03 | alta | done |
-| T07 | Reutilizar cliente MCP y cachear el ID token | `T07-cliente-mcp.md` | mcp-client | — | alta | running |
+| T07 | Reutilizar cliente MCP y cachear el ID token | `T07-cliente-mcp.md` | mcp-client | — | alta | done |
 | T08 | Proteger `/api/observability` | `T08-proteger-observabilidad.md` | api | T06 | media | pending |
 | T09 | Límite de tasa en los endpoints que llaman al modelo | `T09-limite-de-tasa.md` | api | T08 | media | pending |
 | T10 | Ampliar `smoke-test.sh` a `/readyz` y al camino MCP | `T10-smoke-test.md` | infra-3 | — | media | pending |

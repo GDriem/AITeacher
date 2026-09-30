@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
+from collections.abc import Callable
 from typing import Any, Protocol
 
 import httpx
@@ -98,29 +100,53 @@ class LocalLearningTools:
 
 
 class RemoteMcpLearningTools:
+    _TOKEN_LIFETIME_SECONDS = 60 * 60
+    _TOKEN_REFRESH_MARGIN_SECONDS = 5 * 60
+
     def __init__(
         self,
         url: str,
         timeout_seconds: float = 5,
         auth_audience: str | None = None,
+        *,
+        clock: Callable[[], float] = time.time,
     ) -> None:
         self.url = url
         self.timeout_seconds = timeout_seconds
         self.auth_audience = auth_audience
+        self._clock = clock
+        self._cached_identity_token: str | None = None
+        self._identity_token_expires_at = 0.0
+        self._identity_token_lock = asyncio.Lock()
+        self._http_client: httpx.AsyncClient | None = None
+
+    def _get_http_client(self) -> httpx.AsyncClient:
+        if self._http_client is None or self._http_client.is_closed:
+            self._http_client = httpx.AsyncClient()
+        return self._http_client
+
+    async def aclose(self) -> None:
+        client = self._http_client
+        self._http_client = None
+        self._cached_identity_token = None
+        self._identity_token_expires_at = 0.0
+        if client is not None:
+            await client.aclose()
 
     async def _call(self, name: str, arguments: dict[str, Any]) -> Any:
-        headers: dict[str, str] = {}
+        http_client = self._get_http_client()
         if self.auth_audience:
-            headers["Authorization"] = f"Bearer {await self._identity_token()}"
+            # La obtención del token queda fuera del presupuesto de la llamada MCP.
+            token = await self._identity_token()
+            http_client.headers["Authorization"] = f"Bearer {token}"
         try:
             async with asyncio.timeout(self.timeout_seconds):
-                async with httpx.AsyncClient(headers=headers) as http_client:
-                    async with streamable_http_client(
-                        self.url, http_client=http_client
-                    ) as (read, write, _):
-                        async with ClientSession(read, write) as session:
-                            await session.initialize()
-                            result = await session.call_tool(name, arguments=arguments)
+                async with streamable_http_client(
+                    self.url, http_client=http_client
+                ) as (read, write, _):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        result = await session.call_tool(name, arguments=arguments)
         except (TimeoutError, httpx.HTTPError) as exc:
             raise LearningToolsUnavailable(
                 "Las herramientas de aprendizaje no están disponibles"
@@ -147,12 +173,48 @@ class RemoteMcpLearningTools:
         return structured.get("result", structured)
 
     async def _identity_token(self) -> str:
+        now = self._clock()
+        if (
+            self._cached_identity_token is not None
+            and now
+            < self._identity_token_expires_at - self._TOKEN_REFRESH_MARGIN_SECONDS
+        ):
+            return self._cached_identity_token
+
+        async with self._identity_token_lock:
+            now = self._clock()
+            if (
+                self._cached_identity_token is not None
+                and now
+                < self._identity_token_expires_at
+                - self._TOKEN_REFRESH_MARGIN_SECONDS
+            ):
+                return self._cached_identity_token
+
+            token = await self._fetch_identity_token()
+            self._cached_identity_token = token
+            self._identity_token_expires_at = self._token_expiration(token, now)
+            return token
+
+    async def _fetch_identity_token(self) -> str:
         from google.auth.transport.requests import Request
         from google.oauth2 import id_token
 
         return await asyncio.to_thread(
             id_token.fetch_id_token, Request(), self.auth_audience
         )
+
+    def _token_expiration(self, token: str, fetched_at: float) -> float:
+        from google.auth import jwt
+
+        try:
+            expiration = jwt.decode(token, verify=False).get("exp")
+            if isinstance(expiration, (int, float)):
+                return float(expiration)
+        except Exception:
+            # Algunos proveedores de prueba entregan tokens opacos sin claim exp.
+            pass
+        return fetched_at + self._TOKEN_LIFETIME_SECONDS
 
     async def get_student_progress(self, student_id: str) -> StudentProgress:
         data = await self._call("get_student_progress", {"student_id": student_id})

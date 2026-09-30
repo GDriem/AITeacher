@@ -9,7 +9,8 @@ import logging
 import secrets
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
@@ -295,6 +296,12 @@ def create_app(
         sessions,
     )
 
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        yield
+        if isinstance(tools, RemoteMcpLearningTools):
+            await tools.aclose()
+
     app = FastAPI(
         title="AITeacher",
         version="0.8.0",
@@ -302,6 +309,7 @@ def create_app(
             "Tutor de IA multiagente con aprendizaje adaptativo y herramientas "
             "MCP independientes."
         ),
+        lifespan=lifespan,
     )
     app.add_middleware(GZipMiddleware, minimum_size=1_000)
     app.state.orchestrator = orchestrator

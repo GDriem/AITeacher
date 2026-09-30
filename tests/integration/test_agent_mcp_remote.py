@@ -48,19 +48,23 @@ async def test_agent_calls_independent_mcp_over_streamable_http(running_mcp_url)
     )
     remote_tools = RemoteMcpLearningTools(running_mcp_url)
     app = create_agent_app(settings, remote_tools, MockModelProvider())
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
-    ) as client:
-        topics = await client.get(
-            "/api/topics", params={"student_id": "remote-student"}
-        )
-        response = await client.post(
-            "/api/chat",
-            json={
-                "student_id": "remote-student",
-                "message": "Explícame embeddings y comprueba primero mi progreso",
-            },
-        )
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://agent.local"
+        ) as client:
+            topics = await client.get(
+                "/api/topics", params={"student_id": "remote-student"}
+            )
+            response = await client.post(
+                "/api/chat",
+                json={
+                    "student_id": "remote-student",
+                    "message": (
+                        "Explícame embeddings y comprueba primero mi progreso"
+                    ),
+                },
+            )
+    assert remote_tools._http_client is None
     assert topics.status_code == 200, topics.text
     assert topics.json()["total_topics"] == 27
     assert topics.json()["topics"][0]["category"] == "fundamentos"
