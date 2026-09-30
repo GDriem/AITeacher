@@ -290,7 +290,7 @@ def main() -> None:
     uvicorn.run(
         create_app(),
         host=os.getenv("MCP_HOST", "0.0.0.0"),
-        port=int(os.getenv("MCP_PORT", "8001")),
+        port=int(os.getenv("PORT", os.getenv("MCP_PORT", "8001"))),
     )
 
 

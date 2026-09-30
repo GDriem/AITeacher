@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,7 +22,12 @@ class Settings(BaseSettings):
     )
 
     app_host: str = "0.0.0.0"
-    app_port: int = Field(default=8000, ge=1, le=65535)
+    app_port: int = Field(
+        default=8000,
+        ge=1,
+        le=65535,
+        validation_alias=AliasChoices("PORT", "APP_PORT", "app_port"),
+    )
     app_sessions_path: str = ".data/sessions.json"
     app_session_retention_days: int = Field(default=365, ge=1, le=3_650)
     app_sessions_backend: str = Field(default="local", pattern="^(local|firestore)$")
