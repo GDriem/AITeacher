@@ -22,7 +22,7 @@ check() {
   if [ "$status" != "$expected_status" ]; then
     echo "✗ ${description}: esperaba ${expected_status}, recibió '${status}' (${path})"
     failed=1
-    return
+    return 1
   fi
   echo "✓ ${description} (${status})"
 }
@@ -40,7 +40,18 @@ check_body_contains() {
 echo "Smoke test contra ${AGENT_URL}"
 echo
 
+check "El proceso está saludable"          GET "/healthz" 200
+failed_before_readyz="$failed"
+if ! check "Agent puede consultar al MCP" GET "/readyz" 200 --max-time 30; then
+  echo "Reintentando /readyz una vez por posible arranque en frío del MCP..."
+  failed="$failed_before_readyz"
+  check "Agent puede consultar al MCP" GET "/readyz" 200 --max-time 30 || true
+fi
 check "Capacidades responden"             GET "/api/capabilities" 200
+check_body_contains "Las capacidades incluyen texto" "/api/capabilities" '"text":true'
+if [ "${EXPECT_VOICE:-0}" = "1" ]; then
+  check_body_contains "Las capacidades incluyen voz" "/api/capabilities" '"voice":true'
+fi
 check "React sirve la ruta raíz"          GET "/" 200
 check "Ruta profunda de React sobrevive al recargar" GET "/tutor" 200
 check_body_contains "La raíz entrega el shell de React"   "/" '<div id="root">'
@@ -53,4 +64,4 @@ if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 
-echo "Smoke test completo: React sirve la ruta raíz y las rutas profundas."
+echo "Smoke test completo: Agent, MCP, capacidades y React responden correctamente."

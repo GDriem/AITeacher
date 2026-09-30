@@ -323,8 +323,10 @@ Variables del script que puede sobrescribir en el entorno: `PROJECT_ID`,
 `MCP_TIMEOUT_SECONDS`, `GEMINI_MODEL`, `GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`,
 `GEMINI_LOCATION` y `GEMINI_LIVE_LOCATION`.
 
-Tras el despliegue, `infra/cloudrun/smoke-test.sh` verifica el servicio público
-sin crear recursos.
+Tras el despliegue, `infra/cloudrun/smoke-test.sh` verifica el servicio público,
+incluidos `/healthz`, la conexión de Agent App con el MCP mediante `/readyz`, las
+capacidades y las rutas de React, sin crear recursos. La comprobación de voz es
+opcional: use `EXPECT_VOICE=1` cuando el despliegue deba publicar esa capacidad.
 
 ## Herramientas MCP
 
