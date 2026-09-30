@@ -64,6 +64,7 @@ from agent_app.services.observability import (
     ObservableModelProvider,
     ObservabilityRegistry,
 )
+from agent_app.services.rate_limit import RateLimitExceeded, StudentRateLimiter
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
 from agent_app.services.activities import PROJECTS, evaluate_project
 from agent_app.services.auth import (
@@ -289,6 +290,9 @@ def create_app(
     )
     auth_service = auth_service or build_auth_service(settings)
     observed_provider = ObservableModelProvider(provider, observability)
+    rate_limiter = StudentRateLimiter(
+        settings.model_rate_limit_requests_per_minute
+    )
     orchestrator = build_orchestrator(
         settings,
         tools,
@@ -319,6 +323,7 @@ def create_app(
     app.state.settings = settings
     app.state.observability = observability
     app.state.auth_service = auth_service
+    app.state.rate_limiter = rate_limiter
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.mount(
         "/assets",
@@ -418,6 +423,16 @@ def create_app(
     ) -> JSONResponse:
         return JSONResponse(status_code=401, content={"detail": str(exc)})
 
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_exceeded(
+        _: Request, exc: RateLimitExceeded
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": str(exc)},
+            headers={"Retry-After": str(exc.retry_after)},
+        )
+
     @app.exception_handler(ValueError)
     async def invalid_request(_: Request, exc: ValueError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
@@ -516,6 +531,13 @@ def create_app(
         if not normalized or len(normalized) > 100:
             raise ValueError("student_id debe contener entre 1 y 100 caracteres")
         return normalized
+
+    async def limited_student_id(
+        request: Request, claimed_student_id: str | None
+    ) -> str:
+        student_id = await resolve_student_id(request, claimed_student_id)
+        rate_limiter.check(student_id)
+        return student_id
 
     @app.get("/api/auth/status", response_model=AuthStatus)
     async def auth_status(request: Request) -> AuthStatus:
@@ -843,7 +865,7 @@ def create_app(
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         creates_session = payload.session_id is None
         payload = payload.model_copy(
-            update={"student_id": await resolve_student_id(request, payload.student_id)}
+            update={"student_id": await limited_student_id(request, payload.student_id)}
         )
         correlation_id = request.state.correlation_id
         logger.info("chat_started", extra={"correlation_id": correlation_id})
@@ -963,7 +985,7 @@ def create_app(
         payload: EvaluationRequest, request: Request
     ) -> EvaluationResponse:
         payload = payload.model_copy(
-            update={"student_id": await resolve_student_id(request, payload.student_id)}
+            update={"student_id": await limited_student_id(request, payload.student_id)}
         )
         with observability.activity("topic_evaluation"):
             return await orchestrator.evaluate(
@@ -975,7 +997,7 @@ def create_app(
         payload: PracticeStartRequest, request: Request
     ) -> PracticeStartResponse:
         payload = payload.model_copy(
-            update={"student_id": await resolve_student_id(request, payload.student_id)}
+            update={"student_id": await limited_student_id(request, payload.student_id)}
         )
         return await orchestrator.start_practice(payload)
 
@@ -984,7 +1006,7 @@ def create_app(
         payload: PracticeEvaluationRequest, request: Request
     ) -> PracticeEvaluationResponse:
         payload = payload.model_copy(
-            update={"student_id": await resolve_student_id(request, payload.student_id)}
+            update={"student_id": await limited_student_id(request, payload.student_id)}
         )
         with observability.activity("practice_evaluation"):
             return await orchestrator.evaluate_practice(payload)
@@ -1003,7 +1025,7 @@ def create_app(
         request: Request,
     ) -> ProjectEvaluationResponse:
         payload = payload.model_copy(
-            update={"student_id": await resolve_student_id(request, payload.student_id)}
+            update={"student_id": await limited_student_id(request, payload.student_id)}
         )
         project = PROJECTS.get(project_id)
         if project is None:

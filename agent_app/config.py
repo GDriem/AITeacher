@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     app_authoring_token: str | None = None
     model_provider: ModelProviderName = ModelProviderName.MOCK
     model_timeout_seconds: float = Field(default=20, gt=0, le=120)
+    model_rate_limit_requests_per_minute: int = Field(
+        default=30, ge=0, le=10_000
+    )
     model_input_cost_per_million_usd: float = Field(default=0, ge=0)
     model_output_cost_per_million_usd: float = Field(default=0, ge=0)
     observability_max_latency_samples: int = Field(default=1_000, ge=10, le=10_000)

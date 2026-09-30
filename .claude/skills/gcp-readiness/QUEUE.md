@@ -16,7 +16,7 @@ Dos tareas del mismo carril **nunca** se despachan a la vez.
 | T06 | Firestore fuera del event loop | `T06-firestore-no-bloqueante.md` | api | T03 | alta | done |
 | T07 | Reutilizar cliente MCP y cachear el ID token | `T07-cliente-mcp.md` | mcp-client | — | alta | done |
 | T08 | Proteger `/api/observability` | `T08-proteger-observabilidad.md` | api | T06 | media | done |
-| T09 | Límite de tasa en los endpoints que llaman al modelo | `T09-limite-de-tasa.md` | api | T08 | media | pending |
+| T09 | Límite de tasa en los endpoints que llaman al modelo | `T09-limite-de-tasa.md` | api | T08 | media | done |
 | T10 | Ampliar `smoke-test.sh` a `/readyz` y al camino MCP | `T10-smoke-test.md` | infra-3 | — | media | done |
 | T11 | Honrar el `PORT` que inyecta Cloud Run | `T11-puerto-cloudrun.md` | arranque | T09 | baja | pending |
 | T12 | Reconciliar README y CLAUDE.md con el repo real | `T12-docs-desincronizados.md` | docs | — | baja | pending |
