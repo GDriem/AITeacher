@@ -3,8 +3,9 @@
 Tutor de IA adaptativo creado originalmente como demo para la charla
 "Agent, MCP & Run: de un LLM a un tutor multiagente por voz" (Google I/O
 Extended Guatemala City). Guía completa en
-`agent-mcp-run-guia-completa.pdf` (18 secciones) — léela para contexto profundo;
-este archivo es el resumen operativo para trabajar en el código.
+un PDF histórico de 18 secciones que ya no se versiona en este repositorio. Este
+archivo y la documentación Markdown vigente son el contexto operativo para
+trabajar en el código.
 
 Idea central: **el modelo genera, los agentes deciden y delegan, MCP expone
 herramientas y recursos deterministas**. El servidor MCP nunca es tratado como
@@ -20,8 +21,8 @@ agent_app/            App multiagente (FastAPI + Google ADK 2.x)
   api/main.py          Endpoints FastAPI, correlation ID, composición de dependencias
   config.py            Settings (pydantic-settings), fuente única de configuración
   providers/           ModelProvider: base.py (puerto), mock.py, gemini.py, foundry.py, factory.py
-  services/            Cliente MCP, sesiones, evaluación/actividades, autoría,
-                       voz, logging y observabilidad
+  services/            Cliente MCP, sesiones, autenticación, evaluación/actividades,
+                       autoría, voz, rate limiting, logging y observabilidad
   models/               Contratos HTTP de chat y actividades
   static/               AudioWorklet de voz (pcm-capture-worklet.js) servido por FastAPI
   Dockerfile            Imagen del servicio learning-agent
@@ -31,7 +32,7 @@ frontend/             UI React + TypeScript (Vite); FastAPI sirve `dist/` en `/`
 
 mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable HTTP)
   server.py             Punto de entrada ASGI, monta /mcp, /healthz y /admin
-  content/learning_content.json  Corpus propio: 23 temas y 46 lecciones
+  content/learning_content.json  Corpus propio: 58 lecciones
   curriculum.py         CURRICULUM: grafo acíclico de temas y prerrequisitos (fuente única)
   models.py             Modelos de dominio Pydantic (Topic, TopicCategory, TopicStatus, etc.)
   services/             ingestion.py, content_store.py (in-memory), retrieval.py (TF-IDF),
@@ -43,9 +44,10 @@ mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable H
 
 tests/                 unit/ (aislado), integration/ (API + transporte MCP real),
                        conftest.py y fixtures/ compartidos
-infra/cloudrun/         Manifiestos Cloud Run, Cloud Build y deploy.sh manual
-docs/                   README.md (índice), architecture.md, product-roadmap.md,
-                       demo-script.md, deployment.md, foundry.md, phase-1.md a phase-8.md
+infra/cloudrun/         Build de imágenes, deploy.sh manual y smoke tests
+docs/                   english-curriculum.md,
+                       google-auth-student-profiles-plan.md y
+                       react-frontend-migration-plan.md
 ```
 
 Es un repositorio Git. `.env` contiene únicamente configuración local y está
@@ -133,8 +135,7 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
   rúbrica semántica estructurada (80 %). Con `mock`, error o salida inválida usa
   el mismo contrato mediante fallback determinista.
 - **MCP SDK fijado a `<2`** (`mcp[cli]>=1.27,<2`): la línea 2.x estaba en alfa al
-  tomar esta decisión; no subir de versión mayor sin revisar compatibilidad y la
-  nota en `docs/architecture.md`.
+  tomar esta decisión; no subir de versión mayor sin revisar compatibilidad.
 - **Repositorio JSON atómico**: `LocalProgressRepository` escribe a archivo temporal
   + `os.replace`; no reemplazar por escritura directa.
 - **Mínimo privilegio también en el diseño del agente**: cada especialista ADK recibe
@@ -157,10 +158,10 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
 
 ## Pruebas
 
-99 pruebas, ninguna llama servicios cloud reales (usan repos temporales, clientes
-simulados, y un servidor MCP local real para el transporte). Ver `docs/phase-1.md`
-y las guías de cada fase para el desglose por área. Marker `integration` en
-pytest para pruebas que combinan componentes sin credenciales cloud.
+Las pruebas no llaman servicios cloud reales: usan repositorios temporales,
+clientes simulados y un servidor MCP local real para el transporte. El marker
+`integration` de pytest identifica pruebas que combinan componentes sin
+credenciales cloud.
 
 ## Dónde mirar primero según la tarea
 
@@ -213,7 +214,9 @@ subagente de Claude— para no cargar esta sesión.
 
 ## Documentación completa
 
-Use `docs/README.md` como índice. Incluye arquitectura, hoja de ruta cerrada,
-demo, despliegue, Foundry y las guías de las fases 1–8.
-`agent-mcp-run-guia-completa.pdf` conserva la guía histórica de 18 secciones;
-ante diferencias, prevalecen el código y la documentación Markdown vigente.
+La documentación versionada se limita a `docs/english-curriculum.md`,
+`docs/google-auth-student-profiles-plan.md` y
+`docs/react-frontend-migration-plan.md`. La antigua documentación de
+arquitectura, hoja de ruta, demo, despliegue, Foundry y fases 1–8, incluido el
+PDF histórico de 18 secciones, ya no se versiona. Ante diferencias, prevalecen
+el código y la documentación Markdown vigente.

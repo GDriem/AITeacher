@@ -14,9 +14,10 @@ herramientas y recursos deterministas; no se presenta como agente.
 
 ## Estado del proyecto
 
-Las ocho fases de producto están completadas. La referencia consolidada está en
-la [hoja de ruta](docs/product-roadmap.md) y la navegación de toda la
-documentación en el [índice de `docs/`](docs/README.md).
+Las ocho fases de producto están completadas. La documentación que permanece
+versionada cubre el [currículo de inglés](docs/english-curriculum.md),
+[Google Login y perfiles](docs/google-auth-student-profiles-plan.md) y la
+[migración del frontend a React](docs/react-frontend-migration-plan.md).
 
 ## Capacidades
 
@@ -208,8 +209,7 @@ El panel de autoría se habilita al configurar `APP_AUTHORING_TOKEN`. En Docker
 Compose use `AUTHORING_TOKEN` para proteger tanto Agent App como las rutas
 administrativas del MCP. Las lecciones se guardan en
 `MCP_CONTENT_AUTHORING_PATH`; sólo el snapshot publicado alimenta la búsqueda del
-tutor. Consulte [la guía de Fase 7](docs/phase-7.md) para el flujo y los
-contratos.
+tutor. Los borradores no forman parte del corpus hasta que se publican.
 
 `GET /healthz` comprueba la vida del proceso y `GET /readyz` valida que Agent
 App pueda consultar el catálogo MCP. `GET /api/observability` entrega métricas
@@ -223,8 +223,10 @@ MODEL_OUTPUT_COST_PER_MILLION_USD=0
 ```
 
 Con ambos valores en cero se mide consumo sin atribuir un costo. Las métricas
-son locales a cada réplica; consulte [la guía de Fase 8](docs/phase-8.md) para
-privacidad, alcance y validación responsive.
+se mantienen en memoria y son locales a cada instancia. En Cloud Run, donde
+`learning-agent` admite hasta tres instancias, el panel muestra sólo los datos
+de la instancia que atiende esa petición, no el total agregado del servicio. Los
+valores también se reinician al reemplazar o reiniciar una instancia.
 
 ## Ejecutar pruebas
 
@@ -242,8 +244,12 @@ La interfaz queda en `http://localhost:8000` y MCP en `localhost:8001`. El
 progreso queda en `mcp-data` y las conversaciones en `agent-data`; las imágenes
 usan usuarios sin privilegios.
 
-Compose toma `MODEL_PROVIDER` y las credenciales desde `.env`. Para usar Google
-AI Studio dentro del contenedor:
+Compose toma `MODEL_PROVIDER` y las credenciales desde `.env`. Para el panel de
+autoría, toma `AUTHORING_TOKEN` como valor de origen y lo asigna a
+`APP_AUTHORING_TOKEN` y `MCP_AUTHORING_TOKEN` dentro de los dos servicios. Fuera
+de Compose, configure directamente las dos variables con el mismo secreto.
+
+Para usar Google AI Studio dentro del contenedor:
 
 ```dotenv
 MODEL_PROVIDER=gemini
@@ -339,9 +345,10 @@ opcional: use `EXPECT_VOICE=1` cuando el despliegue deba publicar esa capacidad.
 
 ## Documentación
 
-Consulte el [índice de documentación](docs/README.md) para navegar la
-arquitectura, la hoja de ruta completada, las guías de cada capacidad, el guion
-de demo y el despliegue.
+La documentación vigente incluye el
+[currículo de inglés](docs/english-curriculum.md), el plan de
+[Google Login y perfiles](docs/google-auth-student-profiles-plan.md) y el
+[plan de migración a React](docs/react-frontend-migration-plan.md).
 
 La evolución de la interfaz se organiza en el
 [plan de migración a React](docs/react-frontend-migration-plan.md), con una
