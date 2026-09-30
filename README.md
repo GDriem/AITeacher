@@ -274,6 +274,13 @@ Vertex AI, configure `MODEL_PROVIDER=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true` y
 `gemini-live-2.5-flash-native-audio`; puede reemplazarlo mediante la variable
 `GEMINI_LIVE_MODEL` al ejecutar `infra/cloudrun/deploy.sh`.
 
+Las operaciones de texto que invocan al modelo se limitan por alumno mediante
+`MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE` (30 por minuto por defecto; `0` lo
+desactiva). Las conexiones de voz usan un contador de sesiones activas separado:
+`VOICE_MAX_CONCURRENT_SESSIONS_PER_STUDENT` permite una sesión simultánea por
+alumno de forma predeterminada. Ambos límites viven en memoria y se aplican por
+instancia, por lo que el techo efectivo crece con el número de instancias.
+
 La dirección `MCP_SERVER_URL` se configura internamente como
 `http://mcp-server:8080/mcp/`, aunque el servidor MCP se publique en el puerto
 `8001` del host.
@@ -315,6 +322,11 @@ Variables de entorno que fija el despliegue:
 |---|---|
 | `learning-mcp` | `MCP_PROGRESS_BACKEND=firestore`, `GOOGLE_CLOUD_PROJECT`, `FIRESTORE_PROGRESS_COLLECTION=student_progress`, `MCP_ALLOWED_HOSTS` |
 | `learning-agent` | `MODEL_PROVIDER=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_CLOUD_LIVE_LOCATION`, `GEMINI_MODEL`, `GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`, `APP_SESSIONS_BACKEND=firestore`, `FIRESTORE_SESSIONS_COLLECTION=learning_sessions`, `APP_SESSION_RETENTION_DAYS=365`, `APP_STUDENT_PROFILES_BACKEND=firestore`, `FIRESTORE_STUDENT_PROFILES_COLLECTION=student_profiles`, `GOOGLE_CLIENT_ID`, `APP_AUTH_COOKIE_SECURE=true`, `MCP_USE_LOCAL_ADAPTER=false`, `MCP_SERVER_URL`, `MCP_AUTHORING_URL`, `MCP_TIMEOUT_SECONDS`, `MCP_AUTH_AUDIENCE` |
+
+Cloud Run depende deliberadamente de los defaults de la aplicación para
+`MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE=30` y
+`VOICE_MAX_CONCURRENT_SESSIONS_PER_STUDENT=1`; `deploy.sh` no los duplica. Docker
+Compose sí los expone con esos mismos defaults para facilitar ajustes locales.
 
 `MCP_ALLOWED_HOSTS` se aplica en un segundo paso (`gcloud run services update`)
 porque el dominio del MCP sólo se conoce después de su primer despliegue; sin

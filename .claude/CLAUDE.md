@@ -119,6 +119,10 @@ Verificación rápida: `curl http://localhost:8001/healthz` (MCP) y
 - `MODEL_INPUT_COST_PER_MILLION_USD` /
   `MODEL_OUTPUT_COST_PER_MILLION_USD`: tarifas configurables para el panel de
   observabilidad; `0` mide tokens sin atribuir costo.
+- `MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE`: límite por alumno para operaciones de
+  texto que invocan al modelo; default `30`, `0` lo desactiva.
+- `VOICE_MAX_CONCURRENT_SESSIONS_PER_STUDENT`: sesiones de voz activas por
+  alumno; default `1`. Es un contador concurrente separado del límite por minuto.
 - Voz (`voice_enabled` en `config.py`): sólo activa si `MODEL_PROVIDER=gemini` y hay
   credenciales (API key o Vertex AI). Con `foundry` la voz se deshabilita a propósito.
 

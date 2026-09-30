@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python y scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependencias
+        run: python -m pip install -e ".[dev,agents,cloud,foundry]"
+      - name: Suite Python completa
+        run: python -m pytest
+      - name: Validar sintaxis Bash
+        run: bash -n infra/cloudrun/deploy.sh infra/cloudrun/smoke-test.sh .claude/skills/gcp-readiness/dispatch-codex.sh
+      - name: Validar whitespace del diff
+        run: git diff --check "${{ github.event.pull_request.base.sha }}...HEAD"
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Habilitar pnpm
+        run: corepack enable
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+      - name: Tests
+        run: pnpm test
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Lint
+        run: pnpm lint
+      - name: Build
+        run: pnpm build
+      - name: Budget
+        run: pnpm budget:check
