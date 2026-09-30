@@ -9,6 +9,7 @@ import logging
 import secrets
 import time
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 import uvicorn
@@ -126,6 +127,11 @@ def _reconcile_persisted_chat_response(
     student_id: str,
     session_id: str,
 ) -> ChatResponse | None:
+    """Recupera la respuesta ya persistida de una solicitud idempotente.
+
+    Es una función **bloqueante**: agrupa dos llamadas al repositorio para que
+    un único `asyncio.to_thread` las saque del event loop (ver `_in_thread`).
+    """
     try:
         session = sessions.get(session_id, student_id)
     except KeyError:
@@ -140,6 +146,19 @@ def _reconcile_persisted_chat_response(
         # y la reconciliación. La respuesta persistida sigue siendo autoritativa.
         pass
     return response
+
+
+async def _in_thread[T](operation: Callable[..., T], *args: object) -> T:
+    """Ejecuta una operación de persistencia fuera del hilo del event loop.
+
+    `SessionRepository` y `StudentProfileRepository` son protocolos síncronos:
+    el backend `firestore` hace E/S de red y el `local` escribe en disco. Si se
+    invocaran directamente desde un handler `async`, congelarían el loop entero
+    —y con él el bombeo de audio del WebSocket de voz— durante toda la ida y
+    vuelta. Toda llamada a un repositorio desde código asíncrono debe pasar por
+    aquí.
+    """
+    return await asyncio.to_thread(operation, *args)
 
 
 def build_session_repository(settings: Settings) -> SessionRepository:
@@ -275,6 +294,7 @@ def create_app(
         observed_provider,
         sessions,
     )
+
     app = FastAPI(
         title="AITeacher",
         version="0.8.0",
@@ -468,13 +488,19 @@ def create_app(
             authoring=bool(settings.app_authoring_token and authoring),
         )
 
-    def authenticated_profile(request: Request):
+    async def authenticated_profile(request: Request):
         if auth_service is None:
             return None
-        return auth_service.authenticate(request.cookies.get(AUTH_COOKIE_NAME))
+        # `authenticate` lee el perfil del repositorio (Firestore en la nube) y
+        # ocurre en cada petición autenticada: nunca en el hilo del loop.
+        return await _in_thread(
+            auth_service.authenticate, request.cookies.get(AUTH_COOKIE_NAME)
+        )
 
-    def resolve_student_id(request: Request, claimed_student_id: str | None) -> str:
-        profile = authenticated_profile(request)
+    async def resolve_student_id(
+        request: Request, claimed_student_id: str | None
+    ) -> str:
+        profile = await authenticated_profile(request)
         if profile is not None:
             return profile.student_id
         normalized = (claimed_student_id or "").strip()
@@ -487,7 +513,7 @@ def create_app(
         if auth_service is None:
             return AuthStatus(enabled=False, authenticated=False)
         try:
-            profile = authenticated_profile(request)
+            profile = await authenticated_profile(request)
         except AuthenticationError:
             return AuthStatus(
                 enabled=True,
@@ -510,9 +536,7 @@ def create_app(
                 status_code=409,
                 detail="Google Login no está configurado en este entorno",
             )
-        token, _, profile = await asyncio.to_thread(
-            auth_service.login, payload.credential
-        )
+        token, _, profile = await _in_thread(auth_service.login, payload.credential)
         response.set_cookie(
             AUTH_COOKIE_NAME,
             token,
@@ -645,7 +669,7 @@ def create_app(
     async def topics(
         request: Request, student_id: str | None = None
     ) -> TopicCatalogResponse:
-        student_id = resolve_student_id(request, student_id)
+        student_id = await resolve_student_id(request, student_id)
         catalog, progress, path = await asyncio.gather(
             tools.list_available_topics(),
             tools.get_student_progress(student_id),
@@ -693,8 +717,8 @@ def create_app(
         student_id: str | None = None,
         include_archived: bool = False,
     ) -> ConversationListResponse:
-        student_id = resolve_student_id(request, student_id)
-        items = sessions.list(student_id, include_archived)
+        student_id = await resolve_student_id(request, student_id)
+        items = await _in_thread(sessions.list, student_id, include_archived)
         return ConversationListResponse(
             sessions=[conversation_summary(item) for item in items],
             retention_days=sessions.retention_days,
@@ -707,8 +731,10 @@ def create_app(
     async def get_session(
         session_id: str, request: Request, student_id: str | None = None
     ) -> ConversationDetail:
-        student_id = resolve_student_id(request, student_id)
-        return conversation_detail(sessions.get(session_id, student_id))
+        student_id = await resolve_student_id(request, student_id)
+        return conversation_detail(
+            await _in_thread(sessions.get, session_id, student_id)
+        )
 
     @app.patch(
         "/api/sessions/{session_id}",
@@ -717,20 +743,24 @@ def create_app(
     async def update_session(
         session_id: str, payload: SessionUpdateRequest, request: Request
     ) -> ConversationDetail:
-        student_id = resolve_student_id(request, payload.student_id)
-        session = sessions.get(session_id, student_id)
+        student_id = await resolve_student_id(request, payload.student_id)
+        session = await _in_thread(sessions.get, session_id, student_id)
         if payload.title is not None:
-            session = sessions.rename(session_id, student_id, payload.title)
+            session = await _in_thread(
+                sessions.rename, session_id, student_id, payload.title
+            )
         if payload.archived is not None:
-            session = sessions.set_archived(session_id, student_id, payload.archived)
+            session = await _in_thread(
+                sessions.set_archived, session_id, student_id, payload.archived
+            )
         return conversation_detail(session)
 
     @app.delete("/api/sessions/{session_id}", status_code=204)
     async def delete_session(
         session_id: str, request: Request, student_id: str | None = None
     ) -> Response:
-        student_id = resolve_student_id(request, student_id)
-        sessions.delete(session_id, student_id)
+        student_id = await resolve_student_id(request, student_id)
+        await _in_thread(sessions.delete, session_id, student_id)
         return Response(status_code=204)
 
     @app.websocket("/ws/live")
@@ -738,8 +768,9 @@ def create_app(
         voice_student_id = websocket.query_params.get("student_id")
         if auth_service is not None:
             try:
-                profile = auth_service.authenticate(
-                    websocket.cookies.get(AUTH_COOKIE_NAME)
+                profile = await _in_thread(
+                    auth_service.authenticate,
+                    websocket.cookies.get(AUTH_COOKIE_NAME),
                 )
                 voice_student_id = profile.student_id
             except AuthenticationError:
@@ -750,7 +781,9 @@ def create_app(
         session_id = websocket.query_params.get("session_id")
         if session_id and voice_student_id:
             try:
-                current_session = sessions.get(session_id, voice_student_id)
+                current_session = await _in_thread(
+                    sessions.get, session_id, voice_student_id
+                )
                 context_parts = [
                     f"Tema: {current_session.topic.value}.",
                     f"Conversación: {current_session.title}.",
@@ -801,7 +834,7 @@ def create_app(
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         creates_session = payload.session_id is None
         payload = payload.model_copy(
-            update={"student_id": resolve_student_id(request, payload.student_id)}
+            update={"student_id": await resolve_student_id(request, payload.student_id)}
         )
         correlation_id = request.state.correlation_id
         logger.info("chat_started", extra={"correlation_id": correlation_id})
@@ -822,7 +855,8 @@ def create_app(
                     + (2 * settings.mcp_timeout_seconds)
                     + 30.0,
                 )
-                claim = sessions.claim_chat_request(
+                claim = await _in_thread(
+                    sessions.claim_chat_request,
                     payload.request_id,
                     payload.student_id,
                     session_id,
@@ -832,7 +866,8 @@ def create_app(
                 if claim.response is not None:
                     result = claim.response
                 elif not claim.acquired:
-                    recovered = _reconcile_persisted_chat_response(
+                    recovered = await _in_thread(
+                        _reconcile_persisted_chat_response,
                         sessions,
                         payload.request_id,
                         payload.student_id,
@@ -845,8 +880,10 @@ def create_app(
                     deadline = time.monotonic() + settings.model_timeout_seconds + 5
                     while result is None and time.monotonic() < deadline:
                         await asyncio.sleep(0.05)
-                        record = sessions.get_chat_request(
-                            payload.request_id, payload.student_id
+                        record = await _in_thread(
+                            sessions.get_chat_request,
+                            payload.request_id,
+                            payload.student_id,
                         )
                         if (
                             record is not None
@@ -855,7 +892,8 @@ def create_app(
                         ):
                             result = record.response
                             break
-                        recovered = _reconcile_persisted_chat_response(
+                        recovered = await _in_thread(
+                            _reconcile_persisted_chat_response,
                             sessions,
                             payload.request_id,
                             payload.student_id,
@@ -885,7 +923,8 @@ def create_app(
                             create_session_if_missing=creates_session,
                         )
                         try:
-                            sessions.complete_chat_request(
+                            await _in_thread(
+                                sessions.complete_chat_request,
                                 payload.request_id,
                                 payload.student_id,
                                 claim.claim_token,
@@ -900,7 +939,8 @@ def create_app(
                                 extra={"correlation_id": correlation_id},
                             )
                     except BaseException:
-                        sessions.release_chat_request(
+                        await _in_thread(
+                            sessions.release_chat_request,
                             payload.request_id,
                             payload.student_id,
                             claim.claim_token,
@@ -914,7 +954,7 @@ def create_app(
         payload: EvaluationRequest, request: Request
     ) -> EvaluationResponse:
         payload = payload.model_copy(
-            update={"student_id": resolve_student_id(request, payload.student_id)}
+            update={"student_id": await resolve_student_id(request, payload.student_id)}
         )
         with observability.activity("topic_evaluation"):
             return await orchestrator.evaluate(
@@ -926,7 +966,7 @@ def create_app(
         payload: PracticeStartRequest, request: Request
     ) -> PracticeStartResponse:
         payload = payload.model_copy(
-            update={"student_id": resolve_student_id(request, payload.student_id)}
+            update={"student_id": await resolve_student_id(request, payload.student_id)}
         )
         return await orchestrator.start_practice(payload)
 
@@ -935,7 +975,7 @@ def create_app(
         payload: PracticeEvaluationRequest, request: Request
     ) -> PracticeEvaluationResponse:
         payload = payload.model_copy(
-            update={"student_id": resolve_student_id(request, payload.student_id)}
+            update={"student_id": await resolve_student_id(request, payload.student_id)}
         )
         with observability.activity("practice_evaluation"):
             return await orchestrator.evaluate_practice(payload)
@@ -954,7 +994,7 @@ def create_app(
         request: Request,
     ) -> ProjectEvaluationResponse:
         payload = payload.model_copy(
-            update={"student_id": resolve_student_id(request, payload.student_id)}
+            update={"student_id": await resolve_student_id(request, payload.student_id)}
         )
         project = PROJECTS.get(project_id)
         if project is None:
