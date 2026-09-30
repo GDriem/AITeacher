@@ -52,6 +52,7 @@ from agent_app.models.activities import (
 from agent_app.providers.base import ModelProvider
 from agent_app.providers.factory import create_model_provider
 from agent_app.services.learning_tools import (
+    LearningToolsUnavailable,
     LearningTools,
     LocalLearningTools,
     RemoteMcpLearningTools,
@@ -400,6 +401,27 @@ def create_app(
     @app.exception_handler(PermissionError)
     async def forbidden_session(_: Request, exc: PermissionError) -> JSONResponse:
         return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+    @app.exception_handler(TimeoutError)
+    @app.exception_handler(LearningToolsUnavailable)
+    async def learning_tools_unavailable(
+        request: Request, exc: LearningToolsUnavailable | TimeoutError
+    ) -> JSONResponse:
+        logger.exception(
+            "herramientas_aprendizaje_no_disponibles",
+            extra={
+                "correlation_id": getattr(request.state, "correlation_id", None),
+            },
+        )
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": (
+                    "El catálogo de aprendizaje no está disponible en este momento. "
+                    "Vuelve a intentarlo en unos segundos."
+                )
+            },
+        )
 
     @app.get("/healthz")
     async def health() -> dict:

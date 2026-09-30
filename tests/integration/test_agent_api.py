@@ -24,6 +24,14 @@ class UnavailableLearningTools(LocalLearningTools):
         raise RuntimeError("MCP unavailable")
 
 
+class TimedOutLearningTools(LocalLearningTools):
+    async def get_student_progress(self, student_id):
+        raise TimeoutError("MCP no respondió")
+
+    async def list_available_topics(self):
+        raise TimeoutError("MCP no respondió")
+
+
 class BlockingMockModelProvider(MockModelProvider):
     def __init__(self) -> None:
         self.calls = 0
@@ -334,6 +342,37 @@ async def test_readiness_reports_unavailable_learning_service(
         "service": "agent-app",
         "dependency": "learning-mcp",
     }
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_learning_tools_timeout_degrades_without_affecting_health(
+    learning_service,
+) -> None:
+    app = create_app(
+        Settings(mcp_use_local_adapter=True),
+        tools=TimedOutLearningTools(learning_service),
+        provider=MockModelProvider(),
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="http://agent.local",
+    ) as client:
+        chat = await client.post(
+            "/api/chat",
+            json={
+                "student_id": "student-1",
+                "message": "Quiero aprender embeddings",
+            },
+        )
+        health = await client.get("/healthz")
+        readiness = await client.get("/readyz")
+
+    assert chat.status_code == 503
+    assert "detail" in chat.json()
+    assert health.status_code == 200
+    assert readiness.status_code == 503
 
 
 @pytest.mark.integration

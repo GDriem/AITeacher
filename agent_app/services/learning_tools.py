@@ -23,6 +23,10 @@ from mcp_learning_server.models import (
 from mcp_learning_server.services.learning import LearningService
 
 
+class LearningToolsUnavailable(RuntimeError):
+    """Las herramientas de aprendizaje no están disponibles temporalmente."""
+
+
 class LearningTools(Protocol):
     async def get_student_progress(self, student_id: str) -> StudentProgress: ...
 
@@ -108,17 +112,25 @@ class RemoteMcpLearningTools:
         headers: dict[str, str] = {}
         if self.auth_audience:
             headers["Authorization"] = f"Bearer {await self._identity_token()}"
-        async with asyncio.timeout(self.timeout_seconds):
-            async with httpx.AsyncClient(headers=headers) as http_client:
-                async with streamable_http_client(
-                    self.url, http_client=http_client
-                ) as (read, write, _):
-                    async with ClientSession(read, write) as session:
-                        await session.initialize()
-                        result = await session.call_tool(name, arguments=arguments)
+        try:
+            async with asyncio.timeout(self.timeout_seconds):
+                async with httpx.AsyncClient(headers=headers) as http_client:
+                    async with streamable_http_client(
+                        self.url, http_client=http_client
+                    ) as (read, write, _):
+                        async with ClientSession(read, write) as session:
+                            await session.initialize()
+                            result = await session.call_tool(name, arguments=arguments)
+        except (TimeoutError, httpx.HTTPError) as exc:
+            raise LearningToolsUnavailable(
+                "Las herramientas de aprendizaje no están disponibles"
+            ) from exc
         if result.isError:
             message = result.content[0].text if result.content else "Error MCP"
-            raise RuntimeError(f"{name}: {message}")
+            exc = RuntimeError(f"{name}: {message}")
+            raise LearningToolsUnavailable(
+                "Las herramientas de aprendizaje no están disponibles"
+            ) from exc
         structured = result.structuredContent
         if structured is None:
             text_blocks = [

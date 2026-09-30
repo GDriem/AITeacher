@@ -10,7 +10,7 @@ Dos tareas del mismo carril **nunca** se despachan a la vez.
 |----|-------|---------------------|--------|-----------|-----------|--------|
 | T01 | Crear la base Firestore y endurecer `deploy.sh` | `T01-firestore-y-deploy.md` | infra | — | bloqueante | done |
 | T02 | Excluir `y/` y `node_modules` de `.gcloudignore` | `T02-gcloudignore.md` | infra-2 | — | bloqueante | done |
-| T03 | Degradar con 503 JSON cuando el MCP no responde | `T03-degradar-sin-mcp.md` | api | — | bloqueante | running |
+| T03 | Degradar con 503 JSON cuando el MCP no responde | `T03-degradar-sin-mcp.md` | api | — | bloqueante | done |
 | T04 | Decidir el destino de `infra/cloudrun/*.yaml` | `T04-manifiestos-cloudrun.md` | infra | T01 | bloqueante | pending |
 | T05 | Tracebacks y `severity` en el log JSON | `T05-logging-cloud.md` | logging | — | alta | pending |
 | T06 | Firestore fuera del event loop | `T06-firestore-no-bloqueante.md` | api | T03 | alta | pending |
