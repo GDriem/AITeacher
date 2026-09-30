@@ -11,10 +11,10 @@ Dos tareas del mismo carril **nunca** se despachan a la vez.
 | T01 | Crear la base Firestore y endurecer `deploy.sh` | `T01-firestore-y-deploy.md` | infra | — | bloqueante | done |
 | T02 | Excluir `y/` y `node_modules` de `.gcloudignore` | `T02-gcloudignore.md` | infra-2 | — | bloqueante | done |
 | T03 | Degradar con 503 JSON cuando el MCP no responde | `T03-degradar-sin-mcp.md` | api | — | bloqueante | done |
-| T04 | Decidir el destino de `infra/cloudrun/*.yaml` | `T04-manifiestos-cloudrun.md` | infra | T01 | bloqueante | pending |
+| T04 | Decidir el destino de `infra/cloudrun/*.yaml` | `T04-manifiestos-cloudrun.md` | infra | T01 | bloqueante | done |
 | T05 | Tracebacks y `severity` en el log JSON | `T05-logging-cloud.md` | logging | — | alta | pending |
-| T06 | Firestore fuera del event loop | `T06-firestore-no-bloqueante.md` | api | T03 | alta | pending |
-| T07 | Reutilizar cliente MCP y cachear el ID token | `T07-cliente-mcp.md` | mcp-client | — | alta | pending |
+| T06 | Firestore fuera del event loop | `T06-firestore-no-bloqueante.md` | api | T03 | alta | running |
+| T07 | Reutilizar cliente MCP y cachear el ID token | `T07-cliente-mcp.md` | mcp-client | — | alta | running |
 | T08 | Proteger `/api/observability` | `T08-proteger-observabilidad.md` | api | T06 | media | pending |
 | T09 | Límite de tasa en los endpoints que llaman al modelo | `T09-limite-de-tasa.md` | api | T08 | media | pending |
 | T10 | Ampliar `smoke-test.sh` a `/readyz` y al camino MCP | `T10-smoke-test.md` | infra-3 | — | media | pending |

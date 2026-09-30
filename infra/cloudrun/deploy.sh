@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Este script es la única fuente de la configuración de learning-mcp y
+# learning-agent: no existen manifiestos Knative y nunca se usa
+# `gcloud run services replace`. La configuración efectiva resultante está
+# resumida en la sección "Despliegue en Cloud Run" del README; si cambia algo
+# aquí, actualice esa tabla.
+
 # En proyectos creados desde 2024, Cloud Build puede usar una cuenta de servicio
 # predeterminada distinta; el primer builds submit puede requerir permisos de
 # Artifact Registry o la opción --service-account.

@@ -272,6 +272,60 @@ La dirección `MCP_SERVER_URL` se configura internamente como
 `http://mcp-server:8080/mcp/`, aunque el servidor MCP se publique en el puerto
 `8001` del host.
 
+## Despliegue en Cloud Run
+
+`infra/cloudrun/deploy.sh` es la **única fuente de la configuración de los dos
+servicios**: no hay manifiestos declarativos y el script nunca ejecuta
+`gcloud run services replace`. Es manual, genera costos reales y debe ejecutarse
+sólo tras revisar proyecto, región, cuotas y presupuesto.
+
+El script también crea, de forma idempotente, lo que los servicios necesitan:
+APIs habilitadas, base Firestore `(default)`, repositorio de Artifact Registry,
+las dos cuentas de servicio con sus roles (`datastore.user`, `aiplatform.user`)
+y el secreto `learning-agent-session-secret` con su enlace
+`secretmanager.secretAccessor`.
+
+Configuración efectiva de cada servicio (los valores marcados como *default* no
+los fija el script; son los predeterminados de Cloud Run):
+
+| Ajuste | `learning-mcp` | `learning-agent` |
+|---|---|---|
+| Imagen | `…/${REPOSITORY}/mcp-server:${TAG}` | `…/${REPOSITORY}/agent-app:${TAG}` |
+| Cuenta de servicio | `learning-mcp@${PROJECT_ID}` | `learning-agent@${PROJECT_ID}` |
+| Acceso | `--no-allow-unauthenticated`; sólo `learning-agent` tiene `run.invoker` | `--allow-unauthenticated` (público) |
+| Instancias | 0 – 100 (*default*) | 0 – 3 (`--max-instances 3`) |
+| Concurrencia | 80 (*default*) | 40 (`--concurrency`) |
+| Timeout de request | 300 s (*default*) | 3600 s (el WebSocket de voz supera los 5 min) |
+| CPU / memoria | 1 vCPU / 512 MiB (*default*) | 1 vCPU / 512 MiB (*default*) |
+| Sondas | startup y liveness `GET /healthz` | startup y liveness `GET /healthz` |
+| Secretos | — | `APP_SESSION_SECRET` desde Secret Manager (`:latest`) |
+
+Los defaults de memoria bastan: en reposo el agent-app consume ~84 MiB y el
+mcp-server ~48 MiB.
+
+Variables de entorno que fija el despliegue:
+
+| Servicio | Variables |
+|---|---|
+| `learning-mcp` | `MCP_PROGRESS_BACKEND=firestore`, `GOOGLE_CLOUD_PROJECT`, `FIRESTORE_PROGRESS_COLLECTION=student_progress`, `MCP_ALLOWED_HOSTS` |
+| `learning-agent` | `MODEL_PROVIDER=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_CLOUD_LIVE_LOCATION`, `GEMINI_MODEL`, `GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`, `APP_SESSIONS_BACKEND=firestore`, `FIRESTORE_SESSIONS_COLLECTION=learning_sessions`, `APP_SESSION_RETENTION_DAYS=365`, `APP_STUDENT_PROFILES_BACKEND=firestore`, `FIRESTORE_STUDENT_PROFILES_COLLECTION=student_profiles`, `GOOGLE_CLIENT_ID`, `APP_AUTH_COOKIE_SECURE=true`, `MCP_USE_LOCAL_ADAPTER=false`, `MCP_SERVER_URL`, `MCP_AUTHORING_URL`, `MCP_TIMEOUT_SECONDS`, `MCP_AUTH_AUDIENCE` |
+
+`MCP_ALLOWED_HOSTS` se aplica en un segundo paso (`gcloud run services update`)
+porque el dominio del MCP sólo se conoce después de su primer despliegue; sin
+él, la protección anti DNS-rebinding de FastMCP responde `421 Misdirected
+Request`. Por la misma razón `learning-mcp` se despliega antes que
+`learning-agent`, que recibe la URL resultante en `MCP_SERVER_URL`,
+`MCP_AUTHORING_URL` y `MCP_AUTH_AUDIENCE`.
+
+Variables del script que puede sobrescribir en el entorno: `PROJECT_ID`,
+`GOOGLE_CLIENT_ID` y `APP_SESSION_SECRET` (obligatorias), más `REGION`,
+`FIRESTORE_LOCATION`, `REPOSITORY`, `TAG`, `SESSION_SECRET_NAME`,
+`MCP_TIMEOUT_SECONDS`, `GEMINI_MODEL`, `GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`,
+`GEMINI_LOCATION` y `GEMINI_LIVE_LOCATION`.
+
+Tras el despliegue, `infra/cloudrun/smoke-test.sh` verifica el servicio público
+sin crear recursos.
+
 ## Herramientas MCP
 
 - `get_student_progress(student_id)`
