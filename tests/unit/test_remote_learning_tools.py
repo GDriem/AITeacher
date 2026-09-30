@@ -1,9 +1,14 @@
 import asyncio
 from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 
-from agent_app.services.learning_tools import RemoteMcpLearningTools
+from agent_app.services import learning_tools
+from agent_app.services.learning_tools import (
+    LearningToolsUnavailable,
+    RemoteMcpLearningTools,
+)
 
 
 @pytest.mark.asyncio
@@ -88,5 +93,25 @@ async def test_http_client_is_reused_and_closed() -> None:
     second = tools._get_http_client()
 
     assert second is first
+    assert first.timeout.connect is None
+    assert first.timeout.read is None
+    assert first.timeout.write is None
+    assert first.timeout.pool is None
     await tools.aclose()
     assert first.is_closed
+
+
+@pytest.mark.asyncio
+async def test_http_transport_errors_become_domain_unavailable(monkeypatch) -> None:
+    tools = RemoteMcpLearningTools("https://mcp.example/mcp/")
+
+    def fail_transport(*args, **kwargs):
+        raise httpx.ReadTimeout("MCP no respondió")
+
+    monkeypatch.setattr(learning_tools, "streamable_http_client", fail_transport)
+
+    with pytest.raises(LearningToolsUnavailable) as captured:
+        await tools.list_available_topics()
+
+    assert isinstance(captured.value.__cause__, httpx.ReadTimeout)
+    await tools.aclose()

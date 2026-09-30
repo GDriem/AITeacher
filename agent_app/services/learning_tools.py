@@ -122,7 +122,9 @@ class RemoteMcpLearningTools:
 
     def _get_http_client(self) -> httpx.AsyncClient:
         if self._http_client is None or self._http_client.is_closed:
-            self._http_client = httpx.AsyncClient()
+            # `asyncio.timeout` en `_call` es el único presupuesto de extremo a
+            # extremo. Un timeout propio de HTTPX recortaría arranques fríos MCP.
+            self._http_client = httpx.AsyncClient(timeout=None)
         return self._http_client
 
     async def aclose(self) -> None:

@@ -64,7 +64,11 @@ from agent_app.services.observability import (
     ObservableModelProvider,
     ObservabilityRegistry,
 )
-from agent_app.services.rate_limit import RateLimitExceeded, StudentRateLimiter
+from agent_app.services.rate_limit import (
+    RateLimitExceeded,
+    StudentConcurrencyLimiter,
+    StudentRateLimiter,
+)
 from agent_app.services.live_voice import GeminiLiveBridge, VoiceUnavailable
 from agent_app.services.activities import PROJECTS, evaluate_project
 from agent_app.services.auth import (
@@ -293,6 +297,9 @@ def create_app(
     rate_limiter = StudentRateLimiter(
         settings.model_rate_limit_requests_per_minute
     )
+    voice_session_limiter = StudentConcurrencyLimiter(
+        settings.voice_max_concurrent_sessions_per_student
+    )
     orchestrator = build_orchestrator(
         settings,
         tools,
@@ -324,6 +331,7 @@ def create_app(
     app.state.observability = observability
     app.state.auth_service = auth_service
     app.state.rate_limiter = rate_limiter
+    app.state.voice_session_limiter = voice_session_limiter
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.mount(
         "/assets",
@@ -445,10 +453,9 @@ def create_app(
     async def forbidden_session(_: Request, exc: PermissionError) -> JSONResponse:
         return JSONResponse(status_code=403, content={"detail": str(exc)})
 
-    @app.exception_handler(TimeoutError)
     @app.exception_handler(LearningToolsUnavailable)
     async def learning_tools_unavailable(
-        request: Request, exc: LearningToolsUnavailable | TimeoutError
+        request: Request, exc: LearningToolsUnavailable
     ) -> JSONResponse:
         logger.exception(
             "herramientas_aprendizaje_no_disponibles",
@@ -807,59 +814,73 @@ def create_app(
             except AuthenticationError:
                 await websocket.close(code=4401)
                 return
-        await websocket.accept()
-        session_context = ""
-        session_id = websocket.query_params.get("session_id")
-        if session_id and voice_student_id:
-            try:
-                current_session = await _in_thread(
-                    sessions.get, session_id, voice_student_id
-                )
-                context_parts = [
-                    f"Tema: {current_session.topic.value}.",
-                    f"Conversación: {current_session.title}.",
-                    (
-                        "Actividad pendiente: "
-                        f"{current_session.pending_evaluation.quiz.question}"
-                    ),
-                ]
-                last_explanation = next(
-                    (
-                        item.content
-                        for item in reversed(current_session.messages)
-                        if item.role.value == "assistant"
-                    ),
-                    "",
-                )
-                if last_explanation:
-                    context_parts.append(
-                        f"Última explicación del tutor: {last_explanation[:1_000]}"
-                    )
-                session_context = " ".join(context_parts)
-            except (KeyError, PermissionError, ValueError):
-                logger.warning("voice_session_context_unavailable")
-        try:
-            bridge = GeminiLiveBridge(settings, session_context=session_context)
-        except VoiceUnavailable as exc:
-            await websocket.send_json({"type": "unavailable", "message": str(exc)})
-            await websocket.close(code=4403)
+
+        voice_student_id = (voice_student_id or "").strip()
+        if not voice_student_id or len(voice_student_id) > 100:
+            await websocket.close(code=4400)
             return
+        if not voice_session_limiter.acquire(voice_student_id):
+            await websocket.close(code=4429)
+            return
+
         try:
-            await bridge.run(websocket)
-        except WebSocketDisconnect:
-            logger.info("voice_client_disconnected")
-        except Exception:
-            logger.exception("voice_session_failed")
+            # El cupo se reserva antes de aceptar la conexión o construir el
+            # cliente Gemini Live, que es el recurso con costo.
+            await websocket.accept()
+            session_context = ""
+            session_id = websocket.query_params.get("session_id")
+            if session_id:
+                try:
+                    current_session = await _in_thread(
+                        sessions.get, session_id, voice_student_id
+                    )
+                    context_parts = [
+                        f"Tema: {current_session.topic.value}.",
+                        f"Conversación: {current_session.title}.",
+                        (
+                            "Actividad pendiente: "
+                            f"{current_session.pending_evaluation.quiz.question}"
+                        ),
+                    ]
+                    last_explanation = next(
+                        (
+                            item.content
+                            for item in reversed(current_session.messages)
+                            if item.role.value == "assistant"
+                        ),
+                        "",
+                    )
+                    if last_explanation:
+                        context_parts.append(
+                            f"Última explicación del tutor: {last_explanation[:1_000]}"
+                        )
+                    session_context = " ".join(context_parts)
+                except (KeyError, PermissionError, ValueError):
+                    logger.warning("voice_session_context_unavailable")
             try:
-                await websocket.send_json(
-                    {
-                        "type": "error",
-                        "message": "La voz se desconectó; continúa usando el chat de texto.",
-                    }
-                )
-                await websocket.close(code=1011)
-            except RuntimeError:
-                pass
+                bridge = GeminiLiveBridge(settings, session_context=session_context)
+            except VoiceUnavailable as exc:
+                await websocket.send_json({"type": "unavailable", "message": str(exc)})
+                await websocket.close(code=4403)
+                return
+            try:
+                await bridge.run(websocket)
+            except WebSocketDisconnect:
+                logger.info("voice_client_disconnected")
+            except Exception:
+                logger.exception("voice_session_failed")
+                try:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "message": "La voz se desconectó; continúa usando el chat de texto.",
+                        }
+                    )
+                    await websocket.close(code=1011)
+                except RuntimeError:
+                    pass
+        finally:
+            voice_session_limiter.release(voice_student_id)
 
     @app.post("/api/chat", response_model=ChatResponse)
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:

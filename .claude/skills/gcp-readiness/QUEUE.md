@@ -33,10 +33,9 @@ después de cada una (183 pruebas al final).
   `playwright-report`, `test-results` y `**/*.egg-info`. No se corrió
   `gcloud meta list-files-for-upload`; la comprobación de que `frontend/src`
   sigue subiendo se hizo a mano.
-- **T03** · Codex. `LearningToolsUnavailable` + handler 503. Desviación: el
-  handler también captura `TimeoutError` global, así que un timeout de
-  cualquier origen responde con el mensaje del catálogo. Lo pedía la
-  verificación de la tarea.
+- **T03** · Codex. `LearningToolsUnavailable` + handler 503. El handler queda
+  limitado a la excepción de dominio; el cliente MCP convierte sus fallos de
+  transporte y timeout, sin confundirlos con timeouts del proveedor de modelo.
 - **T04** · Subagente. **Opción B**: manifiestos Knative borrados, `deploy.sh`
   queda como fuente única y el README documenta la configuración efectiva.
   Pendiente menor: `docs/react-frontend-migration-plan.md` aún menciona

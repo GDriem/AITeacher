@@ -54,3 +54,32 @@ class StudentRateLimiter:
                 retry_after = max(1, math.ceil(60 - (now - requests[0])))
                 raise RateLimitExceeded(retry_after)
             requests.append(now)
+
+
+class StudentConcurrencyLimiter:
+    """Reserva cupos de conexiones activas de forma atómica por alumno."""
+
+    def __init__(self, max_concurrent: int) -> None:
+        self._max_concurrent = max_concurrent
+        self._lock = Lock()
+        self._active: dict[str, int] = {}
+
+    def acquire(self, student_id: str) -> bool:
+        """Reserva un cupo si aún hay capacidad para el alumno."""
+
+        with self._lock:
+            active = self._active.get(student_id, 0)
+            if active >= self._max_concurrent:
+                return False
+            self._active[student_id] = active + 1
+            return True
+
+    def release(self, student_id: str) -> None:
+        """Libera un cupo previamente reservado."""
+
+        with self._lock:
+            active = self._active.get(student_id, 0)
+            if active <= 1:
+                self._active.pop(student_id, None)
+            else:
+                self._active[student_id] = active - 1

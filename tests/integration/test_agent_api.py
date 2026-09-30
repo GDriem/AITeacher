@@ -9,7 +9,10 @@ from agent_app.config import ModelProviderName, Settings
 from agent_app.models.chat import ChatRequest, ChatResponse
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.authoring import LocalAuthoringGateway
-from agent_app.services.learning_tools import LocalLearningTools
+from agent_app.services.learning_tools import (
+    LearningToolsUnavailable,
+    LocalLearningTools,
+)
 from agent_app.services.sessions import LocalSessionRepository, utc_now
 from mcp_learning_server.models import LearningContent
 from mcp_learning_server.repositories.content_authoring import (
@@ -26,10 +29,19 @@ class UnavailableLearningTools(LocalLearningTools):
 
 class TimedOutLearningTools(LocalLearningTools):
     async def get_student_progress(self, student_id):
-        raise TimeoutError("MCP no respondió")
+        raise LearningToolsUnavailable("MCP no respondió") from TimeoutError(
+            "agotó el presupuesto MCP"
+        )
 
     async def list_available_topics(self):
-        raise TimeoutError("MCP no respondió")
+        raise LearningToolsUnavailable("MCP no respondió") from TimeoutError(
+            "agotó el presupuesto MCP"
+        )
+
+
+class TimedOutModelProvider(MockModelProvider):
+    async def generate(self, request):
+        raise TimeoutError("el modelo agotó su presupuesto")
 
 
 class BlockingMockModelProvider(MockModelProvider):
@@ -373,6 +385,33 @@ async def test_learning_tools_timeout_degrades_without_affecting_health(
     assert "detail" in chat.json()
     assert health.status_code == 200
     assert readiness.status_code == 503
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_model_timeout_is_not_reported_as_catalog_unavailable(
+    learning_service,
+) -> None:
+    app = create_app(
+        Settings(mcp_use_local_adapter=True),
+        tools=LocalLearningTools(learning_service),
+        provider=TimedOutModelProvider(),
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="http://agent.local",
+    ) as client:
+        response = await client.post(
+            "/api/chat",
+            json={
+                "student_id": "student-1",
+                "message": "Quiero aprender embeddings",
+            },
+        )
+
+    assert response.status_code == 500
+    assert "catálogo de aprendizaje" not in response.text
 
 
 @pytest.mark.integration

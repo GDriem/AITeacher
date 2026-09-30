@@ -1,3 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+
 import httpx
 import pytest
 
@@ -5,7 +8,10 @@ from agent_app.api.main import create_app
 from agent_app.config import Settings
 from agent_app.providers.mock import MockModelProvider
 from agent_app.services.learning_tools import LocalLearningTools
-from agent_app.services.rate_limit import StudentRateLimiter
+from agent_app.services.rate_limit import (
+    StudentConcurrencyLimiter,
+    StudentRateLimiter,
+)
 
 
 def build_test_app(learning_service, tmp_path, limit: int):
@@ -71,6 +77,21 @@ def test_zero_disables_rate_limit_for_a_thousand_requests() -> None:
 
     for _ in range(1_000):
         limiter.check("alumno-demo")
+
+
+def test_concurrent_session_reservations_are_atomic() -> None:
+    limiter = StudentConcurrencyLimiter(1)
+    barrier = Barrier(20)
+
+    def reserve() -> bool:
+        barrier.wait()
+        return limiter.acquire("alumno-concurrente")
+
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        results = list(executor.map(lambda _: reserve(), range(20)))
+
+    assert results.count(True) == 1
+    assert results.count(False) == 19
 
 
 @pytest.mark.integration
