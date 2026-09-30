@@ -23,8 +23,57 @@ Dos tareas del mismo carril **nunca** se despachan a la vez.
 
 ## Notas de estado
 
-_(el orquestador escribe aquí una línea por tarea cerrada: fecha, resultado,
-desviaciones respecto al plan)_
+Todas cerradas el 2026-09-29, un commit por tarea, suite completa en verde
+después de cada una (183 pruebas al final).
+
+- **T01** · Codex. `describe || create` de Firestore, `FIRESTORE_LOCATION=nam5`,
+  `--timeout=3600`, `--concurrency=40`, `MCP_TIMEOUT_SECONDS` y
+  `MCP_AUTHORING_URL`. Sin desviaciones.
+- **T02** · Codex. `y/`, `frontend/node_modules`, `dist`, `coverage`,
+  `playwright-report`, `test-results` y `**/*.egg-info`. No se corrió
+  `gcloud meta list-files-for-upload`; la comprobación de que `frontend/src`
+  sigue subiendo se hizo a mano.
+- **T03** · Codex. `LearningToolsUnavailable` + handler 503. Desviación: el
+  handler también captura `TimeoutError` global, así que un timeout de
+  cualquier origen responde con el mensaje del catálogo. Lo pedía la
+  verificación de la tarea.
+- **T04** · Subagente. **Opción B**: manifiestos Knative borrados, `deploy.sh`
+  queda como fuente única y el README documenta la configuración efectiva.
+  Pendiente menor: `docs/react-frontend-migration-plan.md` aún menciona
+  `agent-service.yaml` en 3 líneas (archivo fuera de alcance, registro
+  histórico).
+- **T05** · Codex. `severity`, `exception_type`, traceback y `stack` en el log
+  JSON. La unificación de los logs de uvicorn quedó fuera (requiere archivos no
+  autorizados).
+- **T06** · Subagente. **Camino 1**: helper `_in_thread` en el borde, protocolo
+  `SessionRepository` sigue síncrono. Se envuelve también el backend `local`
+  para no ramificar por backend. Pruebas portadoras verificadas (fallan al
+  revertir el arreglo). Hallazgo fuera de alcance: `LocalLearningTools` llama a
+  `LearningService` de forma síncrona desde métodos `async`; sólo afecta a
+  `MCP_USE_LOCAL_ADAPTER=true`, no a la ruta de Cloud Run.
+- **T07** · Codex. `httpx.AsyncClient` reutilizado + `aclose()` en el lifespan,
+  ID token cacheado con margen de 5 min y doble comprobación bajo lock.
+  Desviación: el handshake MCP sigue siendo por llamada; el transporte
+  instalado no permite reutilizar la sesión limpiamente.
+- **T08** · Codex. `/api/observability` exige sesión reutilizando el
+  `authenticated_profile` que T06 volvió asíncrono. El frontend no necesitó
+  cambios.
+- **T09** · Codex. `StudentRateLimiter` + 429 con `Retry-After`,
+  `MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE` (default 30). El contador es por
+  proceso: el límite efectivo en Cloud Run se multiplica por el número de
+  instancias.
+- **T10** · Codex. `/healthz`, `/readyz` con reintento por arranque en frío y
+  comprobación de capacidades. Verificado contra el stack local con el overlay
+  `docker-compose.gcp.yml`, incluido el caso negativo (MCP apagado → salida 1).
+- **T11** · Codex. `AliasChoices("PORT", "APP_PORT", "app_port")` en
+  `app_port`; el MCP lee `PORT` antes que `MCP_PORT`.
+- **T12** · Codex, devuelto como `blocked`. Reconcilió README y CLAUDE.md
+  (PDF y `docs/README.md` inexistentes, conteo de pruebas fijo, límite de
+  observabilidad por instancia). Se detuvo porque el cuerpo de la tarea pedía
+  documentar `AUTHORING_TOKEN` en `.env.example`, archivo ausente de su propia
+  lista de «Archivos que puedes tocar» — inconsistencia de la tarea, no del
+  ejecutor. El orquestador añadió esa nota a mano tras comprobar el mapeo en
+  `docker-compose.yml`. Cerrada como `done`.
 
 ## Hallazgos que no generan tarea
 
