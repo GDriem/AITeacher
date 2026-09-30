@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 import uuid
 
@@ -65,7 +66,9 @@ class LearningOrchestrator:
         session_id = request.session_id or str(uuid.uuid4())
         try:
             session = (
-                self.sessions.get(session_id, request.student_id)
+                await asyncio.to_thread(
+                    self.sessions.get, session_id, request.student_id
+                )
                 if request.session_id
                 else None
             )
@@ -225,14 +228,16 @@ class LearningOrchestrator:
             while len(session.completed_chat_requests) > 20:
                 oldest_request_id = next(iter(session.completed_chat_requests))
                 del session.completed_chat_requests[oldest_request_id]
-        self.sessions.save(session)
+        await asyncio.to_thread(self.sessions.save, session)
         return response
 
     async def evaluate(
         self, request: EvaluationRequest, correlation_id: str | None = None
     ) -> EvaluationResponse:
         correlation_id = correlation_id or str(uuid.uuid4())
-        session = self.sessions.get(request.session_id, request.student_id)
+        session = await asyncio.to_thread(
+            self.sessions.get, request.session_id, request.student_id
+        )
         if session.archived_at is not None:
             raise ValueError("La conversación está archivada; restáurala para continuar")
         pending = session.pending_evaluation
@@ -273,7 +278,7 @@ class LearningOrchestrator:
                 ),
             ]
         )
-        self.sessions.save(session)
+        await asyncio.to_thread(self.sessions.save, session)
         trace.append(
             TraceEvent(
                 kind=TraceKind.MODEL,
@@ -331,7 +336,9 @@ class LearningOrchestrator:
     async def start_practice(
         self, request: PracticeStartRequest
     ) -> PracticeStartResponse:
-        session = self.sessions.get(request.session_id, request.student_id)
+        session = await asyncio.to_thread(
+            self.sessions.get, request.session_id, request.student_id
+        )
         _ensure_active(session)
         progress = await self.evaluator.tools.get_student_progress(request.student_id)
         topic_progress = progress.progress_for(session.topic)
@@ -366,7 +373,7 @@ class LearningOrchestrator:
                 expected_keywords=exercise.focus_concepts,
             ),
         )
-        self.sessions.save(session)
+        await asyncio.to_thread(self.sessions.save, session)
         return PracticeStartResponse(
             session_id=session.id,
             exercise=exercise,
@@ -376,7 +383,9 @@ class LearningOrchestrator:
     async def evaluate_practice(
         self, request: PracticeEvaluationRequest
     ) -> PracticeEvaluationResponse:
-        session = self.sessions.get(request.session_id, request.student_id)
+        session = await asyncio.to_thread(
+            self.sessions.get, request.session_id, request.student_id
+        )
         _ensure_active(session)
         pending = session.pending_practice
         if pending is None:
@@ -406,7 +415,7 @@ class LearningOrchestrator:
                 expected_keywords=next_exercise.focus_concepts,
             ),
         )
-        self.sessions.save(session)
+        await asyncio.to_thread(self.sessions.save, session)
         return PracticeEvaluationResponse(
             session_id=session.id,
             exercise=pending.exercise,

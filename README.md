@@ -14,9 +14,10 @@ herramientas y recursos deterministas; no se presenta como agente.
 
 ## Estado del proyecto
 
-Las ocho fases de producto están completadas. La referencia consolidada está en
-la [hoja de ruta](docs/product-roadmap.md) y la navegación de toda la
-documentación en el [índice de `docs/`](docs/README.md).
+Las ocho fases de producto están completadas. La documentación que permanece
+versionada cubre el [currículo de inglés](docs/english-curriculum.md),
+[Google Login y perfiles](docs/google-auth-student-profiles-plan.md) y la
+[migración del frontend a React](docs/react-frontend-migration-plan.md).
 
 ## Capacidades
 
@@ -28,7 +29,7 @@ documentación en el [índice de `docs/`](docs/README.md).
 - Repositorio JSON atómico para progreso y evaluaciones.
 - Seis herramientas MCP y un recurso de catálogo.
 - Streamable HTTP sin estado en `http://localhost:8001/mcp/`.
-- Health checks en `/healthz` y `/readyz`.
+- Health checks en `/health` y `/ready`.
 - Pruebas unitarias y de integración sin credenciales cloud.
 - Google ADK 2.x con orquestador y tres subagentes especialistas.
 - FastAPI, chat, evaluación y trazabilidad sin chain-of-thought.
@@ -112,7 +113,7 @@ python -m mcp_learning_server.server
 Verificación rápida:
 
 ```bash
-curl http://localhost:8001/healthz
+curl http://localhost:8001/health
 ```
 
 También puede conectar MCP Inspector a `http://localhost:8001/mcp/`.
@@ -208,10 +209,9 @@ El panel de autoría se habilita al configurar `APP_AUTHORING_TOKEN`. En Docker
 Compose use `AUTHORING_TOKEN` para proteger tanto Agent App como las rutas
 administrativas del MCP. Las lecciones se guardan en
 `MCP_CONTENT_AUTHORING_PATH`; sólo el snapshot publicado alimenta la búsqueda del
-tutor. Consulte [la guía de Fase 7](docs/phase-7.md) para el flujo y los
-contratos.
+tutor. Los borradores no forman parte del corpus hasta que se publican.
 
-`GET /healthz` comprueba la vida del proceso y `GET /readyz` valida que Agent
+`GET /health` comprueba la vida del proceso y `GET /ready` valida que Agent
 App pueda consultar el catálogo MCP. `GET /api/observability` entrega métricas
 agregadas sin contenido del estudiante. El panel **Operación** muestra
 peticiones, tasa de error, latencia p95, llamadas al modelo, tokens estimados,
@@ -223,8 +223,10 @@ MODEL_OUTPUT_COST_PER_MILLION_USD=0
 ```
 
 Con ambos valores en cero se mide consumo sin atribuir un costo. Las métricas
-son locales a cada réplica; consulte [la guía de Fase 8](docs/phase-8.md) para
-privacidad, alcance y validación responsive.
+se mantienen en memoria y son locales a cada instancia. En Cloud Run, donde
+`learning-agent` admite hasta tres instancias, el panel muestra sólo los datos
+de la instancia que atiende esa petición, no el total agregado del servicio. Los
+valores también se reinician al reemplazar o reiniciar una instancia.
 
 ## Ejecutar pruebas
 
@@ -242,8 +244,12 @@ La interfaz queda en `http://localhost:8000` y MCP en `localhost:8001`. El
 progreso queda en `mcp-data` y las conversaciones en `agent-data`; las imágenes
 usan usuarios sin privilegios.
 
-Compose toma `MODEL_PROVIDER` y las credenciales desde `.env`. Para usar Google
-AI Studio dentro del contenedor:
+Compose toma `MODEL_PROVIDER` y las credenciales desde `.env`. Para el panel de
+autoría, toma `AUTHORING_TOKEN` como valor de origen y lo asigna a
+`APP_AUTHORING_TOKEN` y `MCP_AUTHORING_TOKEN` dentro de los dos servicios. Fuera
+de Compose, configure directamente las dos variables con el mismo secreto.
+
+Para usar Google AI Studio dentro del contenedor:
 
 ```dotenv
 MODEL_PROVIDER=gemini
@@ -268,9 +274,77 @@ Vertex AI, configure `MODEL_PROVIDER=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true` y
 `gemini-live-2.5-flash-native-audio`; puede reemplazarlo mediante la variable
 `GEMINI_LIVE_MODEL` al ejecutar `infra/cloudrun/deploy.sh`.
 
+Las operaciones de texto que invocan al modelo se limitan por alumno mediante
+`MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE` (30 por minuto por defecto; `0` lo
+desactiva). Las conexiones de voz usan un contador de sesiones activas separado:
+`VOICE_MAX_CONCURRENT_SESSIONS_PER_STUDENT` permite una sesión simultánea por
+alumno de forma predeterminada. Ambos límites viven en memoria y se aplican por
+instancia, por lo que el techo efectivo crece con el número de instancias.
+
 La dirección `MCP_SERVER_URL` se configura internamente como
 `http://mcp-server:8080/mcp/`, aunque el servidor MCP se publique en el puerto
 `8001` del host.
+
+## Despliegue en Cloud Run
+
+`infra/cloudrun/deploy.sh` es la **única fuente de la configuración de los dos
+servicios**: no hay manifiestos declarativos y el script nunca ejecuta
+`gcloud run services replace`. Es manual, genera costos reales y debe ejecutarse
+sólo tras revisar proyecto, región, cuotas y presupuesto.
+
+El script también crea, de forma idempotente, lo que los servicios necesitan:
+APIs habilitadas, base Firestore `(default)`, repositorio de Artifact Registry,
+las dos cuentas de servicio con sus roles (`datastore.user`, `aiplatform.user`)
+y el secreto `learning-agent-session-secret` con su enlace
+`secretmanager.secretAccessor`.
+
+Configuración efectiva de cada servicio (los valores marcados como *default* no
+los fija el script; son los predeterminados de Cloud Run):
+
+| Ajuste | `learning-mcp` | `learning-agent` |
+|---|---|---|
+| Imagen | `…/${REPOSITORY}/mcp-server:${TAG}` | `…/${REPOSITORY}/agent-app:${TAG}` |
+| Cuenta de servicio | `learning-mcp@${PROJECT_ID}` | `learning-agent@${PROJECT_ID}` |
+| Acceso | `--no-allow-unauthenticated`; sólo `learning-agent` tiene `run.invoker` | `--allow-unauthenticated` (público) |
+| Instancias | 0 – 100 (*default*) | 0 – 3 (`--max-instances 3`) |
+| Concurrencia | 80 (*default*) | 40 (`--concurrency`) |
+| Timeout de request | 300 s (*default*) | 3600 s (el WebSocket de voz supera los 5 min) |
+| CPU / memoria | 1 vCPU / 512 MiB (*default*) | 1 vCPU / 512 MiB (*default*) |
+| Sondas | startup y liveness `GET /health` | startup y liveness `GET /health` |
+| Secretos | — | `APP_SESSION_SECRET` desde Secret Manager (`:latest`) |
+
+Los defaults de memoria bastan: en reposo el agent-app consume ~84 MiB y el
+mcp-server ~48 MiB.
+
+Variables de entorno que fija el despliegue:
+
+| Servicio | Variables |
+|---|---|
+| `learning-mcp` | `MCP_PROGRESS_BACKEND=firestore`, `GOOGLE_CLOUD_PROJECT`, `FIRESTORE_PROGRESS_COLLECTION=student_progress`, `MCP_ALLOWED_HOSTS` |
+| `learning-agent` | `MODEL_PROVIDER=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_CLOUD_LIVE_LOCATION`, `GEMINI_MODEL`, `GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`, `APP_SESSIONS_BACKEND=firestore`, `FIRESTORE_SESSIONS_COLLECTION=learning_sessions`, `APP_SESSION_RETENTION_DAYS=365`, `APP_STUDENT_PROFILES_BACKEND=firestore`, `FIRESTORE_STUDENT_PROFILES_COLLECTION=student_profiles`, `GOOGLE_CLIENT_ID`, `APP_AUTH_COOKIE_SECURE=true`, `MCP_USE_LOCAL_ADAPTER=false`, `MCP_SERVER_URL`, `MCP_AUTHORING_URL`, `MCP_TIMEOUT_SECONDS`, `MCP_AUTH_AUDIENCE` |
+
+Cloud Run depende deliberadamente de los defaults de la aplicación para
+`MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE=30` y
+`VOICE_MAX_CONCURRENT_SESSIONS_PER_STUDENT=1`; `deploy.sh` no los duplica. Docker
+Compose sí los expone con esos mismos defaults para facilitar ajustes locales.
+
+`MCP_ALLOWED_HOSTS` se aplica en un segundo paso (`gcloud run services update`)
+porque el dominio del MCP sólo se conoce después de su primer despliegue; sin
+él, la protección anti DNS-rebinding de FastMCP responde `421 Misdirected
+Request`. Por la misma razón `learning-mcp` se despliega antes que
+`learning-agent`, que recibe la URL resultante en `MCP_SERVER_URL`,
+`MCP_AUTHORING_URL` y `MCP_AUTH_AUDIENCE`.
+
+Variables del script que puede sobrescribir en el entorno: `PROJECT_ID`,
+`GOOGLE_CLIENT_ID` y `APP_SESSION_SECRET` (obligatorias), más `REGION`,
+`FIRESTORE_LOCATION`, `REPOSITORY`, `TAG`, `SESSION_SECRET_NAME`,
+`MCP_TIMEOUT_SECONDS`, `GEMINI_MODEL`, `GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`,
+`GEMINI_LOCATION` y `GEMINI_LIVE_LOCATION`.
+
+Tras el despliegue, `infra/cloudrun/smoke-test.sh` verifica el servicio público,
+incluidos `/health`, la conexión de Agent App con el MCP mediante `/ready`, las
+capacidades y las rutas de React, sin crear recursos. La comprobación de voz es
+opcional: use `EXPECT_VOICE=1` cuando el despliegue deba publicar esa capacidad.
 
 ## Herramientas MCP
 
@@ -283,9 +357,10 @@ La dirección `MCP_SERVER_URL` se configura internamente como
 
 ## Documentación
 
-Consulte el [índice de documentación](docs/README.md) para navegar la
-arquitectura, la hoja de ruta completada, las guías de cada capacidad, el guion
-de demo y el despliegue.
+La documentación vigente incluye el
+[currículo de inglés](docs/english-curriculum.md), el plan de
+[Google Login y perfiles](docs/google-auth-student-profiles-plan.md) y el
+[plan de migración a React](docs/react-frontend-migration-plan.md).
 
 La evolución de la interfaz se organiza en el
 [plan de migración a React](docs/react-frontend-migration-plan.md), con una

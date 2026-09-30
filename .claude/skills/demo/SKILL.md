@@ -54,11 +54,11 @@ python -m agent_app.api.main
 ## Verificación de salud
 
 ```powershell
-curl http://localhost:8001/healthz   # MCP Server
-curl http://localhost:8000/healthz   # Agent App
+curl http://localhost:8001/health   # MCP Server
+curl http://localhost:8000/health   # Agent App
 ```
 
-Ambos deben responder `{"status": "ok", ...}`. Si `8001/healthz` falla,
+Ambos deben responder `{"status": "ok", ...}`. Si `8001/health` falla,
 reinicia solo el proceso de `mcp_learning_server` (no el Agent App) — así lo
 indica el plan B del guion de demo.
 

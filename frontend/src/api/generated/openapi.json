@@ -3299,16 +3299,16 @@
         "summary": "Topics"
       }
     },
-    "/healthz": {
+    "/health": {
       "get": {
-        "operationId": "health_healthz_get",
+        "operationId": "health_health_get",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Health Healthz Get",
+                  "title": "Response Health Health Get",
                   "type": "object"
                 }
               }
@@ -3319,9 +3319,9 @@
         "summary": "Health"
       }
     },
-    "/readyz": {
+    "/ready": {
       "get": {
-        "operationId": "readiness_readyz_get",
+        "operationId": "readiness_ready_get",
         "responses": {
           "200": {
             "content": {

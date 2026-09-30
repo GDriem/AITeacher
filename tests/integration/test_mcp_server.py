@@ -41,7 +41,7 @@ async def test_health_check(learning_service) -> None:
             transport=httpx.ASGITransport(app=app),
             base_url="http://localhost:8001",
         ) as client:
-            response = await client.get("/healthz")
+            response = await client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "service": "learning-mcp"}
 

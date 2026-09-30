@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,7 +22,12 @@ class Settings(BaseSettings):
     )
 
     app_host: str = "0.0.0.0"
-    app_port: int = Field(default=8000, ge=1, le=65535)
+    app_port: int = Field(
+        default=8000,
+        ge=1,
+        le=65535,
+        validation_alias=AliasChoices("PORT", "APP_PORT", "app_port"),
+    )
     app_sessions_path: str = ".data/sessions.json"
     app_session_retention_days: int = Field(default=365, ge=1, le=3_650)
     app_sessions_backend: str = Field(default="local", pattern="^(local|firestore)$")
@@ -39,6 +44,12 @@ class Settings(BaseSettings):
     app_authoring_token: str | None = None
     model_provider: ModelProviderName = ModelProviderName.MOCK
     model_timeout_seconds: float = Field(default=20, gt=0, le=120)
+    model_rate_limit_requests_per_minute: int = Field(
+        default=30, ge=0, le=10_000
+    )
+    voice_max_concurrent_sessions_per_student: int = Field(
+        default=1, ge=1, le=10
+    )
     model_input_cost_per_million_usd: float = Field(default=0, ge=0)
     model_output_cost_per_million_usd: float = Field(default=0, ge=0)
     observability_max_latency_samples: int = Field(default=1_000, ge=10, le=10_000)

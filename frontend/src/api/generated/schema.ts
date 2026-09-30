@@ -348,7 +348,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/healthz": {
+    "/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -356,7 +356,7 @@ export interface paths {
             cookie?: never;
         };
         /** Health */
-        get: operations["health_healthz_get"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -365,7 +365,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/readyz": {
+    "/ready": {
         parameters: {
             query?: never;
             header?: never;
@@ -373,7 +373,7 @@ export interface paths {
             cookie?: never;
         };
         /** Readiness */
-        get: operations["readiness_readyz_get"];
+        get: operations["readiness_ready_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1876,7 +1876,7 @@ export interface operations {
             };
         };
     };
-    health_healthz_get: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1898,7 +1898,7 @@ export interface operations {
             };
         };
     };
-    readiness_readyz_get: {
+    readiness_ready_get: {
         parameters: {
             query?: never;
             header?: never;

@@ -14,7 +14,7 @@ Document a manual Azure CLI deployment of `agent_app` to Azure App Service. Cont
 - Container: `agent_app/Dockerfile` already builds the required application image.
 - Process: `python -m agent_app.api.main`.
 - HTTP port: 8080 in the container.
-- Health endpoints: `/healthz` for liveness and `/readyz` for the MCP dependency.
+- Health endpoints: `/health` for liveness and `/ready` for the MCP dependency.
 - Voice mode uses WebSockets and requires HTTPS.
 
 ## Deployment architecture
@@ -56,13 +56,13 @@ Required non-secret settings include `WEBSITES_PORT=8080`, `APP_PORT=8080`, `MOD
 5. Grant the Web App system identity `AcrPull` on ACR.
 6. Configure application settings and the temporary Google credential materialization step.
 7. Explicitly keep container continuous deployment disabled.
-8. Restart and validate `/healthz`, `/readyz`, Google Login, text chat, Firestore persistence, and voice WebSocket behavior.
+8. Restart and validate `/health`, `/ready`, Google Login, text chat, Firestore persistence, and voice WebSocket behavior.
 9. For later manual releases, build a new immutable image tag and point the Web App at that tag.
 
 ## Validation and rollback
 
 - Stream container logs with Azure CLI if startup or readiness fails.
-- `/healthz` verifies that the process is alive; `/readyz` additionally verifies the private Cloud Run MCP call.
+- `/health` verifies that the process is alive; `/ready` additionally verifies the private Cloud Run MCP call.
 - Rollback is performed by changing the Web App container image back to the previous immutable ACR tag and restarting the app.
 
 ## Out of scope

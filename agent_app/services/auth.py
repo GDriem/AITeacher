@@ -89,6 +89,15 @@ class GoogleIdentityVerifier(Protocol):
 
 
 class StudentProfileRepository(Protocol):
+    """Puerto **síncrono y bloqueante** de perfiles de alumno.
+
+    Igual que `SessionRepository`: el adaptador de Firestore hace E/S de red, así
+    que `AuthService.login` y `AuthService.authenticate` —que lo usan en cada
+    petición autenticada— se invocan desde un hilo aparte
+    (`agent_app.api.main._in_thread`, sobre `asyncio.to_thread`), nunca desde el
+    hilo del event loop.
+    """
+
     def get(self, student_id: str) -> StudentProfile | None: ...
 
     def upsert_google_identity(self, identity: GoogleIdentity) -> StudentProfile: ...
@@ -277,6 +286,8 @@ class LocalStudentProfileRepository:
 
 
 class FirestoreStudentProfileRepository:
+    """Perfiles en Firestore; cada método es una llamada de red bloqueante."""
+
     def __init__(self, client: Any, collection: str = "student_profiles", *, clock=utc_now) -> None:
         self.client = client
         self.collection = collection

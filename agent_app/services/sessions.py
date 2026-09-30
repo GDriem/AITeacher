@@ -123,6 +123,16 @@ class ConversationListResponse(SessionModel):
 
 
 class SessionRepository(Protocol):
+    """Puerto **síncrono y bloqueante** de persistencia de conversaciones.
+
+    Todas las implementaciones hacen E/S: disco local en `LocalSessionRepository`
+    y red en `FirestoreSessionRepository`. Por eso ningún método debe invocarse
+    directamente desde una corrutina: el código asíncrono los ejecuta con
+    `asyncio.to_thread` (el orquestador) o con `agent_app.api.main._in_thread`
+    (los handlers), para no congelar el event loop —y con él el WebSocket de
+    voz— durante toda la ida y vuelta.
+    """
+
     retention_days: int
 
     def get(self, session_id: str, student_id: str) -> StoredConversation: ...
@@ -683,7 +693,12 @@ class InMemorySessionRepository:
 
 
 class FirestoreSessionRepository:
-    """Adaptador administrado para sesiones durables en despliegues Cloud Run."""
+    """Adaptador administrado para sesiones durables en despliegues Cloud Run.
+
+    El cliente de Firestore es síncrono: cada `get`, `set`, `delete` o `stream`
+    es una llamada de red bloqueante. Llámalo siempre desde un hilo de trabajo
+    (ver `SessionRepository`), nunca desde el hilo del event loop.
+    """
 
     def __init__(
         self,

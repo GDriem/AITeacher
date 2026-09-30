@@ -18,6 +18,8 @@ services:
       APP_AUTHORING_TOKEN: ${AUTHORING_TOKEN:-}
       MODEL_PROVIDER: ${MODEL_PROVIDER:-mock}
       MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
+      MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE: ${MODEL_RATE_LIMIT_REQUESTS_PER_MINUTE:-30}
+      VOICE_MAX_CONCURRENT_SESSIONS_PER_STUDENT: ${VOICE_MAX_CONCURRENT_SESSIONS_PER_STUDENT:-1}
       MODEL_INPUT_COST_PER_MILLION_USD: ${MODEL_INPUT_COST_PER_MILLION_USD:-0}
       MODEL_OUTPUT_COST_PER_MILLION_USD: ${MODEL_OUTPUT_COST_PER_MILLION_USD:-0}
       OBSERVABILITY_MAX_LATENCY_SAMPLES: ${OBSERVABILITY_MAX_LATENCY_SAMPLES:-1000}
@@ -48,7 +50,7 @@ services:
       mcp-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -70,7 +72,7 @@ services:
     volumes:
       - mcp-data:/data
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 10s
       timeout: 3s
       retries: 3

@@ -251,8 +251,8 @@ def create_app(
 
     app = Starlette(
         routes=[
-            Route("/healthz", endpoint=health),
-            Route("/readyz", endpoint=health),
+            Route("/health", endpoint=health),
+            Route("/ready", endpoint=health),
             Route("/admin/lessons", endpoint=lessons, methods=["GET", "POST"]),
             Route(
                 "/admin/lessons/{lesson_id:str}",
@@ -290,7 +290,7 @@ def main() -> None:
     uvicorn.run(
         create_app(),
         host=os.getenv("MCP_HOST", "0.0.0.0"),
-        port=int(os.getenv("MCP_PORT", "8001")),
+        port=int(os.getenv("PORT", os.getenv("MCP_PORT", "8001"))),
     )
 
 
