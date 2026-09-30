@@ -11,5 +11,15 @@
 .pytest_cache
 **/__pycache__
 **/*.pyc
+**/*.egg-info
 output
 tmp
+
+# SDK local de Google Cloud descargado accidentalmente en la raíz
+y/
+
+frontend/node_modules
+frontend/dist
+frontend/coverage
+frontend/playwright-report
+frontend/test-results
