@@ -712,3 +712,29 @@
     animation: none;
   }
 }
+
+.learningOptions {
+  padding: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.learningOptions > p {
+  color: var(--content-strong);
+  line-height: 1.5;
+}
+
+.learningActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+
+.learningActions button {
+  flex: 1 1 12rem;
+  justify-content: center;
+}
+
+.learningActions button[aria-pressed="true"] {
+  border-color: var(--status-guide);
+}

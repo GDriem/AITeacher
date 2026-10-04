@@ -8,6 +8,7 @@ import { sessionDetailOptions } from "../sessions/sessionsQueries";
 import { LearningCycle } from "../evaluation/LearningCycle";
 import { HealthPanel } from "../observability/HealthPanel";
 import { LearningProgressPanel } from "../progress/LearningProgressPanel";
+import { TutorLearningOptions } from "./TutorLearningOptions";
 import { TutorComposer } from "./TutorComposer";
 import { TutorConversation } from "./TutorConversation";
 import { TutorTrace } from "./TutorTrace";
@@ -69,6 +70,7 @@ export function TutorScreen({ studentId }: Props) {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceLoadError, setVoiceLoadError] = useState<string | null>(null);
+  const [textRequest, setTextRequest] = useState(0);
   const [VoiceDialog, setVoiceDialog] = useState<ComponentType<VoiceSessionDialogProps> | null>(null);
   const detail = useQuery({
     ...sessionDetailOptions(studentId, activeSessionId ?? "new"),
@@ -83,7 +85,6 @@ export function TutorScreen({ studentId }: Props) {
   const pendingQuiz = localExchangePending && exchange
     ? { question: exchange.response.quiz.question, attempt: exchange.response.quiz_attempt }
     : detail.data?.pending_quiz ?? (exchange ? { question: exchange.response.quiz.question, attempt: exchange.response.quiz_attempt } : null);
-  const cycleKey = `${activeSessionId ?? "new"}:${exchange?.response.correlation_id ?? "persisted"}`;
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -130,6 +131,7 @@ export function TutorScreen({ studentId }: Props) {
   };
   const fallbackToText = () => {
     setVoiceOpen(false);
+    setTextRequest((current) => current + 1);
     window.requestAnimationFrame(() => textareaRef.current?.focus());
   };
   return (
@@ -170,30 +172,49 @@ export function TutorScreen({ studentId }: Props) {
           onRetryHistory={() => void detail.refetch()}
           onRetrySend={() => { if (failedMessage) void sendFollowingTail(failedMessage); }}
         >
-          {activeSessionId && pendingQuiz ? (
-            <LearningCycle
-              key={cycleKey}
-              studentId={studentId}
-              sessionId={activeSessionId}
-              pendingQuiz={pendingQuiz}
-              pendingPractice={detail.data?.pending_practice?.exercise ?? null}
-              tutorBusy={sendPending || learningBusy}
-              onBusyChange={setLearningBusy}
-              onEvaluationCompleted={completeEvaluation}
-              onPracticeCompleted={completePractice}
-              onPracticeStarted={() => refreshLearningData(activeSessionId)}
-              onTutorPrompt={(prompt) => void sendFollowingTail(prompt)}
+          {activeSessionId && pendingQuiz && !sendError ? (
+            <TutorLearningOptions
+              key={activeSessionId}
+              responseId={exchange?.response.correlation_id ?? null}
+              textRequest={textRequest}
+              busy={sendPending || learningBusy}
+              evaluation={(
+                <LearningCycle
+                  studentId={studentId}
+                  sessionId={activeSessionId}
+                  pendingQuiz={pendingQuiz}
+                  pendingPractice={detail.data?.pending_practice?.exercise ?? null}
+                  tutorBusy={sendPending || learningBusy}
+                  onBusyChange={setLearningBusy}
+                  onEvaluationCompleted={completeEvaluation}
+                  onPracticeCompleted={completePractice}
+                  onPracticeStarted={() => refreshLearningData(activeSessionId)}
+                  onTutorPrompt={(prompt) => void sendFollowingTail(prompt)}
+                />
+              )}
+              conversation={(
+                <TutorComposer
+                  draft={draft}
+                  pending={sendPending}
+                  disabled={learningBusy}
+                  textareaRef={textareaRef}
+                  onDraftChange={setDraft}
+                  onSend={(message) => void sendFollowingTail(message)}
+                  onCancel={cancel}
+                />
+              )}
             />
-          ) : null}
-          <TutorComposer
-            draft={draft}
-            pending={sendPending}
-            disabled={learningBusy}
-            textareaRef={textareaRef}
-            onDraftChange={setDraft}
-            onSend={(message) => void sendFollowingTail(message)}
-            onCancel={cancel}
-          />
+          ) : (
+            <TutorComposer
+              draft={draft}
+              pending={sendPending}
+              disabled={learningBusy}
+              textareaRef={textareaRef}
+              onDraftChange={setDraft}
+              onSend={(message) => void sendFollowingTail(message)}
+              onCancel={cancel}
+            />
+          )}
         </TutorConversation>
         <div className={styles.insightRail}>
           <LearningProgressPanel studentId={studentId} latestProgress={latestProgress} />

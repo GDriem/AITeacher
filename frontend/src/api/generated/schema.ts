@@ -470,6 +470,7 @@ export interface components {
         };
         /** ChatRequest */
         ChatRequest: {
+            level?: components["schemas"]["LearningLevel"] | null;
             /** Message */
             message: string;
             /** Request Id */
@@ -753,7 +754,7 @@ export interface components {
          * LearningSubject
          * @enum {string}
          */
-        LearningSubject: "artificial-intelligence" | "english";
+        LearningSubject: "artificial-intelligence" | "english" | "networks";
         /** LessonActionRequest */
         LessonActionRequest: {
             /** Author */
@@ -1015,7 +1016,7 @@ export interface components {
          * Topic
          * @enum {string}
          */
-        Topic: "artificial-intelligence" | "machine-learning" | "nlp" | "language-models" | "llm" | "tokens" | "embeddings" | "context-window" | "rag" | "tool-calling" | "agents" | "model-context-protocol" | "multi-agent-systems" | "prompt-engineering" | "hallucinations-evaluation" | "agent-memory" | "advanced-rag" | "ai-security" | "observability-costs" | "fine-tuning" | "multimodal-ai" | "responsible-ai" | "ai-production" | "english-greetings-introductions" | "english-everyday-vocabulary" | "english-grammar-in-context" | "english-conversation";
+        Topic: "artificial-intelligence" | "machine-learning" | "neural-networks" | "nlp" | "language-models" | "llm" | "tokens" | "embeddings" | "context-window" | "rag" | "tool-calling" | "agents" | "model-context-protocol" | "multi-agent-systems" | "prompt-engineering" | "hallucinations-evaluation" | "agent-memory" | "advanced-rag" | "ai-security" | "observability-costs" | "fine-tuning" | "multimodal-ai" | "responsible-ai" | "ai-production" | "english-greetings-introductions" | "english-everyday-vocabulary" | "english-grammar-in-context" | "english-conversation" | "routing-fundamentals" | "ip-subnetting" | "static-routing" | "floating-static-routing" | "ospf" | "bgp" | "routing-troubleshooting";
         /** TopicCatalogItem */
         TopicCatalogItem: {
             /** Available Levels */
@@ -1057,7 +1058,7 @@ export interface components {
          * TopicCategory
          * @enum {string}
          */
-        TopicCategory: "fundamentos" | "modelos-y-datos" | "agentes-y-herramientas" | "calidad-y-seguridad" | "produccion" | "comunicacion" | "vocabulario" | "gramatica";
+        TopicCategory: "fundamentos" | "modelos-y-datos" | "agentes-y-herramientas" | "calidad-y-seguridad" | "produccion" | "comunicacion" | "vocabulario" | "gramatica" | "enrutamiento";
         /** TopicProgress */
         TopicProgress: {
             /** Attempts */

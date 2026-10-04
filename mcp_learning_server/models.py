@@ -25,6 +25,7 @@ class LearningLevel(StrEnum):
 class LearningSubject(StrEnum):
     ARTIFICIAL_INTELLIGENCE = "artificial-intelligence"
     ENGLISH = "english"
+    NETWORKS = "networks"
 
 
 class TopicCategory(StrEnum):
@@ -36,6 +37,7 @@ class TopicCategory(StrEnum):
     COMMUNICATION = "comunicacion"
     VOCABULARY = "vocabulario"
     GRAMMAR = "gramatica"
+    ROUTING = "enrutamiento"
 
 
 class TopicStatus(StrEnum):
@@ -58,6 +60,7 @@ class RubricEvaluationMode(StrEnum):
 class Topic(StrEnum):
     ARTIFICIAL_INTELLIGENCE = "artificial-intelligence"
     MACHINE_LEARNING = "machine-learning"
+    NEURAL_NETWORKS = "neural-networks"
     NLP = "nlp"
     LANGUAGE_MODELS = "language-models"
     LLM = "llm"
@@ -83,6 +86,13 @@ class Topic(StrEnum):
     ENGLISH_VOCABULARY = "english-everyday-vocabulary"
     ENGLISH_GRAMMAR = "english-grammar-in-context"
     ENGLISH_CONVERSATION = "english-conversation"
+    ROUTING_FUNDAMENTALS = "routing-fundamentals"
+    IP_SUBNETTING = "ip-subnetting"
+    STATIC_ROUTING = "static-routing"
+    FLOATING_STATIC_ROUTING = "floating-static-routing"
+    OSPF = "ospf"
+    BGP = "bgp"
+    ROUTING_TROUBLESHOOTING = "routing-troubleshooting"
 
 
 class LearningContent(StrictModel):

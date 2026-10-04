@@ -120,3 +120,50 @@ async def test_invalid_model_contract_uses_fallback(learning_service) -> None:
         result.rubric.evaluation_mode
         == RubricEvaluationMode.DETERMINISTIC_FALLBACK
     )
+
+
+@pytest.mark.asyncio
+async def test_follow_up_uses_previous_answers_without_requiring_an_example(learning_service):
+    from agent_app.models.chat import Quiz
+
+    provider = StructuredProvider({
+        name: _criterion(4) for name in ("precision", "comprehension", "application", "clarity")
+    })
+    evaluator = EvaluatorAgent(LocalLearningTools(learning_service), provider)
+    previous = "Un sistema de IA usa patrones para tomar decisiones y realizar tareas."
+    result = await evaluator.evaluate(
+        "context-student", Topic.ARTIFICIAL_INTELLIGENCE,
+        Quiz(question="¿Qué significa que un sistema sea construido?", expected_keywords=["sistemas construidos"]),
+        "Como dije antes, es algo creado por el humano, no biológico.",
+        previous_answers=[previous],
+    )
+    prompt = json.loads(provider.requests[0].prompt)
+    assert prompt["previous_student_answers"] == [previous]
+    assert "sin exigir un ejemplo" in prompt["criteria"]["application"]
+    assert result.status == EvaluationStatus.MASTERED
+    assert not result.saved.progress.assessments[-1].pending_concepts
+
+
+@pytest.mark.asyncio
+async def test_definition_fallback_does_not_require_application(learning_service):
+    from agent_app.models.chat import Quiz
+
+    evaluator = EvaluatorAgent(LocalLearningTools(learning_service), MockModelProvider())
+    result = await evaluator.evaluate(
+        "definition-student", Topic.ARTIFICIAL_INTELLIGENCE,
+        Quiz(question="¿Qué significa un sistema construido?", expected_keywords=["sistemas construidos"]),
+        "Es algo creado por el humano, no biológico.",
+    )
+    assert result.status == EvaluationStatus.MASTERED
+    assert result.rubric.application.score == 4
+
+
+@pytest.mark.asyncio
+async def test_previous_correct_answer_cannot_pass_an_unrelated_current_answer(learning_service):
+    evaluator = EvaluatorAgent(LocalLearningTools(learning_service), MockModelProvider())
+    result = await evaluator.evaluate(
+        "unrelated-student", Topic.EMBEDDINGS, evaluator.create_quiz(Topic.EMBEDDINGS),
+        "No tengo idea de la respuesta.",
+        previous_answers=["Es un vector que representa significado y permite comparar por similitud."],
+    )
+    assert result.status == EvaluationStatus.REINFORCE

@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 
 import type { CatalogFilters as CatalogFilterValues, FilterOption } from "./catalogFilterState";
+import { learningLevels } from "./catalogFilterState";
 import styles from "./CatalogScreen.module.css";
 
 interface Props {
@@ -30,7 +31,7 @@ export function CatalogFilters({ filters, subjects, categories, levels, onChange
   };
 
   const changeLevel = (event: ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...filters, level: event.currentTarget.value });
+    onChange({ ...filters, level: learningLevels.find((level) => level === event.currentTarget.value) ?? "" });
   };
 
   return (

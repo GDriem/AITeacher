@@ -1,11 +1,11 @@
-import type { TopicCatalogItem } from "./catalogApi";
+import type { LearningLevel, TopicCatalogItem } from "./catalogApi";
 import { categoryLabel, levelLabel, subjectLabel } from "./catalogLabels";
 
 export interface CatalogFilters {
   query: string;
   subject: string;
   category: string;
-  level: string;
+  level: LearningLevel | "";
 }
 
 export interface FilterOption {
@@ -18,9 +18,11 @@ export function filtersFromParams(params: URLSearchParams): CatalogFilters {
     query: params.get("q") ?? "",
     subject: params.get("subject") ?? "",
     category: params.get("category") ?? "",
-    level: params.get("level") ?? "",
+    level: learningLevels.find((level) => level === params.get("level")) ?? "",
   };
 }
+
+export const learningLevels: LearningLevel[] = ["beginner", "intermediate", "advanced"];
 
 export function paramsFromFilters(filters: CatalogFilters) {
   const params = new URLSearchParams();

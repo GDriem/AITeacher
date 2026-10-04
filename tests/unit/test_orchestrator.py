@@ -14,7 +14,7 @@ from agent_app.providers.mock import MockModelProvider
 from agent_app.services.learning_tools import LocalLearningTools
 from agent_app.services.sessions import InMemorySessionRepository
 from mcp_learning_server.curriculum import TOPIC_TITLES
-from mcp_learning_server.models import Topic
+from mcp_learning_server.models import LearningLevel, Topic
 
 
 def make_orchestrator(learning_service) -> LearningOrchestrator:
@@ -25,6 +25,40 @@ def make_orchestrator(learning_service) -> LearningOrchestrator:
         EvaluatorAgent(tools, MockModelProvider()),
         InMemorySessionRepository(),
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("level", list(LearningLevel))
+async def test_selected_level_reaches_retrieval_and_follow_up(
+    learning_service, monkeypatch, level
+) -> None:
+    orchestrator = make_orchestrator(learning_service)
+    requested_levels = []
+    original_search = orchestrator.tutor.tools.search_learning_content
+
+    async def track_search(topic, requested_level):
+        requested_levels.append(requested_level)
+        return await original_search(topic, requested_level)
+
+    monkeypatch.setattr(orchestrator.tutor.tools, "search_learning_content", track_search)
+    first = await orchestrator.chat(ChatRequest(
+        student_id="level-student", message="Enséñame embeddings", level=level,
+    ))
+    follow_up = await orchestrator.chat(ChatRequest(
+        student_id="level-student", session_id=first.session_id,
+        message="Explícame con otro ejemplo",
+    ))
+    assert first.level == follow_up.level == level
+    assert requested_levels == [level, level]
+    assert orchestrator.sessions.get(first.session_id, "level-student").preferred_level == level
+    assert learning_service.get_student_progress("level-student").topic_progress == []
+
+    changed_topic = await orchestrator.chat(ChatRequest(
+        student_id="level-student", session_id=first.session_id,
+        message="Enséñame ingeniería de prompts",
+    ))
+    assert changed_topic.level == LearningLevel.BEGINNER
+    assert orchestrator.sessions.get(first.session_id, "level-student").preferred_level is None
 
 
 def test_routing_detects_longest_specific_topic() -> None:
@@ -50,6 +84,30 @@ def test_routing_detects_longest_specific_topic() -> None:
 def test_routing_detects_extended_curriculum(
     message: str, expected: Topic
 ) -> None:
+    assert detect_topic(message) == expected
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("Quiero aprender subredes", Topic.IP_SUBNETTING),
+        ("Cómo calculo subredes IPv4", Topic.IP_SUBNETTING),
+        ("Explícame redes", Topic.ROUTING_FUNDAMENTALS),
+        ("¿Qué es un router?", Topic.ROUTING_FUNDAMENTALS),
+        ("Explícame OSPF", Topic.OSPF),
+        ("Quiero aprender BGP", Topic.BGP),
+        ("Explícame las rutas estáticas flotantes", Topic.FLOATING_STATIC_ROUTING),
+        ("Explícame enrutamiento estático", Topic.STATIC_ROUTING),
+        ("Explícame las redes neuronales", Topic.NEURAL_NETWORKS),
+        ("Quiero aprender deep learning", Topic.NEURAL_NETWORKS),
+        ("¿Qué es una red neuronal?", Topic.NEURAL_NETWORKS),
+        ("Explícame el perceptrón", Topic.NEURAL_NETWORKS),
+    ],
+)
+def test_routing_detects_network_topics_by_whole_word(
+    message: str, expected: Topic
+) -> None:
+    # Las frases se comparan por palabra completa: "subredes" no debe activar "redes".
     assert detect_topic(message) == expected
 
 
@@ -345,3 +403,149 @@ async def test_practice_rejects_concept_outside_pending_work(learning_service) -
                 focus_concept="recuperación",
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_tutor_receives_recent_history_and_evaluator_keeps_topic_answers(learning_service):
+    class RecordingProvider(MockModelProvider):
+        def __init__(self):
+            self.requests = []
+
+        async def generate(self, request):
+            self.requests.append(request)
+            return await super().generate(request)
+
+    provider = RecordingProvider()
+    orchestrator = make_orchestrator(learning_service)
+    orchestrator.tutor.provider = provider
+    chat = await orchestrator.chat(ChatRequest(student_id="context", message="Enséñame embeddings"))
+    answer = "Un embedding es un vector que representa significado."
+    await orchestrator.evaluate(EvaluationRequest(student_id="context", session_id=chat.session_id, answer=answer))
+    await orchestrator.chat(ChatRequest(student_id="context", session_id=chat.session_id, message="Aclara lo que me falta"))
+    assert answer in provider.requests[-1].prompt
+    assert chat.answer in provider.requests[-1].prompt
+    session = orchestrator.sessions.get(chat.session_id, "context")
+    assert session.pending_evaluation.student_answers == [answer]
+    await orchestrator.chat(ChatRequest(student_id="context", session_id=chat.session_id, message="Enséñame RAG"))
+    assert orchestrator.sessions.get(chat.session_id, "context").pending_evaluation.student_answers == []
+
+
+@pytest.mark.asyncio
+async def test_tutor_and_evaluator_receive_only_recent_context(learning_service):
+    from agent_app.agents.orchestrator import TUTOR_HISTORY_LIMIT
+    from agent_app.services.sessions import (
+        EVALUATOR_ANSWERS_LIMIT,
+        ConversationMessage,
+        MessageRole,
+    )
+
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(ChatRequest(student_id="recent", message="Enséñame embeddings"))
+    session = orchestrator.sessions.get(chat.session_id, "recent")
+    session.messages = [
+        ConversationMessage(role=MessageRole.USER, label="Tú", content=f"mensaje {index}")
+        for index in range(TUTOR_HISTORY_LIMIT + 5)
+    ]
+    orchestrator.sessions.save(session)
+
+    received = {}
+    original_teach = orchestrator.tutor.teach
+    original_evaluate = orchestrator.evaluator.evaluate
+
+    async def record_teach(diagnostic, message, history):
+        received["history"] = history
+        return await original_teach(diagnostic, message, history)
+
+    async def record_evaluate(*args, previous_answers=None, **kwargs):
+        received["answers"] = previous_answers
+        return await original_evaluate(*args, previous_answers=previous_answers, **kwargs)
+
+    orchestrator.tutor.teach = record_teach
+    orchestrator.evaluator.evaluate = record_evaluate
+    await orchestrator.chat(ChatRequest(student_id="recent", session_id=chat.session_id, message="Continúa"))
+    contents = [message["content"] for message in received["history"]]
+    assert len(contents) == TUTOR_HISTORY_LIMIT
+    assert contents[0] == "mensaje 5"
+    assert contents[-1] == f"mensaje {TUTOR_HISTORY_LIMIT + 4}"
+
+    session = orchestrator.sessions.get(chat.session_id, "recent")
+    session.pending_evaluation.student_answers = [
+        f"respuesta {index}" for index in range(EVALUATOR_ANSWERS_LIMIT + 3)
+    ]
+    orchestrator.sessions.save(session)
+    await orchestrator.evaluate(
+        EvaluationRequest(student_id="recent", session_id=chat.session_id, answer="Un vector de significado.")
+    )
+    assert received["answers"] == [
+        f"respuesta {index}" for index in range(3, EVALUATOR_ANSWERS_LIMIT + 3)
+    ]
+
+
+@pytest.mark.asyncio
+async def test_persisted_answers_keep_only_recent_attempts(learning_service):
+    from agent_app.services.sessions import EVALUATOR_ANSWERS_LIMIT
+
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(ChatRequest(student_id="bounded", message="Enséñame embeddings"))
+    answers = [
+        f"Respuesta {index}: un embedding es un vector de significado."
+        for index in range(EVALUATOR_ANSWERS_LIMIT + 3)
+    ]
+    for answer in answers:
+        await orchestrator.evaluate(
+            EvaluationRequest(student_id="bounded", session_id=chat.session_id, answer=answer)
+        )
+    session = orchestrator.sessions.get(chat.session_id, "bounded")
+    assert session.pending_evaluation.student_answers == answers[-EVALUATOR_ANSWERS_LIMIT:]
+    # La reconstrucción de sesiones heredadas asigna la lista y también se recorta.
+    session.pending_evaluation.student_answers = answers
+    assert session.pending_evaluation.student_answers == answers[-EVALUATOR_ANSWERS_LIMIT:]
+
+
+@pytest.mark.asyncio
+async def test_restores_legacy_answers_and_replaces_identifier_based_ai_quiz(learning_service):
+    from agent_app.models.chat import Quiz
+    from agent_app.services.sessions import PendingEvaluation
+
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(ChatRequest(student_id="legacy", message="Enséñame inteligencia artificial"))
+    answer = "Es una tecnología que usa patrones para tomar decisiones."
+    await orchestrator.evaluate(EvaluationRequest(student_id="legacy", session_id=chat.session_id, answer=answer))
+    session = orchestrator.sessions.get(chat.session_id, "legacy")
+    session.pending_evaluation = PendingEvaluation(
+        student_id="legacy", topic=Topic.ARTIFICIAL_INTELLIGENCE,
+        quiz=Quiz(question="Define artificial", expected_keywords=["artificial", "intelligence"]), attempt=2,
+    )
+    orchestrator._restore_evaluation_context(session)
+    assert session.pending_evaluation.student_answers == [answer]
+    assert "artificial" not in session.pending_evaluation.quiz.expected_keywords
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("topic", "message"),
+    [
+        (Topic.MACHINE_LEARNING, "Enséñame machine learning"),
+        (Topic.TOOL_CALLING, "Enséñame tool calling"),
+    ],
+)
+async def test_replaces_generic_identifier_quiz_for_any_topic(learning_service, topic, message):
+    from agent_app.agents.evaluator import QUIZZES
+    from agent_app.models.chat import Quiz
+    from agent_app.services.sessions import PendingEvaluation
+
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(ChatRequest(student_id="generic", message=message))
+    session = orchestrator.sessions.get(chat.session_id, "generic")
+    identifier_words = topic.value.split("-")
+    session.pending_evaluation = PendingEvaluation(
+        student_id="generic", topic=topic,
+        quiz=Quiz(
+            question=f"Explica con tus palabras la idea principal de {topic.value}.",
+            expected_keywords=identifier_words,
+        ),
+        attempt=1,
+    )
+    orchestrator._restore_evaluation_context(session)
+    assert session.pending_evaluation.quiz == QUIZZES[topic]
+    assert not set(identifier_words) & set(session.pending_evaluation.quiz.expected_keywords)

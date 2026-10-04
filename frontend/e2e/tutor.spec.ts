@@ -180,7 +180,7 @@ test("Markdown, XSS, teclado, envío único, fuentes, traza, foco y consola cubr
   await expect(page.getByRole("heading", { level: 3, name: "Una representación útil" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Fuentes de la respuesta" })).toContainText("Currículo AITeacher");
   await expect(page.getByText("La explicación quedó preparada.")).toBeVisible();
-  await expect(input).toBeFocused();
+  await expect(page.getByRole("button", { name: "Profundizar en el tema" })).toBeFocused();
   expect(chatCalls).toBe(1);
 
   await page.getByRole("button", { name: "Conversaciones" }).click();
@@ -218,6 +218,8 @@ test("evaluación, práctica y reanudación completan el ciclo después de recar
   await page.setViewportSize({ width: 1024, height: 900 });
   await page.goto("./tutor");
 
+  await expect(page.getByRole("heading", { name: "Vectores semánticos" })).toBeFocused();
+  await page.getByRole("button", { name: "Tomar la prueba" }).click();
   const evaluationAnswer = page.getByRole("textbox", { name: "Explícalo con tus propias palabras" });
   await evaluationAnswer.fill("Los embeddings cercanos conservan significados relacionados.");
   await page.getByRole("button", { name: "Recibir feedback" }).click();
@@ -238,6 +240,7 @@ test("evaluación, práctica y reanudación completan el ciclo después de recar
   await expect(page.getByRole("heading", { name: "Diseña una búsqueda semántica" })).toBeVisible();
 
   await page.reload();
+  await page.getByRole("button", { name: "Tomar la prueba" }).click();
   await page.getByRole("button", { name: "Reanudar práctica · ronda 2" }).click();
   await expect(page.getByRole("heading", { name: "Diseña una búsqueda semántica" })).toBeVisible();
   await page.getByRole("button", { name: "Volver a la pregunta principal" }).click();

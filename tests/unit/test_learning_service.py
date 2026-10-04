@@ -17,13 +17,15 @@ def test_new_student_starts_with_first_foundation(learning_service) -> None:
     assert path.available_topics == [
         Topic.ARTIFICIAL_INTELLIGENCE,
         Topic.ENGLISH_GREETINGS,
+        Topic.ROUTING_FUNDAMENTALS,
     ]
     assert path.recommended_topics == [
         Topic.ARTIFICIAL_INTELLIGENCE,
         Topic.ENGLISH_GREETINGS,
+        Topic.ROUTING_FUNDAMENTALS,
     ]
     assert path.recommendations[0].reason.startswith("Es el punto de partida")
-    assert len(path.blocked_topics) == len(Topic) - 2
+    assert len(path.blocked_topics) == len(Topic) - 3
 
 
 def test_partial_assessment_prioritizes_topic_in_progress(learning_service) -> None:
@@ -38,6 +40,7 @@ def test_partial_assessment_prioritizes_topic_in_progress(learning_service) -> N
     assert path.recommended_topics == [
         Topic.ARTIFICIAL_INTELLIGENCE,
         Topic.ENGLISH_GREETINGS,
+        Topic.ROUTING_FUNDAMENTALS,
     ]
     assert "50/100" in path.recommendations[0].reason
 
@@ -56,7 +59,7 @@ def test_mastering_prerequisite_unlocks_next_topics(learning_service) -> None:
         Topic.RESPONSIBLE_AI,
     ]
     assert "Inteligencia artificial" in path.recommendations[0].reason
-    assert path.completion_percentage == pytest.approx(3.7)
+    assert path.completion_percentage == pytest.approx(round(100 / len(Topic), 2))
 
 
 def test_prerequisites_drive_status_without_preventing_study(learning_service) -> None:

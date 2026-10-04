@@ -29,6 +29,12 @@ CURRICULUM: tuple[CurriculumTopic, ...] = (
         (Topic.ARTIFICIAL_INTELLIGENCE,),
     ),
     CurriculumTopic(
+        Topic.NEURAL_NETWORKS,
+        "Redes neuronales",
+        TopicCategory.FOUNDATIONS,
+        (Topic.MACHINE_LEARNING,),
+    ),
+    CurriculumTopic(
         Topic.NLP,
         "Procesamiento de lenguaje natural",
         TopicCategory.FOUNDATIONS,
@@ -184,6 +190,54 @@ CURRICULUM: tuple[CurriculumTopic, ...] = (
         TopicCategory.COMMUNICATION,
         (Topic.ENGLISH_VOCABULARY, Topic.ENGLISH_GRAMMAR),
         subject=LearningSubject.ENGLISH,
+    ),
+    CurriculumTopic(
+        Topic.ROUTING_FUNDAMENTALS,
+        "Fundamentos de enrutamiento",
+        TopicCategory.ROUTING,
+        subject=LearningSubject.NETWORKS,
+    ),
+    CurriculumTopic(
+        Topic.IP_SUBNETTING,
+        "Direccionamiento IP y subredes",
+        TopicCategory.ROUTING,
+        (Topic.ROUTING_FUNDAMENTALS,),
+        subject=LearningSubject.NETWORKS,
+    ),
+    CurriculumTopic(
+        Topic.STATIC_ROUTING,
+        "Enrutamiento estático y rutas predeterminadas",
+        TopicCategory.ROUTING,
+        (Topic.IP_SUBNETTING,),
+        subject=LearningSubject.NETWORKS,
+    ),
+    CurriculumTopic(
+        Topic.FLOATING_STATIC_ROUTING,
+        "Rutas estáticas flotantes",
+        TopicCategory.ROUTING,
+        (Topic.STATIC_ROUTING,),
+        subject=LearningSubject.NETWORKS,
+    ),
+    CurriculumTopic(
+        Topic.OSPF,
+        "Enrutamiento dinámico con OSPF",
+        TopicCategory.ROUTING,
+        (Topic.STATIC_ROUTING,),
+        subject=LearningSubject.NETWORKS,
+    ),
+    CurriculumTopic(
+        Topic.BGP,
+        "Enrutamiento entre sistemas autónomos con BGP",
+        TopicCategory.ROUTING,
+        (Topic.OSPF,),
+        subject=LearningSubject.NETWORKS,
+    ),
+    CurriculumTopic(
+        Topic.ROUTING_TROUBLESHOOTING,
+        "Diagnóstico y resolución de problemas de enrutamiento",
+        TopicCategory.ROUTING,
+        (Topic.STATIC_ROUTING, Topic.OSPF, Topic.BGP,),
+        subject=LearningSubject.NETWORKS,
     ),
 )
 

@@ -1,4 +1,4 @@
-import type { TopicCatalogItem } from "./catalogApi";
+import type { LearningLevel, TopicCatalogItem } from "./catalogApi";
 import { TopicCard } from "./TopicCard";
 import styles from "./CatalogScreen.module.css";
 
@@ -7,10 +7,11 @@ interface Props {
   allTopics: TopicCatalogItem[];
   queryActive: boolean;
   pendingTopic: string | null;
+  selectedLevel?: LearningLevel | "";
   onStart: (topic: TopicCatalogItem) => void;
 }
 
-export function TopicGrid({ topics, allTopics, queryActive, pendingTopic, onStart }: Props) {
+export function TopicGrid({ topics, allTopics, queryActive, pendingTopic, selectedLevel, onStart }: Props) {
   const titles = new Map(allTopics.map((topic) => [topic.topic, topic.title]));
 
   if (topics.length === 0) {
@@ -34,6 +35,7 @@ export function TopicGrid({ topics, allTopics, queryActive, pendingTopic, onStar
           topic={topic}
           titles={titles}
           pending={pendingTopic === topic.topic}
+          selectedLevel={selectedLevel}
           onStart={onStart}
         />
       ))}

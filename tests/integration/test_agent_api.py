@@ -14,7 +14,7 @@ from agent_app.services.learning_tools import (
     LocalLearningTools,
 )
 from agent_app.services.sessions import LocalSessionRepository, utc_now
-from mcp_learning_server.models import LearningContent
+from mcp_learning_server.models import LearningContent, Topic
 from mcp_learning_server.repositories.content_authoring import (
     LocalContentAuthoringRepository,
 )
@@ -25,6 +25,38 @@ from mcp_learning_server.services.content_store import InMemoryContentStore
 class UnavailableLearningTools(LocalLearningTools):
     async def list_available_topics(self):
         raise RuntimeError("MCP unavailable")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_selected_level_survives_restart_and_is_validated(learning_service, tmp_path):
+    sessions_path = tmp_path / "level-sessions.json"
+
+    def build_app():
+        return create_app(
+            Settings(model_provider=ModelProviderName.MOCK),
+            tools=LocalLearningTools(learning_service),
+            provider=MockModelProvider(),
+            sessions=LocalSessionRepository(sessions_path),
+        )
+
+    body = {"student_id": "level-student", "message": "Enséñame embeddings", "level": "advanced"}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=build_app()), base_url="http://agent.local") as client:
+        first = await client.post("/api/chat", json=body)
+        assert first.status_code == 200
+        assert first.json()["level"] == "advanced"
+        invalid = await client.post("/api/chat", json={**body, "level": "expert"})
+        assert invalid.status_code == 422
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=build_app()), base_url="http://agent.local") as client:
+        follow_up = await client.post("/api/chat", json={
+            "student_id": "level-student", "session_id": first.json()["session_id"],
+            "message": "Explícame con otro ejemplo",
+        })
+        assert follow_up.status_code == 200
+        assert follow_up.json()["level"] == "advanced"
+
+    assert _chat_request_fingerprint(ChatRequest(**body)) != _chat_request_fingerprint(ChatRequest(**{**body, "level": "beginner"}))
 
 
 class TimedOutLearningTools(LocalLearningTools):
@@ -446,14 +478,14 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
         }
         assert topics.status_code == 200
         catalog = topics.json()
-        assert catalog["total_topics"] == 27
+        assert catalog["total_topics"] == len(Topic)
         assert {
             topic["subject"] for topic in catalog["topics"]
-        } == {"artificial-intelligence", "english"}
+        } == {"artificial-intelligence", "english", "networks"}
         assert catalog["completed_topics"] == 0
         assert catalog["in_progress_topics"] == 0
-        assert catalog["available_topics"] == 2
-        assert catalog["blocked_topics"] == 25
+        assert catalog["available_topics"] == 3
+        assert catalog["blocked_topics"] == len(Topic) - 3
         assert catalog["completion_percentage"] == 0
         assert catalog["recommendation"]["topic"] == "artificial-intelligence"
         assert catalog["recommendation"]["reason"]
@@ -469,6 +501,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
             "comunicacion",
             "vocabulario",
             "gramatica",
+            "enrutamiento",
         }
         embedding = next(
             topic for topic in catalog["topics"] if topic["topic"] == "embeddings"
@@ -558,7 +591,7 @@ async def test_complete_text_flow_without_cloud_credentials(learning_service) ->
             if topic["topic"] == "embeddings"
         )
         assert updated_catalog["completed_topics"] == 1
-        assert updated_catalog["completion_percentage"] == pytest.approx(3.7)
+        assert updated_catalog["completion_percentage"] == pytest.approx(round(100 / len(Topic), 2))
         assert completed_embedding["status"] == "completed"
         assert completed_embedding["progress"]["level"] == "advanced"
         assert completed_embedding["progress"]["mastery_status"] == "mastered"
@@ -595,7 +628,8 @@ async def test_recommendation_changes_after_mastering_prerequisite(
                 "session_id": chat.json()["session_id"],
                 "answer": (
                     "Artificial intelligence es un sistema que permite realizar "
-                    "tareas que normalmente requieren capacidades humanas."
+                    "tareas que normalmente requieren capacidades humanas usando "
+                    "reglas o patrones aprendidos."
                 ),
             },
         )
@@ -616,6 +650,7 @@ async def test_recommendation_changes_after_mastering_prerequisite(
         "nlp",
         "responsible-ai",
         "english-greetings-introductions",
+        "routing-fundamentals",
     }
 
 
