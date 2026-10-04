@@ -1016,7 +1016,7 @@ export interface components {
          * Topic
          * @enum {string}
          */
-        Topic: "artificial-intelligence" | "machine-learning" | "nlp" | "language-models" | "llm" | "tokens" | "embeddings" | "context-window" | "rag" | "tool-calling" | "agents" | "model-context-protocol" | "multi-agent-systems" | "prompt-engineering" | "hallucinations-evaluation" | "agent-memory" | "advanced-rag" | "ai-security" | "observability-costs" | "fine-tuning" | "multimodal-ai" | "responsible-ai" | "ai-production" | "english-greetings-introductions" | "english-everyday-vocabulary" | "english-grammar-in-context" | "english-conversation" | "routing-fundamentals" | "ip-subnetting" | "static-routing" | "floating-static-routing" | "ospf" | "bgp" | "routing-troubleshooting";
+        Topic: "artificial-intelligence" | "machine-learning" | "neural-networks" | "nlp" | "language-models" | "llm" | "tokens" | "embeddings" | "context-window" | "rag" | "tool-calling" | "agents" | "model-context-protocol" | "multi-agent-systems" | "prompt-engineering" | "hallucinations-evaluation" | "agent-memory" | "advanced-rag" | "ai-security" | "observability-costs" | "fine-tuning" | "multimodal-ai" | "responsible-ai" | "ai-production" | "english-greetings-introductions" | "english-everyday-vocabulary" | "english-grammar-in-context" | "english-conversation" | "routing-fundamentals" | "ip-subnetting" | "static-routing" | "floating-static-routing" | "ospf" | "bgp" | "routing-troubleshooting";
         /** TopicCatalogItem */
         TopicCatalogItem: {
             /** Available Levels */

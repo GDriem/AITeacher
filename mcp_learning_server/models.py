@@ -60,6 +60,7 @@ class RubricEvaluationMode(StrEnum):
 class Topic(StrEnum):
     ARTIFICIAL_INTELLIGENCE = "artificial-intelligence"
     MACHINE_LEARNING = "machine-learning"
+    NEURAL_NETWORKS = "neural-networks"
     NLP = "nlp"
     LANGUAGE_MODELS = "language-models"
     LLM = "llm"

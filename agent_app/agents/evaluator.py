@@ -31,6 +31,13 @@ QUIZZES: dict[Topic, Quiz] = {
         question='¿Cómo aprende un sistema de machine learning a partir de datos?',
         expected_keywords=['datos', 'patrones', 'entrenamiento'],
     ),
+    Topic.NEURAL_NETWORKS: Quiz(
+        question=(
+            "¿Cómo transforma una red neuronal una entrada mediante pesos y funciones "
+            "de activación, y cómo ajusta esos pesos con la retropropagación?"
+        ),
+        expected_keywords=["pesos", "activación", "retropropagación"],
+    ),
     Topic.NLP: Quiz(
         question='¿Qué estudia el procesamiento del lenguaje natural?',
         expected_keywords=['lenguaje', 'texto', 'significado'],
@@ -177,6 +184,14 @@ APPLICATION_QUIZZES: dict[Topic, Quiz] = {
         question="Aplicación: describe un sistema de IA, qué tarea realiza y cómo usa reglas o patrones aprendidos.",
         expected_keywords=["sistemas construidos", "patrones", "tareas"],
     ),
+    Topic.NEURAL_NETWORKS: Quiz(
+        question=(
+            "Aplicación: describe cómo entrenarías una red neuronal para clasificar "
+            "imágenes: qué capas usarías, qué función de pérdida reducirías y cómo "
+            "evitarías el sobreajuste."
+        ),
+        expected_keywords=["capas", "pérdida", "sobreajuste"],
+    ),
     Topic.EMBEDDINGS: Quiz(
         question=(
             "Aplicación: ¿cómo usarías embeddings para encontrar textos relacionados "
@@ -243,6 +258,17 @@ CONCEPT_ALIASES: dict[str, tuple[str, ...]] = {
     "sistemas construidos": ("sistema", "tecnologia", "maquina", "creado por el humano", "no biologico", "programa"),
     "patrones": ("patrones", "reglas", "aprendido", "algoritmo"),
     "tareas": ("tareas", "percepcion", "lenguaje", "prediccion", "decisiones", "reconocimiento"),
+    "pesos": ("peso", "ponderacion", "pondera", "parametros"),
+    "activación": ("activacion", "activa", "relu", "sigmoide", "no lineal"),
+    "retropropagación": (
+        "retropropagacion",
+        "backpropagation",
+        "propagacion hacia atras",
+        "gradiente",
+    ),
+    "capas": ("capa", "convolucional", "oculta"),
+    "pérdida": ("perdida", "error", "loss"),
+    "sobreajuste": ("sobreajuste", "overfitting", "dropout", "regularizacion", "memoriza"),
     "vector": ("vector", "lista de numeros", "representacion numerica"),
     "similitud": (
         "similitud",
@@ -317,6 +343,12 @@ CONCEPT_LABELS: dict[str, str] = {
     "sistemas construidos": "los sistemas creados por personas",
     "patrones": "el uso de reglas o patrones aprendidos",
     "tareas": "las tareas asociadas a capacidades humanas",
+    "pesos": "el papel de los pesos en cada conexión",
+    "activación": "la función de activación no lineal",
+    "retropropagación": "el ajuste de pesos con retropropagación",
+    "capas": "la organización en capas de la red",
+    "pérdida": "la función de pérdida que se minimiza",
+    "sobreajuste": "la prevención del sobreajuste",
     "vector": "la representación numérica o vectorial",
     "similitud": "la comparación por similitud",
     "significado": "la relación con el significado",

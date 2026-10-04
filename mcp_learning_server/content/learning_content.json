@@ -18,6 +18,33 @@
     "keywords": ["entrenamiento", "inferencia", "datos", "modelo"]
   },
   {
+    "id": "nn-beginner-neurons",
+    "topic": "neural-networks",
+    "title": "Neuronas, pesos y capas",
+    "level": "beginner",
+    "text": "Una red neuronal artificial combina muchas neuronas simples. Cada neurona multiplica sus entradas por pesos, suma un sesgo y aplica una función de activación, como ReLU o sigmoide, que introduce no linealidad. Las neuronas se organizan en capas: una capa de entrada recibe los datos, las capas ocultas transforman la representación y la capa de salida produce la predicción.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["neurona", "pesos", "sesgo", "activación", "capas", "perceptrón"]
+  },
+  {
+    "id": "nn-intermediate-training",
+    "topic": "neural-networks",
+    "title": "Entrenar con retropropagación",
+    "level": "intermediate",
+    "text": "Entrenar una red neuronal repite un ciclo. La propagación hacia adelante calcula una predicción capa por capa. La función de pérdida mide cuánto se aleja esa predicción del valor esperado. La retropropagación aplica la regla de la cadena para obtener el gradiente de la pérdida respecto de cada peso, y el descenso de gradiente ajusta los pesos un paso pequeño, definido por la tasa de aprendizaje, en la dirección que reduce el error.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["propagación hacia adelante", "función de pérdida", "retropropagación", "gradiente", "descenso de gradiente", "tasa de aprendizaje"]
+  },
+  {
+    "id": "nn-advanced-deep-architectures",
+    "topic": "neural-networks",
+    "title": "Redes profundas y arquitecturas",
+    "level": "advanced",
+    "text": "El aprendizaje profundo apila muchas capas para aprender representaciones cada vez más abstractas. Con tantos parámetros aparece el sobreajuste: la red memoriza los datos de entrenamiento y generaliza mal; se mitiga con regularización, dropout, más datos y validación separada. Las redes convolucionales comparten filtros para detectar patrones locales en imágenes, mientras los transformers usan atención para relacionar todos los tokens de una secuencia y son la base de los modelos de lenguaje actuales.",
+    "source": "Currículo propio AITeacher",
+    "keywords": ["aprendizaje profundo", "sobreajuste", "dropout", "regularización", "convolucional", "transformer", "atención"]
+  },
+  {
     "id": "nlp-beginner-language",
     "topic": "nlp",
     "title": "Procesamiento de lenguaje natural",

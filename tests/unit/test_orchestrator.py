@@ -98,7 +98,10 @@ def test_routing_detects_extended_curriculum(
         ("Quiero aprender BGP", Topic.BGP),
         ("Explícame las rutas estáticas flotantes", Topic.FLOATING_STATIC_ROUTING),
         ("Explícame enrutamiento estático", Topic.STATIC_ROUTING),
-        ("Explícame las redes neuronales", Topic.MACHINE_LEARNING),
+        ("Explícame las redes neuronales", Topic.NEURAL_NETWORKS),
+        ("Quiero aprender deep learning", Topic.NEURAL_NETWORKS),
+        ("¿Qué es una red neuronal?", Topic.NEURAL_NETWORKS),
+        ("Explícame el perceptrón", Topic.NEURAL_NETWORKS),
     ],
 )
 def test_routing_detects_network_topics_by_whole_word(

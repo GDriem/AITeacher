@@ -29,6 +29,12 @@ CURRICULUM: tuple[CurriculumTopic, ...] = (
         (Topic.ARTIFICIAL_INTELLIGENCE,),
     ),
     CurriculumTopic(
+        Topic.NEURAL_NETWORKS,
+        "Redes neuronales",
+        TopicCategory.FOUNDATIONS,
+        (Topic.MACHINE_LEARNING,),
+    ),
+    CurriculumTopic(
         Topic.NLP,
         "Procesamiento de lenguaje natural",
         TopicCategory.FOUNDATIONS,
