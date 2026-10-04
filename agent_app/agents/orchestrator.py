@@ -39,6 +39,11 @@ from mcp_learning_server.models import RubricEvaluationMode, Topic
 from mcp_learning_server.services.learning import TOPIC_ALIASES
 from mcp_learning_server.services.retrieval import tokenize
 
+# Mensajes recientes que recibe el tutor; acota costo y latencia por turno.
+TUTOR_HISTORY_LIMIT = 12
+# Respuestas previas del alumno que recibe el evaluador como contexto.
+EVALUATOR_ANSWERS_LIMIT = 5
+
 
 class LearningOrchestrator:
     name = "root_orchestrator"
@@ -145,7 +150,7 @@ class LearningOrchestrator:
         started = time.perf_counter()
         history = [
             {"role": message.role.value, "content": message.content, "note": message.note}
-            for message in (session.messages if session else [])
+            for message in (session.messages[-TUTOR_HISTORY_LIMIT:] if session else [])
         ]
         answer, sources = await self.tutor.teach(diagnostic, request.message, history)
         tutor_duration = _elapsed(started)
@@ -282,7 +287,7 @@ class LearningOrchestrator:
             pending.quiz,
             request.answer,
             pending.attempt,
-            previous_answers=pending.student_answers,
+            previous_answers=pending.student_answers[-EVALUATOR_ANSWERS_LIMIT:],
         )
         session.pending_evaluation = PendingEvaluation(
             student_id=request.student_id,

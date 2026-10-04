@@ -403,7 +403,7 @@ async def test_practice_rejects_concept_outside_pending_work(learning_service) -
 
 
 @pytest.mark.asyncio
-async def test_tutor_receives_entire_history_and_evaluator_keeps_topic_answers(learning_service):
+async def test_tutor_receives_recent_history_and_evaluator_keeps_topic_answers(learning_service):
     class RecordingProvider(MockModelProvider):
         def __init__(self):
             self.requests = []
@@ -425,6 +425,56 @@ async def test_tutor_receives_entire_history_and_evaluator_keeps_topic_answers(l
     assert session.pending_evaluation.student_answers == [answer]
     await orchestrator.chat(ChatRequest(student_id="context", session_id=chat.session_id, message="Enséñame RAG"))
     assert orchestrator.sessions.get(chat.session_id, "context").pending_evaluation.student_answers == []
+
+
+@pytest.mark.asyncio
+async def test_tutor_and_evaluator_receive_only_recent_context(learning_service):
+    from agent_app.agents.orchestrator import (
+        EVALUATOR_ANSWERS_LIMIT,
+        TUTOR_HISTORY_LIMIT,
+    )
+    from agent_app.services.sessions import ConversationMessage, MessageRole
+
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(ChatRequest(student_id="recent", message="Enséñame embeddings"))
+    session = orchestrator.sessions.get(chat.session_id, "recent")
+    session.messages = [
+        ConversationMessage(role=MessageRole.USER, label="Tú", content=f"mensaje {index}")
+        for index in range(TUTOR_HISTORY_LIMIT + 5)
+    ]
+    orchestrator.sessions.save(session)
+
+    received = {}
+    original_teach = orchestrator.tutor.teach
+    original_evaluate = orchestrator.evaluator.evaluate
+
+    async def record_teach(diagnostic, message, history):
+        received["history"] = history
+        return await original_teach(diagnostic, message, history)
+
+    async def record_evaluate(*args, previous_answers=None, **kwargs):
+        received["answers"] = previous_answers
+        return await original_evaluate(*args, previous_answers=previous_answers, **kwargs)
+
+    orchestrator.tutor.teach = record_teach
+    orchestrator.evaluator.evaluate = record_evaluate
+    await orchestrator.chat(ChatRequest(student_id="recent", session_id=chat.session_id, message="Continúa"))
+    contents = [message["content"] for message in received["history"]]
+    assert len(contents) == TUTOR_HISTORY_LIMIT
+    assert contents[0] == "mensaje 5"
+    assert contents[-1] == f"mensaje {TUTOR_HISTORY_LIMIT + 4}"
+
+    session = orchestrator.sessions.get(chat.session_id, "recent")
+    session.pending_evaluation.student_answers = [
+        f"respuesta {index}" for index in range(EVALUATOR_ANSWERS_LIMIT + 3)
+    ]
+    orchestrator.sessions.save(session)
+    await orchestrator.evaluate(
+        EvaluationRequest(student_id="recent", session_id=chat.session_id, answer="Un vector de significado.")
+    )
+    assert received["answers"] == [
+        f"respuesta {index}" for index in range(3, EVALUATOR_ANSWERS_LIMIT + 3)
+    ]
 
 
 @pytest.mark.asyncio
