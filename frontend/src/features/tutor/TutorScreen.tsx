@@ -70,6 +70,7 @@ export function TutorScreen({ studentId }: Props) {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceLoadError, setVoiceLoadError] = useState<string | null>(null);
+  const [textRequest, setTextRequest] = useState(0);
   const [VoiceDialog, setVoiceDialog] = useState<ComponentType<VoiceSessionDialogProps> | null>(null);
   const detail = useQuery({
     ...sessionDetailOptions(studentId, activeSessionId ?? "new"),
@@ -130,6 +131,7 @@ export function TutorScreen({ studentId }: Props) {
   };
   const fallbackToText = () => {
     setVoiceOpen(false);
+    setTextRequest((current) => current + 1);
     window.requestAnimationFrame(() => textareaRef.current?.focus());
   };
   return (
@@ -174,6 +176,7 @@ export function TutorScreen({ studentId }: Props) {
             <TutorLearningOptions
               key={activeSessionId}
               responseId={exchange?.response.correlation_id ?? null}
+              textRequest={textRequest}
               busy={sendPending || learningBusy}
               evaluation={(
                 <LearningCycle

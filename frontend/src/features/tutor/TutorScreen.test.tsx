@@ -52,12 +52,21 @@ describe("TutorScreen", () => {
     expect(screen.queryByRole("textbox", { name: "Escribe tu mensaje" })).not.toBeInTheDocument();
   });
 
+  it("al abrir una conversación guardada mantiene el foco en el encabezado", async () => {
+    useRestoredSession();
+    renderTutor({ activeSessionId: "session-vectors" });
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "Vectores semánticos" });
+    expect(await screen.findByRole("button", { name: "Profundizar en el tema" })).toBeVisible();
+    await waitFor(() => expect(heading).toHaveFocus());
+  });
+
   it("restaura el feed, renderiza Markdown seguro, fuentes y foco sin hallazgos axe", async () => {
     useRestoredSession();
     const { container } = renderTutor({ activeSessionId: "session-vectors" });
 
     expect(await screen.findByRole("heading", { name: "Vectores semánticos" })).toBeVisible();
-    expect(await screen.findByRole("button", { name: "Profundizar en el tema" })).toHaveFocus();
+    expect(await screen.findByRole("button", { name: "Profundizar en el tema" })).toBeVisible();
     expect(await screen.findByRole("heading", { level: 3, name: "Idea central" })).toBeVisible();
     expect(screen.getByText("representa significado con números.", { exact: false })).toBeVisible();
     expect(screen.queryByText("window.__xss = true")).not.toBeInTheDocument();
