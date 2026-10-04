@@ -7,7 +7,7 @@ import time
 import uuid
 
 from agent_app.agents.diagnostic import DiagnosticAgent
-from agent_app.agents.evaluator import EvaluatorAgent
+from agent_app.agents.evaluator import GENERIC_QUIZ_PREFIX, QUIZZES, EvaluatorAgent
 from agent_app.agents.tutor import TutorAgent
 from agent_app.models.activities import (
     PracticeEvaluationRequest,
@@ -387,9 +387,12 @@ class LearningOrchestrator:
                     answers = []
                     current_topic = detected
             pending.student_answers = answers
-        if pending.topic == Topic.ARTIFICIAL_INTELLIGENCE and set(
+        legacy_ai_quiz = pending.topic == Topic.ARTIFICIAL_INTELLIGENCE and set(
             pending.quiz.expected_keywords
-        ) & {"artificial", "intelligence"}:
+        ) & {"artificial", "intelligence"}
+        generic_quiz = pending.quiz.question.startswith(GENERIC_QUIZ_PREFIX)
+        if pending.topic in QUIZZES and (legacy_ai_quiz or generic_quiz):
+            # Reemplaza quizzes heredados cuyas palabras clave salían del identificador.
             pending.quiz = self.evaluator.create_quiz(pending.topic)
 
     async def start_practice(

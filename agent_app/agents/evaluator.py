@@ -19,6 +19,9 @@ from mcp_learning_server.services.retrieval import tokenize
 from pydantic import BaseModel, ConfigDict
 
 
+# Prefijo del quiz genérico; también identifica quizzes heredados en sesiones guardadas.
+GENERIC_QUIZ_PREFIX = "Explica con tus palabras la idea principal de"
+
 QUIZZES: dict[Topic, Quiz] = {
     Topic.ARTIFICIAL_INTELLIGENCE: Quiz(
         question="¿Qué es la inteligencia artificial y cómo realiza tareas asociadas a capacidades humanas?",
@@ -428,7 +431,7 @@ class EvaluatorAgent:
         return QUIZZES.get(
             topic,
             Quiz(
-                question=f"Explica con tus palabras la idea principal de {topic.value}.",
+                question=f"{GENERIC_QUIZ_PREFIX} {topic.value}.",
                 expected_keywords=[],
             ),
         )

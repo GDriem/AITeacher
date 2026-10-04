@@ -494,3 +494,33 @@ async def test_restores_legacy_answers_and_replaces_identifier_based_ai_quiz(lea
     orchestrator._restore_evaluation_context(session)
     assert session.pending_evaluation.student_answers == [answer]
     assert "artificial" not in session.pending_evaluation.quiz.expected_keywords
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("topic", "message"),
+    [
+        (Topic.MACHINE_LEARNING, "Enséñame machine learning"),
+        (Topic.TOOL_CALLING, "Enséñame tool calling"),
+    ],
+)
+async def test_replaces_generic_identifier_quiz_for_any_topic(learning_service, topic, message):
+    from agent_app.agents.evaluator import QUIZZES
+    from agent_app.models.chat import Quiz
+    from agent_app.services.sessions import PendingEvaluation
+
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(ChatRequest(student_id="generic", message=message))
+    session = orchestrator.sessions.get(chat.session_id, "generic")
+    identifier_words = topic.value.split("-")
+    session.pending_evaluation = PendingEvaluation(
+        student_id="generic", topic=topic,
+        quiz=Quiz(
+            question=f"Explica con tus palabras la idea principal de {topic.value}.",
+            expected_keywords=identifier_words,
+        ),
+        attempt=1,
+    )
+    orchestrator._restore_evaluation_context(session)
+    assert session.pending_evaluation.quiz == QUIZZES[topic]
+    assert not set(identifier_words) & set(session.pending_evaluation.quiz.expected_keywords)
