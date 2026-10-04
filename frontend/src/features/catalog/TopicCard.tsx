@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-import type { TopicCatalogItem } from "./catalogApi";
+import type { LearningLevel, TopicCatalogItem } from "./catalogApi";
 import {
   categoryLabel,
   levelLabel,
@@ -15,10 +15,11 @@ interface Props {
   topic: TopicCatalogItem;
   titles: Map<string, string>;
   pending: boolean;
+  selectedLevel?: LearningLevel | "";
   onStart: (topic: TopicCatalogItem) => void;
 }
 
-export function TopicCard({ topic, titles, pending, onStart }: Props) {
+export function TopicCard({ topic, titles, pending, selectedLevel, onStart }: Props) {
   const descriptionId = useId();
   const score = topic.progress ? Math.round(topic.progress.best_score) : null;
 
@@ -39,9 +40,10 @@ export function TopicCard({ topic, titles, pending, onStart }: Props) {
       </p>
       <div className={styles.levels} aria-label="Niveles disponibles">
         {topic.available_levels.map((level) => (
-          <span key={level}>{levelLabel(level)}</span>
+          <span key={level} data-level={level} data-selected={level === selectedLevel}>{levelLabel(level)}</span>
         ))}
       </div>
+      {selectedLevel ? <p className={styles.selectedLevel}>Aprenderás en nivel {levelLabel(selectedLevel).toLocaleLowerCase("es")}.</p> : null}
       {topic.progress ? (
         <p className={styles.progressSummary}>
           <strong>{score}/100</strong>

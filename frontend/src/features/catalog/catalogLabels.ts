@@ -3,6 +3,7 @@ import type { TopicCatalogItem } from "./catalogApi";
 const subjectLabels: Record<string, string> = {
   "artificial-intelligence": "Inteligencia artificial",
   english: "Inglés",
+  networks: "Redes",
 };
 
 const categoryLabels: Record<string, string> = {
@@ -14,6 +15,7 @@ const categoryLabels: Record<string, string> = {
   comunicacion: "Comunicación",
   vocabulario: "Vocabulario",
   gramatica: "Gramática",
+  enrutamiento: "Enrutamiento",
 };
 
 const levelLabels: Record<string, string> = {

@@ -107,7 +107,7 @@ export function EvaluationPanel({
           required
           value={answer}
           aria-describedby="evaluation-help evaluation-count"
-          placeholder="Escribe qué entendiste y cómo lo aplicarías…"
+          placeholder="Responde a la pregunta con tus propias palabras…"
           onChange={(event) => setAnswer(event.currentTarget.value)}
         />
         {error ? (
@@ -117,7 +117,7 @@ export function EvaluationPanel({
           </div>
         ) : null}
         <div className={styles.formFooter}>
-          <span id="evaluation-help">Tu respuesta se compara con conceptos y una rúbrica explícita.</span>
+          <span id="evaluation-help">Tomamos en cuenta tus respuestas anteriores del mismo tema.</span>
           <span id="evaluation-count">{String(answer.length)}/2000</span>
           <button className={styles.primaryAction} type="submit" disabled={!answer.trim() || mutation.isPending || tutorBusy}>
             {mutation.isPending ? "Analizando…" : "Recibir feedback"}

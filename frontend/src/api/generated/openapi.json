@@ -250,6 +250,16 @@
       "ChatRequest": {
         "additionalProperties": false,
         "properties": {
+          "level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LearningLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "message": {
             "maxLength": 4000,
             "minLength": 2,
@@ -1108,7 +1118,8 @@
       "LearningSubject": {
         "enum": [
           "artificial-intelligence",
-          "english"
+          "english",
+          "networks"
         ],
         "title": "LearningSubject",
         "type": "string"
@@ -1919,7 +1930,14 @@
           "english-greetings-introductions",
           "english-everyday-vocabulary",
           "english-grammar-in-context",
-          "english-conversation"
+          "english-conversation",
+          "routing-fundamentals",
+          "ip-subnetting",
+          "static-routing",
+          "floating-static-routing",
+          "ospf",
+          "bgp",
+          "routing-troubleshooting"
         ],
         "title": "Topic",
         "type": "string"
@@ -2073,7 +2091,8 @@
           "produccion",
           "comunicacion",
           "vocabulario",
-          "gramatica"
+          "gramatica",
+          "enrutamiento"
         ],
         "title": "TopicCategory",
         "type": "string"

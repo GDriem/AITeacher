@@ -1,10 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { ApiError } from "../../api/ApiError";
-import type { TopicCatalogItem, TopicCatalogResponse } from "./catalogApi";
+import type { LearningLevel, TopicCatalogItem, TopicCatalogResponse } from "./catalogApi";
 import { startTopic } from "./catalogApi";
 import { CatalogFilters } from "./CatalogFilters";
+import { CatalogExplorer } from "./CatalogExplorer";
+import { CatalogLevelPicker } from "./CatalogLevelPicker";
+import { categoryLabel, subjectLabel } from "./catalogLabels";
 import { catalogOptions, filterTopics, filtersFromParams, paramsFromFilters } from "./catalogFilterState";
 import { LearningPath } from "./LearningPath";
 import { topicCatalogKey, topicCatalogOptions } from "./catalogQueries";
@@ -24,10 +28,13 @@ export function CatalogScreen({ studentId }: Props) {
   const { activateSession } = useSessions();
   const catalog = useQuery(topicCatalogOptions(studentId));
   const filters = filtersFromParams(searchParams);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const showAll = searchParams.get("view") === "all" || Boolean(filters.query || (filters.level && !filters.subject));
+  const showLessons = showAll || Boolean(filters.subject && filters.category);
 
   const startMutation = useMutation({
-    mutationFn: (topic: TopicCatalogItem) => startTopic(studentId, topic.title),
-    onSuccess: (response, topic) => {
+    mutationFn: ({ topic, level }: { topic: TopicCatalogItem; level: LearningLevel | "" }) => startTopic(studentId, topic.title, level || undefined),
+    onSuccess: (response, { topic }) => {
       const message = `Quiero aprender sobre ${topic.title}`;
       activateSession(response.session_id);
       void queryClient.invalidateQueries({ queryKey: topicCatalogKey(studentId) });
@@ -41,20 +48,31 @@ export function CatalogScreen({ studentId }: Props) {
 
   const options = catalogOptions(catalog.data.topics, filters.subject);
   const visibleTopics = filterTopics(catalog.data.topics, filters);
-  const recommendation = recommendationForSubject(catalog.data, filters.subject);
-  const pendingTopic = startMutation.isPending ? startMutation.variables.topic : null;
+  const scopeTopics = filterTopics(catalog.data.topics, { ...filters, query: "", level: "" });
+  const availableLevels = [...new Set(scopeTopics.flatMap((topic) => topic.available_levels))];
+  const recommendation = recommendationForSubject(catalog.data, filters.subject, visibleTopics);
+  const pendingTopic = startMutation.isPending ? startMutation.variables.topic.topic : null;
   const count =
     visibleTopics.length === catalog.data.total_topics
       ? `${String(catalog.data.total_topics)} temas`
       : `${String(visibleTopics.length)} de ${String(catalog.data.total_topics)} temas`;
 
   const updateFilters = (next: typeof filters) => {
-    setSearchParams(paramsFromFilters(next), { replace: true });
+    const params = paramsFromFilters(next);
+    if (showAll) params.set("view", "all");
+    setSearchParams(params, { replace: true });
+  };
+
+  const explore = (subject = "", category = "", all = false) => {
+    const params = paramsFromFilters({ subject, category, query: "", level: subject === filters.subject && subject ? filters.level : "" });
+    if (all) params.set("view", "all");
+    setSearchParams(params);
+    requestAnimationFrame(() => titleRef.current?.focus());
   };
 
   const startRecommended = (topicId: string) => {
     const topic = catalog.data.topics.find((item) => item.topic === topicId);
-    if (topic) startMutation.mutate(topic);
+    if (topic) startMutation.mutate({ topic, level: filters.level });
   };
 
   return (
@@ -62,9 +80,11 @@ export function CatalogScreen({ studentId }: Props) {
       <header className={styles.hero}>
         <div>
           <p className={styles.eyebrow}>Explora el currículo</p>
-          <h1>Elige qué quieres aprender</h1>
+          <h1 ref={titleRef} tabIndex={-1}>
+            {showAll ? "Todos los temas" : filters.category && filters.subject ? categoryLabel(filters.category) : "Elige qué quieres aprender"}
+          </h1>
           <p className={styles.lede}>
-            Recorre inteligencia artificial o practica inglés. Cada tema se ajusta al punto en el que estás.
+            {showAll ? "Busca un tema o usa los filtros para encontrar tu próxima lección." : "Elige una materia, explora sus categorías y encuentra tu próxima lección."}
           </p>
         </div>
         <strong id="topics-count" className={styles.count} aria-live="polite">
@@ -84,31 +104,52 @@ export function CatalogScreen({ studentId }: Props) {
         </p>
       ) : null}
 
-      <CatalogFilters
+      <nav className={styles.explorerNav} aria-label="Explorar catálogo">
+        <div className={styles.breadcrumbs}>
+          <button type="button" aria-current={!showAll && !filters.subject ? "page" : undefined} onClick={() => explore()}>Materias</button>
+          {!showAll && filters.subject ? <>
+            <span aria-hidden="true">/</span>
+            <button type="button" aria-current={!filters.category ? "page" : undefined} onClick={() => explore(filters.subject)}>{subjectLabel(filters.subject)}</button>
+            {filters.category ? <><span aria-hidden="true">/</span><span aria-current="page">{categoryLabel(filters.category)}</span></> : null}
+          </> : null}
+        </div>
+        <button type="button" className={styles.viewAll} aria-current={showAll ? "page" : undefined} onClick={() => explore("", "", true)}>Ver todo <span aria-hidden="true">↗</span></button>
+      </nav>
+
+      {!showAll && filters.subject ? <CatalogLevelPicker level={filters.level} available={availableLevels}
+        onChange={(level) => updateFilters({ ...filters, level })} /> : null}
+
+      {!showLessons ? <CatalogExplorer topics={catalog.data.topics} subject={filters.subject} level={filters.level}
+        onSubject={(subject) => explore(subject)} onCategory={(category) => explore(filters.subject, category)} /> : null}
+
+      {showAll ? <CatalogFilters
         filters={filters}
         subjects={options.subjects}
         categories={options.categories}
         levels={options.levels}
         onChange={updateFilters}
-      />
+      /> : null}
+      {showLessons ? <section className={styles.lessons} aria-label="Temas de aprendizaje">
+      {!showAll ? <h2>Temas de {categoryLabel(filters.category)}</h2> : null}
       <TopicGrid
         topics={visibleTopics}
         allTopics={catalog.data.topics}
         queryActive={Boolean(filters.query || filters.subject || filters.category || filters.level)}
         pendingTopic={pendingTopic}
-        onStart={(topic) => startMutation.mutate(topic)}
+        selectedLevel={filters.level}
+        onStart={(topic) => startMutation.mutate({ topic, level: filters.level })}
       />
+      </section> : null}
     </article>
   );
 }
 
-function recommendationForSubject(data: TopicCatalogResponse, subject: string) {
-  if (!subject) return data.recommendation;
-  const recommended = data.topics.find((topic) => topic.topic === data.recommendation?.topic);
-  if (recommended?.subject === subject) return data.recommendation;
+function recommendationForSubject(data: TopicCatalogResponse, subject: string, topics: TopicCatalogItem[]) {
+  const recommended = topics.find((topic) => topic.topic === data.recommendation?.topic);
+  if (recommended && (!subject || recommended.subject === subject)) return data.recommendation;
 
-  const next = data.topics.find(
-    (topic) => topic.subject === subject && (topic.status === "in_progress" || topic.status === "available"),
+  const next = topics.find(
+    (topic) => (!subject || topic.subject === subject) && (topic.status === "in_progress" || topic.status === "available"),
   );
   if (!next) return null;
   return {

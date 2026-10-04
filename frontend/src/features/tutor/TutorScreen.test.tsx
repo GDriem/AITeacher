@@ -38,11 +38,26 @@ function detailForExchange(message: string, answer = chatResponseFixture.answer)
 }
 
 describe("TutorScreen", () => {
+  it("ofrece explorar o tomar la prueba sin pedir una respuesta automáticamente", async () => {
+    useRestoredSession();
+    const user = userEvent.setup();
+    renderTutor({ activeSessionId: "session-vectors" });
+    const explore = await screen.findByRole("button", { name: "Profundizar en el tema" });
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    await user.click(explore);
+    expect(screen.getByRole("textbox", { name: "Escribe tu mensaje" })).toHaveFocus();
+    expect(screen.queryByRole("textbox", { name: "Explícalo con tus propias palabras" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Tomar la prueba" }));
+    expect(screen.getByRole("textbox", { name: "Explícalo con tus propias palabras" })).toHaveFocus();
+    expect(screen.queryByRole("textbox", { name: "Escribe tu mensaje" })).not.toBeInTheDocument();
+  });
+
   it("restaura el feed, renderiza Markdown seguro, fuentes y foco sin hallazgos axe", async () => {
     useRestoredSession();
     const { container } = renderTutor({ activeSessionId: "session-vectors" });
 
-    expect(await screen.findByRole("heading", { name: "Vectores semánticos" })).toHaveFocus();
+    expect(await screen.findByRole("heading", { name: "Vectores semánticos" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Profundizar en el tema" })).toHaveFocus();
     expect(await screen.findByRole("heading", { level: 3, name: "Idea central" })).toBeVisible();
     expect(screen.getByText("representa significado con números.", { exact: false })).toBeVisible();
     expect(screen.queryByText("window.__xss = true")).not.toBeInTheDocument();
@@ -89,7 +104,7 @@ describe("TutorScreen", () => {
     expect(chatCalls).toBe(1);
     expect(window.localStorage.getItem("activeSession:student-test")).toBe("session-vectors");
     expect(screen.getByText("La explicación quedó preparada.")).toBeVisible();
-    await waitFor(() => expect(input).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Profundizar en el tema" })).toHaveFocus());
   });
 
   it("al dejar de esperar reintenta con la misma clave y descarta la respuesta tardía", async () => {
@@ -149,17 +164,19 @@ describe("TutorScreen", () => {
     );
     const user = userEvent.setup();
     renderTutor({ activeSessionId: "session-vectors" });
+    await user.click(await screen.findByRole("button", { name: "Profundizar en el tema" }));
     const input = await screen.findByRole("textbox", { name: "Escribe tu mensaje" });
     await user.type(input, "Mensaje pendiente al cambiar");
     await user.click(screen.getByRole("button", { name: "Enviar" }));
 
+    expect(screen.getByRole("button", { name: "Cancelar envío" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Conversaciones" }));
     const agentsRow = screen.getByText("Agentes y herramientas").closest("li");
     if (!agentsRow) throw new Error("No se encontró la conversación alternativa.");
     await user.click(within(agentsRow).getByRole("button", { name: "Abrir" }));
 
     expect(await screen.findByText("Dejaste de esperar el envío anterior; puede completarse en su conversación original.")).toBeInTheDocument();
-    expect(input).toHaveValue("");
+    expect(screen.queryByRole("textbox", { name: "Escribe tu mensaje" })).not.toBeInTheDocument();
     expect(window.localStorage.getItem("activeSession:student-test")).toBe("session-agents");
     releaseChat();
     await delay(10);
@@ -206,6 +223,7 @@ describe("TutorScreen", () => {
     const user = userEvent.setup();
     renderTutor({ activeSessionId: "session-vectors" });
 
+    await user.click(await screen.findByRole("button", { name: "Tomar la prueba" }));
     const answer = await screen.findByRole("textbox", { name: "Explícalo con tus propias palabras" });
     await user.type(answer, "Un embedding representa significado y permite comparar cercanía.");
     await user.click(screen.getByRole("button", { name: "Recibir feedback" }));
@@ -248,6 +266,7 @@ describe("TutorScreen", () => {
     const user = userEvent.setup();
     renderTutor({ activeSessionId: "session-vectors" });
 
+    await user.click(await screen.findByRole("button", { name: "Tomar la prueba" }));
     await user.type(await screen.findByRole("textbox", { name: "Explícalo con tus propias palabras" }), "Los vectores cercanos conservan significados parecidos.");
     await user.click(screen.getByRole("button", { name: "Recibir feedback" }));
     await user.click(await screen.findByRole("button", { name: "Practicar similitud vectorial" }));
@@ -272,6 +291,7 @@ describe("TutorScreen", () => {
     const user = userEvent.setup();
     renderTutor({ activeSessionId: "session-vectors" });
 
+    await user.click(await screen.findByRole("button", { name: "Tomar la prueba" }));
     await user.click(await screen.findByRole("button", { name: "Reanudar práctica · ronda 2" }));
     expect(screen.getByRole("heading", { name: "Diseña una búsqueda semántica" })).toBeVisible();
     expect(screen.getByRole("textbox", { name: "Tu resolución" })).toBeVisible();

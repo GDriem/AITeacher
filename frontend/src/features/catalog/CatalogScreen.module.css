@@ -415,3 +415,542 @@
     grid-template-columns: 1fr;
   }
 }
+
+.explorerNav,
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.explorerNav {
+  justify-content: space-between;
+  margin-block: var(--space-6);
+  padding-block: var(--space-3);
+  border-block: 1px solid var(--border-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.explorerNav button {
+  min-height: 2.75rem;
+  padding: var(--space-2);
+  color: var(--content-muted);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+}
+
+.explorerNav button:hover,
+.explorerNav button[aria-current="page"] {
+  color: var(--content-strong);
+  background: var(--surface-subtle);
+}
+
+.explorerNav .viewAll {
+  color: var(--action-primary);
+  white-space: nowrap;
+}
+
+.breadcrumbs {
+  min-width: 0;
+}
+
+.explorer h2,
+.lessons h2 {
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-lg);
+}
+
+.subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+
+.subjectBadge {
+  --badge-accent: var(--status-guide);
+  display: flex;
+  flex: 1 1 15rem;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 24rem;
+  min-width: 0;
+  padding: var(--space-6) var(--space-4);
+  color: var(--content-strong);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+  text-align: center;
+  transition: border-color 160ms, background 160ms;
+}
+
+.subjectBadge[data-subject="english"] {
+  --badge-accent: var(--status-mastery);
+}
+
+.subjectBadge:hover {
+  border-color: var(--badge-accent);
+  background: var(--surface-raised);
+}
+
+.badgeEmblem {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6.5rem;
+  color: var(--badge-accent);
+  background: var(--surface-raised);
+  clip-path: polygon(50% 0, 93% 23%, 93% 70%, 50% 100%, 7% 70%, 7% 23%);
+}
+
+.badgeEmblem svg {
+  width: 3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.subjectBadge strong {
+  font-size: var(--font-size-lg);
+}
+
+.subjectBadge > span:not(.badgeEmblem) {
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.subjectBadge > .badgeAction {
+  margin-top: var(--space-2);
+  color: var(--badge-accent);
+  font-weight: 700;
+}
+
+.explorerHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.explorerHeading > p {
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.honeycomb {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+  max-width: 42rem;
+  margin: var(--space-5) auto var(--space-7);
+  padding-bottom: var(--space-4);
+}
+
+.hexagon {
+  position: relative;
+  grid-column: span 2;
+  aspect-ratio: 1 / 1.15;
+  min-width: 0;
+  padding: 0;
+  color: var(--content-strong);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  isolation: isolate;
+}
+
+.hexagon:nth-child(5n + 4) {
+  grid-column: 2 / span 2;
+}
+
+.hexagon:nth-child(n + 4) {
+  margin-top: -22%;
+}
+
+.hexagonFace,
+.hexagonFace::after {
+  position: absolute;
+  inset: 0;
+  background: var(--border-default);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  z-index: -1;
+}
+
+.hexagonFace::after {
+  content: "";
+  inset: 2px;
+  background: var(--surface-raised);
+}
+
+.hexagon:hover .hexagonFace,
+.hexagon:focus-visible .hexagonFace {
+  background: var(--status-guide);
+}
+
+.hexagon:hover .hexagonFace::after {
+  background: var(--surface-default);
+}
+
+.hexagonContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 100%;
+  padding: 22% 10%;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.hexagonContent svg {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  fill: none;
+  stroke: var(--status-guide);
+  stroke-width: 1.5;
+}
+
+.hexagonContent strong {
+  font-size: var(--font-size-md);
+  line-height: 1.25;
+}
+
+.hexagonContent > span,
+.hexagonContent small {
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
+}
+
+.lessons {
+  margin-top: var(--space-6);
+}
+
+@media (max-width: 47.99rem) {
+  .subjectBadge {
+    max-width: none;
+  }
+
+  .honeycomb {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: 28rem;
+    gap: var(--space-1);
+  }
+
+  .hexagon:nth-child(n) {
+    grid-column: span 2;
+    margin-top: 0;
+  }
+
+  .hexagon:nth-child(3n + 3) {
+    grid-column: 2 / span 2;
+  }
+
+  .hexagon:nth-child(n + 3) {
+    margin-top: -22%;
+  }
+
+  .hexagonContent {
+    gap: var(--space-1);
+  }
+
+  .hexagonContent strong {
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (max-width: 23rem) {
+  .hexagonContent svg {
+    display: none;
+  }
+}
+
+[data-level="beginner"] { --level-color: var(--status-mastery); }
+[data-level="intermediate"] { --level-color: var(--status-attention); }
+[data-level="advanced"] { --level-color: var(--status-danger); }
+[data-level="adaptive"] { --level-color: var(--status-guide); }
+
+.levelPicker {
+  min-width: 0;
+  margin: 0 0 var(--space-7);
+  padding: var(--space-5);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.levelPicker legend {
+  padding-inline: var(--space-2);
+  color: var(--content-strong);
+  font-weight: 750;
+}
+
+.levelPicker > p {
+  margin-bottom: var(--space-4);
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.levelSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.levelDescription {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.levelDescription > span:first-child {
+  flex-shrink: 0;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: 50%;
+  background: var(--level-color);
+}
+
+.levelDescription strong { color: var(--content-strong); }
+.levelSummaryHint { display: block; margin-top: var(--space-1); }
+
+.levelToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--action-primary);
+  background: var(--surface-raised);
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+
+.levelToggle:hover { border-color: var(--action-primary); }
+
+.levelThermometer {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: var(--space-5);
+  max-width: 25rem;
+  margin-block: var(--space-6) var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.levelSlider {
+  --selected-index: 0;
+  position: relative;
+  height: 14rem;
+}
+
+.levelSlider[data-selection="beginner"] { --selected-index: 1; }
+.levelSlider[data-selection="intermediate"] { --selected-index: 2; }
+.levelSlider[data-selection="advanced"] { --selected-index: 3; }
+
+.levelTrack {
+  position: absolute;
+  top: 1.375rem;
+  bottom: 1.375rem;
+  left: calc(50% - 0.5rem);
+  width: 1rem;
+  border-radius: 999px 999px 0 0;
+  background: var(--border-default);
+  box-shadow: 0 0 0 0.25rem var(--surface-raised), 0 0 0 0.3125rem var(--border-default);
+  pointer-events: none;
+}
+
+.levelTrack span {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: calc(var(--selected-index) * 100% / 3);
+  border-radius: inherit;
+  background: var(--level-color);
+}
+
+.levelTrack::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  height: var(--space-5);
+  background: var(--level-color);
+}
+
+.levelTrack::after {
+  content: "";
+  position: absolute;
+  bottom: -1.5rem;
+  left: -0.5rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--level-color);
+  box-shadow: 0 0 0 0.25rem var(--surface-raised), 0 0 0 0.3125rem var(--border-default);
+}
+
+.levelSlider input {
+  position: absolute;
+  top: 0.625rem;
+  left: 0;
+  width: 3rem;
+  height: calc(100% - 1.25rem);
+  margin: 0;
+  padding: 0;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.levelSlider input::-webkit-slider-runnable-track { width: 1rem; background: transparent; }
+.levelSlider input::-moz-range-track { width: 1rem; background: transparent; }
+
+.levelSlider input::-webkit-slider-thumb {
+  width: var(--space-6);
+  height: var(--space-6);
+  margin-left: -0.25rem;
+  appearance: none;
+  border: 0.25rem solid var(--content-strong);
+  border-radius: 50%;
+  background: var(--level-color);
+  cursor: grab;
+}
+
+.levelSlider input::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--space-6);
+  height: var(--space-6);
+  border: 0.25rem solid var(--content-strong);
+  border-radius: 50%;
+  background: var(--level-color);
+  cursor: grab;
+}
+
+.levelSlider input:active::-webkit-slider-thumb { cursor: grabbing; }
+.levelSlider input:active::-moz-range-thumb { cursor: grabbing; }
+
+.levelSlider input:focus-visible,
+.levelToggle:focus-visible,
+.levelStop:focus-visible {
+  outline: 0.2rem solid var(--focus-ring);
+  outline-offset: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+
+.levelStops {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+}
+
+.levelStop {
+  position: relative;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: var(--space-1) var(--space-3);
+  text-align: left;
+  color: var(--content-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+
+.levelStop::before {
+  content: "";
+  position: absolute;
+  right: calc(100% + var(--space-1));
+  top: 50%;
+  width: var(--space-3);
+  height: 1px;
+  background: var(--border-default);
+}
+
+.levelStop[aria-pressed="true"] {
+  color: var(--level-color);
+  border-color: var(--border-default);
+  background: var(--surface-raised);
+}
+.levelStop:hover:enabled { color: var(--level-color); }
+.levelStop:disabled { cursor: not-allowed; }
+.levelStop small { margin-left: var(--space-2); font-size: var(--font-size-xs); font-weight: 400; }
+.levelHelp { margin: 0; color: var(--content-muted); font-size: var(--font-size-xs); }
+
+.levelLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+}
+
+.levelLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.levelLegend i {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: 50%;
+  background: var(--level-color);
+}
+
+.hexagon[data-levels="beginner"] { --hex-border: var(--status-mastery); }
+.hexagon[data-levels="intermediate"] { --hex-border: var(--status-attention); }
+.hexagon[data-levels="advanced"] { --hex-border: var(--status-danger); }
+.hexagon[data-levels="beginner intermediate"] { --hex-border: linear-gradient(90deg, var(--status-mastery) 50%, var(--status-attention) 50%); }
+.hexagon[data-levels="beginner advanced"] { --hex-border: linear-gradient(90deg, var(--status-mastery) 50%, var(--status-danger) 50%); }
+.hexagon[data-levels="intermediate advanced"] { --hex-border: linear-gradient(90deg, var(--status-attention) 50%, var(--status-danger) 50%); }
+.hexagon[data-levels="beginner intermediate advanced"] { --hex-border: linear-gradient(90deg, var(--status-mastery) 33%, var(--status-attention) 33% 67%, var(--status-danger) 67%); }
+
+.hexagon .hexagonFace,
+.hexagon:hover .hexagonFace,
+.hexagon:focus-visible .hexagonFace {
+  background: var(--hex-border, var(--border-default));
+}
+
+.hexagon:disabled { cursor: default; }
+.hexagon:disabled .hexagonFace { background: var(--border-default); }
+.hexagon:disabled .hexagonFace::after { background: var(--surface-sunken); }
+.hexagonContent small { max-width: 100%; }
+
+.levels span[data-selected="true"] {
+  color: var(--level-color);
+  box-shadow: inset 0 0 0 1px var(--level-color);
+}
+
+.selectedLevel {
+  margin: 0 0 var(--space-3);
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 47.99rem) {
+  .hexagonContent svg { display: none; }
+}
+
+@media (max-width: 23rem) {
+  .levelPicker { padding: var(--space-3); }
+  .levelStop { font-size: var(--font-size-xs); }
+}
