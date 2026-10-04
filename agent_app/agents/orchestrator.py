@@ -82,6 +82,8 @@ class LearningOrchestrator:
                 return completed
         if session is not None and session.archived_at is not None:
             raise ValueError("La conversación está archivada; restáurala para continuar")
+        if session is not None:
+            self._restore_evaluation_context(session)
         trace = [
             TraceEvent(
                 kind=TraceKind.USER,
@@ -114,19 +116,38 @@ class LearningOrchestrator:
         trace.append(_delegation(self.name, self.diagnostic.name, "diagnosticar nivel"))
         started = time.perf_counter()
         diagnostic = await self.diagnostic.diagnose(request.student_id, topic)
+        preferred_level = request.level or (
+            session.preferred_level
+            if session is not None and session.topic == topic
+            else None
+        )
+        if preferred_level is not None:
+            diagnostic.level = preferred_level
+            trace.append(
+                TraceEvent(
+                    kind=TraceKind.DECISION,
+                    actor=self.name,
+                    action="select_learning_level",
+                    summary=f"Nivel elegido para esta conversación: {preferred_level.value}.",
+                )
+            )
         trace.append(
             TraceEvent(
                 kind=TraceKind.TOOL,
                 actor=self.diagnostic.name,
                 action="get_student_progress",
-                summary=f"Progreso recuperado; nivel {diagnostic.level.value}.",
+                summary=f"Progreso recuperado; nivel de aprendizaje {diagnostic.level.value}.",
                 duration_ms=_elapsed(started),
             )
         )
 
         trace.append(_delegation(self.name, self.tutor.name, "explicar con RAG"))
         started = time.perf_counter()
-        answer, sources = await self.tutor.teach(diagnostic, request.message)
+        history = [
+            {"role": message.role.value, "content": message.content, "note": message.note}
+            for message in (session.messages if session else [])
+        ]
+        answer, sources = await self.tutor.teach(diagnostic, request.message, history)
         tutor_duration = _elapsed(started)
         trace.extend(
             [
@@ -168,6 +189,9 @@ class LearningOrchestrator:
             topic=topic,
             quiz=quiz,
             attempt=quiz_attempt,
+            student_answers=(
+                pending.student_answers if pending and pending.topic == topic else []
+            ),
         )
         trace.append(
             TraceEvent(
@@ -208,6 +232,7 @@ class LearningOrchestrator:
         else:
             session.topic = topic
             session.pending_evaluation = pending
+        session.preferred_level = preferred_level
         session.messages.extend(
             [
                 ConversationMessage(
@@ -240,6 +265,7 @@ class LearningOrchestrator:
         )
         if session.archived_at is not None:
             raise ValueError("La conversación está archivada; restáurala para continuar")
+        self._restore_evaluation_context(session)
         pending = session.pending_evaluation
         trace = [
             TraceEvent(
@@ -256,12 +282,14 @@ class LearningOrchestrator:
             pending.quiz,
             request.answer,
             pending.attempt,
+            previous_answers=pending.student_answers,
         )
         session.pending_evaluation = PendingEvaluation(
             student_id=request.student_id,
             topic=pending.topic,
             quiz=result.next_quiz,
             attempt=pending.attempt + 1,
+            student_answers=[*pending.student_answers, request.answer],
         )
         session.messages.extend(
             [
@@ -332,6 +360,32 @@ class LearningOrchestrator:
             progress=result.saved.progress,
             trace=trace,
         )
+
+    def _restore_evaluation_context(self, session: StoredConversation) -> None:
+        pending = session.pending_evaluation
+        if "student_answers" not in pending.model_fields_set:
+            # Recupera las respuestas de sesiones guardadas antes de incorporar contexto.
+            answers: list[str] = []
+            current_topic: Topic | None = None
+            for message in session.messages:
+                if message.role != MessageRole.USER:
+                    continue
+                if message.label == "Tu explicación":
+                    if current_topic == pending.topic:
+                        answers.append(message.content)
+                    continue
+                try:
+                    detected = detect_topic(message.content)
+                except ValueError:
+                    continue
+                if detected != current_topic:
+                    answers = []
+                    current_topic = detected
+            pending.student_answers = answers
+        if pending.topic == Topic.ARTIFICIAL_INTELLIGENCE and set(
+            pending.quiz.expected_keywords
+        ) & {"artificial", "intelligence"}:
+            pending.quiz = self.evaluator.create_quiz(pending.topic)
 
     async def start_practice(
         self, request: PracticeStartRequest

@@ -520,5 +520,300 @@
     "text": "Fluency means managing interaction, not speaking without pauses. Discourse markers such as “actually”, “on the other hand” and “what I mean is” organize ideas and repair misunderstandings. Intonation can soften disagreement or signal that a turn is unfinished. Skilled speakers adapt register, invite clarification and reformulate when their first wording does not land.",
     "source": "Currículo de inglés AITeacher",
     "keywords": ["fluency", "discourse markers", "intonation", "repair", "register"]
+  },
+  {
+    "id": "routing-fundamentals-beginner",
+    "topic": "routing-fundamentals",
+    "title": "Paquetes, routers y siguiente salto",
+    "level": "beginner",
+    "text": "Un router conecta redes IP. Para reenviar un paquete consulta su dirección de destino y busca una ruta en la tabla. La ruta indica la interfaz de salida y, cuando corresponde, el siguiente salto. Si no existe una ruta aplicable, el router no puede entregar el paquete.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "router",
+      "destino",
+      "tabla de rutas",
+      "siguiente salto"
+    ]
+  },
+  {
+    "id": "routing-fundamentals-intermediate",
+    "topic": "routing-fundamentals",
+    "title": "Selección por prefijo más largo",
+    "level": "intermediate",
+    "text": "Varias rutas pueden coincidir con un destino. Entre rutas instaladas, se usa el prefijo más largo: para 10.1.2.8, una ruta 10.1.2.0/24 es más específica que 10.1.0.0/16. La ruta predeterminada 0.0.0.0/0 coincide cuando no hay una ruta más específica.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "prefijo",
+      "tabla de rutas",
+      "destino",
+      "ruta predeterminada"
+    ]
+  },
+  {
+    "id": "routing-fundamentals-advanced",
+    "topic": "routing-fundamentals",
+    "title": "Plano de control y reenvío",
+    "level": "advanced",
+    "text": "El plano de control aprende y selecciona rutas; el plano de datos reenvía paquetes con la información instalada. Una ruta aprendida puede no ser utilizable si su siguiente salto no es alcanzable. Analiza ambos planos cuando la tabla muestra un destino pero el tráfico no llega.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "plano de control",
+      "plano de datos",
+      "siguiente salto",
+      "alcanzable"
+    ]
+  },
+  {
+    "id": "ip-subnetting-beginner",
+    "topic": "ip-subnetting",
+    "title": "Dirección IPv4 y máscara",
+    "level": "beginner",
+    "text": "Una dirección IPv4 tiene 32 bits. El prefijo CIDR indica cuántos identifican la red: /24 deja ocho bits para direcciones dentro de ella. En una subred convencional 192.168.1.0/24, .0 identifica la red y .255 es broadcast; los hosts usan .1 a .254.",
+    "source": "https://www.rfc-editor.org/rfc/rfc4632",
+    "keywords": [
+      "ipv4",
+      "máscara",
+      "prefijo",
+      "subred"
+    ]
+  },
+  {
+    "id": "ip-subnetting-intermediate",
+    "topic": "ip-subnetting",
+    "title": "División de una red en subredes",
+    "level": "intermediate",
+    "text": "Dividir 192.168.1.0/24 en dos /25 produce 192.168.1.0/25 y 192.168.1.128/25. Cada bloque contiene 128 direcciones y, en una subred convencional, 126 para hosts. Comprueba los límites y evita solapamientos antes de asignar direcciones a interfaces y configurar rutas.",
+    "source": "https://www.rfc-editor.org/rfc/rfc4632",
+    "keywords": [
+      "subred",
+      "cidr",
+      "máscara",
+      "solapamiento"
+    ]
+  },
+  {
+    "id": "ip-subnetting-advanced",
+    "topic": "ip-subnetting",
+    "title": "VLSM y agregación de prefijos",
+    "level": "advanced",
+    "text": "VLSM permite reservar bloques de diferentes tamaños según la necesidad. La agregación anuncia un prefijo que cubre varios bloques contiguos y alineados: 192.168.0.0/24 y 192.168.1.0/24 caben en 192.168.0.0/23. Comprueba la cobertura y las rutas específicas para evitar atraer tráfico hacia destinos inaccesibles.",
+    "source": "https://www.rfc-editor.org/rfc/rfc4632",
+    "keywords": [
+      "vlsm",
+      "agregación",
+      "cidr",
+      "prefijo"
+    ]
+  },
+  {
+    "id": "static-routing-beginner",
+    "topic": "static-routing",
+    "title": "Ruta estática y ruta predeterminada",
+    "level": "beginner",
+    "text": "Una ruta estática se configura manualmente con un prefijo de destino y una salida o siguiente salto. La ruta predeterminada IPv4 usa 0.0.0.0/0. Sirve como salida para destinos sin otra coincidencia, pero no reemplaza una ruta más específica instalada en la tabla.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "ruta estática",
+      "destino",
+      "siguiente salto",
+      "ruta predeterminada"
+    ]
+  },
+  {
+    "id": "static-routing-intermediate",
+    "topic": "static-routing",
+    "title": "Alcance del siguiente salto y retorno",
+    "level": "intermediate",
+    "text": "En una topología A–B–C, A necesita una ruta a la red de C mediante B. El siguiente salto debe ser alcanzable. C también necesita una ruta de retorno hacia A para completar una comunicación bidireccional. Revisa ambas direcciones al diagnosticar un ping fallido.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "siguiente salto",
+      "retorno",
+      "alcanzable",
+      "ruta estática"
+    ]
+  },
+  {
+    "id": "static-routing-advanced",
+    "topic": "static-routing",
+    "title": "Respaldo y rutas recursivas",
+    "level": "advanced",
+    "text": "Una ruta estática de respaldo puede activarse cuando desaparece la preferida, según la preferencia y los mecanismos de seguimiento de la implementación. En una ruta recursiva se resuelve el siguiente salto mediante otra ruta. Comprueba la resolución y la detección de fallas: una interfaz activa no garantiza conectividad extremo a extremo.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "respaldo",
+      "recursiva",
+      "siguiente salto",
+      "preferencia"
+    ]
+  },
+  {
+    "id": "ospf-beginner",
+    "topic": "ospf",
+    "title": "OSPF como protocolo de estado de enlace",
+    "level": "beginner",
+    "text": "OSPF es un protocolo de enrutamiento dentro de un sistema autónomo. Los routers intercambian información del estado de los enlaces y calculan caminos usando costos. A diferencia de una ruta estática, las rutas pueden actualizarse cuando cambia la topología y converge el protocolo.",
+    "source": "https://www.rfc-editor.org/rfc/rfc2328",
+    "keywords": [
+      "ospf",
+      "estado de enlace",
+      "costo",
+      "topología"
+    ]
+  },
+  {
+    "id": "ospf-intermediate",
+    "topic": "ospf",
+    "title": "Vecinos, LSAs y cálculo SPF",
+    "level": "intermediate",
+    "text": "Los mensajes Hello descubren vecinos OSPF. Las adyacencias sincronizan información mediante anuncios LSA para construir una base de datos de estado de enlace del área. El cálculo SPF obtiene caminos de menor costo. Para estudiar una falla, revisa primero vecindad, después base de datos y finalmente rutas.",
+    "source": "https://www.rfc-editor.org/rfc/rfc2328",
+    "keywords": [
+      "hello",
+      "vecinos",
+      "lsa",
+      "spf",
+      "costo"
+    ]
+  },
+  {
+    "id": "ospf-advanced",
+    "topic": "ospf",
+    "title": "Diseño de áreas y convergencia",
+    "level": "advanced",
+    "text": "OSPF divide la topología en áreas para limitar el alcance de información de estado de enlace. El área 0 constituye el backbone y los routers ABR conectan áreas. La sumarización en sus límites ayuda a reducir información. Al diseñar, considera redundancia, costos y el efecto de cambios sobre la convergencia.",
+    "source": "https://www.rfc-editor.org/rfc/rfc2328",
+    "keywords": [
+      "área",
+      "backbone",
+      "abr",
+      "convergencia"
+    ]
+  },
+  {
+    "id": "bgp-beginner",
+    "topic": "bgp",
+    "title": "Sistemas autónomos y anuncios BGP",
+    "level": "beginner",
+    "text": "BGP intercambia información de alcance entre sistemas autónomos. Un AS representa redes bajo una administración de enrutamiento común y tiene un número identificador. Los vecinos anuncian prefijos con atributos. BGP permite aplicar políticas; no elige simplemente el camino con menor latencia o menos saltos físicos.",
+    "source": "https://www.rfc-editor.org/rfc/rfc4271",
+    "keywords": [
+      "bgp",
+      "sistema autónomo",
+      "prefijo",
+      "política"
+    ]
+  },
+  {
+    "id": "bgp-intermediate",
+    "topic": "bgp",
+    "title": "AS_PATH, NEXT_HOP y preferencia local",
+    "level": "intermediate",
+    "text": "AS_PATH registra sistemas autónomos recorridos por un anuncio y ayuda a detectar bucles. NEXT_HOP indica dónde enviar tráfico y debe ser alcanzable. LOCAL_PREF expresa preferencia dentro del AS. La selección considera políticas y atributos: un AS_PATH corto no garantiza ganar frente a una preferencia local superior.",
+    "source": "https://www.rfc-editor.org/rfc/rfc4271",
+    "keywords": [
+      "as_path",
+      "next_hop",
+      "local_pref",
+      "política"
+    ]
+  },
+  {
+    "id": "bgp-advanced",
+    "topic": "bgp",
+    "title": "Políticas de importación y exportación",
+    "level": "advanced",
+    "text": "En una red con varios proveedores, las políticas de importación y exportación controlan qué prefijos se aceptan y anuncian. Distingue selección de rutas locales de anuncios a vecinos. Evalúa filtros, alcance de NEXT_HOP y rutas de retorno para evitar tránsito involuntario, bucles o tráfico dirigido a destinos inaccesibles.",
+    "source": "https://www.rfc-editor.org/rfc/rfc4271",
+    "keywords": [
+      "importación",
+      "exportación",
+      "filtros",
+      "next_hop"
+    ]
+  },
+  {
+    "id": "routing-troubleshooting-beginner",
+    "topic": "routing-troubleshooting",
+    "title": "Diagnóstico por pasos",
+    "level": "beginner",
+    "text": "Ante una falla, comprueba enlace, dirección IP, máscara y gateway. Después revisa la tabla de rutas y prueba conectividad con ping. Traceroute ayuda a observar saltos. Un salto sin respuesta puede filtrar o limitar ICMP; por sí solo no prueba que el router deje de reenviar tráfico.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "gateway",
+      "tabla de rutas",
+      "ping",
+      "traceroute"
+    ]
+  },
+  {
+    "id": "routing-troubleshooting-intermediate",
+    "topic": "routing-troubleshooting",
+    "title": "Rutas de ida y vuelta",
+    "level": "intermediate",
+    "text": "Compara el camino de ida con el de retorno: pueden ser distintos. Una ruta correcta en el origen no garantiza que el destino pueda responder. Separa ausencia de rutas, siguiente salto inaccesible y filtros. Usa pruebas desde ambos extremos y registra resultados antes de modificar la configuración.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "retorno",
+      "siguiente salto",
+      "filtros",
+      "ruta"
+    ]
+  },
+  {
+    "id": "routing-troubleshooting-advanced",
+    "topic": "routing-troubleshooting",
+    "title": "Aislar fallas entre control y datos",
+    "level": "advanced",
+    "text": "Si el protocolo aprende un prefijo pero la comunicación falla, verifica selección, instalación y resolución del siguiente salto. Luego examina reenvío, filtros y MTU con tamaños de paquete controlados. Formula una hipótesis por vez, mide antes y después y comprueba que la corrección no afecte otras redes.",
+    "source": "https://www.rfc-editor.org/rfc/rfc1812",
+    "keywords": [
+      "plano de control",
+      "reenvío",
+      "mtu",
+      "siguiente salto"
+    ]
+  },
+  {
+    "id": "floating-static-routing-beginner",
+    "topic": "floating-static-routing",
+    "title": "Qué es una ruta estática flotante",
+    "level": "beginner",
+    "text": "Una ruta estática flotante es una ruta de respaldo con distancia administrativa mayor que la principal para el mismo prefijo. Se prefiere la distancia menor. El respaldo puede instalarse cuando se retira la principal de la tabla, siempre que su siguiente salto sea alcanzable.",
+    "source": "https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/15986-admin-distance.html",
+    "keywords": [
+      "ruta estática flotante",
+      "distancia administrativa",
+      "respaldo",
+      "siguiente salto"
+    ]
+  },
+  {
+    "id": "floating-static-routing-intermediate",
+    "topic": "floating-static-routing",
+    "title": "Elegir la distancia y probar la conmutación",
+    "level": "intermediate",
+    "text": "En Cisco, una ruta OSPF tiene distancia administrativa predeterminada 110. Una estática al mismo prefijo con distancia 200 queda como respaldo. Comprueba la tabla antes, durante y después de retirar la principal en un laboratorio. Al recuperarse la principal, debe volver a preferirse. La distancia no reemplaza la selección por prefijo más largo.",
+    "source": "https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/15986-admin-distance.html",
+    "keywords": [
+      "ospf",
+      "distancia administrativa",
+      "conmutación",
+      "prefijo"
+    ]
+  },
+  {
+    "id": "floating-static-routing-advanced",
+    "topic": "floating-static-routing",
+    "title": "Alcanzabilidad, recursión y fallas no detectadas",
+    "level": "advanced",
+    "text": "Una falla remota puede dejar instalada la principal si la interfaz y el siguiente salto siguen alcanzables. El respaldo no se activa solo por asignar distancia mayor. Según la plataforma, usa seguimiento de conectividad para retirar la principal. Revisa resolución recursiva y retorno: el siguiente salto del respaldo podría resolverse por una ruta equivocada.",
+    "source": "https://www.cisco.com/c/en/us/support/docs/dial-access/floating-static-route/118263-technote-nexthop-00.html",
+    "keywords": [
+      "seguimiento",
+      "recursión",
+      "siguiente salto",
+      "retorno"
+    ]
   }
 ]

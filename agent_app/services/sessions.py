@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
 from agent_app.models.activities import PracticeExercise
 from agent_app.models.chat import ChatResponse, Quiz
-from mcp_learning_server.models import Topic, utc_now
+from mcp_learning_server.models import LearningLevel, Topic, utc_now
 
 
 class SessionModel(BaseModel):
@@ -44,6 +44,7 @@ class PendingEvaluation(SessionModel):
     topic: Topic
     quiz: Quiz
     attempt: int = Field(default=1, ge=1)
+    student_answers: list[str] = Field(default_factory=list)
 
 
 class PendingPractice(SessionModel):
@@ -56,6 +57,7 @@ class StoredConversation(SessionModel):
     student_id: str = Field(min_length=1, max_length=100)
     title: str = Field(min_length=1, max_length=100)
     topic: Topic
+    preferred_level: LearningLevel | None = None
     messages: list[ConversationMessage] = Field(default_factory=list)
     pending_evaluation: PendingEvaluation
     pending_practice: PendingPractice | None = None

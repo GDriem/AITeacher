@@ -119,7 +119,11 @@ AUTH_COOKIE_NAME = "ait_session"
 
 def _chat_request_fingerprint(payload: ChatRequest) -> str:
     canonical = json.dumps(
-        {"message": payload.message, "session_id": payload.session_id},
+        {
+            "message": payload.message,
+            "session_id": payload.session_id,
+            **({"level": payload.level.value} if payload.level is not None else {}),
+        },
         ensure_ascii=False,
         separators=(",", ":"),
         sort_keys=True,
