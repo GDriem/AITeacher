@@ -87,6 +87,27 @@ def test_routing_detects_extended_curriculum(
     assert detect_topic(message) == expected
 
 
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("Quiero aprender subredes", Topic.IP_SUBNETTING),
+        ("Cómo calculo subredes IPv4", Topic.IP_SUBNETTING),
+        ("Explícame redes", Topic.ROUTING_FUNDAMENTALS),
+        ("¿Qué es un router?", Topic.ROUTING_FUNDAMENTALS),
+        ("Explícame OSPF", Topic.OSPF),
+        ("Quiero aprender BGP", Topic.BGP),
+        ("Explícame las rutas estáticas flotantes", Topic.FLOATING_STATIC_ROUTING),
+        ("Explícame enrutamiento estático", Topic.STATIC_ROUTING),
+        ("Explícame las redes neuronales", Topic.MACHINE_LEARNING),
+    ],
+)
+def test_routing_detects_network_topics_by_whole_word(
+    message: str, expected: Topic
+) -> None:
+    # Las frases se comparan por palabra completa: "subredes" no debe activar "redes".
+    assert detect_topic(message) == expected
+
+
 def test_routing_rejects_missing_topic() -> None:
     with pytest.raises(ValueError, match="selecciona un tema"):
         detect_topic("Quiero aprender algo interesante")

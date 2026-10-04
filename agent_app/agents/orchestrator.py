@@ -494,7 +494,7 @@ def detect_topic(message: str) -> Topic:
     matches = [
         (len(phrase.split()), topic)
         for phrase, topic in _TOPIC_PHRASES.items()
-        if phrase and phrase in normalized
+        if phrase and f" {phrase} " in f" {normalized} "
     ]
     if not matches:
         raise ValueError(
