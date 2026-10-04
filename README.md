@@ -21,9 +21,10 @@ versionada cubre el [currículo de inglés](docs/english-curriculum.md),
 
 ## Capacidades
 
-- 27 temas y 58 lecciones curriculares, con fuente, materia, nivel y metadatos.
-- Dos materias: inteligencia artificial e inglés.
+- 34 temas y 79 lecciones curriculares, con fuente, materia, nivel y metadatos.
+- Tres materias: inteligencia artificial, inglés y redes.
 - Inglés escrito con saludos, vocabulario, gramática y conversación en tres niveles.
+- Redes con direccionamiento IP, subredes, enrutamiento estático y flotante, OSPF, BGP y diagnóstico.
 - Ingestión, almacenamiento y recuperación separados.
 - RAG léxico local, determinista y sin servicios externos.
 - Repositorio JSON atómico para progreso y evaluaciones.
@@ -33,7 +34,7 @@ versionada cubre el [currículo de inglés](docs/english-curriculum.md),
 - Pruebas unitarias y de integración sin credenciales cloud.
 - Google ADK 2.x con orquestador y tres subagentes especialistas.
 - FastAPI, chat, evaluación y trazabilidad sin chain-of-thought.
-- Explorador responsive de los 27 temas con filtros de materia, categoría y nivel.
+- Explorador responsive de los 34 temas con filtros de materia, categoría y nivel.
 - Ruta adaptativa con orden, prerrequisitos, motivos y cuatro estados por tema.
 - Dominio por tema y concepto con intentos, mejor puntaje y nivel independiente.
 - Conversaciones persistentes con recuperación de mensajes, tema y evaluación.

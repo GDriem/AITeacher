@@ -32,7 +32,7 @@ frontend/             UI React + TypeScript (Vite); FastAPI sirve `dist/` en `/`
 
 mcp_learning_server/  Servidor MCP remoto e independiente (FastMCP, Streamable HTTP)
   server.py             Punto de entrada ASGI, monta /mcp, /health y /admin
-  content/learning_content.json  Corpus propio: 58 lecciones
+  content/learning_content.json  Corpus propio: 79 lecciones
   curriculum.py         CURRICULUM: grafo acíclico de temas y prerrequisitos (fuente única)
   models.py             Modelos de dominio Pydantic (Topic, TopicCategory, TopicStatus, etc.)
   services/             ingestion.py, content_store.py (in-memory), retrieval.py (TF-IDF),
