@@ -429,11 +429,12 @@ async def test_tutor_receives_recent_history_and_evaluator_keeps_topic_answers(l
 
 @pytest.mark.asyncio
 async def test_tutor_and_evaluator_receive_only_recent_context(learning_service):
-    from agent_app.agents.orchestrator import (
+    from agent_app.agents.orchestrator import TUTOR_HISTORY_LIMIT
+    from agent_app.services.sessions import (
         EVALUATOR_ANSWERS_LIMIT,
-        TUTOR_HISTORY_LIMIT,
+        ConversationMessage,
+        MessageRole,
     )
-    from agent_app.services.sessions import ConversationMessage, MessageRole
 
     orchestrator = make_orchestrator(learning_service)
     chat = await orchestrator.chat(ChatRequest(student_id="recent", message="Enséñame embeddings"))
@@ -475,6 +476,27 @@ async def test_tutor_and_evaluator_receive_only_recent_context(learning_service)
     assert received["answers"] == [
         f"respuesta {index}" for index in range(3, EVALUATOR_ANSWERS_LIMIT + 3)
     ]
+
+
+@pytest.mark.asyncio
+async def test_persisted_answers_keep_only_recent_attempts(learning_service):
+    from agent_app.services.sessions import EVALUATOR_ANSWERS_LIMIT
+
+    orchestrator = make_orchestrator(learning_service)
+    chat = await orchestrator.chat(ChatRequest(student_id="bounded", message="Enséñame embeddings"))
+    answers = [
+        f"Respuesta {index}: un embedding es un vector de significado."
+        for index in range(EVALUATOR_ANSWERS_LIMIT + 3)
+    ]
+    for answer in answers:
+        await orchestrator.evaluate(
+            EvaluationRequest(student_id="bounded", session_id=chat.session_id, answer=answer)
+        )
+    session = orchestrator.sessions.get(chat.session_id, "bounded")
+    assert session.pending_evaluation.student_answers == answers[-EVALUATOR_ANSWERS_LIMIT:]
+    # La reconstrucción de sesiones heredadas asigna la lista y también se recorta.
+    session.pending_evaluation.student_answers = answers
+    assert session.pending_evaluation.student_answers == answers[-EVALUATOR_ANSWERS_LIMIT:]
 
 
 @pytest.mark.asyncio

@@ -41,8 +41,6 @@ from mcp_learning_server.services.retrieval import tokenize
 
 # Mensajes recientes que recibe el tutor; acota costo y latencia por turno.
 TUTOR_HISTORY_LIMIT = 12
-# Respuestas previas del alumno que recibe el evaluador como contexto.
-EVALUATOR_ANSWERS_LIMIT = 5
 
 
 class LearningOrchestrator:
@@ -287,7 +285,7 @@ class LearningOrchestrator:
             pending.quiz,
             request.answer,
             pending.attempt,
-            previous_answers=pending.student_answers[-EVALUATOR_ANSWERS_LIMIT:],
+            previous_answers=pending.student_answers,
         )
         session.pending_evaluation = PendingEvaluation(
             student_id=request.student_id,

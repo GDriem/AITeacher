@@ -13,11 +13,22 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+)
 
 from agent_app.models.activities import PracticeExercise
 from agent_app.models.chat import ChatResponse, Quiz
 from mcp_learning_server.models import LearningLevel, Topic, utc_now
+
+
+# Respuestas previas del alumno que se conservan y recibe el evaluador como contexto.
+EVALUATOR_ANSWERS_LIMIT = 5
 
 
 class SessionModel(BaseModel):
@@ -40,11 +51,19 @@ class ConversationMessage(SessionModel):
 
 
 class PendingEvaluation(SessionModel):
+    model_config = ConfigDict(validate_assignment=True)
+
     student_id: str
     topic: Topic
     quiz: Quiz
     attempt: int = Field(default=1, ge=1)
     student_answers: list[str] = Field(default_factory=list)
+
+    @field_validator("student_answers")
+    @classmethod
+    def _keep_recent_answers(cls, answers: list[str]) -> list[str]:
+        # Única fuente del recorte: la sesión persistida no crece con cada intento.
+        return answers[-EVALUATOR_ANSWERS_LIMIT:]
 
 
 class PendingPractice(SessionModel):
