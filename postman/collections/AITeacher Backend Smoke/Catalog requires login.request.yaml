@@ -1,0 +1,10 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/catalog/subjects'
+order: 3000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Catalog requires login', function () { pm.response.to.have.status(401);
+    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');
+    });

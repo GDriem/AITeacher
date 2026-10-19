@@ -1,0 +1,14 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/units'
+order: 1000
+headers:
+- key: Accept
+  value: application/json
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: 'pm.test(''Expected 200'', () => pm.response.to.have.status(200));
+
+    pm.test("Page contract", () => { const p = pm.response.json(); pm.expect(p.items).to.be.an("array");
+    pm.expect(p.limit).to.eql(50); });'

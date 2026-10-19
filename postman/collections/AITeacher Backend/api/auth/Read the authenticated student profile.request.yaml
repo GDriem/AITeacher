@@ -1,0 +1,16 @@
+$kind: http-request
+description: ''
+url: '{{baseUrl}}/api/auth/me'
+method: GET
+headers:
+- key: Accept
+  value: application/json
+settings: {}
+order: 3000
+auth:
+  type: noauth
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Expected success', () => pm.expect(pm.response.code).to.be.oneOf([200,
+    201, 204]));

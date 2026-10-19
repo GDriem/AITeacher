@@ -832,6 +832,7 @@ def create_app(
             # cliente Gemini Live, que es el recurso con costo.
             await websocket.accept()
             session_context = ""
+            session_topic = None
             session_id = websocket.query_params.get("session_id")
             if session_id:
                 try:
@@ -859,10 +860,13 @@ def create_app(
                             f"Última explicación del tutor: {last_explanation[:1_000]}"
                         )
                     session_context = " ".join(context_parts)
+                    session_topic = current_session.topic.value
                 except (KeyError, PermissionError, ValueError):
                     logger.warning("voice_session_context_unavailable")
             try:
-                bridge = GeminiLiveBridge(settings, session_context=session_context)
+                bridge = GeminiLiveBridge(
+                    settings, session_context=session_context, session_topic=session_topic
+                )
             except VoiceUnavailable as exc:
                 await websocket.send_json({"type": "unavailable", "message": str(exc)})
                 await websocket.close(code=4403)

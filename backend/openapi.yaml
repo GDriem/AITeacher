@@ -1,0 +1,2305 @@
+openapi: 3.0.3
+info:
+  title: AITeacher backend
+  version: 0.3.0
+  description: Milestone 2. PostgreSQL identity, catalog and immutable editorial unit
+    revisions. Independent host; does not replace Python or migrate production data.
+    Errors use ProblemDetails.
+servers:
+- url: http://localhost:5080
+  description: Local development
+tags:
+- name: Health
+  description: Host and database health
+- name: Identity
+  description: Google authentication and database sessions
+- name: Catalog
+  description: Authenticated reads; author-only writes
+- name: Editorial
+  description: Author-only editorial snapshots; authenticated students read active
+    publications.
+security:
+- sessionCookie: []
+paths:
+  /api/catalog/subjects:
+    get:
+      operationId: listSubjects
+      summary: List subjects
+      description: Authenticated shared editorial catalog, including unavailable entries.
+        Stable sort by sortOrder and id. Parent references are returned for client
+        grouping.
+      tags:
+      - Catalog
+      parameters:
+      - &id003
+        name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - &id004
+        name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: Catalog page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPage'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      operationId: createSubjects
+      summary: Create subjects
+      description: Author only. Slugs are unique globally for subjects/scales, within
+        subject for categories, within scale for levels and within category for topics.
+        Creates are not idempotent; a duplicate slug returns 409. Topics must reference
+        a category of the same subject.
+      tags:
+      - Catalog
+      parameters:
+      - &id001
+        name: X-CSRF-TOKEN
+        in: header
+        required: true
+        description: Fetch /api/auth/csrf, retain its cookie and send requestToken
+          here. Fetch again after login or changing identity.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryRequest'
+      responses:
+        '201':
+          description: Created catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+          headers:
+            Location:
+              description: New entry URL
+              schema:
+                type: string
+        '400':
+          description: Invalid input, parent or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Duplicate slug in this scope
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/subjects/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: &id002
+        type: string
+        format: uuid
+    get:
+      operationId: getSubjects
+      summary: Read a subjects entry
+      tags:
+      - Catalog
+      responses:
+        '200':
+          description: Catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      operationId: updateSubjects
+      summary: Update a subjects entry
+      description: Author only. Replaces name, slug, order and availability. Parent
+        references and scale purpose are immutable. Supply the last read version;
+        concurrent or stale saves return 409. No physical delete in this milestone.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEntryRequest'
+      responses:
+        '200':
+          description: Saved entry with incremented version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '400':
+          description: Invalid input or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version or duplicate slug
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/categories:
+    get:
+      operationId: listCategories
+      summary: List categories
+      description: Authenticated shared editorial catalog, including unavailable entries.
+        Stable sort by sortOrder and id. Parent references are returned for client
+        grouping.
+      tags:
+      - Catalog
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: Catalog page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPage'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      operationId: createCategories
+      summary: Create categories
+      description: Author only. Slugs are unique globally for subjects/scales, within
+        subject for categories, within scale for levels and within category for topics.
+        Creates are not idempotent; a duplicate slug returns 409. Topics must reference
+        a category of the same subject.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '201':
+          description: Created catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+          headers:
+            Location:
+              description: New entry URL
+              schema:
+                type: string
+        '400':
+          description: Invalid input, parent or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Duplicate slug in this scope
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/categories/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id002
+    get:
+      operationId: getCategories
+      summary: Read a categories entry
+      tags:
+      - Catalog
+      responses:
+        '200':
+          description: Catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      operationId: updateCategories
+      summary: Update a categories entry
+      description: Author only. Replaces name, slug, order and availability. Parent
+        references and scale purpose are immutable. Supply the last read version;
+        concurrent or stale saves return 409. No physical delete in this milestone.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEntryRequest'
+      responses:
+        '200':
+          description: Saved entry with incremented version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '400':
+          description: Invalid input or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version or duplicate slug
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/scales:
+    get:
+      operationId: listScales
+      summary: List scales
+      description: Authenticated shared editorial catalog, including unavailable entries.
+        Stable sort by sortOrder and id. Parent references are returned for client
+        grouping.
+      tags:
+      - Catalog
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: Catalog page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPage'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      operationId: createScales
+      summary: Create scales
+      description: Author only. Slugs are unique globally for subjects/scales, within
+        subject for categories, within scale for levels and within category for topics.
+        Creates are not idempotent; a duplicate slug returns 409. Topics must reference
+        a category of the same subject.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScaleRequest'
+      responses:
+        '201':
+          description: Created catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+          headers:
+            Location:
+              description: New entry URL
+              schema:
+                type: string
+        '400':
+          description: Invalid input, parent or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Duplicate slug in this scope
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/scales/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id002
+    get:
+      operationId: getScales
+      summary: Read a scales entry
+      tags:
+      - Catalog
+      responses:
+        '200':
+          description: Catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      operationId: updateScales
+      summary: Update a scales entry
+      description: Author only. Replaces name, slug, order and availability. Parent
+        references and scale purpose are immutable. Supply the last read version;
+        concurrent or stale saves return 409. No physical delete in this milestone.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEntryRequest'
+      responses:
+        '200':
+          description: Saved entry with incremented version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '400':
+          description: Invalid input or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version or duplicate slug
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/levels:
+    get:
+      operationId: listLevels
+      summary: List levels
+      description: Authenticated shared editorial catalog, including unavailable entries.
+        Stable sort by sortOrder and id. Parent references are returned for client
+        grouping.
+      tags:
+      - Catalog
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: Catalog page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPage'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      operationId: createLevels
+      summary: Create levels
+      description: Author only. Slugs are unique globally for subjects/scales, within
+        subject for categories, within scale for levels and within category for topics.
+        Creates are not idempotent; a duplicate slug returns 409. Topics must reference
+        a category of the same subject.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LevelRequest'
+      responses:
+        '201':
+          description: Created catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+          headers:
+            Location:
+              description: New entry URL
+              schema:
+                type: string
+        '400':
+          description: Invalid input, parent or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Duplicate slug in this scope
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/levels/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id002
+    get:
+      operationId: getLevels
+      summary: Read a levels entry
+      tags:
+      - Catalog
+      responses:
+        '200':
+          description: Catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      operationId: updateLevels
+      summary: Update a levels entry
+      description: Author only. Replaces name, slug, order and availability. Parent
+        references and scale purpose are immutable. Supply the last read version;
+        concurrent or stale saves return 409. No physical delete in this milestone.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEntryRequest'
+      responses:
+        '200':
+          description: Saved entry with incremented version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '400':
+          description: Invalid input or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version or duplicate slug
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/topics:
+    get:
+      operationId: listTopics
+      summary: List topics
+      description: Authenticated shared editorial catalog, including unavailable entries.
+        Stable sort by sortOrder and id. Parent references are returned for client
+        grouping.
+      tags:
+      - Catalog
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: Catalog page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPage'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      operationId: createTopics
+      summary: Create topics
+      description: Author only. Slugs are unique globally for subjects/scales, within
+        subject for categories, within scale for levels and within category for topics.
+        Creates are not idempotent; a duplicate slug returns 409. Topics must reference
+        a category of the same subject.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicRequest'
+      responses:
+        '201':
+          description: Created catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+          headers:
+            Location:
+              description: New entry URL
+              schema:
+                type: string
+        '400':
+          description: Invalid input, parent or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Duplicate slug in this scope
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/catalog/topics/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id002
+    get:
+      operationId: getTopics
+      summary: Read a topics entry
+      tags:
+      - Catalog
+      responses:
+        '200':
+          description: Catalog entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      operationId: updateTopics
+      summary: Update a topics entry
+      description: Author only. Replaces name, slug, order and availability. Parent
+        references and scale purpose are immutable. Supply the last read version;
+        concurrent or stale saves return 409. No physical delete in this milestone.
+      tags:
+      - Catalog
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEntryRequest'
+      responses:
+        '200':
+          description: Saved entry with incremented version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+        '400':
+          description: Invalid input or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Entry not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version or duplicate slug
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /health:
+    get:
+      operationId: getLiveness
+      summary: Liveness only
+      tags:
+      - Health
+      security: []
+      responses:
+        '200':
+          description: Healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+        '503':
+          description: Unhealthy
+          content:
+            text/plain:
+              schema:
+                type: string
+  /health/ready:
+    get:
+      operationId: getReadiness
+      summary: PostgreSQL reachable and all committed migrations applied
+      tags:
+      - Health
+      security: []
+      responses:
+        '200':
+          description: Healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+        '503':
+          description: Unhealthy
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/auth/csrf:
+    get:
+      operationId: getCsrf
+      summary: Create an antiforgery cookie and obtain its request token
+      tags:
+      - Identity
+      security: []
+      responses:
+        '200':
+          description: Retain cookie; send requestToken in X-CSRF-TOKEN on writes.
+            Refresh after login.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfToken'
+  /api/auth/google:
+    post:
+      operationId: googleLogin
+      summary: Exchange a Google ID token for a seven-day revocable session
+      description: 'Google signature, issuer, audience, expiration and verified email
+        are validated server-side. Author access comes only from configured Google
+        subjects. Session cookie ait_dotnet_session is HttpOnly, SameSite=Lax, Path=/api
+        and Secure outside Development. Existing session cookie is revoked on replacement.
+        No CORS is enabled: browser clients must use a same-origin reverse proxy.'
+      tags:
+      - Identity
+      security: []
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleLoginRequest'
+      responses:
+        '200':
+          description: Signed in; store Set-Cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+        '400':
+          description: Invalid body or CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Invalid Google credential
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '429':
+          description: Login rate limit exceeded
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Google unconfigured, timed out or unavailable; retry later
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/auth/me:
+    get:
+      operationId: getCurrentStudent
+      summary: Read the authenticated student profile
+      tags:
+      - Identity
+      responses:
+        '200':
+          description: Current student
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+        '401':
+          description: Invalid, expired or revoked session
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/auth/logout:
+    post:
+      operationId: logout
+      summary: Revoke the current session and remove its cookie
+      tags:
+      - Identity
+      parameters:
+      - *id001
+      responses:
+        '204':
+          description: Session revoked
+        '400':
+          description: Invalid CSRF token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/units:
+    get:
+      operationId: listUnits
+      tags:
+      - Editorial
+      summary: listUnits
+      description: Authenticated. Authors see latest revisions; students see active
+        published revisions only. Ordered by unit ID.
+      parameters:
+      - *id003
+      - *id004
+      - name: topicId
+        in: query
+        schema: &id005
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitPage'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      operationId: createUnit
+      tags:
+      - Editorial
+      summary: createUnit
+      description: Author only. Create a draft with revision 1. Topic must exist.
+        IDs and references are local to the revision. All arrays are required and
+        may be empty in a draft. Title/text must be nonblank. Total document JSON
+        is limited to 2 MB. Creates are not idempotent.
+      parameters:
+      - *id001
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitResponse'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version conflict or conflicting import. Reload before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUnitRequest'
+  /api/units/{unitId}:
+    get:
+      operationId: getUnit
+      tags:
+      - Editorial
+      summary: getUnit
+      description: Authors receive the latest immutable snapshot. Students receive
+        only the active publication, excluding assessments and private criteria. Missing/unpublished
+        units return 404 to students. Content is plain text; clients must not render
+        it as trusted HTML.
+      parameters:
+      - &id006
+        name: unitId
+        in: path
+        required: true
+        schema: *id005
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitResponse'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unit or revision missing or hidden from this caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/units/{unitId}/revisions:
+    get:
+      operationId: listUnitRevisions
+      tags:
+      - Editorial
+      summary: listUnitRevisions
+      description: Author only. Paginated immutable revision metadata ordered by number
+        descending; publishedAt records first publication.
+      parameters:
+      - *id006
+      - *id003
+      - *id004
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitRevisionPage'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version conflict or conflicting import. Reload before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unit or revision missing or hidden from this caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      operationId: createUnitRevision
+      tags:
+      - Editorial
+      summary: createUnitRevision
+      description: Author only. Append immutable snapshot; never updates an existing
+        revision. Requires current unit version, returns incremented version. Active
+        publication remains unchanged. Conflicts return 409 atomically.
+      parameters:
+      - *id006
+      - *id001
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitResponse'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version conflict or conflicting import. Reload before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unit or revision missing or hidden from this caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRevisionRequest'
+  /api/units/{unitId}/revisions/{revisionId}:
+    get:
+      operationId: getUnitRevision
+      tags:
+      - Editorial
+      summary: getUnitRevision
+      description: Author only, including historical unpublished/withdrawn snapshots.
+        Revision must belong to unit.
+      parameters:
+      - *id006
+      - &id007
+        name: revisionId
+        in: path
+        required: true
+        schema: *id005
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitResponse'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version conflict or conflicting import. Reload before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unit or revision missing or hidden from this caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/units/{unitId}/revisions/{revisionId}/publish:
+    post:
+      operationId: publishUnitRevision
+      tags:
+      - Editorial
+      summary: publishUnitRevision
+      description: Author only. Requires current unit version. Every objective needs
+        local concepts, reading, exercise and assessment coverage; all references
+        and prerequisite DAG are validated. Editorial assessments require prompt/private
+        criteria; executable grading arrives in milestone 3. Replaces the active publication
+        atomically; snapshots stay immutable. No RAG index or worker is activated.
+      parameters:
+      - *id006
+      - *id007
+      - *id001
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitResponse'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version conflict or conflicting import. Reload before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unit or revision missing or hidden from this caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitVersionRequest'
+  /api/units/{unitId}/unpublish:
+    post:
+      operationId: unpublishUnit
+      tags:
+      - Editorial
+      summary: unpublishUnit
+      description: Author only. Requires current unit version. Immediately clears
+        active publication for student reads; historical revisions remain available
+        to authors. Increments version even if already unpublished.
+      parameters:
+      - *id006
+      - *id001
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitResponse'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version conflict or conflicting import. Reload before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unit or revision missing or hidden from this caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitVersionRequest'
+  /api/units/import:
+    post:
+      operationId: importCorpus
+      tags:
+      - Editorial
+      summary: importCorpus
+      description: Author only. Atomic import of the existing learning_content.json
+        record format. Explicit source-topic to catalog-topic UUID mappings; catalog
+        is not modified. Preserves original record in revision origin. Creates reading-only
+        drafts without invented objectives or exercises. Repeating identical normalized
+        records and mappings skips existing units (even after editorial changes).
+        Changed record or mapping for an existing source ID returns 409 for the entire
+        batch. Duplicate source IDs, missing mappings and unknown topics return 400.
+        Fixed import namespace learning-content-v1.
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportCorpusResponse'
+        '400':
+          description: Invalid request, references, coverage or pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Authentication required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version conflict or conflicting import. Reload before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportCorpusRequest'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: ait_dotnet_session
+  schemas:
+    ProblemDetails:
+      type: object
+      properties:
+        status:
+          type: integer
+        title:
+          type: string
+        detail:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    EntryRequest:
+      type: object
+      required:
+      - name
+      - slug
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+          example: Matemáticas
+        slug:
+          type: string
+          maxLength: 80
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          example: matematicas
+        sortOrder:
+          type: integer
+          minimum: 0
+          default: 0
+        isAvailable:
+          type: boolean
+          default: true
+    EntryResponse:
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - sortOrder
+      - isAvailable
+      - version
+      properties:
+        id: *id002
+        name:
+          type: string
+        slug:
+          type: string
+        sortOrder:
+          type: integer
+        isAvailable:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        subjectId:
+          type: string
+          format: uuid
+          nullable: true
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+        scaleId:
+          type: string
+          format: uuid
+          nullable: true
+        levelId:
+          type: string
+          format: uuid
+          nullable: true
+        purpose:
+          type: string
+          nullable: true
+          enum:
+          - difficulty
+          - proficiency
+          - mastery
+          - null
+    UpdateEntryRequest:
+      type: object
+      required:
+      - version
+      - entry
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        entry:
+          $ref: '#/components/schemas/EntryRequest'
+    CategoryRequest:
+      type: object
+      required:
+      - subjectId
+      - entry
+      properties:
+        subjectId: *id002
+        entry:
+          $ref: '#/components/schemas/EntryRequest'
+    ScaleRequest:
+      type: object
+      required:
+      - purpose
+      - entry
+      properties:
+        purpose:
+          type: string
+          enum:
+          - difficulty
+          - proficiency
+          - mastery
+        entry:
+          $ref: '#/components/schemas/EntryRequest'
+    LevelRequest:
+      type: object
+      required:
+      - scaleId
+      - entry
+      properties:
+        scaleId: *id002
+        entry:
+          $ref: '#/components/schemas/EntryRequest'
+    TopicRequest:
+      type: object
+      required:
+      - subjectId
+      - categoryId
+      - entry
+      properties:
+        subjectId: *id002
+        categoryId: *id002
+        levelId:
+          type: string
+          format: uuid
+          nullable: true
+        entry:
+          $ref: '#/components/schemas/EntryRequest'
+    StudentProfile:
+      type: object
+      required:
+      - studentId
+      - email
+      - displayName
+      - canAuthor
+      properties:
+        studentId:
+          type: string
+          description: Same google- plus 32 lowercase SHA-256 hex characters used
+            by Python.
+        email:
+          type: string
+        displayName:
+          type: string
+        canAuthor:
+          type: boolean
+    CatalogPage:
+      type: object
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryResponse'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+    GoogleLoginRequest:
+      type: object
+      required:
+      - credential
+      properties:
+        credential:
+          type: string
+          minLength: 1
+          maxLength: 8192
+          description: Google GIS ID token, never an access token.
+    CsrfToken:
+      type: object
+      required:
+      - requestToken
+      properties:
+        requestToken:
+          type: string
+    UnitConcept:
+      type: object
+      required:
+      - id
+      - name
+      properties:
+        id: *id005
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+    UnitObjective:
+      type: object
+      required:
+      - id
+      - description
+      - conceptIds
+      properties:
+        id: *id005
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        conceptIds:
+          type: array
+          maxItems: 200
+          items: *id005
+    UnitReading:
+      type: object
+      required:
+      - id
+      - title
+      - text
+      - source
+      - objectiveIds
+      properties:
+        id: *id005
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        text:
+          type: string
+          minLength: 1
+          maxLength: 100000
+        source:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        objectiveIds:
+          type: array
+          maxItems: 200
+          items: *id005
+    UnitExercise:
+      type: object
+      required:
+      - id
+      - prompt
+      - objectiveIds
+      properties:
+        id: *id005
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        objectiveIds:
+          type: array
+          maxItems: 200
+          items: *id005
+    UnitAssessment:
+      type: object
+      required:
+      - id
+      - prompt
+      - privateCriteria
+      - objectiveIds
+      properties:
+        id: *id005
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        privateCriteria:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        objectiveIds:
+          type: array
+          maxItems: 200
+          items: *id005
+    UnitPrerequisite:
+      type: object
+      required:
+      - conceptId
+      - requiresConceptId
+      properties:
+        conceptId: *id005
+        requiresConceptId: *id005
+    UnitDocument:
+      type: object
+      required:
+      - title
+      - concepts
+      - objectives
+      - readings
+      - exercises
+      - assessments
+      - prerequisites
+      properties:
+        title: &id008
+          type: string
+          minLength: 1
+          maxLength: 150
+        concepts: &id009
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/UnitConcept'
+        objectives: &id010
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/UnitObjective'
+        readings: &id011
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/UnitReading'
+        exercises: &id012
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/UnitExercise'
+        assessments:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/UnitAssessment'
+        prerequisites: &id013
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/UnitPrerequisite'
+    StudentUnitDocument:
+      type: object
+      required:
+      - title
+      - concepts
+      - objectives
+      - readings
+      - exercises
+      - prerequisites
+      properties:
+        title: *id008
+        concepts: *id009
+        objectives: *id010
+        readings: *id011
+        exercises: *id012
+        prerequisites: *id013
+      additionalProperties: false
+    UnitVersionRequest:
+      type: object
+      required:
+      - version
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+    CreateUnitRequest:
+      type: object
+      required:
+      - topicId
+      - document
+      properties:
+        topicId: *id005
+        document:
+          $ref: '#/components/schemas/UnitDocument'
+    CreateRevisionRequest:
+      type: object
+      required:
+      - version
+      - document
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        document:
+          $ref: '#/components/schemas/UnitDocument'
+    UnitRevision:
+      type: object
+      required:
+      - id
+      - number
+      - createdAt
+      - createdBy
+      - origin
+      - document
+      properties:
+        id: *id005
+        number:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        origin:
+          type: object
+          nullable: true
+          additionalProperties: true
+        document:
+          oneOf:
+          - $ref: '#/components/schemas/UnitDocument'
+          - $ref: '#/components/schemas/StudentUnitDocument'
+    UnitResponse:
+      type: object
+      required:
+      - id
+      - topicId
+      - version
+      - publishedRevisionId
+      - revision
+      properties:
+        id: *id005
+        topicId: *id005
+        version:
+          type: integer
+          format: int64
+        publishedRevisionId:
+          type: string
+          format: uuid
+          nullable: true
+        revision:
+          $ref: '#/components/schemas/UnitRevision'
+    UnitSummary:
+      type: object
+      required:
+      - id
+      - topicId
+      - version
+      - publishedRevisionId
+      - revisionId
+      - number
+      - title
+      properties:
+        id: *id005
+        topicId: *id005
+        version:
+          type: integer
+          format: int64
+        publishedRevisionId:
+          type: string
+          format: uuid
+          nullable: true
+        revisionId: *id005
+        number:
+          type: integer
+        title:
+          type: string
+    UnitPage:
+      type: object
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitSummary'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+    UnitRevisionSummary:
+      type: object
+      required:
+      - id
+      - number
+      - createdAt
+      - createdBy
+      - publishedAt
+      properties:
+        id: *id005
+        number:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    UnitRevisionPage:
+      type: object
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitRevisionSummary'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+    CorpusRecord:
+      type: object
+      required:
+      - id
+      - topic
+      - title
+      - level
+      - text
+      - source
+      - keywords
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 150
+        topic:
+          type: string
+          minLength: 1
+          maxLength: 150
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        level:
+          type: string
+          minLength: 1
+          maxLength: 80
+        text:
+          type: string
+          minLength: 1
+          maxLength: 100000
+        source:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        keywords:
+          type: array
+          maxItems: 200
+          items:
+            type: string
+            minLength: 1
+            maxLength: 150
+    ImportCorpusRequest:
+      type: object
+      required:
+      - records
+      - topicMappings
+      properties:
+        records:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/CorpusRecord'
+        topicMappings:
+          type: object
+          additionalProperties: *id005
+    ImportCorpusResponse:
+      type: object
+      required:
+      - created
+      - skipped
+      - items
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            required:
+            - sourceId
+            - unitId
+            properties:
+              sourceId:
+                type: string
+              unitId: *id005

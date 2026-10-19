@@ -1,0 +1,41 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/units/{{unitId}}/revisions'
+order: 6000
+headers:
+- key: Accept
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+- key: Content-Type
+  value: application/json
+body:
+  type: json
+  content: "{\n  \"version\": {{unitVersion}},\n  \"document\": {\n    \"title\":\
+    \ \"Unidad de ejemplo\",\n    \"concepts\": [\n      {\n        \"id\": \"10000000-0000-0000-0000-000000000001\"\
+    ,\n        \"name\": \"Contexto\"\n      }\n    ],\n    \"objectives\": [\n  \
+    \    {\n        \"id\": \"10000000-0000-0000-0000-000000000002\",\n        \"\
+    description\": \"Explicar la diferencia entre contexto y persistencia\",\n   \
+    \     \"conceptIds\": [\n          \"10000000-0000-0000-0000-000000000001\"\n\
+    \        ]\n      }\n    ],\n    \"readings\": [\n      {\n        \"id\": \"\
+    10000000-0000-0000-0000-000000000003\",\n        \"title\": \"Memoria de trabajo\"\
+    ,\n        \"text\": \"El contexto es limitado; la aplicación persiste el historial.\"\
+    ,\n        \"source\": \"Currículo propio AITeacher\",\n        \"objectiveIds\"\
+    : [\n          \"10000000-0000-0000-0000-000000000002\"\n        ]\n      }\n\
+    \    ],\n    \"exercises\": [\n      {\n        \"id\": \"10000000-0000-0000-0000-000000000004\"\
+    ,\n        \"prompt\": \"Da un ejemplo de información que debe persistirse.\"\
+    ,\n        \"objectiveIds\": [\n          \"10000000-0000-0000-0000-000000000002\"\
+    \n        ]\n      }\n    ],\n    \"assessments\": [\n      {\n        \"id\"\
+    : \"10000000-0000-0000-0000-000000000005\",\n        \"prompt\": \"¿Qué ocurre\
+    \ con el historial fuera del contexto?\",\n        \"privateCriteria\": \"Distingue\
+    \ ventana de contexto de almacenamiento durable.\",\n        \"objectiveIds\"\
+    : [\n          \"10000000-0000-0000-0000-000000000002\"\n        ]\n      }\n\
+    \    ],\n    \"prerequisites\": []\n  }\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: 'pm.test(''Expected 201'', () => pm.response.to.have.status(201));
+
+    if (pm.response.code < 300) { const u = pm.response.json(); pm.collectionVariables.set("unitId",
+    u.id); pm.collectionVariables.set("revisionId", u.revision.id); pm.collectionVariables.set("unitVersion",
+    String(u.version)); }'

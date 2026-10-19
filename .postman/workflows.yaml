@@ -1,0 +1,4 @@
+workflows:
+  syncSpecToCollection:
+    - spec: ../backend/openapi.yaml
+      collection: ../postman/collections/AITeacher Backend

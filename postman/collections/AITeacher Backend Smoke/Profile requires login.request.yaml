@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/auth/me'
+order: 4000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Profile requires login', function () { pm.response.to.have.status(401);  });

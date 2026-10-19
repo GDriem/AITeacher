@@ -1,0 +1,28 @@
+$kind: collection
+name: AITeacher Backend
+description: 'Requests generated from backend/openapi.yaml and curated for cookie/CSRF
+  auth. Use a local Google credential; never commit it. Run csrf, login, then csrf
+  again. Retain the cookie jar. Catalog request bodies contain examples; replace parent
+  IDs and versions with saved response values. Automated unauthenticated checks live
+  in AITeacher Backend Smoke. Do not blindly regenerate over maintained scripts. Editorial
+  workflow: set topicId from catalog, create unit, publish, append revision, publish
+  again or unpublish. Successful writes capture unitId, revisionId and unitVersion.
+  Import requires explicit topicMappings; use the documented payload generator for
+  the complete corpus.'
+variables:
+- key: baseUrl
+  value: http://localhost:5080
+- key: csrfToken
+  value: ''
+- key: googleCredential
+  value: ''
+- key: topicId
+  value: ''
+- key: unitId
+  value: ''
+- key: revisionId
+  value: ''
+- key: unitVersion
+  value: '1'
+auth:
+  type: noauth

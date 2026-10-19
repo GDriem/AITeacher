@@ -246,6 +246,7 @@ __marimo__/
 !/docs/english-curriculum.md
 !/docs/google-auth-student-profiles-plan.md
 !/docs/react-frontend-migration-plan.md
+!/docs/backend-architecture-plan.md
 
 # React frontend build and test artifacts
 /frontend/node_modules/

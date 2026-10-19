@@ -13,7 +13,7 @@ from agent_app.services.learning_tools import LocalLearningTools
 class HoldingVoiceBridge:
     """Mantiene la sesión viva hasta que el cliente de prueba se desconecta."""
 
-    def __init__(self, settings: Settings, session_context: str = "") -> None:
+    def __init__(self, settings: Settings, session_context: str = "", session_topic: str | None = None) -> None:
         pass
 
     async def run(self, websocket: WebSocket) -> None:

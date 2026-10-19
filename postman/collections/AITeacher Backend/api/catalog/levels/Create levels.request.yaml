@@ -1,0 +1,38 @@
+$kind: http-request
+description: Author only. Slugs are unique globally for subjects/scales, within subject
+  for categories, within scale for levels and within category for topics. Creates
+  are not idempotent; a duplicate slug returns 409. Topics must reference a category
+  of the same subject.
+url: '{{baseUrl}}/api/catalog/levels'
+method: POST
+headers:
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+  disabled: false
+  description: (Required) Fetch /api/auth/csrf, retain its cookie and send requestToken
+    here. Fetch again after login or changing identity.
+- key: Content-Type
+  value: application/json
+- key: Accept
+  value: application/json
+body:
+  type: json
+  content: |
+    {
+      "scaleId": "edd45fe7-5856-3f5c-1a7e-795f1f570a69",
+      "entry": {
+        "name": "Matemáticas",
+        "slug": "matematicas",
+        "sortOrder": 0,
+        "isAvailable": true
+      }
+    }
+settings: {}
+order: 2000
+auth:
+  type: noauth
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Expected success', () => pm.expect(pm.response.code).to.be.oneOf([200,
+    201, 204]));

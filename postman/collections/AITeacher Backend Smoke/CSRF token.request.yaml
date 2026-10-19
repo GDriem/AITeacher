@@ -1,0 +1,9 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/auth/csrf'
+order: 5000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('CSRF token', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().requestToken).to.be.a('string').and.not.empty;
+    pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'); });

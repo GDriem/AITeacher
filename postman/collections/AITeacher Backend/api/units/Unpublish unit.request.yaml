@@ -1,0 +1,22 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/units/{{unitId}}/unpublish'
+order: 8000
+headers:
+- key: Accept
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+- key: Content-Type
+  value: application/json
+body:
+  type: json
+  content: "{\n  \"version\": {{unitVersion}}\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: 'pm.test(''Expected 200'', () => pm.response.to.have.status(200));
+
+    if (pm.response.code < 300) { const u = pm.response.json(); pm.collectionVariables.set("unitId",
+    u.id); pm.collectionVariables.set("revisionId", u.revision.id); pm.collectionVariables.set("unitVersion",
+    String(u.version)); }'
