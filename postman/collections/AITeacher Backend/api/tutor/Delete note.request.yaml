@@ -1,0 +1,13 @@
+$kind: http-request
+method: DELETE
+url: '{{baseUrl}}/api/tutor/notes/{{noteId}}?version={{noteVersion}}'
+order: 12000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Note removed",()=>pm.response.to.have.status(204));

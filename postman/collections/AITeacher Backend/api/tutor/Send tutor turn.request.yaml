@@ -1,0 +1,22 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/tutor/conversations/{{conversationId}}/turns'
+order: 4000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"requestId\": \"{{turnRequestId}}\",\n  \"version\": {{turnRequestVersion}},\n\
+    \  \"text\": \"Ayúdame a entender la idea principal.\"\n}"
+scripts:
+- type: beforeRequest
+  language: text/javascript
+  code: if(!pm.collectionVariables.get("turnRequestId")){pm.collectionVariables.set("turnRequestId",pm.variables.replaceIn("{{$guid}}"));pm.collectionVariables.set("turnRequestVersion",pm.collectionVariables.get("conversationVersion"));}
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Completed turn",()=>pm.response.to.have.status(200));if(pm.response.code===200){const
+    t=pm.response.json();pm.collectionVariables.set("conversationVersion",String(t.version));pm.collectionVariables.set("messageId",t.messages[1].id);pm.test("Bounded
+    context and safe projection",()=>{pm.expect(t.manifest.characterCount).to.be.at.most(24000);pm.expect(t.messages).to.have.lengthOf(2);pm.expect(pm.response.text()).not.to.include("privateCriteria");});}

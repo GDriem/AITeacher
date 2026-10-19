@@ -1,0 +1,17 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/tutor/notes'
+order: 7000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"kind\": \"savedMessage\",\n  \"conversationId\": \"{{conversationId}}\"\
+    ,\n  \"messageId\": \"{{messageId}}\"\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Message note created",()=>pm.response.to.have.status(201));

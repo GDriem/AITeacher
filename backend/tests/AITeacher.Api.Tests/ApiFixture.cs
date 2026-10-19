@@ -2,6 +2,7 @@ using AITeacher.Api.Features.Assessments;
 using AITeacher.Api.Features.Catalog;
 using AITeacher.Api.Features.Editorial;
 using AITeacher.Api.Features.Identity;
+using AITeacher.Api.Features.Tutor;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,7 @@ public sealed class TestGoogleVerifier : IGoogleIdentityVerifier
         });
 }
 
-public sealed class ApiHost(string connection, TestClock clock) : WebApplicationFactory<Program>
+public sealed class ApiHost(string connection, TestClock clock, IReadOnlyDictionary<string, string>? settings = null) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -39,6 +40,14 @@ public sealed class ApiHost(string connection, TestClock clock) : WebApplication
         builder.UseSetting("ConnectionStrings:Postgres", connection);
         builder.UseSetting("Authentication:GoogleClientId", "test-client");
         builder.UseSetting("Authentication:AuthorGoogleSubjects:0", "author-sub");
+        builder.UseSetting("AI:Capabilities:Tutor:Provider", "mock");
+        builder.UseSetting("AI:Capabilities:Tutor:Model", "mock-tutor-v1");
+        builder.UseSetting("AI:Capabilities:Tutor:StructuredOutput", "true");
+        builder.UseSetting("AI:Capabilities:Summary:Provider", "mock");
+        builder.UseSetting("AI:Capabilities:Summary:Model", "mock-summary-v1");
+        builder.UseSetting("AI:Capabilities:Summary:StructuredOutput", "true");
+        if (settings is not null)
+            foreach (var setting in settings) builder.UseSetting(setting.Key, setting.Value);
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IGoogleIdentityVerifier>();
@@ -72,6 +81,7 @@ public sealed class ApiFixture : IAsyncLifetime
         await scope.ServiceProvider.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<EditorialDbContext>().Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<AssessmentDbContext>().Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<TutorDbContext>().Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()

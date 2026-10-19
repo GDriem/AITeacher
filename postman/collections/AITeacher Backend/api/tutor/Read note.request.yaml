@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/tutor/notes/{{noteId}}'
+order: 10000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Note available",()=>pm.response.to.have.status(200));

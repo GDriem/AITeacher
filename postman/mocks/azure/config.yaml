@@ -1,0 +1,10 @@
+version: 1
+name: azure
+slug: azure
+protocol: http
+port: 4901
+interceptRequests: true
+scenarios:
+  - name: default
+    path: ../ai-providers/default.js
+    default: true

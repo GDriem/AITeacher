@@ -318,7 +318,49 @@ La colección autenticada fue validada estructuralmente; el flujo autenticado se
 ensayó en integración con el puerto Google de prueba. Google real y React siguen
 pendientes.
 
-No hay worker, consumidor del outbox, contexto IA, evaluadores por
+Hito 4: implementación de backend y regresión local (aceptación externa pendiente):
+
+- Esquema `conversations`, migración explícita y readiness. Conversaciones por
+  alumno, con revisión editorial y actividad fijadas; lectura, práctica y chat
+  usan únicamente la publicación activa mediante un contrato editorial seguro.
+- Turnos idempotentes por alumno/requestId, hash de cuerpo y versión, reserva
+  transaccional con bloqueo corto y lease. La llamada IA ocurre fuera de la
+  transacción; recuperar el lease invalida respuestas tardías. Mensajes paginados
+  inmutables también en SQL, con fuentes históricas y sin claves privadas.
+- ContextBuilder acotado: actividad, objetivos, hasta ocho mensajes y tres
+  fragmentos, con manifiesto de procedencia, versión de skill y cota de tokens
+  UTF-8. Se validan IDs citados y vigencia antes de guardar la respuesta; retirar
+  o cambiar la publicación impide nuevos turnos sobre esa revisión.
+- Apuntes del alumno, mensajes guardados y resúmenes explícitos, con procedencia
+  conservada al editar, concurrencia optimista y aislamiento incluso ante autores.
+  No generan evidencias ni dominio. Los resúmenes no son memoria automática.
+- Adaptadores HTTP Azure Chat Completions v1 y Gemini generateContent, selección
+  independiente para tutor y resúmenes, salida estructurada validada y timeout.
+  Sin fallback; IA deshabilitada por defecto y mock explícito solo en desarrollo.
+  Se fijan proveedor/modelo/configuración y registran latencia y tokens disponibles;
+  no hay tarifas configuradas para calcular costos.
+- OpenAPI y colecciones Postman actualizados; guía en `backend/TUTOR.md` y
+  simulaciones locales versionadas. No se han publicado recursos Postman.
+
+Validación del backend del hito 4: compilación sin advertencias ni errores,
+nueve pruebas de dominio y 46 de integración aprobadas. PostgreSQL real y
+simulaciones HTTP locales de ambos proveedores, con casos de 429, HTML de gateway,
+salida inválida, fuentes inventadas, conexión rechazada y timeout real de 30 segundos.
+Incluye persistencia tras reinicio, aislamiento, CSRF, notas con procedencia,
+inmutabilidad SQL, idempotencia, carreras y recuperación de leases, descarte de
+respuestas tardías y retiro durante generación. Trece aserciones smoke Postman
+aprobadas contra host HTTP real en base temporal, salida 0. OpenAPI y ambas
+colecciones validados sin incidencias. La colección autenticada solo se validó
+estructuralmente; el flujo autenticado se ejecutó en integración con Google sustituido.
+
+La regresión local valida contratos HTTP de ambos adaptadores contra simulaciones,
+no calidad pedagógica ni comunicación con Azure/Gemini reales. Quedan pendientes
+credenciales/deployments y regresión pedagógica real por modelo, Google real y
+conexión de React. La lectura/práctica se conecta al tutor por contrato API; no
+se afirma haber terminado el recorrido de producto en la UI. No hay streaming,
+voz ni recuperación vectorial en esta entrega.
+
+No hay worker, consumidor del outbox, evaluadores por
 rúbrica, grafo del alumno ni política de dominio implementados. Los conceptos y
 prerrequisitos editoriales son locales al snapshot; el grafo curricular compartido
 versionado sigue en el hito 5. No se han creado recursos Azure, modificado Firestore
@@ -328,24 +370,27 @@ como una migración de datos de producción.
 ## Retomar en otra sesión
 
 Consultar primero `git status`, este documento y `backend/README.md`. Los cambios
-locales preexistentes de voz, pruebas Python y README deben conservarse. El plan,
+locales existentes deben conservarse. El plan,
 el backend y las colecciones pueden seguir sin commit; no se presupone una rama
 limpia ni se preparan commits automáticamente.
 
 Para reproducir la validación, iniciar PostgreSQL con `backend/compose.yaml`,
 configurar `ConnectionStrings__Postgres`, compilar y ejecutar `--migrate`. Las
-pruebas requieren `AITEACHER_TEST_POSTGRES` con permiso CREATEDB; crean y eliminan
-solo su base aleatoria. Las instrucciones completas están en `backend/README.md`.
+pruebas requieren `AITEACHER_TEST_POSTGRES` con permiso CREATEDB y la simulación
+Postman local con `AITEACHER_TEST_AI_URL`; crean y eliminan solo su base aleatoria.
+Las instrucciones completas están en `backend/README.md`.
 
 Pendiente de aceptación externa del hito 1: probar login con Google real y el `sub`
 de un autor. La API está lista para ese ensayo; el frontend continúa en Python.
 Los hitos 2 y 3 están verificados localmente; consulte `backend/EDITORIAL.md`
-y `backend/ASSESSMENTS.md`. La entrega siguiente es el hito 4, tutor y apuntes. La selección de proveedores
-por capacidad sigue en el hito 4 y el despliegue/corte Azure en el 8.
+y `backend/ASSESSMENTS.md`. El backend del hito 4 está implementado con regresión
+local; consulte `backend/TUTOR.md` para configuración, simulaciones y aceptación
+externa pendiente. La entrega siguiente de backend es el hito 5, grafos. El
+despliegue/corte Azure sigue en el hito 8.
 
 Solicitud sugerida para continuar:
 
-> Lee docs/backend-architecture-plan.md, backend/README.md, backend/EDITORIAL.md
-> y backend/ASSESSMENTS.md. Conserva los cambios locales existentes y continúa con
-> el hito 4: tutor y apuntes, contexto acotado, fuentes verificables y proveedores
-> Azure/Gemini por capacidad. Conserva las revisiones e intentos históricos.
+> Lee docs/backend-architecture-plan.md, backend/README.md, backend/EDITORIAL.md,
+> backend/ASSESSMENTS.md y backend/TUTOR.md. Conserva los cambios locales existentes
+> y continúa con el hito 5: grafos con procedencia y corrección de inferencias.
+> Conserva las revisiones, intentos, conversaciones y fuentes históricas.

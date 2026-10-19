@@ -2,6 +2,7 @@ using AITeacher.Api.Features.Assessments;
 using AITeacher.Api.Features.Catalog;
 using AITeacher.Api.Features.Editorial;
 using AITeacher.Api.Features.Identity;
+using AITeacher.Api.Features.Tutor;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -17,7 +18,9 @@ public sealed class PostgresReadiness(IServiceScopeFactory scopes) : IHealthChec
             if (!await catalog.Database.CanConnectAsync(cancellationToken)) return HealthCheckResult.Unhealthy();
             var editorial = scope.ServiceProvider.GetRequiredService<EditorialDbContext>();
             var assessments = scope.ServiceProvider.GetRequiredService<AssessmentDbContext>();
-            if ((await assessments.Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
+            var tutor = scope.ServiceProvider.GetRequiredService<TutorDbContext>();
+            if ((await tutor.Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
+                (await assessments.Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
                 (await editorial.Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
                 (await identity.Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
                 (await catalog.Database.GetPendingMigrationsAsync(cancellationToken)).Any()) return HealthCheckResult.Unhealthy();

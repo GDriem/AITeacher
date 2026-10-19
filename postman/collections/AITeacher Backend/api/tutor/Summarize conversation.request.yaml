@@ -1,0 +1,17 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/tutor/notes'
+order: 8000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"kind\": \"summary\",\n  \"conversationId\": \"{{conversationId}}\"\
+    \n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Summary has provenance",()=>{pm.response.to.have.status(201);pm.expect(pm.response.json().origin.manifest.messageIds.length).to.be.above(0);});

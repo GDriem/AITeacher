@@ -2,6 +2,7 @@ using AITeacher.Api.Features.Assessments;
 using AITeacher.Api.Features.Catalog;
 using AITeacher.Api.Features.Editorial;
 using AITeacher.Api.Features.Identity;
+using AITeacher.Api.Features.Tutor;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,14 @@ builder.Services.AddDbContext<EditorialDbContext>(options => options.UseNpgsql(c
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "content")));
 builder.Services.AddDbContext<AssessmentDbContext>(options => options.UseNpgsql(connection,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "assessments")));
+builder.Services.AddDbContext<TutorDbContext>(options => options.UseNpgsql(connection,
+    postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "conversations")));
+builder.Services.AddScoped<ITutorContent, TutorContent>();
+builder.Services.AddScoped<TutorService>();
+builder.Services.AddSingleton<ContextBuilder>();
+builder.Services.AddScoped<TutorProviders>();
+builder.Services.AddHttpClient("tutor-provider", client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<IAssessmentCurriculum, AssessmentCurriculum>();
 builder.Services.AddScoped<AssessmentService>();
 builder.Services.AddScoped<ITopicCatalog, TopicCatalog>();
@@ -56,6 +65,7 @@ if (args.Contains("--migrate", StringComparer.Ordinal))
     await scope.ServiceProvider.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<EditorialDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<AssessmentDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<TutorDbContext>().Database.MigrateAsync();
     return;
 }
 app.UseExceptionHandler();
@@ -89,6 +99,7 @@ app.MapIdentity();
 app.MapCatalog();
 app.MapEditorial();
 app.MapAssessments();
+app.MapTutor();
 app.Run();
 
 public partial class Program;

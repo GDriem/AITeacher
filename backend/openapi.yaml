@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
   title: AITeacher backend
-  version: 0.4.0
-  description: Milestone 3. PostgreSQL identity, catalog, immutable editorial revisions
-    and closed assessments with versioned questions, definitions and idempotent attempts.
+  version: 0.5.0
+  description: Milestone 4. PostgreSQL identity, catalog, editorial revisions, closed
+    assessments, private tutor conversations and notes with bounded contexts.
     Independent host; does not replace Python or migrate production data.
     Errors use ProblemDetails.
 servers:
@@ -21,6 +21,8 @@ tags:
 - name: Editorial
   description: Author-only editorial snapshots; authenticated students read active
     publications.
+- name: Tutor
+  description: Private tutor, verified editorial sources and notes; providers by capability.
 security:
 - sessionCookie: []
 paths:
@@ -2289,6 +2291,720 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SubmitAssessmentAttempt'
+  /api/tutor/conversations:
+    post:
+      operationId: createTutorConversation
+      summary: createTutorConversation
+      tags:
+      - Tutor
+      description: Student-owned conversation pinned to the active publication. Reading/practice
+        require a matching reading/exercise activityId; chat requires no activityId.
+        Authors have no access to other students.
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorConversation'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConversation'
+    get:
+      operationId: listTutorConversations
+      summary: listTutorConversations
+      tags:
+      - Tutor
+      description: Own conversations, createdAt descending then id. Historical publications
+        remain visible.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorConversationPage'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/tutor/conversations/{id}:
+    get:
+      operationId: readTutorConversation
+      summary: readTutorConversation
+      tags:
+      - Tutor
+      description: Own conversation and reservation version. An active turn must be
+        retried using its original request.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorConversation'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/tutor/conversations/{id}/messages:
+    get:
+      operationId: listTutorMessages
+      summary: listTutorMessages
+      tags:
+      - Tutor
+      description: Own immutable messages by ascending sequence. Failed or pending
+        turns can have a user message without an assistant. Historical sources retained
+        after withdrawal.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorMessagePage'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/tutor/conversations/{id}/turns:
+    post:
+      operationId: createTutorTurn
+      summary: createTutorTurn
+      tags:
+      - Tutor
+      description: 'Synchronous bounded tutor. requestId unique per student; identical
+        replay returns completed result even if publication subsequently changes.
+        Different input/version with same requestId is 409. Reservation increments
+        conversation version once. Pending lease: 409; expired lease: retry same request.
+        Calls outside transactions; external call may repeat after a crash. Publication
+        must still be active and pinned. Sources validated against provided excerpts.
+        No tools, streaming or grading; no provider fallback.'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorTurnResult'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTutorTurn'
+  /api/tutor/notes:
+    post:
+      operationId: createTutorNote
+      summary: createTutorNote
+      tags:
+      - Tutor
+      description: 'student: text, optional owned conversationId, no messageId. savedMessage:
+        conversationId/messageId, no text. summary: conversationId only, up to eight
+        completed messages; generated note records manifest and provider. Saving never
+        grants mastery. Creation is not idempotent.'
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorNote'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTutorNote'
+    get:
+      operationId: listTutorNotes
+      summary: listTutorNotes
+      tags:
+      - Tutor
+      description: Own notes by createdAt descending then id.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorNotePage'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/tutor/notes/{id}:
+    get:
+      operationId: readTutorNote
+      summary: readTutorNote
+      tags:
+      - Tutor
+      description: Own note including preserved origin.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorNote'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateTutorNote
+      summary: updateTutorNote
+      tags:
+      - Tutor
+      description: Optimistic concurrency. Only text changes; kind and original provenance
+        remain.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorNote'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTutorNote'
+    delete:
+      operationId: deleteTutorNote
+      summary: deleteTutorNote
+      tags:
+      - Tutor
+      description: Delete own note with current version. Conversation history is retained.
+      responses:
+        '204':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum:
+                - no-store
+        '400':
+          description: Invalid data, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Version, publication, lease or requestId conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '502':
+          description: Invalid provider output or unverifiable source IDs
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Capability unconfigured, disabled or provider unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
 components:
   securitySchemes:
     sessionCookie:
@@ -3408,3 +4124,398 @@ components:
           minimum: 0
           maximum: 1
       additionalProperties: false
+    CreateConversation:
+      type: object
+      properties:
+        unitId:
+          type: string
+          format: uuid
+        mode:
+          type: string
+          enum:
+          - chat
+          - reading
+          - practice
+          default: chat
+        activityId:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - unitId
+    TutorConversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        unitId:
+          type: string
+          format: uuid
+        revisionId:
+          type: string
+          format: uuid
+        mode:
+          type: string
+          enum:
+          - chat
+          - reading
+          - practice
+        activityId:
+          type: string
+          format: uuid
+          nullable: true
+        version:
+          type: integer
+          format: int64
+        activeTurnId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - unitId
+      - revisionId
+      - mode
+      - activityId
+      - version
+      - activeTurnId
+      - createdAt
+    CreateTutorTurn:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        text:
+          type: string
+          minLength: 1
+          maxLength: 4000
+      required:
+      - requestId
+      - version
+      - text
+    TutorSource:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        unitId:
+          type: string
+          format: uuid
+        revisionId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        source:
+          type: string
+        excerpt:
+          type: string
+          maxLength: 2000
+      required:
+      - id
+      - unitId
+      - revisionId
+      - title
+      - source
+      - excerpt
+    TutorMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        turnId:
+          type: string
+          format: uuid
+        sequence:
+          type: integer
+          format: int64
+        role:
+          type: string
+          enum:
+          - user
+          - assistant
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/TutorSource'
+      required:
+      - id
+      - turnId
+      - sequence
+      - role
+      - text
+      - createdAt
+      - sources
+    TutorProvider:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum:
+          - mock
+          - azure
+          - gemini
+        model:
+          type: string
+        configurationVersion:
+          type: string
+        structuredOutput:
+          type: boolean
+      required:
+      - provider
+      - model
+      - configurationVersion
+      - structuredOutput
+    ContextManifest:
+      type: object
+      properties:
+        skillVersion:
+          type: string
+        characterCount:
+          type: integer
+          maximum: 24000
+        utf8TokenUpperBound:
+          type: integer
+        messageIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        sourceIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        revisionId:
+          type: string
+          format: uuid
+          nullable: true
+        capability:
+          type: string
+          enum:
+          - Tutor
+          - Summary
+        truncated:
+          type: boolean
+      required:
+      - skillVersion
+      - characterCount
+      - utf8TokenUpperBound
+      - messageIds
+      - sourceIds
+      - revisionId
+      - capability
+      - truncated
+    TutorTurnResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        requestId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum:
+          - completed
+        version:
+          type: integer
+          format: int64
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TutorMessage'
+        provider:
+          $ref: '#/components/schemas/TutorProvider'
+        manifest:
+          $ref: '#/components/schemas/ContextManifest'
+        inputTokens:
+          type: integer
+          format: int64
+          nullable: true
+        outputTokens:
+          type: integer
+          format: int64
+          nullable: true
+        latencyMs:
+          type: integer
+          format: int64
+          nullable: true
+      required:
+      - id
+      - conversationId
+      - requestId
+      - state
+      - version
+      - messages
+      - provider
+      - manifest
+      - inputTokens
+      - outputTokens
+      - latencyMs
+    CreateTutorNote:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+          - student
+          - savedMessage
+          - summary
+        text:
+          type: string
+          minLength: 1
+          maxLength: 12000
+          nullable: true
+        conversationId:
+          type: string
+          format: uuid
+          nullable: true
+        messageId:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - kind
+    UpdateTutorNote:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        text:
+          type: string
+          minLength: 1
+          maxLength: 12000
+      required:
+      - version
+      - text
+    TutorNote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+          - student
+          - savedMessage
+          - summary
+        text:
+          type: string
+        conversationId:
+          type: string
+          format: uuid
+          nullable: true
+        messageId:
+          type: string
+          format: uuid
+          nullable: true
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        origin:
+          type: object
+          description: 'Immutable origin. Student: empty; savedMessage: messageId and
+            sources; summary: manifest, provider, token counts. Edits preserve origin.'
+      required:
+      - id
+      - kind
+      - text
+      - conversationId
+      - messageId
+      - version
+      - createdAt
+      - updatedAt
+      - origin
+    TutorConversationPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TutorConversation'
+        total:
+          type: integer
+          format: int64
+        offset:
+          type: integer
+          format: int64
+        limit:
+          type: integer
+          format: int64
+      required:
+      - items
+      - total
+      - offset
+      - limit
+    TutorMessagePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TutorMessage'
+        total:
+          type: integer
+          format: int64
+        offset:
+          type: integer
+          format: int64
+        limit:
+          type: integer
+          format: int64
+      required:
+      - items
+      - total
+      - offset
+      - limit
+    TutorNotePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TutorNote'
+        total:
+          type: integer
+          format: int64
+        offset:
+          type: integer
+          format: int64
+        limit:
+          type: integer
+          format: int64
+      required:
+      - items
+      - total
+      - offset
+      - limit

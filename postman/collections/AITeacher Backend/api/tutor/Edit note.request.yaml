@@ -1,0 +1,17 @@
+$kind: http-request
+method: PUT
+url: '{{baseUrl}}/api/tutor/notes/{{noteId}}'
+order: 11000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"version\": {{noteVersion}},\n  \"text\": \"Mi explicación corregida.\"\
+    \n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Note updated",()=>pm.response.to.have.status(200));if(pm.response.code===200)pm.collectionVariables.set("noteVersion",String(pm.response.json().version));
