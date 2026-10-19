@@ -1,3 +1,4 @@
+using AITeacher.Api.Features.Assessments;
 using AITeacher.Api.Features.Catalog;
 using AITeacher.Api.Features.Editorial;
 using AITeacher.Api.Features.Identity;
@@ -70,6 +71,7 @@ public sealed class ApiFixture : IAsyncLifetime
         await scope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<EditorialDbContext>().Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<AssessmentDbContext>().Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()

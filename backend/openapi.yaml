@@ -1,9 +1,10 @@
 openapi: 3.0.3
 info:
   title: AITeacher backend
-  version: 0.3.0
-  description: Milestone 2. PostgreSQL identity, catalog and immutable editorial unit
-    revisions. Independent host; does not replace Python or migrate production data.
+  version: 0.4.0
+  description: Milestone 3. PostgreSQL identity, catalog, immutable editorial revisions
+    and closed assessments with versioned questions, definitions and idempotent attempts.
+    Independent host; does not replace Python or migrate production data.
     Errors use ProblemDetails.
 servers:
 - url: http://localhost:5080
@@ -15,6 +16,8 @@ tags:
   description: Google authentication and database sessions
 - name: Catalog
   description: Authenticated reads; author-only writes
+- name: Assessments
+  description: Immutable closed questions and definitions; student-owned attempts.
 - name: Editorial
   description: Author-only editorial snapshots; authenticated students read active
     publications.
@@ -1701,6 +1704,591 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ImportCorpusRequest'
+  /api/assessments/questions:
+    post:
+      operationId: createQuestionRevision
+      summary: createQuestionRevision
+      tags:
+      - Assessments
+      description: Author only. Appends an immutable snapshot. Reuse resource id with
+        the next number; revisions start at 1. Concurrent appends return 409. References
+        objectives and concepts of a published editorial revision.
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionRevision'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionRevisionRequest'
+    get:
+      operationId: listQuestionRevisions
+      summary: listQuestionRevisions
+      tags:
+      - Assessments
+      description: Author only. Paged snapshots ordered by resourceId then descending
+        number. Includes private keys for authors.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionRevisionPage'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/assessments/questions/{id}:
+    get:
+      operationId: getQuestionRevision
+      summary: getQuestionRevision
+      tags:
+      - Assessments
+      description: Author only. Read immutable revision by revision ID, including private
+        authoring document.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionRevision'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/assessments/definitions:
+    post:
+      operationId: createDefinitionRevision
+      summary: createDefinitionRevision
+      tags:
+      - Assessments
+      description: Author only. Appends an immutable snapshot. Reuse resource id with
+        the next number; revisions start at 1. Concurrent appends return 409. Immediately
+        available. Pins an explicit ordered composition of question revisions with complete
+        objective coverage in one published editorial revision.
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefinitionRevision'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefinitionRevisionRequest'
+    get:
+      operationId: listDefinitionRevisions
+      summary: listDefinitionRevisions
+      tags:
+      - Assessments
+      description: Authenticated. Paged snapshots ordered by resourceId then descending
+        number. Public policy metadata only, for all revisions; no question IDs or private
+        keys.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefinitionRevisionPage'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/assessments/definitions/{id}:
+    get:
+      operationId: getDefinitionRevision
+      summary: getDefinitionRevision
+      tags:
+      - Assessments
+      description: Author only. Read immutable revision by revision ID, including private
+        authoring document.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefinitionRevision'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/assessments/attempts:
+    post:
+      operationId: startAttempt
+      summary: startAttempt
+      tags:
+      - Assessments
+      description: 'Authenticated. Server pins student, definition revision, question
+        order and deadlines. Request ID is unique per student. Replays return the same
+        attempt even after limit/expiry. Reusing a request ID with another definition
+        returns 409. Limits span all revisions of the definition and count expired attempts.
+        Historical published editorial revisions remain assessable. No keys or scores
+        before submission. Responses use Cache-Control: no-store.'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentAttempt'
+        '200':
+          description: Idempotent replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentAttempt'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartAssessmentAttempt'
+  /api/assessments/attempts/{id}:
+    get:
+      operationId: getAttempt
+      summary: getAttempt
+      tags:
+      - Assessments
+      description: 'Authenticated. Owner only; all other users, including authors, receive
+        404. Server computes expiration. Keys are never exposed. Feedback scores appear
+        only after submission when policy permits. Cache-Control: no-store.'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentAttempt'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/assessments/attempts/{id}/submit:
+    post:
+      operationId: submitAttempt
+      summary: submitAttempt
+      tags:
+      - Assessments
+      description: 'Authenticated. Owner only. Omitted questions count as unanswered.
+        Unknown/duplicate questions or options and invalid cardinality return 400 without
+        writes. Expired attempts return 409. Answers are normalized by fixed question
+        order and sorted options: identical replay returns the persisted result; changed
+        answers return 409. Submission, scores and evidence outbox events commit once
+        atomically. Each question weighs equally; selecting all multiple-choice options
+        scores zero. No keys in responses. Never feedback hides aggregate and per-question
+        scores. Cache-Control: no-store.'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentAttempt'
+        '400':
+          description: Invalid input, references or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author role required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Resource unavailable to caller
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Revision conflict, retry conflict, attempt limit or expiration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: PostgreSQL unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Obtain /api/auth/csrf after login and retain cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAssessmentAttempt'
 components:
   securitySchemes:
     sessionCookie:
@@ -2303,3 +2891,520 @@ components:
               sourceId:
                 type: string
               unitId: *id005
+    AssessmentOption:
+      type: object
+      required:
+      - id
+      - text
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+      additionalProperties: false
+    ClosedQuestionDocument:
+      type: object
+      required:
+      - unitId
+      - unitRevisionId
+      - objectiveIds
+      - conceptIds
+      - type
+      - prompt
+      - options
+      - scoringPolicy
+      - correctOptionIds
+      properties:
+        unitId:
+          type: string
+          format: uuid
+        unitRevisionId:
+          type: string
+          format: uuid
+        objectiveIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 200
+        conceptIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 200
+        type:
+          type: string
+          enum:
+          - singleChoice
+          - multipleChoice
+          - trueFalse
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentOption'
+          minItems: 2
+          maxItems: 50
+        scoringPolicy:
+          type: string
+          enum:
+          - exactMatch
+          - partialCredit
+        correctOptionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 200
+      additionalProperties: false
+    AssessmentDefinitionDocument:
+      type: object
+      required:
+      - title
+      - unitId
+      - unitRevisionId
+      - objectiveIds
+      - questionRevisionIds
+      - mode
+      - timeLimitMinutes
+      - maxAttempts
+      - feedback
+      - assistance
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        unitId:
+          type: string
+          format: uuid
+        unitRevisionId:
+          type: string
+          format: uuid
+        objectiveIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 200
+        questionRevisionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 100
+          minItems: 1
+        mode:
+          type: string
+          enum:
+          - assessment
+          - practice
+        timeLimitMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        maxAttempts:
+          type: integer
+          minimum: 1
+          maximum: 100
+        feedback:
+          type: string
+          enum:
+          - afterSubmission
+          - never
+        assistance:
+          type: string
+          enum:
+          - none
+      additionalProperties: false
+    QuestionRevisionRequest:
+      type: object
+      required:
+      - id
+      - number
+      - document
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          minimum: 1
+        document:
+          $ref: '#/components/schemas/ClosedQuestionDocument'
+      additionalProperties: false
+    QuestionRevision:
+      type: object
+      required:
+      - id
+      - resourceId
+      - number
+      - createdAt
+      - createdBy
+      - document
+      properties:
+        id:
+          type: string
+          format: uuid
+        resourceId:
+          type: string
+          format: uuid
+        number:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        document:
+          $ref: '#/components/schemas/ClosedQuestionDocument'
+      additionalProperties: false
+    DefinitionRevisionRequest:
+      type: object
+      required:
+      - id
+      - number
+      - document
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          minimum: 1
+        document:
+          $ref: '#/components/schemas/AssessmentDefinitionDocument'
+      additionalProperties: false
+    DefinitionRevision:
+      type: object
+      required:
+      - id
+      - resourceId
+      - number
+      - createdAt
+      - createdBy
+      - document
+      properties:
+        id:
+          type: string
+          format: uuid
+        resourceId:
+          type: string
+          format: uuid
+        number:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        document:
+          $ref: '#/components/schemas/AssessmentDefinitionDocument'
+      additionalProperties: false
+    AssessmentDefinitionSummary:
+      type: object
+      required:
+      - id
+      - resourceId
+      - number
+      - title
+      - unitId
+      - unitRevisionId
+      - objectiveIds
+      - mode
+      - timeLimitMinutes
+      - maxAttempts
+      - feedback
+      - assistance
+      - questionCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        resourceId:
+          type: string
+          format: uuid
+        number:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        unitId:
+          type: string
+          format: uuid
+        unitRevisionId:
+          type: string
+          format: uuid
+        objectiveIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 200
+        mode:
+          type: string
+          enum:
+          - assessment
+          - practice
+        timeLimitMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        maxAttempts:
+          type: integer
+          minimum: 1
+          maximum: 100
+        feedback:
+          type: string
+          enum:
+          - afterSubmission
+          - never
+        assistance:
+          type: string
+          enum:
+          - none
+        questionCount:
+          type: integer
+      additionalProperties: false
+    QuestionRevisionPage:
+      type: object
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionRevision'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      additionalProperties: false
+    DefinitionRevisionPage:
+      type: object
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentDefinitionSummary'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      additionalProperties: false
+    StartAssessmentAttempt:
+      type: object
+      required:
+      - definitionRevisionId
+      - requestId
+      properties:
+        definitionRevisionId:
+          type: string
+          format: uuid
+        requestId:
+          type: string
+          format: uuid
+      additionalProperties: false
+    AssessmentAnswer:
+      type: object
+      required:
+      - questionRevisionId
+      - selectedOptionIds
+      properties:
+        questionRevisionId:
+          type: string
+          format: uuid
+        selectedOptionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 200
+      additionalProperties: false
+    SubmitAssessmentAttempt:
+      type: object
+      required:
+      - answers
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentAnswer'
+      additionalProperties: false
+    AssessmentScore:
+      type: object
+      required:
+      - questionRevisionId
+      - fraction
+      - isCorrect
+      properties:
+        questionRevisionId:
+          type: string
+          format: uuid
+        fraction:
+          type: number
+          minimum: 0
+          maximum: 1
+        isCorrect:
+          type: boolean
+      additionalProperties: false
+    StudentAssessmentQuestion:
+      type: object
+      required:
+      - revisionId
+      - questionId
+      - number
+      - objectiveIds
+      - conceptIds
+      - type
+      - prompt
+      - options
+      - scoringPolicy
+      properties:
+        revisionId:
+          type: string
+          format: uuid
+        questionId:
+          type: string
+          format: uuid
+        number:
+          type: integer
+        objectiveIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 200
+        conceptIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+          maxItems: 200
+        type:
+          type: string
+          enum:
+          - singleChoice
+          - multipleChoice
+          - trueFalse
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentOption'
+          minItems: 2
+          maxItems: 50
+        scoringPolicy:
+          type: string
+          enum:
+          - exactMatch
+          - partialCredit
+      additionalProperties: false
+    AssessmentAttempt:
+      type: object
+      required:
+      - id
+      - definitionRevisionId
+      - startedAt
+      - expiresAt
+      - submittedAt
+      - status
+      - title
+      - mode
+      - feedback
+      - assistance
+      - questions
+      - answers
+      - scores
+      - fraction
+      properties:
+        id:
+          type: string
+          format: uuid
+        definitionRevisionId:
+          type: string
+          format: uuid
+        startedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        submittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum:
+          - inProgress
+          - submitted
+          - expired
+        title:
+          type: string
+        mode:
+          type: string
+          enum:
+          - assessment
+          - practice
+        feedback:
+          type: string
+          enum:
+          - afterSubmission
+          - never
+        assistance:
+          type: string
+          enum:
+          - none
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentAssessmentQuestion'
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentAnswer'
+          nullable: true
+        scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentScore'
+          nullable: true
+        fraction:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+      additionalProperties: false

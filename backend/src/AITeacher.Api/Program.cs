@@ -1,3 +1,4 @@
+using AITeacher.Api.Features.Assessments;
 using AITeacher.Api.Features.Catalog;
 using AITeacher.Api.Features.Editorial;
 using AITeacher.Api.Features.Identity;
@@ -20,6 +21,10 @@ builder.Services.AddDbContext<CatalogDbContext>(options => options.UseNpgsql(con
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "curriculum")));
 builder.Services.AddDbContext<EditorialDbContext>(options => options.UseNpgsql(connection,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "content")));
+builder.Services.AddDbContext<AssessmentDbContext>(options => options.UseNpgsql(connection,
+    postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "assessments")));
+builder.Services.AddScoped<IAssessmentCurriculum, AssessmentCurriculum>();
+builder.Services.AddScoped<AssessmentService>();
 builder.Services.AddScoped<ITopicCatalog, TopicCatalog>();
 builder.Services.AddScoped<EditorialService>();
 builder.Services.AddScoped<CorpusImporter>();
@@ -50,6 +55,7 @@ if (args.Contains("--migrate", StringComparer.Ordinal))
     await scope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<EditorialDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<AssessmentDbContext>().Database.MigrateAsync();
     return;
 }
 app.UseExceptionHandler();
@@ -82,6 +88,7 @@ app.MapHealthChecks("/health/ready", new() { Predicate = check => check.Tags.Con
 app.MapIdentity();
 app.MapCatalog();
 app.MapEditorial();
+app.MapAssessments();
 app.Run();
 
 public partial class Program;

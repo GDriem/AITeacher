@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../AITeacher.Modules.Assessments/AITeacher.Modules.Assessments.csproj" />
     <ProjectReference Include="../AITeacher.Modules.Curriculum/AITeacher.Modules.Curriculum.csproj" />
   </ItemGroup>
 </Project>

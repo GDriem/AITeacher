@@ -1,0 +1,23 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/assessments/attempts'
+order: 7000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"definitionRevisionId\": \"{{definitionRevisionId}}\",\n  \"requestId\"\
+    : \"{{attemptRequestId}}\"\n}"
+scripts:
+- type: beforeRequest
+  language: text/javascript
+  code: if(!pm.collectionVariables.get("attemptRequestId")) pm.collectionVariables.set("attemptRequestId",pm.variables.replaceIn("{{$guid}}"));
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Created or idempotent replay",()=>pm.expect(pm.response.code).to.be.oneOf([200,201])); if(pm.response.code
+    < 300){ pm.collectionVariables.set("attemptId",pm.response.json().id); pm.test("No
+    scores or keys before submission",()=>{if(pm.response.json().status === "inProgress") pm.expect(pm.response.json().scores).to.eql(null);pm.expect(pm.response.text()).not.to.include("correctOptionIds");});
+    }

@@ -1,0 +1,27 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/assessments/definitions'
+order: 4000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"id\": \"{{definitionId}}\",\n  \"number\": 1,\n  \"document\":\
+    \ {\n    \"title\": \"Contexto y persistencia\",\n    \"unitId\": \"{{unitId}}\"\
+    ,\n    \"unitRevisionId\": \"{{revisionId}}\",\n    \"objectiveIds\": [\n    \
+    \  \"10000000-0000-0000-0000-000000000002\"\n    ],\n    \"questionRevisionIds\"\
+    : [\n      \"{{questionRevisionId}}\"\n    ],\n    \"mode\": \"assessment\",\n\
+    \    \"timeLimitMinutes\": 10,\n    \"maxAttempts\": 3,\n    \"feedback\": \"\
+    afterSubmission\",\n    \"assistance\": \"none\"\n  }\n}"
+scripts:
+- type: beforeRequest
+  language: text/javascript
+  code: pm.collectionVariables.set("definitionId",pm.variables.replaceIn("{{$guid}}"));
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Expected 201",()=>pm.response.to.have.status(201)); if(pm.response.code
+    < 300){ pm.collectionVariables.set("definitionRevisionId",pm.response.json().id);
+    }

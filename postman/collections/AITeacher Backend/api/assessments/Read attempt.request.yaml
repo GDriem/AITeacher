@@ -1,0 +1,10 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/assessments/attempts/{{attemptId}}'
+order: 8000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Expected 200",()=>pm.response.to.have.status(200)); if(pm.response.code
+    < 300){ pm.test("No keys",()=>pm.expect(pm.response.text()).not.to.include("correctOptionIds"));
+    }

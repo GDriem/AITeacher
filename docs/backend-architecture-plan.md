@@ -285,7 +285,40 @@ aserciones smoke Postman aprobadas contra HTTP real, y lint de OpenAPI y ambas
 colecciones sin incidencias. El puerto Google se sustituye solo en las pruebas;
 no se ha completado el ensayo con Google real ni la conexión de React.
 
-No hay worker, API de intentos/evaluación ejecutable, contexto IA, evaluadores por
+Hito 3 implementado y verificado localmente:
+
+- Esquema `assessments`, migración explícita y readiness. Preguntas y definiciones
+  como snapshots inmutables, protegidos por triggers SQL. Referencias a objetivos
+  y conceptos de revisiones editoriales publicadas por contrato de aplicación.
+- Opción única, verdadero/falso y selección múltiple con coincidencia exacta o
+  puntuación parcial declarada; seleccionar todas las opciones no da puntos.
+  Definiciones con composición y orden fijos, cobertura de objetivos, modo,
+  límite de tiempo, máximo de intentos y política de feedback. Solo ayuda `none`.
+- Intentos por alumno con revisiones fijadas y tiempos controlados por servidor.
+  Inicio idempotente por alumno/requestId, límite entre revisiones de una misma
+  definición y serialización de carreras en PostgreSQL. La entrega fija respuestas
+  normalizadas y resultados: reenvío igual devuelve el resultado; cambiado, `409`.
+- Proyecciones de alumno sin claves ni criterios privados, acceso a intentos solo
+  del propietario y `no-store`. Feedback posterior o nunca; nunca oculta también
+  la nota agregada. Las revisiones históricas conservan enunciado, clave y política.
+- Evidencia por pregunta/concepto guardada en outbox en la misma transacción, sin
+  duplicados por reintentos. El consumidor de Aprendizaje y su política de dominio
+  quedan pendientes; no se afirma haber actualizado dominio.
+- OpenAPI y solicitudes Postman locales actualizados; guía en
+  `backend/ASSESSMENTS.md`. La definición se hace disponible al crearla; no hay
+  borradores, selección aleatoria ni ayudas en esta entrega.
+
+Validación al cerrar el hito 3: compilación con cero advertencias y errores,
+nueve pruebas de dominio y 30 de integración aprobadas contra PostgreSQL real.
+Las siete pruebas nuevas cubren corrección cerrada, privacidad, permisos/CSRF,
+aislamiento, reintentos, límites, vencimiento, carreras, rollback y protección SQL
+de snapshots. Once aserciones smoke Postman aprobadas contra el host HTTP real en
+base temporal, salida 0. OpenAPI y ambas colecciones validados sin incidencias.
+La colección autenticada fue validada estructuralmente; el flujo autenticado se
+ensayó en integración con el puerto Google de prueba. Google real y React siguen
+pendientes.
+
+No hay worker, consumidor del outbox, contexto IA, evaluadores por
 rúbrica, grafo del alumno ni política de dominio implementados. Los conceptos y
 prerrequisitos editoriales son locales al snapshot; el grafo curricular compartido
 versionado sigue en el hito 5. No se han creado recursos Azure, modificado Firestore
@@ -306,13 +339,13 @@ solo su base aleatoria. Las instrucciones completas están en `backend/README.md
 
 Pendiente de aceptación externa del hito 1: probar login con Google real y el `sub`
 de un autor. La API está lista para ese ensayo; el frontend continúa en Python.
-El hito 2 está verificado localmente; consulte también `backend/EDITORIAL.md`.
-La entrega siguiente es el hito 3, pruebas cerradas. La selección de proveedores
+Los hitos 2 y 3 están verificados localmente; consulte `backend/EDITORIAL.md`
+y `backend/ASSESSMENTS.md`. La entrega siguiente es el hito 4, tutor y apuntes. La selección de proveedores
 por capacidad sigue en el hito 4 y el despliegue/corte Azure en el 8.
 
 Solicitud sugerida para continuar:
 
-> Lee docs/backend-architecture-plan.md, backend/README.md y backend/EDITORIAL.md.
-> Conserva los cambios locales existentes y continúa con el hito 3: banco y
-> definiciones versionadas, intentos persistidos y corrección cerrada, sin filtrar
-> claves y con entregas idempotentes. Conserva las revisiones editoriales históricas.
+> Lee docs/backend-architecture-plan.md, backend/README.md, backend/EDITORIAL.md
+> y backend/ASSESSMENTS.md. Conserva los cambios locales existentes y continúa con
+> el hito 4: tutor y apuntes, contexto acotado, fuentes verificables y proveedores
+> Azure/Gemini por capacidad. Conserva las revisiones e intentos históricos.

@@ -1,0 +1,9 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/assessments/questions/{{questionRevisionId}}'
+order: 2000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Expected 200",()=>pm.response.to.have.status(200)); if(pm.response.code
+    < 300){  }
