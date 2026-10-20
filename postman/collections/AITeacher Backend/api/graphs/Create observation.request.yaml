@@ -1,0 +1,19 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/graphs/conversations/{{conversationId}}/observations'
+order: 5000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"graphRevisionId\": \"{{graphRevisionId}}\",\n  \"messageId\": \"\
+    {{graphMessageId}}\",\n  \"fromNodeId\": \"{{graphNodeId}}\",\n  \"stage\": \"\
+    exploration\",\n  \"confidence\": 0.5\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Observation created",()=>pm.response.to.have.status(201)); if(pm.response.code===201){const
+    o=pm.response.json();pm.collectionVariables.set("observationId",o.id);pm.collectionVariables.set("observationVersion",String(o.current.version));}

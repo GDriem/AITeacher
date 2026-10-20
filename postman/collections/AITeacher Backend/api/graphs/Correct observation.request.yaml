@@ -1,0 +1,18 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/graphs/observations/{{observationId}}/corrections'
+order: 7000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"version\": {{observationVersion}},\n  \"fromNodeId\": \"{{graphNodeId}}\"\
+    ,\n  \"stage\": \"exploration\",\n  \"confidence\": 0.8,\n  \"status\": \"accepted\"\
+    ,\n  \"reason\": \"Revisé mi explicación\"\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Correction saved",()=>pm.response.to.have.status(200)); if(pm.response.code===200){pm.collectionVariables.set("observationVersion",String(pm.response.json().current.version));}

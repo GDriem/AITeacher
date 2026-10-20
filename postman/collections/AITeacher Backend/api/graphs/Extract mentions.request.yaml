@@ -1,0 +1,18 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/graphs/conversations/{{conversationId}}/extract'
+order: 4000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"graphRevisionId\": \"{{graphRevisionId}}\",\n  \"messageId\": \"\
+    {{graphMessageId}}\"\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Mentions extracted",()=>pm.response.to.have.status(200)); if(pm.response.code===200
+    && pm.response.json().items.length){const o=pm.response.json().items[0];pm.collectionVariables.set("observationId",o.id);pm.collectionVariables.set("observationVersion",String(o.current.version));pm.collectionVariables.set("graphNodeId",o.current.fromNodeId);}

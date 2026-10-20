@@ -1,0 +1,4 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/graphs/revisions/{{graphRevisionId}}'
+order: 3000

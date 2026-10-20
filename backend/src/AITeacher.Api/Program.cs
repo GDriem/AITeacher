@@ -1,3 +1,4 @@
+using AITeacher.Api.Features.Graphs;
 using AITeacher.Api.Features.Assessments;
 using AITeacher.Api.Features.Catalog;
 using AITeacher.Api.Features.Editorial;
@@ -26,6 +27,11 @@ builder.Services.AddDbContext<AssessmentDbContext>(options => options.UseNpgsql(
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "assessments")));
 builder.Services.AddDbContext<TutorDbContext>(options => options.UseNpgsql(connection,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "conversations")));
+builder.Services.AddDbContext<GraphDbContext>(options => options.UseNpgsql(connection,
+    postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "graphs")));
+builder.Services.AddScoped<IGraphCurriculum, GraphCurriculum>();
+builder.Services.AddScoped<IGraphMessages, GraphMessages>();
+builder.Services.AddScoped<GraphService>();
 builder.Services.AddScoped<ITutorContent, TutorContent>();
 builder.Services.AddScoped<TutorService>();
 builder.Services.AddSingleton<ContextBuilder>();
@@ -66,6 +72,7 @@ if (args.Contains("--migrate", StringComparer.Ordinal))
     await scope.ServiceProvider.GetRequiredService<EditorialDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<AssessmentDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<TutorDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<GraphDbContext>().Database.MigrateAsync();
     return;
 }
 app.UseExceptionHandler();
@@ -100,6 +107,7 @@ app.MapCatalog();
 app.MapEditorial();
 app.MapAssessments();
 app.MapTutor();
+app.MapGraphs();
 app.Run();
 
 public partial class Program;

@@ -360,12 +360,50 @@ conexión de React. La lectura/práctica se conecta al tutor por contrato API; n
 se afirma haber terminado el recorrido de producto en la UI. No hay streaming,
 voz ni recuperación vectorial en esta entrega.
 
-No hay worker, consumidor del outbox, evaluadores por
-rúbrica, grafo del alumno ni política de dominio implementados. Los conceptos y
-prerrequisitos editoriales son locales al snapshot; el grafo curricular compartido
-versionado sigue en el hito 5. No se han creado recursos Azure, modificado Firestore
-ni migrado escritores. El corpus se importó en una base temporal de prueba, no
-como una migración de datos de producción.
+Hito 5: backend de grafos y alternativa accesible implementados y verificados localmente:
+
+- Esquema `graphs`, migración explícita y readiness. Snapshots editoriales completos
+  con nodos y relaciones normalizados, IDs estables y procedencia a conceptos de
+  revisiones publicadas del mismo tema mediante contrato de aplicación. Relaciones
+  requiere, explica, aplica y se diferencia de; solo requiere impide ciclos.
+- Mapa conversacional privado con revisión curricular fijada y mensaje del alumno
+  como origen. Propuestas explícitas y extracción léxica Unicode `name-match-v1`,
+  con deduplicación transaccional incluso ante extracciones concurrentes. No se
+  atribuyen propuestas del alumno a un modelo ni respuestas del tutor al alumno.
+- Mención, exploración y comprensión declarada separadas de dominio. Validación
+  pendiente/aceptada/rechazada; cada corrección crea una revisión inmutable con
+  motivo, concurrencia optimista e historial. Rechazar excluye de la comparación,
+  sin borrar la observación original ni su procedencia. Triggers SQL protegen las
+  cinco tablas de snapshots e historial frente a actualización y borrado.
+- Comparación de menciones/cobertura aceptada, conceptos sin mención, prerrequisitos
+  sin cobertura y relaciones propuestas ausentes de la referencia. Son señales
+  para revisión, no diagnósticos de confusión ni acreditación de transferencia.
+- Lista HTML accesible con procedencia enlazada, texto escapado, sesión privada,
+  CSP y `no-store`; disponible en el host sin depender de React. OpenAPI y Postman
+  actualizados; guía en `backend/GRAPHS.md`.
+
+Validación conjunta: compilación sin advertencias ni errores, nueve pruebas de
+dominio y 52 de integración aprobadas con PostgreSQL real y las simulaciones HTTP
+locales de ambos proveedores. Seis pruebas nuevas cubren grafos, procedencia,
+aislamiento, permisos/CSRF, revisión y extracción concurrentes, correcciones,
+comparación, rechazo, persistencia/retiro, Unicode e inmutabilidad SQL. Dieciséis
+aserciones smoke Postman aprobadas contra host HTTP real en base temporal, salida 0.
+OpenAPI y ambas colecciones sin incidencias. La lista generada se verificó en
+Chromium a 320/768/1024/1440 píxeles, sin desbordamiento, con foco de teclado y cero
+infracciones axe WCAG A/AA y 2.1 AA. Google se sustituye solo en integración; la
+colección autenticada tiene validación estructural, sin ensayo con Google real.
+
+No hay extracción semántica por modelos ni inferencia automática de relaciones;
+la extracción léxica crea candidatos pendientes, sin acreditar comprensión. Tampoco
+hay agregador de mapas de todas las conversaciones, mapa visual React ni conexión
+de React al host .NET. El recorrido de producto completo sigue pendiente de esa
+integración y de la aceptación externa de Google y proveedores reales.
+
+No hay worker, consumidor del outbox, evaluadores por rúbrica ni política de dominio.
+Los conceptos locales del contenido siguen perteneciendo a sus snapshots; los nodos
+del grafo compartido los referencian sin reescribir contenido ni evidencia histórica.
+No se han creado recursos Azure, modificado Firestore ni migrado escritores. El
+corpus se importó en una base temporal de prueba, no como migración de producción.
 
 ## Retomar en otra sesión
 
@@ -385,12 +423,14 @@ de un autor. La API está lista para ese ensayo; el frontend continúa en Python
 Los hitos 2 y 3 están verificados localmente; consulte `backend/EDITORIAL.md`
 y `backend/ASSESSMENTS.md`. El backend del hito 4 está implementado con regresión
 local; consulte `backend/TUTOR.md` para configuración, simulaciones y aceptación
-externa pendiente. La entrega siguiente de backend es el hito 5, grafos. El
+externa pendiente. El hito 5 tiene backend y lista accesible verificados localmente; consulte
+`backend/GRAPHS.md`. La entrega siguiente de backend es el hito 6, evaluación avanzada. El
 despliegue/corte Azure sigue en el hito 8.
 
 Solicitud sugerida para continuar:
 
 > Lee docs/backend-architecture-plan.md, backend/README.md, backend/EDITORIAL.md,
-> backend/ASSESSMENTS.md y backend/TUTOR.md. Conserva los cambios locales existentes
-> y continúa con el hito 5: grafos con procedencia y corrección de inferencias.
+> backend/ASSESSMENTS.md, backend/TUTOR.md y backend/GRAPHS.md. Conserva los cambios
+> locales existentes y continúa con el hito 6: evaluación avanzada con rúbricas,
+> calibración de dominio y repasos, sin inventar umbrales de dominio.
 > Conserva las revisiones, intentos, conversaciones y fuentes históricas.

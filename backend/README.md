@@ -4,7 +4,7 @@ Implementación incremental del [plan aprobado](../docs/backend-architecture-pla
 El host ASP.NET Core se ejecuta separado de FastAPI; React y Python siguen usando
 sus contratos y escritores actuales. Azure es el destino del despliegue final.
 
-## Ejecutar los hitos 1–4
+## Ejecutar los hitos 1–5
 
 Desde `backend/`, con Docker y el SDK fijado en `global.json`:
 
@@ -117,6 +117,8 @@ sin exponer SQL, credenciales o detalles internos de PostgreSQL.
   de evidencia del esquema `assessments`; consulte [la guía de evaluaciones](ASSESSMENTS.md).
 - `src/AITeacher.Api/Features/Tutor`: conversaciones, turnos, mensajes y apuntes
   privados del esquema `conversations`; [guía de tutor](TUTOR.md).
+- `src/AITeacher.Api/Features/Graphs`: referencia editorial y mapas privados del
+  esquema `graphs`; [guía de grafos](GRAPHS.md).
 - `src/AITeacher.Api/Features/Catalog`: endpoints, DTOs y adaptador EF del esquema
   `curriculum`. Son adaptadores del host; el módulo de dominio sigue independiente.
 - `src/AITeacher.Modules.Curriculum`: entradas del catálogo, cobertura editorial
@@ -124,7 +126,7 @@ sin exponer SQL, credenciales o detalles internos de PostgreSQL.
 - `src/AITeacher.Modules.Assessments`: preguntas cerradas y corrección determinista.
 - `src/AITeacher.Modules.Learning`: evidencias con procedencia y ayudas.
 - `tests/AITeacher.Domain.Tests`: reglas de dominio del hito 0.
-- `tests/AITeacher.Api.Tests`: integración HTTP y PostgreSQL real de los hitos 1–4.
+- `tests/AITeacher.Api.Tests`: integración HTTP y PostgreSQL real de los hitos 1–5.
 
 No se consultan tablas ajenas entre módulos. El SDK .NET 11 RC1 se conserva según
 el plan; no es una afirmación de release final. EF Core 10.0.1 y Npgsql EF 10.0.0
@@ -141,7 +143,8 @@ dotnet ef migrations add Nombre --context CatalogDbContext --project src/AITeach
 Para identidad use `IdentityDbContext` y `Features/Identity/Migrations`; para
 unidades, `EditorialDbContext` y `Features/Editorial/Migrations`; para evaluaciones,
 `AssessmentDbContext` y `Features/Assessments/Migrations`; para conversaciones,
-`TutorDbContext` y `Features/Tutor/Migrations`.
+`TutorDbContext` y `Features/Tutor/Migrations`; para grafos, `GraphDbContext`
+y `Features/Graphs/Migrations`.
 
 ## Verificación
 
@@ -157,7 +160,7 @@ dotnet test AITeacher.slnx --no-build
 ```
 
 Última verificación: compilación sin advertencias ni errores; nueve pruebas de
-dominio y 46 de integración aprobadas contra PostgreSQL real. Además del catálogo,
+dominio y 52 de integración aprobadas contra PostgreSQL real. Además del catálogo,
 identidad, sesiones y CSRF, verifican cobertura de publicación, referencias locales,
 ciclos, inmutabilidad SQL, revisiones históricas, aislamiento de borradores y criterios
 privados, retiro inmediato, carreras de revisión/publicación e importación de las
@@ -165,8 +168,10 @@ privados, retiro inmediato, carreras de revisión/publicación e importación de
 claves ocultas, feedback privado, límites y vencimiento, aislamiento de intentos,
 reintentos y carreras de inicio/entrega, rollback y snapshots inmutables. El hito 4 añade aislamiento y persistencia de conversaciones/apuntes,
 leases y respuestas tardías, contexto acotado y regresión HTTP Azure/Gemini
-contra simulaciones locales, incluidos fallos y timeout real. El smoke Postman
-aprobó trece aserciones HTTP contra el host real (código de salida 0). OpenAPI y las
+contra simulaciones locales, incluidos fallos y timeout real. El hito 5 añade
+grafos con procedencia, correcciones, comparación, extracción Unicode idempotente,
+concurrencia, historia SQL inmutable y lista HTML accesible. El smoke Postman
+aprobó dieciséis aserciones HTTP contra el host real (código de salida 0). OpenAPI y las
 dos colecciones se validaron sin errores ni advertencias.
 
 Las pruebas sustituyen únicamente el puerto de verificación Google con un adaptador de prueba, sin bypass en producción. No
@@ -194,7 +199,7 @@ Smoke reproducible contra el host real, sin cuenta Google y sin publicar resulta
 
 ## Estado y siguiente entrega
 
-Hitos 1–4 implementados en el backend y verificados localmente. El login Google real sigue
+Hitos 1–5 implementados en el backend y verificados localmente. El login Google real sigue
 pendiente de Client ID y cuenta autorizada; no se usa un bypass en producción.
 El [hito editorial](EDITORIAL.md) incluye unidades, objetivos, lectura, práctica,
 evaluaciones editoriales privadas, revisiones, cobertura e importación del corpus.
@@ -208,5 +213,8 @@ contexto acotado, lectura/práctica/chat vinculados a publicaciones, fuentes
 verificadas y adaptadores Azure/Gemini seleccionados por capacidad. Sus
 regresiones usan HTTP y PostgreSQL reales contra simulaciones locales de IA;
 la aceptación con modelos reales y React continúa pendiente. La siguiente entrega
-de backend es el hito 5, grafos. Worker y migración siguen pendientes.
+de backend es el hito 6, evaluación avanzada. El [hito 5](GRAPHS.md) incluye
+grafos editoriales versionados, mapa conversacional privado con procedencia,
+extracción léxica explícita, correcciones inmutables, comparación y lista HTML
+accesible. React y la extracción semántica por modelos siguen pendientes. Worker y migración siguen pendientes.
 No se han creado recursos Azure ni se ha modificado Firestore.

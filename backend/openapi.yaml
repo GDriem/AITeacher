@@ -1,9 +1,10 @@
 openapi: 3.0.3
 info:
   title: AITeacher backend
-  version: 0.5.0
-  description: Milestone 4. PostgreSQL identity, catalog, editorial revisions, closed
+  version: 0.6.0
+  description: Milestone 5. PostgreSQL identity, catalog, editorial revisions, closed
     assessments, private tutor conversations and notes with bounded contexts.
+    Versioned editorial graphs, private observations and correction history.
     Independent host; does not replace Python or migrate production data.
     Errors use ProblemDetails.
 servers:
@@ -23,6 +24,8 @@ tags:
     publications.
 - name: Tutor
   description: Private tutor, verified editorial sources and notes; providers by capability.
+- name: Graphs
+  description: Versioned editorial references and student-owned conversation maps.
 security:
 - sessionCookie: []
 paths:
@@ -3005,6 +3008,681 @@ paths:
           type: integer
           format: int64
           minimum: 1
+  /api/graphs/revisions:
+    post:
+      operationId: createGraphRevision
+      summary: Create editorial graph snapshot
+      description: Author only. Immutable complete snapshot; number must follow latest
+        revision of graphId. Topic fixed; node IDs cannot be reassigned. Sources must
+        be published concepts in the same topic, including historical publications.
+        Only requires edges must be acyclic. No draft or activation pointer; each revision
+        is immediately readable. Duplicate or racing revision returns 409; creating
+        is not idempotent.
+      tags:
+      - Graphs
+      parameters:
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '201':
+          description: Create editorial graph snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphRevision'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphRequest'
+    get:
+      operationId: listGraphRevisions
+      summary: List editorial graph revisions
+      description: Authenticated shared snapshots, ordered by graphId then descending
+        number; includes historical revisions.
+      tags:
+      - Graphs
+      parameters:
+      - name: topicId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: List editorial graph revisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphRevisionPage'
+  /api/graphs/revisions/{id}:
+    get:
+      operationId: getGraphRevision
+      summary: Read editorial graph snapshot
+      description: Read editorial graph snapshot
+      tags:
+      - Graphs
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: Read editorial graph snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphRevision'
+  /api/graphs/conversations/{id}/observations:
+    post:
+      operationId: createGraphObservation
+      summary: Record student-proposed mention or relation
+      description: Owner only. Origin student, initial status pending; source must be
+        a user message in this conversation. Reference must include the conversation
+        unit revision. Optional relation and target must be supplied together. Stages
+        are self-reports, never mastery. Maximum 1000 observations per conversation/reference.
+        Not idempotent.
+      tags:
+      - Graphs
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '201':
+          description: Record student-proposed mention or relation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphObservation'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphObservationRequest'
+  /api/graphs/conversations/{id}/extract:
+    post:
+      operationId: extractGraphMentions
+      summary: Extract literal concept mentions
+      description: Owner only. Explicit deterministic Unicode name matching with word
+        boundaries, name-match-v1; only the specified user message is processed. No
+        model calls or inference of understanding. Confidence 1 describes a lexical
+        match, not probability of learning. Pending observations deduplicate by message,
+        revision and node, including concurrent extraction and corrected/rejected observations.
+      tags:
+      - Graphs
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: Extract literal concept mentions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphExtraction'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphExtractRequest'
+  /api/graphs/observations/{id}:
+    get:
+      operationId: getGraphObservation
+      summary: Read observation and immutable corrections
+      description: Read observation and immutable corrections
+      tags:
+      - Graphs
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: Read observation and immutable corrections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphObservation'
+  /api/graphs/observations/{id}/corrections:
+    post:
+      operationId: correctGraphObservation
+      summary: Append an observation correction
+      description: Owner only. Current version required; stale or racing corrections
+        return 409. Maximum 100 revisions. Graph revision, source message, origin and
+        original observation are immutable. Nodes may be corrected within the original
+        graph snapshot. Rejected observations remain in history and are excluded from
+        comparison. Acceptance is student validation, not assessed mastery.
+      tags:
+      - Graphs
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: Append an observation correction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphObservation'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphCorrectionRequest'
+  /api/graphs/conversations/{id}:
+    get:
+      operationId: getConversationGraph
+      summary: Read conversation graph and comparison
+      description: Owner only; no-store. Pinned revision required and must include the
+        conversation source revision. Preserves historical access after withdrawal.
+        Comparison reports mentions, accepted coverage, unmentioned nodes, prerequisite
+        coverage gaps and proposed relations absent from reference; these are review
+        signals, not confusion or mastery diagnoses. Rejected observations are excluded.
+        Maximum 1000 observations, each with at most 100 immutable revisions. HTML uses
+        semantic lists, escaped text and source links.
+      tags:
+      - Graphs
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: graphRevisionId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: Read conversation graph and comparison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationGraph'
+  /api/graphs/conversations/{id}/list:
+    get:
+      operationId: getConversationGraphList
+      summary: Read accessible conversation graph list
+      description: Owner only; no-store. Pinned revision required and must include the
+        conversation source revision. Preserves historical access after withdrawal.
+        Comparison reports mentions, accepted coverage, unmentioned nodes, prerequisite
+        coverage gaps and proposed relations absent from reference; these are review
+        signals, not confusion or mastery diagnoses. Rejected observations are excluded.
+        Maximum 1000 observations, each with at most 100 immutable revisions. HTML uses
+        semantic lists, escaped text and source links.
+      tags:
+      - Graphs
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: graphRevisionId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: Read accessible conversation graph list
+          content:
+            text/html:
+              schema:
+                type: string
+  /api/graphs/conversations/{id}/messages/{messageId}:
+    get:
+      operationId: getGraphSourceMessage
+      summary: Read an observation source message
+      description: Owner only. Returns source text without private criteria. no-store.
+        Accept text/html returns an escaped accessible page; other Accept values return
+        JSON. Vary Accept.
+      tags:
+      - Graphs
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: messageId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '400':
+          description: Invalid data, references, pagination or CSRF
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Author permission required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Stale version, concurrent revision or resource limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: Read an observation source message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphSourceMessage'
+            text/html:
+              schema:
+                type: string
 components:
   securitySchemes:
     sessionCookie:
@@ -4519,3 +5197,529 @@ components:
       - total
       - offset
       - limit
+    GraphNodeInput:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        unitId:
+          type: string
+          format: uuid
+        unitRevisionId:
+          type: string
+          format: uuid
+        conceptId:
+          type: string
+          format: uuid
+      required:
+      - id
+      - unitId
+      - unitRevisionId
+      - conceptId
+    GraphNode:
+      type: object
+      properties:
+        revisionId:
+          type: string
+          format: uuid
+        id:
+          type: string
+          format: uuid
+        unitId:
+          type: string
+          format: uuid
+        unitRevisionId:
+          type: string
+          format: uuid
+        conceptId:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - revisionId
+      - id
+      - unitId
+      - unitRevisionId
+      - conceptId
+      - name
+    GraphEdgeInput:
+      type: object
+      properties:
+        fromNodeId:
+          type: string
+          format: uuid
+        toNodeId:
+          type: string
+          format: uuid
+        relation:
+          type: string
+          enum:
+          - requires
+          - explains
+          - applies
+          - differsFrom
+      required:
+      - fromNodeId
+      - toNodeId
+      - relation
+    GraphEdge:
+      type: object
+      properties:
+        revisionId:
+          type: string
+          format: uuid
+        fromNodeId:
+          type: string
+          format: uuid
+        toNodeId:
+          type: string
+          format: uuid
+        relation:
+          type: string
+          enum:
+          - requires
+          - explains
+          - applies
+          - differsFrom
+      required:
+      - revisionId
+      - fromNodeId
+      - toNodeId
+      - relation
+    GraphRequest:
+      type: object
+      properties:
+        graphId:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          format: int32
+          minimum: 1
+        topicId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphNodeInput'
+          minItems: 1
+          maxItems: 200
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphEdgeInput'
+          maxItems: 500
+      required:
+      - graphId
+      - number
+      - topicId
+      - title
+      - nodes
+      - edges
+    GraphRevisionSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        graphId:
+          type: string
+          format: uuid
+        topicId:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          format: int32
+          minimum: 1
+        title:
+          type: string
+          maxLength: 150
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - graphId
+      - topicId
+      - number
+      - title
+      - createdBy
+      - createdAt
+    GraphRevision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        graphId:
+          type: string
+          format: uuid
+        topicId:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          format: int32
+          minimum: 1
+        title:
+          type: string
+          maxLength: 150
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphEdge'
+      required:
+      - id
+      - graphId
+      - topicId
+      - number
+      - title
+      - createdBy
+      - createdAt
+      - nodes
+      - edges
+    GraphRevisionPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphRevisionSummary'
+        total:
+          type: integer
+          format: int32
+        offset:
+          type: integer
+          format: int32
+        limit:
+          type: integer
+          format: int32
+      required:
+      - items
+      - total
+      - offset
+      - limit
+    GraphObservationRequest:
+      type: object
+      properties:
+        graphRevisionId:
+          type: string
+          format: uuid
+        messageId:
+          type: string
+          format: uuid
+        fromNodeId:
+          type: string
+          format: uuid
+        toNodeId:
+          type: string
+          format: uuid
+          nullable: true
+        relation:
+          type: string
+          enum:
+          - requires
+          - explains
+          - applies
+          - differsFrom
+          nullable: true
+        stage:
+          type: string
+          enum:
+          - mention
+          - exploration
+          - understanding
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+      required:
+      - graphRevisionId
+      - messageId
+      - fromNodeId
+      - stage
+      - confidence
+    GraphExtractRequest:
+      type: object
+      properties:
+        graphRevisionId:
+          type: string
+          format: uuid
+        messageId:
+          type: string
+          format: uuid
+      required:
+      - graphRevisionId
+      - messageId
+    GraphCorrectionRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 99
+        fromNodeId:
+          type: string
+          format: uuid
+        toNodeId:
+          type: string
+          format: uuid
+          nullable: true
+        relation:
+          type: string
+          enum:
+          - requires
+          - explains
+          - applies
+          - differsFrom
+          nullable: true
+        stage:
+          type: string
+          enum:
+          - mention
+          - exploration
+          - understanding
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        status:
+          type: string
+          enum:
+          - pending
+          - accepted
+          - rejected
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - version
+      - fromNodeId
+      - stage
+      - confidence
+      - status
+      - reason
+    GraphObservationRevision:
+      type: object
+      properties:
+        observationId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+        graphRevisionId:
+          type: string
+          format: uuid
+        fromNodeId:
+          type: string
+          format: uuid
+        toNodeId:
+          type: string
+          format: uuid
+          nullable: true
+        relation:
+          type: string
+          enum:
+          - requires
+          - explains
+          - applies
+          - differsFrom
+          nullable: true
+        stage:
+          type: string
+          enum:
+          - mention
+          - exploration
+          - understanding
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        status:
+          type: string
+          enum:
+          - pending
+          - accepted
+          - rejected
+        reason:
+          type: string
+          maxLength: 2000
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - observationId
+      - version
+      - graphRevisionId
+      - fromNodeId
+      - toNodeId
+      - relation
+      - stage
+      - confidence
+      - status
+      - reason
+      - createdAt
+    GraphObservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        graphRevisionId:
+          type: string
+          format: uuid
+        messageId:
+          type: string
+          format: uuid
+        origin:
+          type: string
+          enum:
+          - student
+          - name-match-v1
+        createdAt:
+          type: string
+          format: date-time
+        sourceUrl:
+          type: string
+        current:
+          $ref: '#/components/schemas/GraphObservationRevision'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphObservationRevision'
+      required:
+      - id
+      - conversationId
+      - graphRevisionId
+      - messageId
+      - origin
+      - createdAt
+      - sourceUrl
+      - current
+      - history
+    GraphExtraction:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphObservation'
+        algorithm:
+          type: string
+          enum:
+          - name-match-v1
+      required:
+      - items
+      - algorithm
+    GraphComparison:
+      type: object
+      properties:
+        mentionedNodeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        acceptedNodeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        unmentionedNodeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        prerequisiteGaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphEdge'
+        differingObservationIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        masteryEvaluated:
+          type: boolean
+          enum:
+          - false
+      required:
+      - mentionedNodeIds
+      - acceptedNodeIds
+      - unmentionedNodeIds
+      - prerequisiteGaps
+      - differingObservationIds
+      - masteryEvaluated
+    ConversationGraph:
+      type: object
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+        graphRevisionId:
+          type: string
+          format: uuid
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphEdge'
+        observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphObservation'
+        comparison:
+          $ref: '#/components/schemas/GraphComparison'
+      required:
+      - conversationId
+      - graphRevisionId
+      - nodes
+      - edges
+      - observations
+      - comparison
+    GraphSourceMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        role:
+          type: string
+          enum:
+          - user
+          - assistant
+      required:
+      - id
+      - text
+      - role
