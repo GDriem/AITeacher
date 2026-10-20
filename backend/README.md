@@ -4,7 +4,7 @@ Implementación incremental del [plan aprobado](../docs/backend-architecture-pla
 El host ASP.NET Core se ejecuta separado de FastAPI; React y Python siguen usando
 sus contratos y escritores actuales. Azure es el destino del despliegue final.
 
-## Ejecutar los hitos 1–5
+## Ejecutar los hitos 1–6 (hito 6 parcial)
 
 Desde `backend/`, con Docker y el SDK fijado en `global.json`:
 
@@ -119,6 +119,8 @@ sin exponer SQL, credenciales o detalles internos de PostgreSQL.
   privados del esquema `conversations`; [guía de tutor](TUTOR.md).
 - `src/AITeacher.Api/Features/Graphs`: referencia editorial y mapas privados del
   esquema `graphs`; [guía de grafos](GRAPHS.md).
+- `src/AITeacher.Api/Features/Learning`: consumidor deduplicado de evidencias, conceptos
+  sin calibrar y repasos explícitos; [evaluación avanzada](MILESTONE6.md).
 - `src/AITeacher.Api/Features/Catalog`: endpoints, DTOs y adaptador EF del esquema
   `curriculum`. Son adaptadores del host; el módulo de dominio sigue independiente.
 - `src/AITeacher.Modules.Curriculum`: entradas del catálogo, cobertura editorial
@@ -144,7 +146,8 @@ Para identidad use `IdentityDbContext` y `Features/Identity/Migrations`; para
 unidades, `EditorialDbContext` y `Features/Editorial/Migrations`; para evaluaciones,
 `AssessmentDbContext` y `Features/Assessments/Migrations`; para conversaciones,
 `TutorDbContext` y `Features/Tutor/Migrations`; para grafos, `GraphDbContext`
-y `Features/Graphs/Migrations`.
+y `Features/Graphs/Migrations`. Para aprendizaje, `LearningDbContext` y
+`Features/Learning/Migrations`.
 
 ## Verificación
 
@@ -159,7 +162,7 @@ export AITEACHER_TEST_AI_URL=http://127.0.0.1:4900
 dotnet test AITeacher.slnx --no-build
 ```
 
-Última verificación: compilación sin advertencias ni errores; nueve pruebas de
+Verificación al cierre del hito 5: compilación sin advertencias ni errores; nueve pruebas de
 dominio y 52 de integración aprobadas contra PostgreSQL real. Además del catálogo,
 identidad, sesiones y CSRF, verifican cobertura de publicación, referencias locales,
 ciclos, inmutabilidad SQL, revisiones históricas, aislamiento de borradores y criterios
@@ -207,14 +210,32 @@ La importación real se ensayó únicamente en una base temporal de pruebas.
 
 El [hito 3](ASSESSMENTS.md) incluye banco y definiciones inmutables, intentos
 persistidos, corrección cerrada, protección de claves y entregas idempotentes.
-El outbox guarda evidencia transaccional; su consumidor de Aprendizaje sigue
-pendiente y no se calcula dominio. El [hito 4](TUTOR.md) agrega conversaciones y apuntes privados persistidos,
+El outbox guarda evidencia transaccional; el incremento del hito 6 incorpora su
+consumidor de Aprendizaje y mantiene el dominio sin calibrar. El [hito 4](TUTOR.md) agrega conversaciones y apuntes privados persistidos,
 contexto acotado, lectura/práctica/chat vinculados a publicaciones, fuentes
 verificadas y adaptadores Azure/Gemini seleccionados por capacidad. Sus
 regresiones usan HTTP y PostgreSQL reales contra simulaciones locales de IA;
-la aceptación con modelos reales y React continúa pendiente. La siguiente entrega
-de backend es el hito 6, evaluación avanzada. El [hito 5](GRAPHS.md) incluye
+la aceptación con modelos reales y React continúa pendiente. El incremento del hito 6 añade evaluación avanzada con corrección humana. El [hito 5](GRAPHS.md) incluye
 grafos editoriales versionados, mapa conversacional privado con procedencia,
 extracción léxica explícita, correcciones inmutables, comparación y lista HTML
-accesible. React y la extracción semántica por modelos siguen pendientes. Worker y migración siguen pendientes.
+accesible. React y la extracción semántica por modelos siguen pendientes. El consumidor optativo de evidencia está disponible; migración y calibración
+de dominio siguen pendientes.
 No se han creado recursos Azure ni se ha modificado Firestore.
+
+
+## Incremento del hito 6
+
+[Contrato, operación y límites](MILESTONE6.md): respuestas abiertas, casos y
+práctica con rúbricas inmutables y corrección por autor; estado `pendingReview`,
+feedback protegido, correcciones idempotentes y evidencia transaccional. Nuevo
+consumidor recuperable con `Learning__WorkerEnabled=true` o `--consume-evidence`.
+Las evidencias y los repasos son privados; completar un repaso exige un intento
+nuevo completamente corregido e iniciado después de la fecha programada.
+El dominio permanece `uncalibrated` hasta contar con datos docentes reales.
+El hito 6 todavía no está cerrado. No hay migración de producción ni recursos Azure.
+
+Verificación más reciente (incremento del hito 6): compilación sin advertencias
+ni errores, 9 pruebas de dominio y 57 de integración aprobadas con PostgreSQL real
+más simulaciones HTTP de IA; 19 aserciones smoke Postman aprobadas (salida 0).
+OpenAPI y ambas colecciones validados sin incidencias. Véase la guía del hito 6
+para alcance y aceptación pendiente.

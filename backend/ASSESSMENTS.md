@@ -43,3 +43,14 @@ de dominio son entregas posteriores; no se afirma haber actualizado dominio.
 
 Todas las escrituras usan sesión y CSRF. Los intentos de otros alumnos devuelven
 404, incluso a autores. Las listas admiten `offset`/`limit` (máximo 100).
+
+
+## Ampliación del hito 6
+
+Los tipos avanzados y las correcciones por rúbrica se describen en
+[MILESTONE6.md](MILESTONE6.md). Las preguntas cerradas mantienen sus políticas.
+Una prueba mixta queda `pendingReview` hasta finalizar la corrección completa;
+la evidencia de toda la prueba se emite al corregirla. El consumidor de
+Aprendizaje ya está disponible de forma optativa y conserva evidencia deduplicada,
+sin atribuir dominio. Los párrafos anteriores describen la entrega original del
+hito 3; no implican que siga pendiente ese consumidor.

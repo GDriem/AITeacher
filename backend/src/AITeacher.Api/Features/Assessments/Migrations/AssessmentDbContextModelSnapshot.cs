@@ -107,6 +107,42 @@ namespace AITeacher.Api.Features.Assessments.Migrations
                     b.ToTable("evidence_outbox", "assessments");
                 });
 
+            modelBuilder.Entity("AITeacher.Api.Features.Assessments.AssessmentReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GradesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReviewerId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("ScoresJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptId")
+                        .IsUnique();
+
+                    b.ToTable("reviews", "assessments");
+                });
+
             modelBuilder.Entity("AITeacher.Api.Features.Assessments.AssessmentRevision", b =>
                 {
                     b.Property<Guid>("Id")
@@ -146,6 +182,16 @@ namespace AITeacher.Api.Features.Assessments.Migrations
                         });
                 });
 
+            modelBuilder.Entity("AITeacher.Api.Features.Assessments.EvidenceReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("evidence_receipts", "assessments");
+                });
+
             modelBuilder.Entity("AITeacher.Api.Features.Assessments.AssessmentAttempt", b =>
                 {
                     b.HasOne("AITeacher.Api.Features.Assessments.AssessmentRevision", null)
@@ -166,6 +212,24 @@ namespace AITeacher.Api.Features.Assessments.Migrations
                     b.HasOne("AITeacher.Api.Features.Assessments.AssessmentRevision", null)
                         .WithMany()
                         .HasForeignKey("QuestionRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AITeacher.Api.Features.Assessments.AssessmentReview", b =>
+                {
+                    b.HasOne("AITeacher.Api.Features.Assessments.AssessmentAttempt", null)
+                        .WithMany()
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AITeacher.Api.Features.Assessments.EvidenceReceipt", b =>
+                {
+                    b.HasOne("AITeacher.Api.Features.Assessments.AssessmentEvidenceEvent", null)
+                        .WithMany()
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

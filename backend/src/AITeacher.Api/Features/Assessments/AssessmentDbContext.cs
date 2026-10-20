@@ -34,14 +34,39 @@ public sealed class AssessmentEvidenceEvent
     public string PayloadJson { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; }
 }
+public sealed class EvidenceReceipt { public Guid Id { get; set; } }
+public sealed class AssessmentReview
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid AttemptId { get; set; }
+    public Guid RequestId { get; set; }
+    public string ReviewerId { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; }
+    public string GradesJson { get; set; } = "";
+    public string ScoresJson { get; set; } = "";
+}
 public sealed class AssessmentDbContext(DbContextOptions<AssessmentDbContext> options) : DbContext(options)
 {
+    public DbSet<EvidenceReceipt> EvidenceReceipts => Set<EvidenceReceipt>();
+    public DbSet<AssessmentReview> Reviews => Set<AssessmentReview>();
     public DbSet<AssessmentRevision> Revisions => Set<AssessmentRevision>();
     public DbSet<AssessmentAttempt> Attempts => Set<AssessmentAttempt>();
     public DbSet<AssessmentEvidenceEvent> EvidenceEvents => Set<AssessmentEvidenceEvent>();
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.HasDefaultSchema("assessments");
+        model.Entity<EvidenceReceipt>(b => { b.ToTable("evidence_receipts"); b.HasKey(x => x.Id);
+            b.HasOne<AssessmentEvidenceEvent>().WithMany().HasForeignKey(x => x.Id).OnDelete(DeleteBehavior.Restrict); });
+        model.Entity<AssessmentReview>(b =>
+        {
+            b.ToTable("reviews");
+            b.HasKey(x => x.Id);
+            b.HasIndex(x => x.AttemptId).IsUnique();
+            b.Property(x => x.ReviewerId).HasMaxLength(80);
+            b.Property(x => x.GradesJson).HasColumnType("jsonb");
+            b.Property(x => x.ScoresJson).HasColumnType("jsonb");
+            b.HasOne<AssessmentAttempt>().WithMany().HasForeignKey(x => x.AttemptId).OnDelete(DeleteBehavior.Restrict);
+        });
         model.Entity<AssessmentRevision>(b =>
         {
             b.ToTable("revisions", t => t.HasCheckConstraint("ck_assessment_revision", "\"Number\" > 0 AND \"Kind\" IN ('question','definition')"));

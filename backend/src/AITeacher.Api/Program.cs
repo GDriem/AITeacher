@@ -1,3 +1,4 @@
+using AITeacher.Api.Features.Learning;
 using AITeacher.Api.Features.Graphs;
 using AITeacher.Api.Features.Assessments;
 using AITeacher.Api.Features.Catalog;
@@ -29,6 +30,11 @@ builder.Services.AddDbContext<TutorDbContext>(options => options.UseNpgsql(conne
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "conversations")));
 builder.Services.AddDbContext<GraphDbContext>(options => options.UseNpgsql(connection,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "graphs")));
+builder.Services.AddDbContext<LearningDbContext>(options => options.UseNpgsql(connection,
+    postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "learning")));
+builder.Services.AddScoped<IAssessmentEvidenceFeed, AssessmentEvidenceFeed>();
+builder.Services.AddScoped<LearningService>();
+builder.Services.AddHostedService<EvidenceWorker>();
 builder.Services.AddScoped<IGraphCurriculum, GraphCurriculum>();
 builder.Services.AddScoped<IGraphMessages, GraphMessages>();
 builder.Services.AddScoped<GraphService>();
@@ -73,6 +79,13 @@ if (args.Contains("--migrate", StringComparer.Ordinal))
     await scope.ServiceProvider.GetRequiredService<AssessmentDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<TutorDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<GraphDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<LearningDbContext>().Database.MigrateAsync();
+    return;
+}
+if (args.Contains("--consume-evidence", StringComparer.Ordinal))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    while (await scope.ServiceProvider.GetRequiredService<LearningService>().Consume(CancellationToken.None) == 100) { }
     return;
 }
 app.UseExceptionHandler();
@@ -108,6 +121,7 @@ app.MapEditorial();
 app.MapAssessments();
 app.MapTutor();
 app.MapGraphs();
+app.MapLearning();
 app.Run();
 
 public partial class Program;

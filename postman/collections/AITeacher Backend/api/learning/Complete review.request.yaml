@@ -1,0 +1,12 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/learning/reviews/{{learningReviewId}}/complete'
+order: 5000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"attemptId\": \"{{attemptId}}\"\n}"

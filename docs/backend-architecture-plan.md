@@ -399,11 +399,45 @@ hay agregador de mapas de todas las conversaciones, mapa visual React ni conexi�
 de React al host .NET. El recorrido de producto completo sigue pendiente de esa
 integración y de la aceptación externa de Google y proveedores reales.
 
-No hay worker, consumidor del outbox, evaluadores por rúbrica ni política de dominio.
+Al cierre del hito 5 no había worker, consumidor del outbox, evaluadores por rúbrica
+ni política de dominio. El incremento del hito 6 descrito abajo incorpora los tres
+primeros con corrección humana; la calibración de dominio sigue pendiente.
 Los conceptos locales del contenido siguen perteneciendo a sus snapshots; los nodos
 del grafo compartido los referencian sin reescribir contenido ni evidencia histórica.
 No se han creado recursos Azure, modificado Firestore ni migrado escritores. El
 corpus se importó en una base temporal de prueba, no como migración de producción.
+
+Hito 6: incremento implementado; aceptación de calibración pendiente:
+
+- Abiertas, casos y ejercicios prácticos con rúbrica versionada embebida en cada
+  pregunta inmutable. Respuestas textuales acotadas y corrección por autor humano;
+  no se ejecuta código ni se delega la nota a un modelo.
+- Entregas mixtas `pendingReview`, sin feedback ni evidencia hasta corrección
+  completa. Rúbrica fijada históricamente, criterios/puntos validados, corrección
+  final inmutable, serializada e idempotente; evidencia y nota se confirman juntas.
+- Esquema `learning`, consumidor optativo con deduplicación durable y confirmación
+  posterior a persistencia. Recupera caídas entre persistencia y confirmación.
+  Evidencia privada con procedencia; proyecciones sin puntuaciones ni payloads
+  impiden eludir feedback `never`.
+- Repasos programados explícitamente por el alumno para un concepto/revisión;
+  completar requiere intento propio, nuevo, de la definición fijada, iniciado
+  desde la fecha prevista y completamente corregido. No fija intervalos automáticos.
+- Conceptos con estado `uncalibrated`. No hay muestras reales etiquetadas ni
+  umbrales aprobados; no se inventa una política de dominio. Guía y límites en
+  `backend/MILESTONE6.md`. No se declara cerrado el hito 6.
+
+
+Validación del incremento del hito 6: compilación sin advertencias ni errores,
+nueve pruebas de dominio y 57 de integración aprobadas contra PostgreSQL real.
+Cinco casos nuevos (tres tipos de rúbrica, recuperación del consumidor/repasos y
+validación/omisiones/correcciones concurrentes) cubren feedback privado, rúbricas
+históricas, rollback, idempotencia, permisos/CSRF, aislamiento, inmutabilidad SQL,
+caída entre persistencia/confirmación y finalización de repasos con un intento nuevo.
+Se conservó la regresión HTTP Azure/Gemini contra simulaciones locales. Postman
+aprobó 19 aserciones smoke contra el host HTTP y base temporal, salida 0; OpenAPI
+y ambas colecciones validaron sin incidencias. Se verificaron las migraciones y
+el comando de consumo local. Google se sustituye solo en integración; modelos
+reales y flujo autenticado Postman no se ensayaron. No hay datos de calibración.
 
 ## Retomar en otra sesión
 
@@ -424,13 +458,15 @@ Los hitos 2 y 3 están verificados localmente; consulte `backend/EDITORIAL.md`
 y `backend/ASSESSMENTS.md`. El backend del hito 4 está implementado con regresión
 local; consulte `backend/TUTOR.md` para configuración, simulaciones y aceptación
 externa pendiente. El hito 5 tiene backend y lista accesible verificados localmente; consulte
-`backend/GRAPHS.md`. La entrega siguiente de backend es el hito 6, evaluación avanzada. El
+`backend/GRAPHS.md`. La continuación del hito 6 es calibrar dominio con datos docentes reales y
+validar pedagógicamente el flujo avanzado; consulte `backend/MILESTONE6.md`. El
 despliegue/corte Azure sigue en el hito 8.
 
 Solicitud sugerida para continuar:
 
 > Lee docs/backend-architecture-plan.md, backend/README.md, backend/EDITORIAL.md,
 > backend/ASSESSMENTS.md, backend/TUTOR.md y backend/GRAPHS.md. Conserva los cambios
-> locales existentes y continúa con el hito 6: evaluación avanzada con rúbricas,
-> calibración de dominio y repasos, sin inventar umbrales de dominio.
+> locales existentes y consulta backend/MILESTONE6.md y continúa la aceptación del hito 6:
+> datos docentes reales para calibrar dominio y validar rúbricas/repasos,
+> sin inventar umbrales de dominio.
 > Conserva las revisiones, intentos, conversaciones y fuentes históricas.

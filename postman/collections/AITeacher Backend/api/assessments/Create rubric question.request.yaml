@@ -1,0 +1,30 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/assessments/questions'
+order: 12000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"id\": \"{{questionId}}\",\n  \"number\": 1,\n  \"document\": {\n\
+    \    \"unitId\": \"{{unitId}}\",\n    \"unitRevisionId\": \"{{revisionId}}\",\n\
+    \    \"objectiveIds\": [\n      \"10000000-0000-0000-0000-000000000002\"\n   \
+    \ ],\n    \"conceptIds\": [\n      \"10000000-0000-0000-0000-000000000001\"\n\
+    \    ],\n    \"type\": \"openResponse\",\n    \"prompt\": \"Explica por qué el\
+    \ historial se conserva fuera del contexto.\",\n    \"options\": [],\n    \"correctOptionIds\"\
+    : [],\n    \"scoringPolicy\": \"rubric\",\n    \"rubric\": {\n      \"version\"\
+    : 1,\n      \"criteria\": [\n        {\n          \"id\": \"30000000-0000-0000-0000-000000000001\"\
+    ,\n          \"description\": \"Justificación con procedencia\",\n          \"\
+    maxPoints\": 2\n        }\n      ],\n      \"privateGuidance\": \"Distinguir historial\
+    \ persistido y ventana de contexto.\"\n    }\n  }\n}"
+scripts:
+- type: beforeRequest
+  language: text/javascript
+  code: pm.collectionVariables.set("questionId",pm.variables.replaceIn("{{$guid}}"));
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Created",()=>pm.response.to.have.status(201)); if(pm.response.code===201)
+    pm.collectionVariables.set("questionRevisionId",pm.response.json().id);

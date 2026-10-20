@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AITeacher.Api.Features.Assessments;
 
-public sealed class AssessmentService(AssessmentDbContext db, IAssessmentCurriculum curriculum, TimeProvider clock)
+public sealed partial class AssessmentService(AssessmentDbContext db, IAssessmentCurriculum curriculum, TimeProvider clock)
 {
     internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static T Read<T>(string json) => JsonSerializer.Deserialize<T>(json, Json)!;
@@ -42,7 +42,7 @@ public sealed class AssessmentService(AssessmentDbContext db, IAssessmentCurricu
     public async Task<IResult> CreateQuestion(QuestionRequest request, ClaimsPrincipal user, CancellationToken ct)
     {
         if (request.Document is null) return Invalid("A document is required.");
-        try { _ = Question(request.Id, request.Number, request.Document); }
+        try { ValidateQuestion(request); }
         catch (ArgumentException e) { return Invalid(e.Message); }
         if (!await References(request.Document.UnitId, request.Document.UnitRevisionId, request.Document.ObjectiveIds, request.Document.ConceptIds, ct))
             return Invalid("Questions must reference objectives and concepts of a published unit revision.");
@@ -134,10 +134,12 @@ public sealed class AssessmentService(AssessmentDbContext db, IAssessmentCurricu
         var definition = await db.Revisions.AsNoTracking().SingleAsync(x => x.Id == a.DefinitionRevisionId, ct);
         var d = Read<DefinitionDocument>(definition.DocumentJson);
         var rows = await db.Revisions.AsNoTracking().Where(x => d.QuestionRevisionIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
-        var feedback = a.SubmittedAt is not null && d.Feedback == "afterSubmission";
-        var scores = feedback ? Read<ScoreDocument[]>(a.ScoresJson!) : null;
+        var review = await db.Reviews.AsNoTracking().SingleOrDefaultAsync(x => x.AttemptId == a.Id, ct);
+        var pending = a.SubmittedAt is not null && review is null && rows.Values.Any(x => IsRubric(Read<QuestionDocument>(x.DocumentJson)));
+        var feedback = a.SubmittedAt is not null && !pending && d.Feedback == "afterSubmission";
+        var scores = feedback ? Read<ScoreDocument[]>(review?.ScoresJson ?? a.ScoresJson!) : null;
         return new { a.Id, a.DefinitionRevisionId, a.StartedAt, a.ExpiresAt, a.SubmittedAt,
-            status = a.SubmittedAt is not null ? "submitted" : clock.GetUtcNow() >= a.ExpiresAt ? "expired" : "inProgress",
+            status = pending ? "pendingReview" : a.SubmittedAt is not null ? "submitted" : clock.GetUtcNow() >= a.ExpiresAt ? "expired" : "inProgress",
             d.Title, d.Mode, d.Feedback, d.Assistance,
             questions = d.QuestionRevisionIds.Select(id => { var q = Read<QuestionDocument>(rows[id].DocumentJson);
                 return new { revisionId = id, questionId = rows[id].ResourceId, number = rows[id].Number,
@@ -154,11 +156,12 @@ public sealed class AssessmentService(AssessmentDbContext db, IAssessmentCurricu
         if (a is null) return Results.NotFound();
         var definition = await db.Revisions.AsNoTracking().SingleAsync(x => x.Id == a.DefinitionRevisionId, ct);
         var d = Read<DefinitionDocument>(definition.DocumentJson);
-        if (request.Answers is null || request.Answers.Length > d.QuestionRevisionIds.Length || request.Answers.Any(x => x is null || !Ids(x.SelectedOptionIds, false)) ||
+        if (request.Answers is null || request.Answers.Length > d.QuestionRevisionIds.Length || request.Answers.Any(x => x is null || !Ids(x.SelectedOptionIds, false) || x.Text?.Length > 20000) ||
             request.Answers.Select(x => x.QuestionRevisionId).Distinct().Count() != request.Answers.Length || request.Answers.Any(x => !d.QuestionRevisionIds.Contains(x.QuestionRevisionId)))
             return Invalid("Answers must contain distinct known question and option IDs.");
         var normalized = d.QuestionRevisionIds.Select(q => new AnswerDocument(q,
-            request.Answers.SingleOrDefault(x => x.QuestionRevisionId == q)?.SelectedOptionIds.Order().ToArray() ?? [])).ToArray();
+            request.Answers.SingleOrDefault(x => x.QuestionRevisionId == q)?.SelectedOptionIds.Order().ToArray() ?? [],
+            request.Answers.SingleOrDefault(x => x.QuestionRevisionId == q)?.Text is { } text && text.Length > 0 ? text : null)).ToArray();
         var answers = Write(normalized);
         // jsonb normalizes whitespace/key order, so compare deserialized canonical data.
         if (a.SubmittedAt is not null)
@@ -170,6 +173,13 @@ public sealed class AssessmentService(AssessmentDbContext db, IAssessmentCurricu
         foreach (var answer in normalized)
         {
             var revision = questions[answer.QuestionRevisionId];
+            var document = Read<QuestionDocument>(revision.DocumentJson);
+            if (IsRubric(document))
+            {
+                if (answer.SelectedOptionIds.Length != 0) return Invalid("Rubric answers cannot select options.");
+                continue;
+            }
+            if (answer.Text is not null) return Invalid("Closed answers cannot contain text.");
             var q = Question(revision);
             ChoiceScore score;
             try { score = new ChoiceScorer().Score(q, answer.SelectedOptionIds); }
@@ -179,18 +189,26 @@ public sealed class AssessmentService(AssessmentDbContext db, IAssessmentCurricu
         a.SubmittedAt = now;
         a.AnswersJson = answers;
         a.ScoresJson = Write(scores);
+        if (scores.Count == d.QuestionRevisionIds.Length)
+            AddEvidence(a, definition, d, questions, scores, now);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return Results.Ok(await AttemptResponse(a, ct));
+    }
+
+    private void AddEvidence(AssessmentAttempt a, AssessmentRevision definition, DefinitionDocument d,
+        Dictionary<Guid, AssessmentRevision> questions, IEnumerable<ScoreDocument> scores, DateTimeOffset now, Guid? reviewId = null)
+    {
         foreach (var score in scores)
         {
             var r = questions[score.QuestionRevisionId];
             var q = Read<QuestionDocument>(r.DocumentJson);
             foreach (var concept in q.ConceptIds)
-                db.EvidenceEvents.Add(new() { AttemptId = a.Id, QuestionRevisionId = r.Id, ConceptId = concept, CreatedAt = now,
-                    PayloadJson = Write(new { schemaVersion = 1, studentId = student, attemptId = a.Id, definitionRevisionId = definition.Id,
+                db.EvidenceEvents.Add(new() { AttemptId = a.Id, QuestionRevisionId = r.Id, ConceptId = concept, CreatedAt = clock.GetUtcNow(),
+                    PayloadJson = Write(new { schemaVersion = 1, studentId = a.StudentId, attemptId = a.Id, definitionRevisionId = definition.Id,
+                        reviewId, evaluatedAt = clock.GetUtcNow(), evaluator = IsRubric(q) ? "human-rubric" : "deterministic",
                         questionId = r.ResourceId, questionRevisionId = r.Id, questionRevision = r.Number,
                         q.UnitId, q.UnitRevisionId, conceptId = concept, source = d.Mode, assistance = d.Assistance, score.Fraction, observedAt = now }) });
         }
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        return Results.Ok(await AttemptResponse(a, ct));
     }
 }

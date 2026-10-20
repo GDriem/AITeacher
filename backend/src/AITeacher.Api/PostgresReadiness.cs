@@ -1,3 +1,4 @@
+using AITeacher.Api.Features.Learning;
 using AITeacher.Api.Features.Graphs;
 using AITeacher.Api.Features.Assessments;
 using AITeacher.Api.Features.Catalog;
@@ -20,7 +21,8 @@ public sealed class PostgresReadiness(IServiceScopeFactory scopes) : IHealthChec
             var editorial = scope.ServiceProvider.GetRequiredService<EditorialDbContext>();
             var assessments = scope.ServiceProvider.GetRequiredService<AssessmentDbContext>();
             var tutor = scope.ServiceProvider.GetRequiredService<TutorDbContext>();
-            if ((await scope.ServiceProvider.GetRequiredService<GraphDbContext>().Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
+            if ((await scope.ServiceProvider.GetRequiredService<LearningDbContext>().Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
+                (await scope.ServiceProvider.GetRequiredService<GraphDbContext>().Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
                 (await tutor.Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
                 (await assessments.Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||
                 (await editorial.Database.GetPendingMigrationsAsync(cancellationToken)).Any() ||

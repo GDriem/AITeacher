@@ -1,12 +1,13 @@
 openapi: 3.0.3
 info:
   title: AITeacher backend
-  version: 0.6.0
-  description: Milestone 5. PostgreSQL identity, catalog, editorial revisions, closed
-    assessments, private tutor conversations and notes with bounded contexts.
-    Versioned editorial graphs, private observations and correction history.
-    Independent host; does not replace Python or migrate production data.
-    Errors use ProblemDetails.
+  version: 0.7.0
+  description: 'Milestone 5. PostgreSQL identity, catalog, editorial revisions, closed
+    assessments, private tutor conversations and notes with bounded contexts. Versioned
+    editorial graphs, private observations and correction history. Independent host;
+    does not replace Python or migrate production data. Errors use ProblemDetails.
+    Milestone 6 increment: human rubric reviews, durable evidence consumption and
+    explicit delayed reviews. Mastery remains uncalibrated.'
 servers:
 - url: http://localhost:5080
   description: Local development
@@ -18,7 +19,7 @@ tags:
 - name: Catalog
   description: Authenticated reads; author-only writes
 - name: Assessments
-  description: Immutable closed questions and definitions; student-owned attempts.
+  description: Immutable closed and rubric questions; student-owned attempts and author reviews.
 - name: Editorial
   description: Author-only editorial snapshots; authenticated students read active
     publications.
@@ -26,6 +27,9 @@ tags:
   description: Private tutor, verified editorial sources and notes; providers by capability.
 - name: Graphs
   description: Versioned editorial references and student-owned conversation maps.
+- name: Learning
+  description: Private evidence and explicit delayed reviews; no calibrated mastery
+    policy.
 security:
 - sessionCookie: []
 paths:
@@ -1844,8 +1848,8 @@ paths:
       summary: getQuestionRevision
       tags:
       - Assessments
-      description: Author only. Read immutable revision by revision ID, including private
-        authoring document.
+      description: Author only. Read immutable revision by revision ID, including
+        private authoring document.
       responses:
         '200':
           description: Success
@@ -1904,8 +1908,8 @@ paths:
       - Assessments
       description: Author only. Appends an immutable snapshot. Reuse resource id with
         the next number; revisions start at 1. Concurrent appends return 409. Immediately
-        available. Pins an explicit ordered composition of question revisions with complete
-        objective coverage in one published editorial revision.
+        available. Pins an explicit ordered composition of question revisions with
+        complete objective coverage in one published editorial revision.
       responses:
         '201':
           description: Created
@@ -1968,8 +1972,8 @@ paths:
       tags:
       - Assessments
       description: Authenticated. Paged snapshots ordered by resourceId then descending
-        number. Public policy metadata only, for all revisions; no question IDs or private
-        keys.
+        number. Public policy metadata only, for all revisions; no question IDs or
+        private keys.
       responses:
         '200':
           description: Success
@@ -2033,8 +2037,8 @@ paths:
       summary: getDefinitionRevision
       tags:
       - Assessments
-      description: Author only. Read immutable revision by revision ID, including private
-        authoring document.
+      description: Author only. Read immutable revision by revision ID, including
+        private authoring document.
       responses:
         '200':
           description: Success
@@ -2092,11 +2096,11 @@ paths:
       tags:
       - Assessments
       description: 'Authenticated. Server pins student, definition revision, question
-        order and deadlines. Request ID is unique per student. Replays return the same
-        attempt even after limit/expiry. Reusing a request ID with another definition
-        returns 409. Limits span all revisions of the definition and count expired attempts.
-        Historical published editorial revisions remain assessable. No keys or scores
-        before submission. Responses use Cache-Control: no-store.'
+        order and deadlines. Request ID is unique per student. Replays return the
+        same attempt even after limit/expiry. Reusing a request ID with another definition
+        returns 409. Limits span all revisions of the definition and count expired
+        attempts. Historical published editorial revisions remain assessable. No keys
+        or scores before submission. Responses use Cache-Control: no-store.'
       responses:
         '201':
           description: Created
@@ -2165,9 +2169,9 @@ paths:
       summary: getAttempt
       tags:
       - Assessments
-      description: 'Authenticated. Owner only; all other users, including authors, receive
-        404. Server computes expiration. Keys are never exposed. Feedback scores appear
-        only after submission when policy permits. Cache-Control: no-store.'
+      description: 'Authenticated. Owner only; all other users, including authors,
+        receive 404. Server computes expiration. Keys are never exposed. Feedback
+        scores appear only after submission when policy permits. Cache-Control: no-store.'
       responses:
         '200':
           description: Success
@@ -2225,13 +2229,14 @@ paths:
       tags:
       - Assessments
       description: 'Authenticated. Owner only. Omitted questions count as unanswered.
-        Unknown/duplicate questions or options and invalid cardinality return 400 without
-        writes. Expired attempts return 409. Answers are normalized by fixed question
-        order and sorted options: identical replay returns the persisted result; changed
-        answers return 409. Submission, scores and evidence outbox events commit once
-        atomically. Each question weighs equally; selecting all multiple-choice options
-        scores zero. No keys in responses. Never feedback hides aggregate and per-question
-        scores. Cache-Control: no-store.'
+        Unknown/duplicate questions or options and invalid cardinality return 400
+        without writes. Expired attempts return 409. Answers are normalized by fixed
+        question order and sorted options: identical replay returns the persisted
+        result; changed answers return 409. Closed-only submissions commit scores and evidence atomically. Rubric and mixed
+        submissions stay pendingReview without feedback or evidence until a complete
+        immutable human review commits scores and evidence. Each question weighs equally; selecting all
+        multiple-choice options scores zero. No keys in responses. Never feedback
+        hides aggregate and per-question scores. Cache-Control: no-store.'
       responses:
         '200':
           description: Success
@@ -3015,9 +3020,9 @@ paths:
       description: Author only. Immutable complete snapshot; number must follow latest
         revision of graphId. Topic fixed; node IDs cannot be reassigned. Sources must
         be published concepts in the same topic, including historical publications.
-        Only requires edges must be acyclic. No draft or activation pointer; each revision
-        is immediately readable. Duplicate or racing revision returns 409; creating
-        is not idempotent.
+        Only requires edges must be acyclic. No draft or activation pointer; each
+        revision is immediately readable. Duplicate or racing revision returns 409;
+        creating is not idempotent.
       tags:
       - Graphs
       parameters:
@@ -3208,8 +3213,8 @@ paths:
     post:
       operationId: createGraphObservation
       summary: Record student-proposed mention or relation
-      description: Owner only. Origin student, initial status pending; source must be
-        a user message in this conversation. Reference must include the conversation
+      description: Owner only. Origin student, initial status pending; source must
+        be a user message in this conversation. Reference must include the conversation
         unit revision. Optional relation and target must be supplied together. Stages
         are self-reports, never mastery. Maximum 1000 observations per conversation/reference.
         Not idempotent.
@@ -3284,7 +3289,8 @@ paths:
         boundaries, name-match-v1; only the specified user message is processed. No
         model calls or inference of understanding. Confidence 1 describes a lexical
         match, not probability of learning. Pending observations deduplicate by message,
-        revision and node, including concurrent extraction and corrected/rejected observations.
+        revision and node, including concurrent extraction and corrected/rejected
+        observations.
       tags:
       - Graphs
       parameters:
@@ -3410,10 +3416,10 @@ paths:
       operationId: correctGraphObservation
       summary: Append an observation correction
       description: Owner only. Current version required; stale or racing corrections
-        return 409. Maximum 100 revisions. Graph revision, source message, origin and
-        original observation are immutable. Nodes may be corrected within the original
-        graph snapshot. Rejected observations remain in history and are excluded from
-        comparison. Acceptance is student validation, not assessed mastery.
+        return 409. Maximum 100 revisions. Graph revision, source message, origin
+        and original observation are immutable. Nodes may be corrected within the
+        original graph snapshot. Rejected observations remain in history and are excluded
+        from comparison. Acceptance is student validation, not assessed mastery.
       tags:
       - Graphs
       parameters:
@@ -3481,13 +3487,13 @@ paths:
     get:
       operationId: getConversationGraph
       summary: Read conversation graph and comparison
-      description: Owner only; no-store. Pinned revision required and must include the
-        conversation source revision. Preserves historical access after withdrawal.
+      description: Owner only; no-store. Pinned revision required and must include
+        the conversation source revision. Preserves historical access after withdrawal.
         Comparison reports mentions, accepted coverage, unmentioned nodes, prerequisite
         coverage gaps and proposed relations absent from reference; these are review
         signals, not confusion or mastery diagnoses. Rejected observations are excluded.
-        Maximum 1000 observations, each with at most 100 immutable revisions. HTML uses
-        semantic lists, escaped text and source links.
+        Maximum 1000 observations, each with at most 100 immutable revisions. HTML
+        uses semantic lists, escaped text and source links.
       tags:
       - Graphs
       parameters:
@@ -3550,13 +3556,13 @@ paths:
     get:
       operationId: getConversationGraphList
       summary: Read accessible conversation graph list
-      description: Owner only; no-store. Pinned revision required and must include the
-        conversation source revision. Preserves historical access after withdrawal.
+      description: Owner only; no-store. Pinned revision required and must include
+        the conversation source revision. Preserves historical access after withdrawal.
         Comparison reports mentions, accepted coverage, unmentioned nodes, prerequisite
         coverage gaps and proposed relations absent from reference; these are review
         signals, not confusion or mastery diagnoses. Rejected observations are excluded.
-        Maximum 1000 observations, each with at most 100 immutable revisions. HTML uses
-        semantic lists, escaped text and source links.
+        Maximum 1000 observations, each with at most 100 immutable revisions. HTML
+        uses semantic lists, escaped text and source links.
       tags:
       - Graphs
       parameters:
@@ -3683,6 +3689,259 @@ paths:
             text/html:
               schema:
                 type: string
+  /api/assessments/attempts/{id}/review:
+    get:
+      operationId: readRubricReview
+      tags:
+      - Assessments
+      summary: Read submitted attempt for author review
+      description: Read submitted attempt for author review
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentReviewView'
+        '400':
+          description: Invalid body or CSRF token
+        '401':
+          description: Session required
+        '403':
+          description: Author role required
+        '404':
+          description: Resource not found or not owned
+        '409':
+          description: Conflicting state or retry
+      parameters:
+      - &id008
+        name: id
+        in: path
+        required: true
+        schema: &id017
+          type: string
+          format: uuid
+    post:
+      operationId: gradeRubricAttempt
+      tags:
+      - Assessments
+      summary: Finalize human rubric review
+      description: Author only. All rubric questions and criteria are required. Immutable
+        final review; identical normalized requestId retries return the same result.
+        Evidence is committed atomically. No student access.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentReviewResult'
+        '400':
+          description: Invalid body or CSRF token
+        '401':
+          description: Session required
+        '403':
+          description: Author role required
+        '404':
+          description: Resource not found or not owned
+        '409':
+          description: Conflicting state or retry
+      parameters:
+      - *id008
+      - &id010
+        name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessmentReviewRequest'
+  /api/learning/evidence:
+    get:
+      operationId: listLearningEvidence
+      tags:
+      - Learning
+      summary: List own evidence
+      description: List own evidence
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningEvidencePage'
+        '400':
+          description: Invalid body or CSRF token
+        '401':
+          description: Session required
+        '403':
+          description: Author role required
+        '404':
+          description: Resource not found or not owned
+        '409':
+          description: Conflicting state or retry
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/learning/concepts:
+    get:
+      operationId: listLearningConcepts
+      tags:
+      - Learning
+      summary: List own concepts
+      description: List own concepts
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningConceptPage'
+        '400':
+          description: Invalid body or CSRF token
+        '401':
+          description: Session required
+        '403':
+          description: Author role required
+        '404':
+          description: Resource not found or not owned
+        '409':
+          description: Conflicting state or retry
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/learning/reviews:
+    get:
+      operationId: listLearningReviews
+      tags:
+      - Learning
+      summary: List own reviews
+      description: List own reviews
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningReviewPage'
+        '400':
+          description: Invalid body or CSRF token
+        '401':
+          description: Session required
+        '403':
+          description: Author role required
+        '404':
+          description: Resource not found or not owned
+        '409':
+          description: Conflicting state or retry
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+    post:
+      operationId: scheduleLearningReview
+      tags:
+      - Learning
+      summary: Schedule own delayed review
+      description: Requires owned evidence and definition covering its concept in
+        the same unit revision. Due date UTC in the future, within one year. Request
+        ID retries are idempotent.
+      responses:
+        '200': &id009
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningReview'
+        '400':
+          description: Invalid body or CSRF token
+        '401':
+          description: Session required
+        '403':
+          description: Author role required
+        '404':
+          description: Resource not found or not owned
+        '409':
+          description: Conflicting state or retry
+        '201': *id009
+      parameters:
+      - *id010
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleLearningReview'
+  /api/learning/reviews/{id}/complete:
+    post:
+      operationId: completeLearningReview
+      tags:
+      - Learning
+      summary: Complete delayed review with a new graded attempt
+      description: Own unused attempt, fixed definition, started at or after due date,
+        submitted and fully graded. Same-attempt retries are idempotent.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningReview'
+        '400':
+          description: Invalid body or CSRF token
+        '401':
+          description: Session required
+        '403':
+          description: Author role required
+        '404':
+          description: Resource not found or not owned
+        '409':
+          description: Conflicting state or retry
+      parameters:
+      - *id008
+      - *id010
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteLearningReview'
 components:
   securitySchemes:
     sessionCookie:
@@ -3997,26 +4256,26 @@ components:
       - assessments
       - prerequisites
       properties:
-        title: &id008
+        title: &id011
           type: string
           minLength: 1
           maxLength: 150
-        concepts: &id009
+        concepts: &id012
           type: array
           maxItems: 200
           items:
             $ref: '#/components/schemas/UnitConcept'
-        objectives: &id010
+        objectives: &id013
           type: array
           maxItems: 200
           items:
             $ref: '#/components/schemas/UnitObjective'
-        readings: &id011
+        readings: &id014
           type: array
           maxItems: 200
           items:
             $ref: '#/components/schemas/UnitReading'
-        exercises: &id012
+        exercises: &id015
           type: array
           maxItems: 200
           items:
@@ -4026,7 +4285,7 @@ components:
           maxItems: 200
           items:
             $ref: '#/components/schemas/UnitAssessment'
-        prerequisites: &id013
+        prerequisites: &id016
           type: array
           maxItems: 200
           items:
@@ -4041,12 +4300,12 @@ components:
       - exercises
       - prerequisites
       properties:
-        title: *id008
-        concepts: *id009
-        objectives: *id010
-        readings: *id011
-        exercises: *id012
-        prerequisites: *id013
+        title: *id011
+        concepts: *id012
+        objectives: *id013
+        readings: *id014
+        exercises: *id015
+        prerequisites: *id016
       additionalProperties: false
     UnitVersionRequest:
       type: object
@@ -4338,6 +4597,9 @@ components:
           - singleChoice
           - multipleChoice
           - trueFalse
+          - openResponse
+          - caseAnalysis
+          - practicalExercise
         prompt:
           type: string
           minLength: 1
@@ -4346,13 +4608,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssessmentOption'
-          minItems: 2
+          minItems: 0
           maxItems: 50
         scoringPolicy:
           type: string
           enum:
           - exactMatch
           - partialCredit
+          - rubric
         correctOptionIds:
           type: array
           items:
@@ -4360,7 +4623,12 @@ components:
             format: uuid
           uniqueItems: true
           maxItems: 200
+        rubric:
+          $ref: '#/components/schemas/AssessmentRubric'
+          nullable: true
       additionalProperties: false
+      description: Closed types require options/key and forbid rubric. Advanced types
+        require empty options/key, scoringPolicy rubric and a versioned private rubric.
     AssessmentDefinitionDocument:
       type: object
       required:
@@ -4641,6 +4909,10 @@ components:
             format: uuid
           uniqueItems: true
           maxItems: 200
+        text:
+          type: string
+          nullable: true
+          maxLength: 20000
       additionalProperties: false
     SubmitAssessmentAttempt:
       type: object
@@ -4668,6 +4940,10 @@ components:
           maximum: 1
         isCorrect:
           type: boolean
+        feedback:
+          type: string
+          nullable: true
+          maxLength: 10000
       additionalProperties: false
     StudentAssessmentQuestion:
       type: object
@@ -4710,6 +4986,9 @@ components:
           - singleChoice
           - multipleChoice
           - trueFalse
+          - openResponse
+          - caseAnalysis
+          - practicalExercise
         prompt:
           type: string
           minLength: 1
@@ -4718,13 +4997,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssessmentOption'
-          minItems: 2
+          minItems: 0
           maxItems: 50
         scoringPolicy:
           type: string
           enum:
           - exactMatch
           - partialCredit
+          - rubric
       additionalProperties: false
     AssessmentAttempt:
       type: object
@@ -4766,6 +5046,7 @@ components:
           - inProgress
           - submitted
           - expired
+          - pendingReview
         title:
           type: string
         mode:
@@ -5122,8 +5403,9 @@ components:
           format: date-time
         origin:
           type: object
-          description: 'Immutable origin. Student: empty; savedMessage: messageId and
-            sources; summary: manifest, provider, token counts. Edits preserve origin.'
+          description: 'Immutable origin. Student: empty; savedMessage: messageId
+            and sources; summary: manifest, provider, token counts. Edits preserve
+            origin.'
       required:
       - id
       - kind
@@ -5723,3 +6005,302 @@ components:
       - id
       - text
       - role
+    AssessmentRubric:
+      type: object
+      required:
+      - version
+      - criteria
+      - privateGuidance
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        criteria:
+          type: array
+          items:
+            $ref: '#/components/schemas/RubricCriterion'
+          minItems: 1
+          maxItems: 50
+        privateGuidance:
+          type: string
+          minLength: 1
+          maxLength: 20000
+      additionalProperties: false
+    RubricCriterion:
+      type: object
+      required:
+      - id
+      - description
+      - maxPoints
+      properties:
+        id: *id017
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        maxPoints:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          maximum: 1000
+      additionalProperties: false
+    AssessmentReviewRequest:
+      type: object
+      required:
+      - requestId
+      - grades
+      properties:
+        requestId: *id017
+        grades:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionGrade'
+          minItems: 1
+          maxItems: 100
+      additionalProperties: false
+    QuestionGrade:
+      type: object
+      required:
+      - questionRevisionId
+      - criteria
+      - feedback
+      properties:
+        questionRevisionId: *id017
+        criteria:
+          type: array
+          items:
+            $ref: '#/components/schemas/CriterionGrade'
+          minItems: 1
+          maxItems: 50
+        feedback:
+          type: string
+          minLength: 1
+          maxLength: 10000
+      additionalProperties: false
+    CriterionGrade:
+      type: object
+      required:
+      - criterionId
+      - points
+      properties:
+        criterionId: *id017
+        points:
+          type: number
+          minimum: 0
+          maximum: 1000
+      additionalProperties: false
+    ScheduleLearningReview:
+      type: object
+      required:
+      - requestId
+      - evidenceId
+      - definitionRevisionId
+      - dueAt
+      properties:
+        requestId: *id017
+        evidenceId: *id017
+        definitionRevisionId: *id017
+        dueAt: &id018
+          type: string
+          format: date-time
+      additionalProperties: false
+    CompleteLearningReview:
+      type: object
+      required:
+      - attemptId
+      properties:
+        attemptId: *id017
+      additionalProperties: false
+    AssessmentReviewResult:
+      type: object
+      required:
+      - attemptId
+      - reviewId
+      properties:
+        attemptId: *id017
+        reviewId: *id017
+      additionalProperties: false
+    AssessmentReviewSnapshot:
+      type: object
+      required:
+      - id
+      - attemptId
+      - requestId
+      - reviewerId
+      - createdAt
+      - gradesJson
+      - scoresJson
+      properties:
+        id: *id017
+        attemptId: *id017
+        requestId: *id017
+        reviewerId:
+          type: string
+        createdAt: *id018
+        gradesJson:
+          type: string
+        scoresJson:
+          type: string
+      additionalProperties: false
+    AssessmentReviewView:
+      type: object
+      required:
+      - attemptId
+      - definitionRevisionId
+      - submittedAt
+      - questions
+      - answers
+      - review
+      properties:
+        attemptId: *id017
+        definitionRevisionId: *id017
+        submittedAt: *id018
+        questions:
+          type: array
+          items:
+            type: object
+            required:
+            - revisionId
+            - document
+            properties:
+              revisionId: *id017
+              document:
+                $ref: '#/components/schemas/ClosedQuestionDocument'
+            additionalProperties: false
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentAnswer'
+        review:
+          $ref: '#/components/schemas/AssessmentReviewSnapshot'
+          nullable: true
+      additionalProperties: false
+    LearningEvidence:
+      type: object
+      required:
+      - id
+      - attemptId
+      - questionRevisionId
+      - unitRevisionId
+      - conceptId
+      - source
+      - assistance
+      - observedAt
+      properties:
+        id: *id017
+        attemptId: *id017
+        questionRevisionId: *id017
+        unitRevisionId: *id017
+        conceptId: *id017
+        source:
+          type: string
+        assistance:
+          type: string
+        observedAt: *id018
+      additionalProperties: false
+    LearningConcept:
+      type: object
+      required:
+      - unitRevisionId
+      - conceptId
+      - evidenceCount
+      - lastObservedAt
+      - masteryStatus
+      properties:
+        unitRevisionId: *id017
+        conceptId: *id017
+        evidenceCount:
+          type: integer
+        lastObservedAt: *id018
+        masteryStatus:
+          type: string
+          enum:
+          - uncalibrated
+      additionalProperties: false
+    LearningReview:
+      type: object
+      required:
+      - id
+      - studentId
+      - requestId
+      - evidenceId
+      - definitionRevisionId
+      - dueAt
+      - createdAt
+      - completedAttemptId
+      - completedAt
+      properties:
+        id: *id017
+        studentId:
+          type: string
+        requestId: *id017
+        evidenceId: *id017
+        definitionRevisionId: *id017
+        dueAt: *id018
+        createdAt: *id018
+        completedAttemptId:
+          type: string
+          format: uuid
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    LearningEvidencePage:
+      type: object
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LearningEvidence'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      additionalProperties: false
+    LearningConceptPage:
+      type: object
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LearningConcept'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      additionalProperties: false
+    LearningReviewPage:
+      type: object
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LearningReview'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      additionalProperties: false

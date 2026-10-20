@@ -38,5 +38,15 @@ variables:
   value: '1'
 - key: conceptId
   value: 10000000-0000-0000-0000-000000000001
+- key: rubricReviewRequestId
+  value: ''
+- key: evidenceId
+  value: ''
+- key: reviewDueAt
+  value: ''
+- key: learningReviewRequestId
+  value: ''
+- key: learningReviewId
+  value: ''
 auth:
   type: noauth
