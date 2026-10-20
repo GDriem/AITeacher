@@ -1,0 +1,10 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/history/conversations?offset=0&limit=50'
+order: 1000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Private history",()=>{pm.response.to.have.status(200);pm.expect(pm.response.headers.get("Cache-Control")).to.eql("no-store");});
+    const items=pm.response.json().items; if(items.length) pm.collectionVariables.set("historyConversationId",items[0].id);
+    pm.test("No pending quiz keys",()=>{pm.expect(pm.response.text()).not.to.include("expected_keywords");pm.expect(pm.response.text()).not.to.include("completed_chat_requests");});

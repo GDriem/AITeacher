@@ -1,3 +1,4 @@
+using AITeacher.Api.Features.History;
 using AITeacher.Api.Features.Learning;
 using AITeacher.Api.Features.Graphs;
 using AITeacher.Api.Features.Assessments;
@@ -13,6 +14,9 @@ using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 var connection = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Configure ConnectionStrings:Postgres before starting the backend.");
+builder.Services.AddDbContext<HistoryDbContext>(options => options.UseNpgsql(connection,
+    postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "history")));
+builder.Services.AddScoped<HistoryMigration>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddValidation();
@@ -80,12 +84,49 @@ if (args.Contains("--migrate", StringComparer.Ordinal))
     await scope.ServiceProvider.GetRequiredService<TutorDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<GraphDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<LearningDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<HistoryDbContext>().Database.MigrateAsync();
     return;
 }
 if (args.Contains("--consume-evidence", StringComparer.Ordinal))
 {
     await using var scope = app.Services.CreateAsyncScope();
     while (await scope.ServiceProvider.GetRequiredService<LearningService>().Consume(CancellationToken.None) == 100) { }
+    return;
+}
+if (args.Contains("--history", StringComparer.Ordinal))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    try
+    {
+        if (!app.Environment.IsDevelopment())
+            throw new InvalidDataException("History rehearsal commands require Development environment.");
+        var index = Array.IndexOf(args, "--history");
+        if (args.Length != index + 3) throw new InvalidDataException("Use --history import|reconcile <snapshot> or rollback <batch UUID>.");
+        var service = scope.ServiceProvider.GetRequiredService<HistoryMigration>();
+        if (args[index + 1] == "rollback")
+        {
+            await service.Rollback(Guid.Parse(args[index + 2]), CancellationToken.None);
+            Console.WriteLine("History batch rolled back.");
+        }
+        else if (args[index + 1] is "import" or "reconcile")
+        {
+            await using var input = File.OpenRead(args[index + 2]);
+            var snapshot = await System.Text.Json.JsonSerializer.DeserializeAsync<HistorySnapshot>(input, HistoryMigration.Json)
+                ?? throw new InvalidDataException("Empty snapshot.");
+            var report = args[index + 1] == "import"
+                ? await service.Import(snapshot, CancellationToken.None)
+                : await service.Reconcile(snapshot, CancellationToken.None);
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(report, HistoryMigration.Json));
+            if (!report.Matches) Environment.ExitCode = 2;
+        }
+        else throw new InvalidDataException("Unknown history command.");
+    }
+    catch (Exception)
+    {
+        // Do not echo payloads, connection strings or source validation errors.
+        Console.Error.WriteLine("History command failed. Check snapshot, batch state, migrations and database connectivity.");
+        Environment.ExitCode = 2;
+    }
     return;
 }
 app.UseExceptionHandler();
@@ -122,6 +163,7 @@ app.MapAssessments();
 app.MapTutor();
 app.MapGraphs();
 app.MapLearning();
+app.MapHistory();
 app.Run();
 
 public partial class Program;

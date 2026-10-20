@@ -4,7 +4,7 @@ Implementación incremental del [plan aprobado](../docs/backend-architecture-pla
 El host ASP.NET Core se ejecuta separado de FastAPI; React y Python siguen usando
 sus contratos y escritores actuales. Azure es el destino del despliegue final.
 
-## Ejecutar los hitos 1–6 (hito 6 parcial)
+## Ejecutar los hitos 1–7 (hitos 6 y 7 parciales)
 
 Desde `backend/`, con Docker y el SDK fijado en `global.json`:
 
@@ -239,3 +239,21 @@ ni errores, 9 pruebas de dominio y 57 de integración aprobadas con PostgreSQL r
 más simulaciones HTTP de IA; 19 aserciones smoke Postman aprobadas (salida 0).
 OpenAPI y ambas colecciones validados sin incidencias. Véase la guía del hito 6
 para alcance y aceptación pendiente.
+
+
+## Incremento del hito 7
+
+[Contrato, ensayo y límites de aceptación](MILESTONE7.md): exportación validada de
+mapas JSON Python, archivo histórico privado en PostgreSQL, importación idempotente,
+conciliación de huellas/cantidades y reversión transaccional por lote mediante
+`--history`. Lecturas paginadas `/api/history` con aislamiento entre alumnos,
+sin cuestionarios privados ni reanudación automática de actividades antiguas.
+Los resultados históricos no modifican el dominio sin calibrar del hito 6.
+Para nuevas migraciones use `HistoryDbContext` y `Features/History/Migrations`.
+
+Validación más reciente: 9 pruebas de dominio, 61 de integración PostgreSQL,
+27 Python de exportación/configuración y cupos de voz; 22 aserciones smoke Postman.
+El ciclo CLI de importación/repetición/conciliación/reversión se ensayó con datos
+sintéticos en una base temporal. Contrato y colecciones validados. No se ha cerrado
+el hito 7: faltan datos Firestore reales, continuidad editorial, React y voz real.
+Python sigue siendo el escritor de producción y no se han creado recursos Azure.

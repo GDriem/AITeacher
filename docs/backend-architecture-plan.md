@@ -439,6 +439,36 @@ y ambas colecciones validaron sin incidencias. Se verificaron las migraciones y
 el comando de consumo local. Google se sustituye solo en integración; modelos
 reales y flujo autenticado Postman no se ensayaron. No hay datos de calibración.
 
+Hito 7: incremento de ensayo histórico implementado y verificado localmente:
+
+- Exportador de mapas JSON Python congelados que valida con los modelos existentes
+  y conserva los payloads originales sin recalcular resúmenes ni purgar sesiones.
+- Archivo privado `history` en PostgreSQL con procedencia, IDs y propietarios
+  originales, mensajes, fuentes, actividades pendientes y resultados históricos.
+  Las filas son inmutables mediante trigger SQL; no se inventan revisiones,
+  intentos ni evidencia calibrada para datos antiguos.
+- Comandos locales `--history import|reconcile|rollback`, limitados a Development.
+  Huellas SHA-256, validación completa, transacción y bloqueo entre procesos;
+  reintentos idempotentes, conflictos sin escrituras parciales y reversión por lote.
+- Lecturas privadas paginadas `/api/history` con `no-store`, aislamiento por alumno
+  y proyección que excluye cuestionarios pendientes y respuestas de chat cacheadas.
+  No hay escrituras HTTP ni reanudación automática de actividades históricas.
+- Guía operativa y aceptación pendiente en `backend/MILESTONE7.md`. Firestore,
+  escritores Python y recursos Azure permanecen sin cambios. El hito 7 no se cierra:
+  faltan exportación Firestore autorizada, datos reales conciliados, continuidad
+  editorial, React y voz real; la calibración del hito 6 sigue pendiente.
+
+Validación del incremento del hito 7: compilación sin errores ni advertencias;
+9 pruebas de dominio y 61 de integración aprobadas con PostgreSQL real y
+simulaciones HTTP locales de IA. Se repitieron las 4 pruebas de historial tras
+agregar la comprobación de inmutabilidad SQL, todas aprobadas. 27 pruebas Python
+aprobadas cubren exportación y configuración/cupos de voz con un puente de prueba.
+22 aserciones smoke Postman aprobaron contra el host real y una base temporal;
+OpenAPI y ambas colecciones validaron sin incidencias. Se ensayaron por CLI
+exportación, migraciones, importación, repetición, conciliación y reversión sobre
+un snapshot sintético; la conciliación posterior detectó la ausencia con salida 2.
+No se ensayaron login Google ni proveedores de voz reales.
+
 ## Retomar en otra sesión
 
 Consultar primero `git status`, este documento y `backend/README.md`. Los cambios
@@ -458,15 +488,17 @@ Los hitos 2 y 3 están verificados localmente; consulte `backend/EDITORIAL.md`
 y `backend/ASSESSMENTS.md`. El backend del hito 4 está implementado con regresión
 local; consulte `backend/TUTOR.md` para configuración, simulaciones y aceptación
 externa pendiente. El hito 5 tiene backend y lista accesible verificados localmente; consulte
-`backend/GRAPHS.md`. La continuación del hito 6 es calibrar dominio con datos docentes reales y
-validar pedagógicamente el flujo avanzado; consulte `backend/MILESTONE6.md`. El
-despliegue/corte Azure sigue en el hito 8.
+`backend/GRAPHS.md`. La calibración del hito 6 requiere datos docentes reales y validación pedagógica;
+consulte `backend/MILESTONE6.md`. El hito 7 tiene un ensayo histórico local, con
+aceptación pendiente en `backend/MILESTONE7.md`. El despliegue/corte Azure sigue
+en el hito 8.
 
 Solicitud sugerida para continuar:
 
 > Lee docs/backend-architecture-plan.md, backend/README.md, backend/EDITORIAL.md,
 > backend/ASSESSMENTS.md, backend/TUTOR.md y backend/GRAPHS.md. Conserva los cambios
-> locales existentes y consulta backend/MILESTONE6.md y continúa la aceptación del hito 6:
-> datos docentes reales para calibrar dominio y validar rúbricas/repasos,
-> sin inventar umbrales de dominio.
+> locales existentes y consulta backend/MILESTONE7.md. Continúa el hito 7 desde
+> el ensayo histórico ya implementado: extracción Firestore autorizada, conciliación
+> con datos reales, continuidad editorial, integración React y validación de voz.
+> Mantén pendiente la calibración del hito 6 sin inventar umbrales de dominio.
 > Conserva las revisiones, intentos, conversaciones y fuentes históricas.

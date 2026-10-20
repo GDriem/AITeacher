@@ -1,0 +1,9 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/history/conversations/{{historyConversationId}}'
+order: 2000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Private history",()=>{pm.response.to.have.status(200);pm.expect(pm.response.headers.get("Cache-Control")).to.eql("no-store");});
+    pm.test("No pending quiz keys",()=>{pm.expect(pm.response.text()).not.to.include("expected_keywords");pm.expect(pm.response.text()).not.to.include("completed_chat_requests");});

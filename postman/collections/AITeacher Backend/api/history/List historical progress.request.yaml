@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/history/progress?offset=0&limit=50'
+order: 4000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Private history",()=>{pm.response.to.have.status(200);pm.expect(pm.response.headers.get("Cache-Control")).to.eql("no-store");});

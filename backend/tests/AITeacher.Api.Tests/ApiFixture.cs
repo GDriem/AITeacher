@@ -1,3 +1,4 @@
+using AITeacher.Api.Features.History;
 using AITeacher.Api.Features.Learning;
 using AITeacher.Api.Features.Graphs;
 using AITeacher.Api.Features.Assessments;
@@ -86,6 +87,7 @@ public sealed class ApiFixture : IAsyncLifetime
         await scope.ServiceProvider.GetRequiredService<TutorDbContext>().Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<GraphDbContext>().Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<LearningDbContext>().Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<HistoryDbContext>().Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()

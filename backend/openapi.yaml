@@ -1,13 +1,14 @@
 openapi: 3.0.3
 info:
   title: AITeacher backend
-  version: 0.7.0
+  version: 0.8.0
   description: 'Milestone 5. PostgreSQL identity, catalog, editorial revisions, closed
     assessments, private tutor conversations and notes with bounded contexts. Versioned
     editorial graphs, private observations and correction history. Independent host;
     does not replace Python or migrate production data. Errors use ProblemDetails.
     Milestone 6 increment: human rubric reviews, durable evidence consumption and
-    explicit delayed reviews. Mastery remains uncalibrated.'
+    explicit delayed reviews. Mastery remains uncalibrated. Milestone 7 increment:
+    private read-only Python history; local migration rehearsal only.'
 servers:
 - url: http://localhost:5080
   description: Local development
@@ -19,7 +20,8 @@ tags:
 - name: Catalog
   description: Authenticated reads; author-only writes
 - name: Assessments
-  description: Immutable closed and rubric questions; student-owned attempts and author reviews.
+  description: Immutable closed and rubric questions; student-owned attempts and author
+    reviews.
 - name: Editorial
   description: Author-only editorial snapshots; authenticated students read active
     publications.
@@ -30,6 +32,9 @@ tags:
 - name: Learning
   description: Private evidence and explicit delayed reviews; no calibrated mastery
     policy.
+- name: History
+  description: Private read-only imported Python history; no calibrated mastery or
+    executable pending quizzes.
 security:
 - sessionCookie: []
 paths:
@@ -2232,11 +2237,12 @@ paths:
         Unknown/duplicate questions or options and invalid cardinality return 400
         without writes. Expired attempts return 409. Answers are normalized by fixed
         question order and sorted options: identical replay returns the persisted
-        result; changed answers return 409. Closed-only submissions commit scores and evidence atomically. Rubric and mixed
-        submissions stay pendingReview without feedback or evidence until a complete
-        immutable human review commits scores and evidence. Each question weighs equally; selecting all
-        multiple-choice options scores zero. No keys in responses. Never feedback
-        hides aggregate and per-question scores. Cache-Control: no-store.'
+        result; changed answers return 409. Closed-only submissions commit scores
+        and evidence atomically. Rubric and mixed submissions stay pendingReview without
+        feedback or evidence until a complete immutable human review commits scores
+        and evidence. Each question weighs equally; selecting all multiple-choice
+        options scores zero. No keys in responses. Never feedback hides aggregate
+        and per-question scores. Cache-Control: no-store.'
       responses:
         '200':
           description: Success
@@ -3942,6 +3948,199 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CompleteLearningReview'
+  /api/history/conversations:
+    get:
+      operationId: listHistoryConversations
+      tags:
+      - History
+      summary: List private imported conversations
+      description: Read-only history owned by the current student. Authors have no
+        access to other students. Pending quizzes and cached chat responses are never
+        returned.
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryConversationPage'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/history/conversations/{id}:
+    get:
+      operationId: readHistoryConversation
+      tags:
+      - History
+      summary: Read private imported conversation metadata
+      description: Read-only history owned by the current student. Authors have no
+        access to other students. Pending quizzes and cached chat responses are never
+        returned.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Internal archive UUID; sourceId retains the original Python identity.
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryConversation'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/history/conversations/{id}/messages:
+    get:
+      operationId: listHistoryMessages
+      tags:
+      - History
+      summary: Read original messages without private pending quizzes
+      description: Read-only history owned by the current student. Authors have no
+        access to other students. Pending quizzes and cached chat responses are never
+        returned.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Internal archive UUID; sourceId retains the original Python identity.
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryMessagePage'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/history/progress:
+    get:
+      operationId: listHistoryProgress
+      tags:
+      - History
+      summary: Read original uncalibrated private progress
+      description: Read-only history owned by the current student. Authors have no
+        access to other students. Pending quizzes and cached chat responses are never
+        returned.
+      parameters:
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryProgressPage'
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Session required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Unknown resource or another student owns it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
 components:
   securitySchemes:
     sessionCookie:
@@ -6303,4 +6502,170 @@ components:
           type: integer
         limit:
           type: integer
+      additionalProperties: false
+    HistoryConversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          type: string
+        sourceId:
+          type: string
+        readOnly:
+          type: boolean
+          enum:
+          - true
+        title:
+          type: string
+        topic:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          nullable: true
+        archivedAt:
+          type: string
+          nullable: true
+        messageCount:
+          type: integer
+          minimum: 0
+      required:
+      - id
+      - source
+      - sourceId
+      - readOnly
+      - title
+      - topic
+      - createdAt
+      - updatedAt
+      - archivedAt
+      - messageCount
+      additionalProperties: false
+    HistoryMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum:
+          - user
+          - assistant
+        content:
+          type: string
+        label:
+          type: string
+          nullable: true
+        sources:
+          type: array
+          items:
+            type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          nullable: true
+      required:
+      - id
+      - role
+      - content
+      - label
+      - sources
+      - note
+      - createdAt
+      additionalProperties: false
+    HistoryProgress:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          type: string
+        sourceId:
+          type: string
+        readOnly:
+          type: boolean
+          enum:
+          - true
+        status:
+          type: string
+          enum:
+          - legacyUncalibrated
+        payload:
+          type: object
+          description: Original private StudentProgress document, including original
+            assessments and derived summaries; never used as calibrated .NET evidence.
+          additionalProperties: true
+      required:
+      - id
+      - source
+      - sourceId
+      - readOnly
+      - status
+      - payload
+      additionalProperties: false
+    HistoryConversationPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryConversation'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      additionalProperties: false
+    HistoryMessagePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryMessage'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      required:
+      - items
+      - total
+      - offset
+      - limit
+      additionalProperties: false
+    HistoryProgressPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryProgress'
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      required:
+      - items
+      - total
+      - offset
+      - limit
       additionalProperties: false
