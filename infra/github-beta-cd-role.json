@@ -1,0 +1,23 @@
+{
+  "Name": "AITeacher Beta CD",
+  "Description": "Publish images and update only the existing beta app; run existing migration jobs. Assign at the four documented resource scopes only.",
+  "IsCustom": true,
+  "Actions": [
+    "Microsoft.ContainerRegistry/registries/read",
+    "Microsoft.ContainerRegistry/registries/pull/read",
+    "Microsoft.ContainerRegistry/registries/push/write",
+    "Microsoft.App/containerApps/read",
+    "Microsoft.App/containerApps/write",
+    "Microsoft.App/containerApps/revisions/read",
+    "Microsoft.App/jobs/read",
+    "Microsoft.App/jobs/start/action",
+    "Microsoft.App/jobs/executions/read",
+    "Microsoft.App/jobs/execution/read"
+  ],
+  "NotActions": [],
+  "DataActions": [],
+  "NotDataActions": [],
+  "AssignableScopes": [
+    "/subscriptions/1350d930-7008-4b43-923d-6a7cd66701bc/resourceGroups/rg-aiteacher-beta-8136"
+  ]
+}

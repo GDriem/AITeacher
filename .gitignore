@@ -285,3 +285,4 @@ pnpm-debug.log*
 !/docs/ci-and-confidentiality.md
 
 !/docs/pr14-readiness.md
+!/docs/azure-beta-cd.md

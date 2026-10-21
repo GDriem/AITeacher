@@ -1,0 +1,6 @@
+{
+  "name": "github-aiteacher-beta",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:GDriem@34953083/AITeacher@1310182865:environment:beta",
+  "audiences": ["api://AzureADTokenExchange"]
+}

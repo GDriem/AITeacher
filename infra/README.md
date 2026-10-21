@@ -1,5 +1,8 @@
 # Beta privada de AITeacher en Azure
 
+Para actualizar automáticamente la beta existente, ver [CD de beta](../docs/azure-beta-cd.md).
+El CD tiene su propia ruta de actualización; no ejecuta el aprovisionamiento de esta guía.
+
 Destino fijo: **Driem-Sub-Test** `1350d930-7008-4b43-923d-6a7cd66701bc`, `mexicocentral`, grupo `rg-aiteacher-beta-8136`.
 
 La web es pública por HTTPS. PostgreSQL tiene acceso público deshabilitado y subred delegada independiente. Blob y Key Vault tienen endpoints privados; la aplicación usa identidad administrada y claves Data Protection compartidas/cifradas. Las migraciones usan otra identidad, con privilegios que no recibe el proceso HTTP. Los recursos Foundry existentes se conservan fuera de este despliegue.
