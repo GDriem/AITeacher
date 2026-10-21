@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AITeacher.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace AITeacher.Api.Features.Assessments;
@@ -73,7 +74,7 @@ public sealed partial class AssessmentService
             scores.Add(new(grade.QuestionRevisionId, fraction, fraction == 1, grade.Feedback));
         }
         var orderedScores = d.QuestionRevisionIds.Select(q => scores.Single(s => s.QuestionRevisionId == q)).ToArray();
-        var now = clock.GetUtcNow();
+        var now = PostgresTimestamp.Normalize(clock.GetUtcNow());
         var review = new AssessmentReview { AttemptId = id, RequestId = request.RequestId, ReviewerId = Actor(user),
             CreatedAt = now, GradesJson = json, ScoresJson = Write(orderedScores) };
         db.Reviews.Add(review);

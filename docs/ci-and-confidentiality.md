@@ -46,6 +46,16 @@ cookies ni conversaciones de alumnos.
 La comprobación es detección de secretos y revisión de la entrega; no equivale
 a una auditoría exhaustiva de seguridad de toda la aplicación.
 
+## Incidencia encontrada en el primer CI remoto
+
+Linux expuso dos pruebas sensibles a la precisión de reloj: PostgreSQL persiste
+`timestamp with time zone` con microsegundos, mientras `DateTimeOffset` puede
+llevar ticks de 100 ns. Las respuestas JSON de un intento cambiaban en el reintento
+y un `DueAt` recuperado de la base difería del valor enviado, provocando `409`.
+`PostgresTimestamp` recorta los tiempos escritos a microsegundos y los dos casos
+reproducen el reloj sub-microsegundo explícitamente. La semántica observable del
+API ahora es estable entre escritor, PostgreSQL y reintento.
+
 ## Resultado local
 
 - Python: 274 pruebas aprobadas (tres advertencias de dependencias).

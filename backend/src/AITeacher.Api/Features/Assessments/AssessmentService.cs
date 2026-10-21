@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using AITeacher.Api.Infrastructure;
 using AITeacher.Modules.Assessments.Questions;
 using AITeacher.Modules.Assessments.Scoring;
 using Microsoft.EntityFrameworkCore;
@@ -72,7 +73,7 @@ public sealed partial class AssessmentService(AssessmentDbContext db, IAssessmen
     {
         var previous = await db.Revisions.Where(x => x.Kind == kind && x.ResourceId == id).MaxAsync(x => (int?)x.Number, ct) ?? 0;
         if (number != previous + 1) return Conflict("Revision number must follow the latest immutable snapshot");
-        var revision = new AssessmentRevision { ResourceId = id, Number = number, Kind = kind, DocumentJson = Write(document), CreatedAt = clock.GetUtcNow(), CreatedBy = Actor(user) };
+        var revision = new AssessmentRevision { ResourceId = id, Number = number, Kind = kind, DocumentJson = Write(document), CreatedAt = PostgresTimestamp.Normalize(clock.GetUtcNow()), CreatedBy = Actor(user) };
         db.Revisions.Add(revision);
         await db.SaveChangesAsync(ct);
         return Results.Created($"/api/assessments/{kind}s/{revision.Id}", RevisionResponse(revision));
@@ -115,7 +116,7 @@ public sealed partial class AssessmentService(AssessmentDbContext db, IAssessmen
         var d = Read<DefinitionDocument>(revision.DocumentJson);
         if (await db.Attempts.CountAsync(x => x.StudentId == student && x.DefinitionId == revision.ResourceId, ct) >= d.MaxAttempts)
             return Conflict("Attempt limit reached");
-        var now = clock.GetUtcNow();
+        var now = PostgresTimestamp.Normalize(clock.GetUtcNow());
         var attempt = new AssessmentAttempt { StudentId = student, RequestId = request.RequestId, DefinitionId = revision.ResourceId,
             DefinitionRevisionId = revision.Id, StartedAt = now, ExpiresAt = now.AddMinutes(d.TimeLimitMinutes) };
         db.Attempts.Add(attempt);
@@ -144,7 +145,7 @@ public sealed partial class AssessmentService(AssessmentDbContext db, IAssessmen
         var questionIds = definitions.SelectMany(d => d.QuestionRevisionIds).Distinct().ToArray();
         var questions = await db.Revisions.AsNoTracking().Where(r => questionIds.Contains(r.Id)).Select(r => new { r.Id, r.DocumentJson }).ToArrayAsync(ct);
         var rubricIds = questions.Where(q => IsRubric(Read<QuestionDocument>(q.DocumentJson))).Select(q => q.Id).ToHashSet();
-        var now = clock.GetUtcNow();
+        var now = PostgresTimestamp.Normalize(clock.GetUtcNow());
         var items = rows.Select((row, index) => new { row.Id, row.DefinitionRevisionId, row.StartedAt, row.ExpiresAt, row.SubmittedAt,
             definitions[index].Title, definitions[index].Mode,
             status = row.SubmittedAt is null ? now >= row.ExpiresAt ? "expired" : "inProgress"
@@ -188,7 +189,7 @@ public sealed partial class AssessmentService(AssessmentDbContext db, IAssessmen
         // jsonb normalizes whitespace/key order, so compare deserialized canonical data.
         if (a.SubmittedAt is not null)
             return Write(Read<AnswerDocument[]>(a.AnswersJson!)) == answers ? Results.Ok(await AttemptResponse(a, ct)) : Conflict("Attempt already submitted with different answers");
-        var now = clock.GetUtcNow();
+        var now = PostgresTimestamp.Normalize(clock.GetUtcNow());
         if (now >= a.ExpiresAt) return Conflict("Attempt has expired");
         var questions = await db.Revisions.AsNoTracking().Where(x => d.QuestionRevisionIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
         var scores = new List<ScoreDocument>();
@@ -226,9 +227,9 @@ public sealed partial class AssessmentService(AssessmentDbContext db, IAssessmen
             var r = questions[score.QuestionRevisionId];
             var q = Read<QuestionDocument>(r.DocumentJson);
             foreach (var concept in q.ConceptIds)
-                db.EvidenceEvents.Add(new() { AttemptId = a.Id, QuestionRevisionId = r.Id, ConceptId = concept, CreatedAt = clock.GetUtcNow(),
+                db.EvidenceEvents.Add(new() { AttemptId = a.Id, QuestionRevisionId = r.Id, ConceptId = concept, CreatedAt = now,
                     PayloadJson = Write(new { schemaVersion = 1, studentId = a.StudentId, attemptId = a.Id, definitionRevisionId = definition.Id,
-                        reviewId, evaluatedAt = clock.GetUtcNow(), evaluator = IsRubric(q) ? "human-rubric" : "deterministic",
+                        reviewId, evaluatedAt = now, evaluator = IsRubric(q) ? "human-rubric" : "deterministic",
                         questionId = r.ResourceId, questionRevisionId = r.Id, questionRevision = r.Number,
                         q.UnitId, q.UnitRevisionId, conceptId = concept, source = d.Mode, assistance = d.Assistance, score.Fraction, observedAt = now }) });
         }

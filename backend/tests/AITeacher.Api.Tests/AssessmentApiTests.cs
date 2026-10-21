@@ -72,6 +72,8 @@ public sealed class AssessmentApiTests(ApiFixture fixture) : IClassFixture<ApiFi
     [Fact]
     public async Task Closed_types_are_scored_persisted_and_retries_do_not_duplicate_evidence()
     {
+        // Preserve a sub-microsecond component even on clocks with coarser resolution.
+        fixture.Clock.Now = fixture.Clock.Now.AddTicks(7 - fixture.Clock.Now.Ticks % 10);
         using var author = await Login(); using var student = await Login("student-a");
         var s = await Create(author); var id = await Start(student, s);
         var before = await student.GetStringAsync(Attempt(id));

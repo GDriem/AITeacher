@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using AITeacher.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace AITeacher.Api.Features.Learning;
@@ -68,6 +69,7 @@ public sealed class LearningService(LearningDbContext db, IAssessmentEvidenceFee
         var student = Actor(user);
         if (request.RequestId == Guid.Empty || request.EvidenceId == Guid.Empty || request.DefinitionRevisionId == Guid.Empty)
             return Invalid("Request, evidence and definition IDs are required");
+        request = request with { DueAt = PostgresTimestamp.Normalize(request.DueAt) };
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({student}, 6))", ct);
         var existing = await db.Reviews.SingleOrDefaultAsync(x => x.StudentId == student && x.RequestId == request.RequestId, ct);
@@ -81,7 +83,7 @@ public sealed class LearningService(LearningDbContext db, IAssessmentEvidenceFee
         if (!await feed.Covers(request.DefinitionRevisionId, evidence.UnitRevisionId, evidence.ConceptId, ct))
             return Invalid("Review definition must assess this concept in the same editorial revision");
         var review = new ReviewRow { StudentId = student, RequestId = request.RequestId, EvidenceId = evidence.Id,
-            DefinitionRevisionId = request.DefinitionRevisionId, DueAt = request.DueAt, CreatedAt = now };
+            DefinitionRevisionId = request.DefinitionRevisionId, DueAt = request.DueAt, CreatedAt = PostgresTimestamp.Normalize(now) };
         db.Reviews.Add(review); await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         return Results.Created($"/api/learning/reviews/{review.Id}", review);
     }
@@ -105,7 +107,7 @@ public sealed class LearningService(LearningDbContext db, IAssessmentEvidenceFee
         if (clock.GetUtcNow() < review.DueAt || await db.Reviews.AnyAsync(x => x.StudentId == student && x.CompletedAttemptId == request.AttemptId, ct) ||
             !await feed.Completed(request.AttemptId, student, review.DefinitionRevisionId, review.DueAt, ct))
             return Conflict("A new, fully graded, unused attempt started after the due date is required");
-        review.CompletedAttemptId = request.AttemptId; review.CompletedAt = clock.GetUtcNow();
+        review.CompletedAttemptId = request.AttemptId; review.CompletedAt = PostgresTimestamp.Normalize(clock.GetUtcNow());
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         return Results.Ok(review);
     }

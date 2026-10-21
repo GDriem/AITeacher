@@ -163,6 +163,8 @@ public sealed class AdvancedAssessmentApiTests(ApiFixture fixture) : IClassFixtu
     [Fact]
     public async Task Evidence_consumer_recovers_after_failed_ack_and_reviews_require_new_graded_attempts()
     {
+        // Preserve a sub-microsecond component even on clocks with coarser resolution.
+        fixture.Clock.Now = fixture.Clock.Now.AddTicks(7 - fixture.Clock.Now.Ticks % 10);
         using var author = await Login(); using var student = await Login("student-a"); using var other = await Login("student-b");
         var s = await Create(author, feedback: "never"); var id = await Start(student, s);
         await Success(await student.PostAsJsonAsync(Attempt(id) + "/submit", Correct(s)));
