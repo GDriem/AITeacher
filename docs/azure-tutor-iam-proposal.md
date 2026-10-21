@@ -1,6 +1,10 @@
 # Propuesta de federación para el tutor beta
 
-Estado: **preparada, pendiente de aprobación; no ejecutada**. Véase el
+Estado: **autorizada explícitamente por el usuario y aplicada el 21/10/2026**.
+Audiencia Entra: `api://78c6aa25-8499-40fc-b1d9-8d81a9948f40`.
+Pool/proveedor y rol se crearon con las restricciones propuestas, sin secretos
+ni permisos Graph. [Verificación IAM](tutor-evidence/azure-iam-20261021.json).
+La activación y aceptación del proveedor se registran por separado. Véase el
 [diagnóstico verificado](azure-tutor-enablement.md). La regla del usuario exige
 propuesta revisable antes de ampliar IAM, infraestructura o costos fuera del alcance.
 

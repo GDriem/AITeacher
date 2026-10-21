@@ -1,5 +1,23 @@
 # Tutor real de la beta Azure
 
+## Continuación autorizada — 21/10/2026
+
+El usuario aprobó explícitamente la propuesta IAM y activación de texto/Summary.
+Se volvió a comprobar revisión `0000008`, digest e identidad runtime sin cambios,
+tenant correcto y ausencia de colisiones antes de crear objetos.
+
+Fase IAM aplicada y verificada: app Entra `78c6aa25-8499-40fc-b1d9-8d81a9948f40`,
+audiencia propia, service principal, STS habilitado, pool `aiteacher-beta`,
+proveedor `azure-runtime` y rol `vertexBetaPredict`. Condiciones por tenant,
+objectId y clientId exactos; binding individual con una sola permission
+`aiplatform.endpoints.predict`. Sin claves, permisos Graph, impersonación ni
+permisos de datos. No se cambiaron identidad, red ni SQL de Azure.
+[Informe IAM sin credenciales](tutor-evidence/azure-iam-20261021.json).
+
+La aprobación ya no es el bloqueo de esta fase. Falta desplegar y comprobar
+intercambio STS/Vertex reales y recorrido autenticado. La voz continúa false.
+Las secciones de diagnóstico siguientes describen el estado previo.
+
 ## Fase 1 — diagnóstico verificado, 21 de octubre de 2026
 
 Se leyeron las instrucciones de colaboración, continuidad curricular, hitos 6/7,
