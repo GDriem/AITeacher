@@ -12,6 +12,11 @@ public static class TutorEndpoints
             context.HttpContext.Response.Headers.CacheControl = "no-store";
             return await next(context);
         });
+        group.MapGet("/availability", (TutorProviders providers) =>
+        {
+            try { _ = providers.Select("Tutor"); return Results.Ok(new { enabled = true }); }
+            catch (TutorUnavailableException) { return Results.Ok(new { enabled = false }); }
+        });
         group.MapPost("/conversations", (CreateConversationRequest r, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.Create(r, u, ct));
         group.MapGet("/conversations", (int? offset, int? limit, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.List(offset ?? 0, limit ?? 50, u, ct));
         group.MapGet("/conversations/{id:guid}", (Guid id, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.Get(id, u, ct));

@@ -9,8 +9,10 @@ public sealed record UnitReading(Guid Id, string Title, string Text, string Sour
 public sealed record UnitExercise(Guid Id, string Prompt, Guid[] ObjectiveIds);
 // Editorial assessment material only. Executable questions and attempts belong to milestone 3.
 public sealed record UnitAssessment(Guid Id, string Prompt, string PrivateCriteria, Guid[] ObjectiveIds);
+public sealed record ReadingProvenance(string SourceId, string Topic, string Level, string[] Keywords);
 public sealed record UnitDocument(string Title, UnitConcept[] Concepts, UnitObjective[] Objectives,
-    UnitReading[] Readings, UnitExercise[] Exercises, UnitAssessment[] Assessments, Prerequisite[] Prerequisites);
+    UnitReading[] Readings, UnitExercise[] Exercises, UnitAssessment[] Assessments, Prerequisite[] Prerequisites,
+    string Kind = "learningUnit", ReadingProvenance? ReadingProvenance = null);
 
 public static class UnitDocumentValidation
 {
@@ -28,6 +30,15 @@ public static class UnitDocumentValidation
             document.Assessments.Any(x => x is null || !Text(x.Prompt, 20000) || !Text(x.PrivateCriteria, 20000) || !Ids(x.ObjectiveIds)) ||
             document.Prerequisites.Any(x => x is null))
             return ["Invalid document entry, text length or reference array."];
+        if (document.Kind is not ("learningUnit" or "reading"))
+            errors.Add("Unknown material kind.");
+        if (document.ReadingProvenance is { } provenance &&
+            (!Text(provenance.SourceId, 150) || !Text(provenance.Topic, 150) ||
+             !Text(provenance.Level, 80) || !Collection(provenance.Keywords) || provenance.Keywords.Any(x => !Text(x, 150))))
+            errors.Add("Invalid reading provenance.");
+        if (document.Kind == "reading" && (document.Readings.Length == 0 || document.Objectives.Length != 0 ||
+            document.Concepts.Length != 0 || document.Exercises.Length != 0 || document.Assessments.Length != 0 || document.Prerequisites.Length != 0))
+            errors.Add("Reading material requires readings and cannot claim objectives, concepts, practice or assessment.");
         var ids = document.Concepts.Select(x => x.Id).Concat(document.Objectives.Select(x => x.Id))
             .Concat(document.Readings.Select(x => x.Id)).Concat(document.Exercises.Select(x => x.Id))
             .Concat(document.Assessments.Select(x => x.Id)).ToArray();
@@ -41,7 +52,7 @@ public static class UnitDocumentValidation
             errors.Add("References must resolve inside this unit revision.");
         try { PrerequisiteGraph.Validate(concepts, document.Prerequisites); }
         catch (ArgumentException exception) { errors.Add(exception.Message); }
-        if (publishing)
+        if (publishing && document.Kind == "learningUnit")
         {
             var coverage = document.Objectives.Select(x => new ObjectiveCoverage(x.Id, x.ConceptIds,
                 document.Readings.Where(r => r.ObjectiveIds.Contains(x.Id)).Select(r => r.Id).ToArray(),

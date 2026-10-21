@@ -231,7 +231,7 @@ public sealed class EditorialApiTests(ApiFixture fixture) : IClassFixture<ApiFix
         Assert.Equal(records[0].Id, origin["id"]!.GetValue<string>());
         Assert.Equal(records[0].Level, origin["level"]!.GetValue<string>());
         Assert.Equal(records[0].Text, unit["revision"]!["document"]!["readings"]![0]!["text"]!.GetValue<string>());
-        Assert.Equal(HttpStatusCode.BadRequest, (await author.PostAsJsonAsync(Revision(unit) + "/publish", new { version = 1 })).StatusCode);
+        Assert.Equal("reading", unit["revision"]!["document"]!["kind"]!.GetValue<string>());
         await Success(await author.PostAsJsonAsync(Url(unit) + "/revisions", new { version = 1, document = Document("Curado") }), HttpStatusCode.Created);
         var repeat = await Success(await author.PostAsJsonAsync("/api/units/import", request));
         Assert.Equal(0, repeat["created"]!.GetValue<int>());

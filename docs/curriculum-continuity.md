@@ -38,3 +38,42 @@ La consulta HTTPS de `/api/auth/status` confirmó autenticación Google habilita
 sin sesión en el cliente de diagnóstico. La sesión Azure corresponde a la
 suscripción autorizada. Esto no demuestra que el destino esté vacío: el inventario
 curricular autenticado sigue siendo requisito previo a cualquier escritura.
+
+## Implementación y validación local
+
+Material `reading` explícito; la publicación valida lecturas y prohíbe fingir
+objetivos, conceptos, prácticas y evaluaciones. `learningUnit` mantiene cobertura
+completa. No hay migraciones de esquema: se versionan documentos JSON inmutables.
+
+El comando `--curriculum inspect|apply|reconcile` usa una transacción serializable
+entre los dos esquemas curriculares, el importador existente y el servicio de
+publicación. Conciliación por slug/padres y procedencia completa; los conflictos
+conservan todo el lote sin cambios. Versiones modificadas o publicaciones retiradas
+no se reactivan automáticamente. Los datos de alumnos no intervienen.
+
+El manifiesto embebido se genera con `.venv/bin/python
+backend/scripts/prepare-curriculum-manifest.py`; `--check` detecta diferencias
+contra Python y el corpus antes de ejecutar. Contiene las relaciones originales
+entre temas. `/api/catalog/source-curriculum` las sirve únicamente con sesión;
+no sustituye el grafo conceptual ni establece bloqueos por dominio.
+
+`run-curriculum-azure.py` ejecuta una imagen por digest en el job migrador ya
+existente, sin actualizar su definición. Guarda informes nuevos, no sobrescribe
+informes anteriores y comprueba que el template del job quedó idéntico.
+
+Validación local: 9 pruebas de dominio, 80 de integración PostgreSQL, 25/25
+aserciones Postman y dos recorridos Chromium. El recorrido migrado comprueba
+materia/categoría/tema/nivel, fuente, ausencia de actividades inventadas, tutor
+con simulación HTTP y regreso conservando filtros. Axe sin infracciones en
+320/768/1024/1440px. OpenAPI y colecciones sin incidencias; TypeScript y ESLint
+aprobados. Build .NET sin advertencias/errores; build React .NET y presupuesto
+aprobados. Google y proveedores se sustituyen solo en las pruebas locales.
+
+La sesión real Google sí entró a Azure con cuenta de alumno tras consentimiento
+explícito. Antes de migrar, esa cuenta no ve unidades publicadas. El inventario
+administrativo sigue pendiente; no se deduce que no existan borradores.
+
+Los commits de esta fase incluyen solo archivos nuevos y cambios propios en
+archivos previamente versionados. Los archivos React/BrowserHost que ya estaban
+sin seguimiento al iniciar conservan sus ediciones en el árbol de trabajo; no se
+incluye en estos commits toda la entrega previa de otra sesión.

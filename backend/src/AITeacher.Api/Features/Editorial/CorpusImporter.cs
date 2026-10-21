@@ -47,7 +47,8 @@ public sealed class CorpusImporter(EditorialDbContext db, EditorialService edito
             }
             var unit = new EditorialUnit { TopicId = topicId, ImportKey = Key(record.Id), ImportHash = hash };
             var document = new UnitDocument(record.Title, [], [],
-                [new UnitReading(Guid.NewGuid(), record.Title, record.Text, record.Source, [])], [], [], []);
+                [new UnitReading(Guid.NewGuid(), record.Title, record.Text, record.Source, [])], [], [], [], "reading",
+                new(record.Id, record.Topic, record.Level, record.Keywords));
             db.Units.Add(unit);
             db.Revisions.Add(editorial.NewRevision(unit, document, EditorialService.Actor(user), origin));
             items.Add(new { sourceId = record.Id, unitId = unit.Id });

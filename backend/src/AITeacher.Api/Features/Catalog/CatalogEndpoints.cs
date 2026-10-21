@@ -21,6 +21,11 @@ public static class CatalogEndpoints
     public static void MapCatalog(this WebApplication app)
     {
         var group = app.MapGroup("/api/catalog").RequireAuthorization();
+        group.MapGet("/source-curriculum", () =>
+        {
+            var source = AITeacher.Api.Features.Editorial.SourceCurriculum.Load();
+            return Results.Ok(new { source.Source, source.Topics, source.Levels });
+        });
         MapReadAndUpdate<Subject>(group, "subjects");
         MapReadAndUpdate<Category>(group, "categories");
         MapReadAndUpdate<LevelScale>(group, "scales");

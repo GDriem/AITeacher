@@ -453,6 +453,40 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  /api/tutor/availability:
+    get:
+      operationId: tutorAvailability
+      summary: Read whether the tutor has valid server configuration
+      description: Configuration availability only; does not claim upstream or pedagogical acceptance.
+      tags: [Tutor]
+      responses:
+        '200':
+          description: Server selected configuration availability
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enabled]
+                properties:
+                  enabled:
+                    type: boolean
+        '401':
+          description: Authentication required
+  /api/catalog/source-curriculum:
+    get:
+      operationId: sourceCurriculum
+      summary: Read the frozen source topic relationships and reading levels
+      description: Authenticated reference metadata. Prerequisites are guidance, not learner mastery or executable gates.
+      tags: [Catalog]
+      responses:
+        '200':
+          description: Source curriculum reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceCurriculumView'
+        '401':
+          description: Authentication required
   /api/catalog/scales:
     get:
       operationId: listScales
@@ -4444,6 +4478,54 @@ components:
       properties:
         conceptId: *id005
         requiresConceptId: *id005
+    ReadingProvenance:
+      type: object
+      required: [sourceId, topic, level, keywords]
+      properties:
+        sourceId:
+          type: string
+        topic:
+          type: string
+        level:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+    SourceCurriculumView:
+      type: object
+      required: [source, topics, levels]
+      properties:
+        source:
+          type: string
+        topics:
+          type: array
+          items:
+            type: object
+            required: [slug, name, subject, category, prerequisites]
+            properties:
+              slug:
+                type: string
+              name:
+                type: string
+              subject:
+                type: string
+              category:
+                type: string
+              prerequisites:
+                type: array
+                items:
+                  type: string
+        levels:
+          type: array
+          items:
+            type: object
+            required: [slug, name]
+            properties:
+              slug:
+                type: string
+              name:
+                type: string
     UnitDocument:
       type: object
       required:
@@ -4455,6 +4537,15 @@ components:
       - assessments
       - prerequisites
       properties:
+        kind:
+          type: string
+          enum: [learningUnit, reading]
+          default: learningUnit
+          description: Reading material cannot claim objectives, concepts, exercises or assessments. Complete learning units retain coverage requirements.
+        readingProvenance:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/ReadingProvenance'
         title: &id011
           type: string
           minLength: 1
@@ -4499,6 +4590,15 @@ components:
       - exercises
       - prerequisites
       properties:
+        kind:
+          type: string
+          enum: [learningUnit, reading]
+          default: learningUnit
+          description: Reading material cannot claim objectives, concepts, exercises or assessments. Complete learning units retain coverage requirements.
+        readingProvenance:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/ReadingProvenance'
         title: *id011
         concepts: *id012
         objectives: *id013
@@ -4593,6 +4693,13 @@ components:
       - number
       - title
       properties:
+        kind:
+          type: string
+          enum: [learningUnit, reading]
+        readingProvenance:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/ReadingProvenance'
         id: *id005
         topicId: *id005
         version:

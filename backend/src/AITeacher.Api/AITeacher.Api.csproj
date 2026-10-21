@@ -21,4 +21,7 @@
     <ProjectReference Include="../AITeacher.Modules.Assessments/AITeacher.Modules.Assessments.csproj" />
     <ProjectReference Include="../AITeacher.Modules.Curriculum/AITeacher.Modules.Curriculum.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Features/Editorial/source-curriculum.json" />
+  </ItemGroup>
 </Project>

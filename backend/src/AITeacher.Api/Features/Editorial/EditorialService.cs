@@ -69,7 +69,9 @@ public sealed class EditorialService(EditorialDbContext db, ITopicCatalog catalo
         var total = await query.CountAsync(ct);
         var rows = await query.OrderBy(x => x.Id).Skip(skip).Take(take).ToListAsync(ct);
         return Results.Ok(new { items = rows.Select(x => new { x.Id, x.TopicId, x.Version, x.PublishedRevisionId, x.RevisionId, x.Number,
-            Title = JsonSerializer.Deserialize<UnitDocument>(x.DocumentJson, Json)!.Title }), total, offset = skip, limit = take });
+            Title = JsonSerializer.Deserialize<UnitDocument>(x.DocumentJson, Json)!.Title,
+            Kind = JsonSerializer.Deserialize<UnitDocument>(x.DocumentJson, Json)!.Kind,
+            ReadingProvenance = JsonSerializer.Deserialize<UnitDocument>(x.DocumentJson, Json)!.ReadingProvenance }), total, offset = skip, limit = take });
     }
 
     public async Task<IResult> History(Guid unitId, int? offset, int? limit, CancellationToken ct)
@@ -137,7 +139,7 @@ public sealed class EditorialService(EditorialDbContext db, ITopicCatalog catalo
     {
         var document = JsonSerializer.Deserialize<UnitDocument>(revision.DocumentJson, Json)!;
         object visible = author ? document : new { document.Title, document.Concepts, document.Objectives,
-            document.Readings, document.Exercises, document.Prerequisites };
+            document.Readings, document.Exercises, document.Prerequisites, document.Kind, document.ReadingProvenance };
         return new { unit.Id, unit.TopicId, unit.Version, unit.PublishedRevisionId,
             revision = new { revision.Id, revision.Number, revision.CreatedAt, revision.CreatedBy,
                 origin = author && revision.OriginJson is not null ? JsonSerializer.Deserialize<JsonElement>(revision.OriginJson) : (JsonElement?)null,

@@ -53,6 +53,7 @@ builder.Services.AddScoped<AssessmentService>();
 builder.Services.AddScoped<ITopicCatalog, TopicCatalog>();
 builder.Services.AddScoped<EditorialService>();
 builder.Services.AddScoped<CorpusImporter>();
+builder.Services.AddScoped<CurriculumMigration>();
 builder.Services.AddHealthChecks().AddCheck<PostgresReadiness>("postgres", tags: ["ready"]);
 builder.Services.AddAuthentication(SessionAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(SessionAuthenticationHandler.SchemeName, _ => { });
@@ -85,6 +86,17 @@ if (args.Contains("--migrate", StringComparer.Ordinal))
     await scope.ServiceProvider.GetRequiredService<GraphDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<LearningDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<HistoryDbContext>().Database.MigrateAsync();
+    return;
+}
+if (args.Contains("--curriculum", StringComparer.Ordinal))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var index = Array.IndexOf(args, "--curriculum");
+    if (args.Length != index + 2) throw new InvalidDataException("Use --curriculum inspect|apply|reconcile.");
+    var report = await scope.ServiceProvider.GetRequiredService<CurriculumMigration>().Run(args[index + 1], CancellationToken.None);
+    var reportJson = System.Text.Json.JsonSerializer.SerializeToElement(report, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+    Console.WriteLine(reportJson);
+    if (reportJson.GetProperty("conflicts").GetArrayLength() > 0 || (args[index + 1] == "reconcile" && !reportJson.GetProperty("matches").GetBoolean())) Environment.ExitCode = 2;
     return;
 }
 if (args.Contains("--consume-evidence", StringComparer.Ordinal))
