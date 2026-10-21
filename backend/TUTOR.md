@@ -1,3 +1,9 @@
+> Continuación 21/10/2026: credencial renovable Azure → Google STS preparada y
+> probada localmente con HTTP sintético; activación en Azure pendiente de aprobar
+> IAM. [Diagnóstico y evidencia](../docs/azure-tutor-enablement.md),
+> [propuesta revisable](../docs/azure-tutor-iam-proposal.md). Tutor/Summary de la
+> beta siguen deshabilitados; voz y aceptación real permanecen pendientes.
+
 # Tutor y apuntes — hito 4
 
 Contrato implementado, definido antes de desarrollar: API autenticada bajo `/api/tutor`,

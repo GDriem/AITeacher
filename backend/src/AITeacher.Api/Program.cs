@@ -48,6 +48,7 @@ builder.Services.AddSingleton<ContextBuilder>();
 builder.Services.AddScoped<TutorProviders>();
 builder.Services.AddHttpClient("tutor-provider", client => client.Timeout = Timeout.InfiniteTimeSpan)
     .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+builder.Services.AddSingleton<IVertexCredential, ConfiguredVertexCredential>();
 builder.Services.AddScoped<IAssessmentCurriculum, AssessmentCurriculum>();
 builder.Services.AddScoped<AssessmentService>();
 builder.Services.AddScoped<ITopicCatalog, TopicCatalog>();

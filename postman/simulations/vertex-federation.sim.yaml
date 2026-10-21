@@ -1,0 +1,5 @@
+simulation: aiteacher-vertex-federation
+routing: path
+mocks:
+  - routeKey: sts
+    path: ../mocks/google-sts/config.yaml

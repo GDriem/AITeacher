@@ -5,3 +5,5 @@ mocks:
     path: ../mocks/azure/config.yaml
   - routeKey: gemini
     path: ../mocks/gemini/config.yaml
+  - routeKey: sts
+    path: ../mocks/google-sts/config.yaml

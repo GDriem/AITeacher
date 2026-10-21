@@ -1,3 +1,8 @@
+> Actualización 21/10/2026: soporte de federación del tutor preparado; falta
+> aprobar IAM y verificar conversación/apunte/privacidad en Azure con Google real.
+> [Evidencia y pendientes por hito](../docs/azure-tutor-enablement.md).
+> El hito 7 sigue abierto; las pruebas sintéticas no acreditan tutor ni voz en Azure.
+
 # Hito 7: ensayo de migración histórica
 
 ## Estado vigente: corpus publicado y recorrido de lectura — 21 de octubre de 2026

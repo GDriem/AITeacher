@@ -1,0 +1,31 @@
+{
+  "AI": {
+    "VertexAuthentication": {
+      "Mode": "azureFederation",
+      "Audience": "//iam.googleapis.com/projects/930398712637/locations/global/workloadIdentityPools/aiteacher-beta/providers/azure-runtime",
+      "AzureResource": "api://<appId-Entra-aprobada>"
+    },
+    "Capabilities": {
+      "Tutor": {
+        "Provider": "vertex",
+        "Model": "gemini-3.5-flash-lite",
+        "StructuredOutput": true,
+        "ConfigurationVersion": "azure-vertex-beta-1"
+      },
+      "Summary": {
+        "Provider": "vertex",
+        "Model": "gemini-3.5-flash-lite",
+        "StructuredOutput": true,
+        "ConfigurationVersion": "azure-vertex-beta-1"
+      }
+    },
+    "Providers": {
+      "vertex": {
+        "Endpoint": "https://aiplatform.googleapis.com/",
+        "Project": "gen-lang-client-0364164089",
+        "Location": "global"
+      }
+    },
+    "Voice": { "Enabled": false }
+  }
+}

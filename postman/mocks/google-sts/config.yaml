@@ -1,0 +1,10 @@
+version: 1
+name: google-sts
+slug: google-sts
+protocol: http
+port: 4902
+interceptRequests: true
+scenarios:
+  - name: default
+    path: default.js
+    default: true

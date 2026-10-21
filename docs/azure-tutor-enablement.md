@@ -56,3 +56,69 @@ contrato aplicable. Se usan las referencias oficiales y el SDK instalado:
 Hitos 6/7 y aceptaciones operativas del 8 abiertos. Dominio `uncalibrated`;
 sin muestras docentes ni actividades inventadas. Sin corte, migración personal,
 retiro de GCP o cambios de escritores Python.
+
+## Fase 2 — implementación y evidencia local
+
+`ConfiguredVertexCredential` añade modo explícito `azureFederation`, sin fallback
+a ADC al fallar. Reutiliza Azure.Identity con clientId runtime y
+`ProgrammaticExternalAccountCredential` de Google.Apis.Auth 1.77.0 ya instalado.
+El SDK obtiene/renueva tokens temporales en memoria; no se añaden paquetes,
+archivos de tokens, claves privadas ni secretos. ADC se conserva para el modo
+local existente. El selector nuevo se registra después del registro previo de
+Vertex, preservando ese trabajo local anterior sin incluirlo en el commit.
+
+El endpoint STS está fijo en producción; loopback HTTP se admite solo en
+Development para la simulación. Se rechazan otras URLs y redirects; audience y
+recurso Entra se validan antes de solicitar un token. Los errores SDK de identidad
+y STS se transforman en `TutorUnavailableException` sin mensajes/cuerpos originales,
+para recorrer el 503 sanitizado y limpieza de turnos ya existentes. La cancelación
+usa el presupuesto de operación existente. El token Entra se pide para la audiencia
+dedicada, no para ARM ni PostgreSQL. La misma interfaz sirve a voz, sin habilitarla.
+
+Verificación ejecutada:
+
+- Build .NET: cero errores y cero advertencias; conserva el SDK preview del proyecto.
+- 90 pruebas API + 9 de dominio aprobadas, sin omisiones. PostgreSQL local real;
+  proveedores Google de alumno e IA sintéticos. Incluye fuentes, apuntes,
+  aislamiento, fallos y voz del gateway local ya existentes.
+- 10 pruebas nuevas de federación: SDK real sobre HTTP hacia Postman STS;
+  intercambio, caché concurrente, scope de audiencia, rechazo de confianza,
+  cancelación, redirects y configuración insegura. La fuente de token Azure es
+  sintética; esto no acredita Managed Identity ni confianza STS reales en Azure.
+- Postman emitió eventos request para POST `/v1/token`: éxito 200, rechazo 400,
+  redirect 307 y dependencia lenta. No se siguió el redirect. Logs efímeros;
+  solo tokens ficticios. Mock derivado de la referencia STS oficial, no publicado.
+- OpenAPI sin incidencias de sintaxis; `node --check` del mock, JSON de configuración
+  y `git diff --check` aprobados. No cambia el contrato HTTP público.
+
+Reproducción de las pruebas nuevas (dos terminales, raíz del repo):
+
+```sh
+/Users/gadiorellana/.local/bin/postman simulation run postman/simulations/vertex-federation.sim.yaml --port 4910 --no-history --output ndjson
+AITEACHER_TEST_STS_URL=http://127.0.0.1:4910/sts/v1/token dotnet test backend/tests/AITeacher.Api.Tests --filter FullyQualifiedName~VertexFederationTests
+```
+
+La simulación de tutor existente incluye ahora STS; la suite completa reutiliza
+`AITEACHER_TEST_AI_URL` y PostgreSQL del procedimiento de TUTOR.md.
+
+La [propuesta IAM](azure-tutor-iam-proposal.md) incluye comandos, confianza por
+tenant/object/client exactos, rol de una sola permission de inferencia, consumo
+de texto/Summary, configuración pública, reversión y puerta de aceptación.
+Se preparó un ejemplo público; no se ejecutaron esos comandos ni se desplegó imagen.
+El commit de implementación depende del trabajo previo presente en el árbol
+(VertexCredential, AzureHosting y referencias de paquetes); no lo incorpora ni
+pretende que una clonación de HEAD sin esos archivos reproduzca toda la beta.
+
+## Pendientes por hito después de esta fase
+
+| Hito | Avance verificable | Pendiente |
+| --- | --- | --- |
+| 4 / tutor | Autenticación federada preparada y HTTP sintético probado; Tutor/Summary configurables por separado | Aprobar IAM, activar en Azure, conversación contextual, fuentes y apuntes reales |
+| 6 | Sin cambios en políticas ni evaluación | Muestras docentes y calibración; mantener `uncalibrated` |
+| 7 | Brecha de tutor identificada sin reimportar las 82 lecturas; se conserva aislamiento local probado | Dos Google reales, autoría, calidad pedagógica, continuidad de actividades y voz humana |
+| 8 | Revisión/identidad efectivas consultadas y propuesta reversible | IAM aprobado, despliegue/aceptación de texto, costos reales, telemetría, restauración, reversión y corte |
+
+Bloqueo concreto de activación: no existe confianza WIF y requiere cambios IAM
+fuera de la autorización previa de despliegue. No hay error de cuota/proveedor
+Vertex medido desde Azure porque aún no puede autenticarse. El tutor de texto
+real y Summary **no están habilitados ni aceptados en Azure** en esta fase.
