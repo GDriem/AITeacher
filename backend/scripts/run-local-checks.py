@@ -57,7 +57,7 @@ def main():
     # Keep logs ephemeral: test payloads are synthetic, no reports are published.
     with tempfile.TemporaryFile(mode="w+") as simulation_log, tempfile.TemporaryFile(mode="w+") as host_log:
         try:
-            simulation = start([args.postman, "simulation", "run", "postman/simulations/tutor.sim.yaml", "--port", str(args.port), "--output", "ndjson"], simulation_log)
+            simulation = start([args.postman, "simulation", "run", "postman/simulations/tutor.sim.yaml", "--port", str(args.port), "--no-history", "--output", "ndjson"], simulation_log)
             wait_for(f"http://127.0.0.1:{args.port}/azure/", simulation, any_http=True)
             run(["dotnet", "test", "AITeacher.slnx"], root / "backend")
             run(["dotnet", "build", "tests/AITeacher.BrowserHost"], root / "backend")
