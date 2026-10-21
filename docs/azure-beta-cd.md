@@ -14,13 +14,21 @@ actual. Rechaza checks omitidos, cancelados, duplicados o ausentes. El SHA debe
 seguir siendo la punta de `main`. Manualmente se proporciona el ID del CI, nunca
 una rama o imagen arbitraria.
 
+La ejecución manual tiene dos operaciones, ambas tras el mismo guard y el
+environment `beta`: `deploy` (requiere `BETA_CD_ENABLED=true`) y `verify-access`,
+que solo inicia sesión por OIDC, obtiene token de ACR y lee app, revisión, jobs y
+ejecuciones. `verify-access` no construye, no inicia jobs ni escribe en Azure;
+sirve para comprobar federación y propagación de RBAC antes de activar el CD.
+
 El job de despliegue usa el environment `beta`, adquiere el grupo exclusivo
 `aiteacher-azure-beta` con `cancel-in-progress: false` y vuelve a validar después
 de esperar. Construye el checkout exacto validado, desde `backend/Dockerfile.azure`,
 en el runner Linux amd64 y publica en el ACR existente. Las Actions están fijadas
 a commits. No descarga artefactos ni cachés de workflows de PR.
 La etiqueta incluye SHA, run y attempt para trazabilidad; **solo el digest
-devuelto por el build** llega a los jobs y a la aplicación.
+devuelto por el build** llega a los jobs y a la aplicación. Provenance y SBOM de
+buildx están desactivados para publicar un manifiesto simple linux/amd64, igual
+que las imágenes previas de `az acr build`, y no un índice con atestaciones.
 
 Antes de migrar se comprueban tenant, suscripción, destino HTTPS fijo, modo
 Single, revisión lista e identidades esperadas. Tras las migraciones se vuelve
@@ -55,17 +63,24 @@ nuevo del mismo workflow.
 privado y modifica solo imagen y argumentos de esa ejecución. Esto conserva
 variables, referencias a secretos, recursos y comando; los overrides de ejecución
 reemplazan la plantilla, no deben enviarse solo imagen/args. La plantilla almacenada
-del job no cambia. Migración usa únicamente `--migrate`: la clave Data Protection
+del job no cambia. Antes de iniciar se rechaza una plantilla con campos que el
+modelo de ejecución del CLI descartaría en silencio (volúmenes, montajes,
+contenedores init o adicionales). Después de iniciar se lee la ejecución y se
+exige que imagen, argumentos, comando y nombres de variables coincidan con lo
+enviado; si no, se detiene sin publicar. Este mecanismo `--yaml` es el mismo que
+`run-curriculum-azure.py` ya usó con éxito en la beta. Migración usa únicamente `--migrate`: la clave Data Protection
 ya existe, por lo que se omite `--bootstrap-data-protection-key` y no se requiere
 Crypto Officer. El segundo job ejecuta `--grant-runtime-access` con los permisos
 SQL de la identidad migradora existente. Runtime conserva su identidad SQL limitada.
 Un fallo, estado terminal de error o timeout impide publicar la nueva app.
 
-El PATCH de Container Apps conserva la plantilla completa, cambia la imagen
+El PATCH de Container Apps lee y escribe la plantilla con la misma versión de API
+(`2025-07-01`), conserva la plantilla completa, cambia la imagen
 de `api` y usa el sufijo de revisión `cd-RUN-ATTEMPT` para evitar colisiones;
 incluye la ubicación existente requerida por el contrato REST. No envía configuración,
 secretos, ingress, identidad ni tráfico. Se
-espera una revisión Healthy/activa con el digest nuevo como `latestReadyRevision`
+espera exactamente la revisión `ca-aiteacher-beta-8136--cd-RUN-ATTEMPT`, Healthy y
+activa con el digest nuevo, como `latestRevision` y `latestReadyRevision`
 y se ejecutan los checks anteriores contra el hostname HTTPS fijo. Los smoke
 comprueban salud, CSRF y límites de autenticación; no prueban Google real, micrófono,
 tutor IA ni aislamiento entre dos cuentas. Un fallo posterior a publicar marca CD
@@ -157,20 +172,33 @@ no un presupuesto nuevo ni un límite de gasto. Revisar esos consumos al aprobar
    y que no haya jobs/actualizaciones externos en curso.
 4. Integrar la PR por el proceso protegido. Mientras `BETA_CD_ENABLED=false`,
    puede correr el guard de CD, pero no se construye/publica ni se accede a Azure.
-5. Tras aprobación, poner `BETA_CD_ENABLED=true` y ejecutar el primer CD manual
+5. Ejecutar `verify-access` con el ID del CI push de main. Si falla, revisar la
+   operación concreta denegada antes de cambiar permisos:
+
+   ```bash
+   gh workflow run cd-beta.yml --repo GDriem/AITeacher --ref main \
+     -f ci_run_id=ID_CI_PUSH_MAIN -f operation=verify-access
+   ```
+
+6. Tras aprobación, poner `BETA_CD_ENABLED=true` y ejecutar el primer CD manual
    desde main con el ID de su CI **push** exitoso:
 
    ```bash
-   gh workflow run cd-beta.yml --repo GDriem/AITeacher --ref main -f ci_run_id=ID_CI_PUSH_MAIN
+   gh workflow run cd-beta.yml --repo GDriem/AITeacher --ref main \
+     -f ci_run_id=ID_CI_PUSH_MAIN -f operation=deploy
    ```
 
-6. Verificar OIDC/RBAC con esa identidad, digest publicado, ambos jobs Succeeded,
+7. Verificar OIDC/RBAC con esa identidad, digest publicado, ambos jobs Succeeded,
    nueva revisión Healthy y smoke. Revisar que secretos, identidades, ingress,
    configuración de IA y datos permanezcan como antes. Desde entonces los
    siguientes CI push exitosos de main disparan el CD automáticamente.
 
 Si faltan permisos, detenerse y revisar la llamada concreta; no conceder roles
-amplios para hacer pasar el primer despliegue. Una ejecución manual obsoleta o
+amplios para hacer pasar el primer despliegue. El candidato conocido no incluido
+es `Microsoft.App/managedEnvironments/join/action`: la documentación lo describe
+para crear apps en el entorno y el PATCH no envía `environmentId`. Si ARM lo
+exigiera, requeriría una asignación adicional sobre el entorno administrado,
+fuera de los cuatro recursos aprobados, y una nueva aprobación. Una ejecución manual obsoleta o
 desde otra rama se rechaza incluso si el operador puede iniciarla.
 
 ## Volver a la imagen anterior
@@ -210,6 +238,21 @@ por la entrada manual de CD, que solo admite la punta de main validada. Para
 reactivar automatización, corregir/revertir el código por PR, esperar el CI push
 del nuevo main y revisar antes de cambiar `BETA_CD_ENABLED=true`; reactivar sin
 corregir puede volver a publicar la versión fallida.
+
+## Correcciones de la revisión previa a la activación
+
+Revisión del 21 de octubre de 2026, antes de crear permisos en Azure:
+
+- `azure/login` estaba fijado a `8216e11…`, que es el **objeto del tag anotado**
+  `v2`, no un commit; Actions no puede resolverlo. Se fijó al commit
+  `7184910d9eb2b1c5e48f7073824a90609bb9b6d6` (`v2` = `v2.3.1`). Las demás Actions
+  se comprobaron como commits de sus tags.
+- Build con provenance/SBOM desactivados (ver arriba).
+- Validación de plantilla antes del override y de la ejecución real después.
+- GET/PATCH con la misma versión de API y espera de la revisión exacta.
+- Operación manual `verify-access`, de solo lectura.
+- `--verify-access` se ejecutó localmente contra Azure con la cuenta del
+  propietario (no con la identidad de CD): aprobado, revisión `0000009` Healthy.
 
 ## Fuentes y alcance de la evidencia
 

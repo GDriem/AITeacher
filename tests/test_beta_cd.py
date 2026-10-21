@@ -82,26 +82,81 @@ def test_stale_and_incomplete_validation_is_rejected(case):
         guard.validate("20", "d" * 40 if case == "other-sha" else SHA, get=getter(data))
 
 
+def job_resource(kind, commands, status="Failed", executed=None):
+    template = {"containers": [{"name": kind, "command": ["dotnet", "AITeacher.Api.dll"],
+                                "env": [{"name": "DB", "secretRef": "db"}]}]}
+    def resource(*args, **kwargs):
+        commands.append(args)
+        if "start" in args:
+            sent = json.loads(Path(args[args.index("--yaml") + 1]).read_text())
+            assert sent["containers"][0]["image"] == IMAGE
+            assert sent["containers"][0]["env"] == [{"name": "DB", "secretRef": "db"}]
+            assert sent["containers"][0]["args"] == ["--migrate" if kind == "migrate" else "--grant-runtime-access"]
+            commands.append(("sent", sent))
+            return "execution-1"
+        if "execution" in args and kwargs.get("query") == "properties.template.containers[0]":
+            return executed if executed is not None else dict(
+                [item for item in commands if item[0] == "sent"][0][1]["containers"][0])
+        if "execution" in args:
+            return status
+        return copy.deepcopy(template)
+    return resource
+
+
 @pytest.mark.parametrize("kind", ["migrate", "grant"])
 def test_job_failure_stops_before_any_application_write(monkeypatch, kind):
     commands = []
-    def resource(*args, **kwargs):
-        commands.append(args)
-        if "show" in args and "execution" not in args:
-            return {"containers": [{"name": kind, "env": [{"name": "DB", "secretRef": "db"}]}]}
-        if "start" in args:
-            template = json.loads(Path(args[args.index("--yaml") + 1]).read_text())
-            assert template["containers"][0]["image"] == IMAGE
-            assert template["containers"][0]["env"] == [{"name": "DB", "secretRef": "db"}]
-            assert template["containers"][0]["args"] == ["--migrate" if kind == "migrate" else "--grant-runtime-access"]
-        return "execution-1" if "start" in args else "Failed"
-    monkeypatch.setattr(update, "resource", resource)
+    monkeypatch.setattr(update, "resource", job_resource(kind, commands))
     monkeypatch.setattr(update, "note", lambda _: None)
     with pytest.raises(RuntimeError, match="application image was not updated"):
         update.run_job(kind, IMAGE, "--migrate" if kind == "migrate" else "--grant-runtime-access")
     assert "--yaml" in commands[1]
     assert "--bootstrap-data-protection-key" not in str(commands)
     assert all("update" not in command for command in commands)
+
+
+def test_job_success_requires_executed_override(monkeypatch):
+    commands = []
+    monkeypatch.setattr(update, "resource", job_resource("migrate", commands, status="Succeeded"))
+    monkeypatch.setattr(update, "note", lambda _: None)
+    update.run_job("migrate", IMAGE, "--migrate")
+
+
+@pytest.mark.parametrize("change", ["image", "args", "env"])
+def test_job_override_not_applied_stops(monkeypatch, change):
+    executed = {"name": "migrate", "image": IMAGE, "args": ["--migrate"],
+                "command": ["dotnet", "AITeacher.Api.dll"], "env": [{"name": "DB"}]}
+    executed[change] = {"image": "other", "args": ["--bootstrap-data-protection-key", "--migrate"],
+                        "env": []}[change]
+    monkeypatch.setattr(update, "resource", job_resource("migrate", [], status="Succeeded", executed=executed))
+    monkeypatch.setattr(update, "note", lambda _: None)
+    with pytest.raises(RuntimeError, match="expected override"):
+        update.run_job("migrate", IMAGE, "--migrate")
+
+
+@pytest.mark.parametrize("template", [
+    {"containers": [{"name": "migrate", "volumeMounts": [{"volumeName": "data"}]}]},
+    {"containers": [{"name": "migrate"}], "volumes": [{"name": "data"}]},
+    {"containers": [{"name": "migrate"}], "initContainers": [{"name": "init"}]},
+    {"containers": [{"name": "grant"}]},
+    {"containers": [{"name": "migrate"}, {"name": "sidecar"}]},
+])
+def test_execution_template_that_would_lose_settings_is_rejected(template):
+    with pytest.raises(ValueError):
+        update.execution_template(template, "migrate")
+
+
+def test_verify_access_never_mutates(monkeypatch):
+    calls = []
+    monkeypatch.setattr(update, "preflight", lambda: {"ready": "rev-1", "containers": [{"image": IMAGE}]})
+    monkeypatch.setattr(update, "note", lambda _: None)
+    def resource(*args, **kwargs):
+        calls.append(args)
+        return "Healthy" if "revision" in args else {"containers": [{"name": args[args.index("--name") + 1].split("-")[1]}]}
+    monkeypatch.setattr(update, "resource", resource)
+    monkeypatch.setattr(update, "az", lambda *a, **k: pytest.fail("no direct ARM call"))
+    update.verify_access()
+    assert all(not {"start", "update", "patch"} & set(command) for command in calls)
 
 
 @pytest.mark.parametrize("failure", ["migrate", "grant", "stale"])
@@ -150,10 +205,14 @@ def test_publish_preserves_settings_and_uses_only_existing_resource_patch(monkey
                                "env": [{"name": "API", "secretRef": "api"}],
                                "probes": [{"type": "Readiness"}]}],
                 "scale": {"minReplicas": 1}, "revisionSuffix": "previous"}
-    monkeypatch.setattr(update, "resource", lambda *args, **kwargs: copy.deepcopy(template))
+    calls = []
     def az(*args, **kwargs):
-        assert args[:4] == ("rest", "--method", "patch", "--url")
+        calls.append(args[:3])
+        assert args[3:5] == ("--url", update.APP_URL)
         assert f"/resourceGroups/{update.GROUP}/providers/Microsoft.App/containerApps/{update.APP}?" in args[4]
+        if args[2] == "get":
+            return copy.deepcopy(template)
+        assert args[:3] == ("rest", "--method", "patch")
         body = json.loads(Path(args[args.index("--body") + 1][1:]).read_text())
         assert set(body) == {"location", "properties"}
         assert set(body["properties"]) == {"template"}
@@ -163,7 +222,33 @@ def test_publish_preserves_settings_and_uses_only_existing_resource_patch(monkey
         expected["revisionSuffix"] = "cd-1234-2"
         assert body["properties"]["template"] == expected
     monkeypatch.setattr(update, "az", az)
-    update.publish(IMAGE.replace("b" * 64, "c" * 64))
+    assert update.publish(IMAGE.replace("b" * 64, "c" * 64)) == f"{update.APP}--cd-1234-2"
+    assert [call[2] for call in calls] == ["get", "patch"]
+
+
+def test_wait_revision_requires_the_exact_new_revision(monkeypatch):
+    states = iter([{"latest": "old", "ready": "old"}, {"latest": "new", "ready": "old"},
+                   {"latest": "new", "ready": "new"}])
+    monkeypatch.setattr(update, "app_state", lambda: next(states))
+    monkeypatch.setattr(update.time, "sleep", lambda _: None)
+    monkeypatch.setattr(update, "note", lambda _: None)
+    revisions = []
+    def resource(*args, **kwargs):
+        revisions.append(args[args.index("--revision") + 1])
+        return {"health": "Healthy", "active": True, "images": [IMAGE]}
+    monkeypatch.setattr(update, "resource", resource)
+    update.wait_revision(IMAGE, "new")
+    assert revisions == ["new"]
+
+
+def test_workflow_actions_are_pinned_to_commits():
+    import re
+    workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/cd-beta.yml").read_text()
+    uses = re.findall(r"uses: ([^@\s]+)@(\S+)", workflow)
+    assert uses and all(re.fullmatch(r"[0-9a-f]{40}", ref) for _, ref in uses)
+    # v2 tag object 8216e11 is not a commit and cannot be resolved by Actions.
+    assert ("azure/login", "7184910d9eb2b1c5e48f7073824a90609bb9b6d6") in uses
+    assert "provenance: false" in workflow
 
 
 def test_success_orders_migrations_revalidation_publish_and_checks(monkeypatch):
@@ -178,8 +263,8 @@ def test_success_orders_migrations_revalidation_publish_and_checks(monkeypatch):
     monkeypatch.setattr(update, "note", lambda _: None)
     monkeypatch.setattr(update.shutil, "which", lambda _: "/postman")
     monkeypatch.setattr(update, "run_job", lambda kind, *args: calls.append(kind))
-    monkeypatch.setattr(update, "publish", lambda _: calls.append("publish"))
-    monkeypatch.setattr(update, "wait_revision", lambda _: calls.append("ready"))
+    monkeypatch.setattr(update, "publish", lambda _: calls.append("publish") or "rev")
+    monkeypatch.setattr(update, "wait_revision", lambda image, name: calls.append(("ready", name)) or calls.append("ready"))
     monkeypatch.setattr(update.subprocess, "run", lambda args, **kwargs: calls.append(args[0]))
     update.main()
-    assert calls == ["validate", "migrate", "grant", "validate", "publish", "ready", "bash", "/postman"]
+    assert calls == ["validate", "migrate", "grant", "validate", "publish", ("ready", "rev"), "ready", "bash", "/postman"]

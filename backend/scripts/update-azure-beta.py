@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -19,6 +20,11 @@ APP = f"ca-{PREFIX}"
 HOST = f"{APP}.thankfuldune-75a4eb8a.mexicocentral.azurecontainerapps.io"
 REGISTRY = "craiteacherbeta8136.azurecr.io/aiteacher"
 ROOT = Path(__file__).resolve().parents[2]
+API = "2025-07-01"
+APP_URL = (f"https://management.azure.com/subscriptions/{SUBSCRIPTION}/resourceGroups/{GROUP}"
+           f"/providers/Microsoft.App/containerApps/{APP}?api-version={API}")
+# Fields the CLI execution model keeps; anything else would be dropped silently.
+EXECUTION_FIELDS = {"name", "image", "imageType", "command", "args", "env", "resources"}
 
 
 def az(*args, query=None):
@@ -89,14 +95,24 @@ def preflight():
     return app
 
 
+def execution_template(template, kind):
+    containers = template.get("containers") or []
+    if (len(containers) != 1 or containers[0].get("name") != kind
+            or template.get("initContainers") or template.get("volumes")
+            or not set(containers[0]) <= EXECUTION_FIELDS):
+        raise ValueError("Unexpected execution template; an override could drop settings")
+    return template
+
+
 def run_job(kind, image, argument):
     job = f"job-{kind}-{PREFIX}"
     # Start overrides replace the execution template. Copy it in full so env,
     # secretRef, resources and command survive; never update the stored job.
-    template = resource("containerapp", "job", "show", "--name", job, query="properties.template")
-    if len(template["containers"]) != 1 or template["containers"][0]["name"] != kind:
-        raise ValueError("Unexpected execution template")
+    template = execution_template(
+        resource("containerapp", "job", "show", "--name", job, query="properties.template"), kind)
     template["containers"][0].update(image=image, args=[argument])
+    expected = {key: template["containers"][0].get(key) for key in ("image", "args", "command")}
+    expected["env"] = sorted(item["name"] for item in template["containers"][0].get("env") or [])
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "execution.json"
         path.write_text(json.dumps(template))  # JSON is also valid YAML.
@@ -106,6 +122,13 @@ def run_job(kind, image, argument):
     if not execution:
         raise ValueError("Azure did not return a job execution")
     note(f"Job `{job}`, execution `{execution}`, image `{image}`.")
+    executed = resource("containerapp", "job", "execution", "show", "--name", job,
+                        "--job-execution-name", execution, query="properties.template.containers[0]")
+    actual = {key: executed.get(key) for key in ("image", "args", "command")}
+    actual["env"] = sorted(item["name"] for item in executed.get("env") or [])
+    if actual != expected:
+        # Fail closed; a running execution must be inspected, never followed by an app update.
+        raise RuntimeError(f"Job {execution} did not receive the expected override; application image was not updated")
     deadline = time.monotonic() + 1860
     while time.monotonic() < deadline:
         status = resource("containerapp", "job", "execution", "show", "--name", job,
@@ -119,11 +142,11 @@ def run_job(kind, image, argument):
     raise TimeoutError(f"Job {execution} timed out; inspect before retrying; no application update")
 
 
-def wait_revision(image):
+def wait_revision(image, expected):
     deadline = time.monotonic() + 600
     while time.monotonic() < deadline:
         state = app_state()
-        if state["latest"] and state["latest"] == state["ready"]:
+        if state["latest"] == expected and state["ready"] == expected:
             revision = resource("containerapp", "revision", "show", "--name", APP,
                                 "--revision", state["ready"], query=(
                                     "{health:properties.healthState,active:properties.active,"
@@ -136,21 +159,34 @@ def wait_revision(image):
 
 
 def publish(image):
-    template = resource("containerapp", "show", "--name", APP, query="properties.template")
+    # Read and write the template with the same API version so no field is lost in translation.
+    template = az("rest", "--method", "get", "--url", APP_URL, query="properties.template")
     if len(template["containers"]) != 1 or template["containers"][0]["name"] != "api":
         raise ValueError("Unexpected application template")
     template["containers"][0]["image"] = image
-    template["revisionSuffix"] = f"cd-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}"
+    suffix = f"cd-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}"
+    template["revisionSuffix"] = suffix
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "image-update.json"
         path.write_text(json.dumps({"location": "mexicocentral", "properties": {"template": template}}))
         path.chmod(0o600)
         # PATCH only the existing template, without provider registration, identity
         # assignment, secrets/configuration replacement or a resource deployment.
-        url = (f"https://management.azure.com/subscriptions/{SUBSCRIPTION}/resourceGroups/{GROUP}"
-               f"/providers/Microsoft.App/containerApps/{APP}?api-version=2025-07-01")
-        az("rest", "--method", "patch", "--url", url, "--body", f"@{path}",
-           query="properties.latestRevisionName")
+        # ARM may answer 202 without a body; the revision name is derived from the suffix.
+        az("rest", "--method", "patch", "--url", APP_URL, "--body", f"@{path}")
+    return f"{APP}--{suffix}"
+
+
+def verify_access():
+    """Read-only proof of OIDC, subscription visibility and the role's read actions."""
+    app = preflight()
+    revision = resource("containerapp", "revision", "show", "--name", APP, "--revision", app["ready"],
+                        query="properties.healthState")
+    for kind in ("migrate", "grant"):
+        execution_template(resource("containerapp", "job", "show", "--name", f"job-{kind}-{PREFIX}",
+                                    query="properties.template"), kind)
+    note(f"Read access verified. Ready revision `{app['ready']}` ({revision}), image "
+         f"`{app['containers'][0]['image']}`. No image, job or application change was made.")
 
 
 def main():
@@ -175,8 +211,7 @@ def main():
     current = app_state()
     if current != previous:
         raise ValueError("Application changed outside the CD lock; refusing to overwrite it")
-    publish(image)
-    wait_revision(image)
+    wait_revision(image, publish(image))
     subprocess.run(["bash", str(ROOT / "backend/scripts/verify-azure.sh"), f"https://{HOST}"], check=True)
     subprocess.run([postman, "collection", "run", str(ROOT / "postman/collections/AITeacher Backend Smoke"),
                     "--env-var", f"baseUrl=https://{HOST}", "--no-report-events"], check=True, timeout=300)
@@ -185,4 +220,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    verify_access() if sys.argv[1:] == ["--verify-access"] else main()
