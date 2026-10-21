@@ -1,7 +1,7 @@
-> Continuación del tutor, 21/10/2026: diagnóstico real de identidad/configuración
-> y soporte Azure → Google STS preparados. No se activó IA en Azure: falta aprobar
-> [la propuesta IAM](azure-tutor-iam-proposal.md) y completar aceptación real.
-> [Evidencia vigente del tutor](azure-tutor-enablement.md).
+> Estado vigente del tutor, 21/10/2026: Vertex con federación Azure → Google
+> habilitado en revisión `0000009`; texto, fuentes y Summary/apuntes verificados
+> con Google real. Identidad, red y SQL sin cambios. [Evidencia](azure-tutor-enablement.md).
+> Segunda cuenta/autoría, recuperación de fallos, voz y aceptaciones 6/7/8 abiertas.
 
 # Backend de AITeacher: arquitectura y ejecución
 

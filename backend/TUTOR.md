@@ -1,8 +1,8 @@
-> Continuación 21/10/2026: credencial renovable Azure → Google STS preparada y
-> probada localmente con HTTP sintético; activación en Azure pendiente de aprobar
-> IAM. [Diagnóstico y evidencia](../docs/azure-tutor-enablement.md),
-> [propuesta revisable](../docs/azure-tutor-iam-proposal.md). Tutor/Summary de la
-> beta siguen deshabilitados; voz y aceptación real permanecen pendientes.
+> Estado vigente 21/10/2026: Tutor y Summary funcionan con Vertex federado en
+> Azure, revisión `0000009`. Dos turnos contextuales, fuentes de la publicación
+> activa, mensaje guardado y resumen persistente verificados con Google real.
+> [Evidencia y pendientes](../docs/azure-tutor-enablement.md). Segunda cuenta,
+> fallo/recuperación operativos y voz humana siguen pendientes; voz deshabilitada.
 
 # Tutor y apuntes — hito 4
 

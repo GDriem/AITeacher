@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-21",
+  "anonymousReadOfExistingResources": {
+    "conversation": 401,
+    "messages": 401,
+    "note": 401
+  },
+  "secondGoogleIdentityIsolation": "not verified; only one Google account available in browser",
+  "controlledAzureProviderFailureAndRecovery": "pending authenticated browser session",
+  "currentAccountReselection": "automatic approval review rejected action; no retry or workaround",
+  "voiceEnabled": false
+}

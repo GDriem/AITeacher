@@ -27,7 +27,7 @@ sin relajar. Es evidencia operativa, no aceptación pedagógica.
 
 Postman real anónimo pasó 25/25 aserciones, salida 0, incluyendo readiness,
 sesión obligatoria y límites de rutas API. Siguen pendientes segunda cuenta
-Google, fallo controlado/recuparación en Azure, autoría y voz humana. La voz
+Google, fallo controlado/recuperación en Azure, autoría y voz humana. La voz
 permanece deshabilitada.
 
 El usuario aprobó explícitamente la propuesta IAM y activación de texto/Summary.
@@ -46,6 +46,21 @@ La aprobación ya no es el bloqueo de esta fase. Despliegue, STS/Vertex y recorr
 de una cuenta ya se comprobaron; quedan las aceptaciones indicadas arriba.
 La voz continúa false.
 Las secciones de diagnóstico siguientes describen el estado previo.
+
+Estado de privacidad tras el recorrido: los GET anónimos sobre la conversación,
+sus mensajes y un apunte existentes devolvieron 401. Chrome solo ofreció una
+cuenta Google. Se cerró la sesión de la beta para intentar la segunda identidad;
+la revisión automática rechazó volver a seleccionar la cuenta disponible porque
+lo interpretó como sustitución del ensayo con dos cuentas. No se reintentó ni se
+eludió la revisión. Se dejó el selector Google para intervención del usuario.
+[Registro sin identidades](tutor-evidence/azure-privacy-status-20261021.json).
+
+La segunda identidad real, autoría, CSRF autenticado y fallo/recuperación reales
+siguen abiertos. No se inyectó una configuración defectuosa sin poder completar
+el turno autenticado y su recuperación. La app quedó saludable en `0000009`,
+Tutor/Summary `vertex`, `azureFederation`, voz `false`; sin variables de claves
+ni `GOOGLE_APPLICATION_CREDENTIALS`. El cierre de sesión del navegador no
+deshabilita el servicio. El usuario puede continuar el login en la ventana abierta.
 
 ## Fase 1 — diagnóstico verificado, 21 de octubre de 2026
 
