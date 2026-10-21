@@ -1,0 +1,70 @@
+{
+  "verifiedAtUtc": "2026-10-21T14:58:43.217984+00:00",
+  "url": "https://ca-aiteacher-beta-8136.thankfuldune-75a4eb8a.mexicocentral.azurecontainerapps.io",
+  "revision": "ca-aiteacher-beta-8136--0000008",
+  "method": "Real Chrome UI through CUA; existing Google student session; no authentication bypass or AI simulation in Azure",
+  "catalogShown": {
+    "materials": 82,
+    "topics": 35,
+    "subjects": [
+      "Inteligencia artificial",
+      "Inglés",
+      "Redes"
+    ]
+  },
+  "readingsOpened": [
+    {
+      "sourceId": "ospf-beginner",
+      "subject": "Redes",
+      "category": "Enrutamiento",
+      "topic": "Enrutamiento dinámico con OSPF",
+      "level": "Principiante",
+      "title": "OSPF como protocolo de estado de enlace",
+      "source": "https://www.rfc-editor.org/rfc/rfc2328"
+    },
+    {
+      "sourceId": "ospf-advanced",
+      "subject": "Redes",
+      "level": "Avanzado",
+      "title": "Diseño de áreas y convergencia",
+      "source": "https://www.rfc-editor.org/rfc/rfc2328"
+    },
+    {
+      "sourceId": "english-greetings-intermediate-register",
+      "subject": "Inglés",
+      "level": "Intermedio",
+      "title": "Saludos según la situación",
+      "source": "Currículo de inglés AITeacher"
+    },
+    {
+      "sourceId": "nn-intermediate-training",
+      "subject": "Inteligencia artificial",
+      "level": "Intermedio",
+      "title": "Entrenar con retropropagación",
+      "source": "Currículo propio AITeacher"
+    }
+  ],
+  "checks": {
+    "filtersPreservedOnReturn": true,
+    "keyboardSelectionAndOpening": true,
+    "sourceTextAndReferencesVisible": true,
+    "readingOnlyDisclosure": true,
+    "unconfiguredTutorDisclosure": true,
+    "authorToolsAbsentForStudent": true,
+    "editorialHistoryStatusForStudent": 403,
+    "publishedReadingOriginForStudent": null
+  },
+  "livePostman": {
+    "requests": 25,
+    "passedAssertions": 25,
+    "failedAssertions": 0,
+    "exitCode": 0,
+    "reportEventsPublished": false
+  },
+  "limits": [
+    "Browser sampling covers four readings across three subjects and all three levels; complete corpus reconciliation is administrative, not 82 manual browser openings.",
+    "Real Google author and a second real Google identity were not tested.",
+    "AI and voice providers are not configured or accepted in this beta.",
+    "Legacy reference app was viewed only at its login screen; functional comparison uses repository source."
+  ]
+}

@@ -1,5 +1,19 @@
 # Hito 6: contrato de evaluación avanzada
 
+## Aclaración vigente — 21 de octubre de 2026
+
+La interfaz React de pruebas abiertas y corrección humana existe y pasó el
+recorrido local .NET/PostgreSQL/Chromium. La referencia antigua a «sin integración
+React» más abajo describe el incremento original. El login Google de alumno ya
+se verificó en la beta Azure; la autoría y el aislamiento con dos cuentas reales
+siguen pendientes. IA/voz en Azure no están configuradas ni aceptadas.
+
+La publicación de 82 lecturas del catálogo no crea rúbricas, objetivos, prácticas
+ni evaluaciones y no acredita dominio. Continúan pendientes las muestras docentes
+reales, la calibración y la aceptación pedagógica. El hito 6 sigue abierto.
+[Estado curricular y evidencia](../docs/curriculum-continuity.md).
+
+
 Incremento de evaluación con corrección por autor. Los tipos `openResponse`,
 `caseAnalysis` y `practicalExercise` usan `scoringPolicy: rubric`, opciones y claves
 vacías y una `rubric` obligatoria. La rúbrica queda embebida en la revisión

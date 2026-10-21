@@ -1,0 +1,439 @@
+{
+  "mode": "apply",
+  "source": "learning-content-v1",
+  "sourceReadings": 82,
+  "sourceTopics": 35,
+  "before": {
+    "subjects": 3,
+    "categories": 9,
+    "scales": 1,
+    "levels": 3,
+    "topics": 35,
+    "units": 82,
+    "published": 82
+  },
+  "catalogEntriesToCreate": 0,
+  "readingsToImportOrPublish": 0,
+  "imported": 82,
+  "published": 82,
+  "conflicts": [],
+  "matches": true,
+  "items": [
+    {
+      "sourceId": "ai-beginner-overview",
+      "topicId": "036dfcf6-4cf0-40b9-a642-f3af5621c22d",
+      "unitId": "c07840b3-e33d-4063-bed5-17ce88f04958"
+    },
+    {
+      "sourceId": "ml-beginner-learning",
+      "topicId": "7df278ae-aed7-492f-95e4-9dbdd5f6acce",
+      "unitId": "2e550631-4ca0-401e-b084-039c6cb9b7ce"
+    },
+    {
+      "sourceId": "nn-beginner-neurons",
+      "topicId": "ac4fd73b-1d34-4e88-902a-587b86da94f5",
+      "unitId": "c7416f4f-3bd8-411d-b567-97b211da2ec9"
+    },
+    {
+      "sourceId": "nn-intermediate-training",
+      "topicId": "ac4fd73b-1d34-4e88-902a-587b86da94f5",
+      "unitId": "c0dc7470-45e2-41c5-9d02-c2de9fc2777f"
+    },
+    {
+      "sourceId": "nn-advanced-deep-architectures",
+      "topicId": "ac4fd73b-1d34-4e88-902a-587b86da94f5",
+      "unitId": "4885e2ca-c0d6-420b-8703-de4a37fb1340"
+    },
+    {
+      "sourceId": "nlp-beginner-language",
+      "topicId": "00dbbe0f-b6aa-40ce-b6bd-ec900cb8d9ba",
+      "unitId": "a3919854-c0e6-458b-a03e-3201da9157bb"
+    },
+    {
+      "sourceId": "language-models-beginner",
+      "topicId": "a14525c0-bdce-4225-bbb9-152b90ff01d6",
+      "unitId": "c2406418-d205-4155-bc1b-e804ddd8e919"
+    },
+    {
+      "sourceId": "llm-beginner-scale",
+      "topicId": "c2540476-4856-4ac3-b86b-786bcb40fab7",
+      "unitId": "03b9c997-f055-4dbb-aabb-92c5b129625c"
+    },
+    {
+      "sourceId": "tokens-beginner-pieces",
+      "topicId": "95b2eef1-be77-427a-b515-b516e665d54e",
+      "unitId": "69b352a3-1840-4d5f-913c-0fcd3a01838d"
+    },
+    {
+      "sourceId": "embeddings-beginner-map",
+      "topicId": "95657528-9ace-48df-a63b-ba2e935cfb89",
+      "unitId": "fd12f12b-a241-4da4-b2ef-e9207a2ca550"
+    },
+    {
+      "sourceId": "embeddings-intermediate-similarity",
+      "topicId": "95657528-9ace-48df-a63b-ba2e935cfb89",
+      "unitId": "05b094bc-7514-4250-ba20-a74fbe397638"
+    },
+    {
+      "sourceId": "context-window-beginner",
+      "topicId": "6fd279c4-bba4-412a-86a3-f1dd0f35b370",
+      "unitId": "386e193e-1e72-477e-a5c8-c897e9595533"
+    },
+    {
+      "sourceId": "rag-beginner-grounding",
+      "topicId": "86f77c60-8b71-41f7-b68b-5834d567c5a0",
+      "unitId": "c4ae38f5-e487-45b4-ba4e-60ce41947fa3"
+    },
+    {
+      "sourceId": "rag-intermediate-pipeline",
+      "topicId": "86f77c60-8b71-41f7-b68b-5834d567c5a0",
+      "unitId": "f7879d21-918b-4d4b-826c-083d7724e67c"
+    },
+    {
+      "sourceId": "tool-calling-beginner",
+      "topicId": "c32608d4-6416-4999-b88e-99d5fa3de435",
+      "unitId": "2ec33ae2-202c-47d2-8cb7-6836becdba99"
+    },
+    {
+      "sourceId": "agents-beginner-loop",
+      "topicId": "bb0163cb-880a-4ea2-91c5-7d75e7f45785",
+      "unitId": "11d3ab08-32ed-4e19-b4a0-8b0632fffb3c"
+    },
+    {
+      "sourceId": "mcp-beginner-boundary",
+      "topicId": "6f1d64b4-ba02-4760-a40f-ea32a701196d",
+      "unitId": "2d310152-ac64-404e-8a75-a29383cea58d"
+    },
+    {
+      "sourceId": "mcp-intermediate-transport",
+      "topicId": "6f1d64b4-ba02-4760-a40f-ea32a701196d",
+      "unitId": "95db3fa9-1bf2-4044-afed-fc160fac634d"
+    },
+    {
+      "sourceId": "multi-agent-beginner-delegation",
+      "topicId": "e398502a-93d2-4596-a154-9eff1514e115",
+      "unitId": "c5a9a667-43ef-4072-9b36-d7910c545247"
+    },
+    {
+      "sourceId": "prompt-engineering-beginner-instructions",
+      "topicId": "95f5739f-fc9b-4851-955a-ca8178171d3c",
+      "unitId": "cebec521-d562-454d-9513-9d8164479cc5"
+    },
+    {
+      "sourceId": "prompt-engineering-intermediate-roles",
+      "topicId": "95f5739f-fc9b-4851-955a-ca8178171d3c",
+      "unitId": "34b739e0-5c92-49bd-94c4-585983e770d7"
+    },
+    {
+      "sourceId": "prompt-engineering-advanced-design",
+      "topicId": "95f5739f-fc9b-4851-955a-ca8178171d3c",
+      "unitId": "b70e9b89-3b1b-4234-9072-c665a6db5d03"
+    },
+    {
+      "sourceId": "hallucinations-evaluation-beginner",
+      "topicId": "aa93609e-84e8-40d2-b669-48a2cedda02a",
+      "unitId": "4155dbcb-09a8-4371-bf80-b9954655c82d"
+    },
+    {
+      "sourceId": "hallucinations-evaluation-intermediate-metrics",
+      "topicId": "aa93609e-84e8-40d2-b669-48a2cedda02a",
+      "unitId": "b735bd90-d343-4476-8ff2-6bc1bf683a3d"
+    },
+    {
+      "sourceId": "hallucinations-evaluation-advanced-pipeline",
+      "topicId": "aa93609e-84e8-40d2-b669-48a2cedda02a",
+      "unitId": "30026814-40bd-44ba-bdee-e44c7b4f15fe"
+    },
+    {
+      "sourceId": "agent-memory-beginner-state",
+      "topicId": "c29e2095-b37e-4a91-8de9-458ff195209f",
+      "unitId": "1b5d541e-f6e3-45ac-9c1e-f55ad18a8530"
+    },
+    {
+      "sourceId": "agent-memory-intermediate-strategies",
+      "topicId": "c29e2095-b37e-4a91-8de9-458ff195209f",
+      "unitId": "23275054-cf61-4321-811d-b091f0965d75"
+    },
+    {
+      "sourceId": "agent-memory-advanced-architecture",
+      "topicId": "c29e2095-b37e-4a91-8de9-458ff195209f",
+      "unitId": "d884ebf4-2157-4332-8096-fe7238eb8861"
+    },
+    {
+      "sourceId": "advanced-rag-beginner-chunking",
+      "topicId": "2d2e9c71-e1f1-4611-894d-81dc5402d066",
+      "unitId": "69f36435-9f2f-432b-8361-d196baf60334"
+    },
+    {
+      "sourceId": "advanced-rag-intermediate-hybrid",
+      "topicId": "2d2e9c71-e1f1-4611-894d-81dc5402d066",
+      "unitId": "16046245-7351-453a-8f6f-89363f83e79f"
+    },
+    {
+      "sourceId": "advanced-rag-advanced-evaluation",
+      "topicId": "2d2e9c71-e1f1-4611-894d-81dc5402d066",
+      "unitId": "48d967dc-6569-4e32-94db-8d5219cd5fb5"
+    },
+    {
+      "sourceId": "ai-security-beginner-boundaries",
+      "topicId": "90fcc814-df58-4d42-9b25-09a21c9080c1",
+      "unitId": "bf7a3c7e-8408-4fd6-9077-00d4ed0e0ea9"
+    },
+    {
+      "sourceId": "ai-security-intermediate-injection",
+      "topicId": "90fcc814-df58-4d42-9b25-09a21c9080c1",
+      "unitId": "ecbbcb99-7107-496c-bbd7-dcd8d422225c"
+    },
+    {
+      "sourceId": "ai-security-advanced-threat-model",
+      "topicId": "90fcc814-df58-4d42-9b25-09a21c9080c1",
+      "unitId": "89ad76fd-64b7-411c-a922-68a4e75c18a5"
+    },
+    {
+      "sourceId": "observability-costs-beginner-signals",
+      "topicId": "658dde6b-f3f0-41f3-9fb4-b62de73ee1e8",
+      "unitId": "76787abb-6293-42fa-8f2b-0fd597cf051a"
+    },
+    {
+      "sourceId": "observability-costs-intermediate-tracing",
+      "topicId": "658dde6b-f3f0-41f3-9fb4-b62de73ee1e8",
+      "unitId": "2dcee14b-8295-4d62-8d2b-eb60c5b69049"
+    },
+    {
+      "sourceId": "observability-costs-advanced-optimization",
+      "topicId": "658dde6b-f3f0-41f3-9fb4-b62de73ee1e8",
+      "unitId": "1e33cf3e-42d6-4f4d-bc8a-7ae3dc844521"
+    },
+    {
+      "sourceId": "fine-tuning-beginner-choice",
+      "topicId": "d42f5bea-7da9-4b42-9133-679ebadd4fc9",
+      "unitId": "1b9d269a-51c4-4517-b277-25aadc98090c"
+    },
+    {
+      "sourceId": "fine-tuning-intermediate-dataset",
+      "topicId": "d42f5bea-7da9-4b42-9133-679ebadd4fc9",
+      "unitId": "a83903bc-5b52-4029-83ba-51336d9b5a80"
+    },
+    {
+      "sourceId": "fine-tuning-advanced-lifecycle",
+      "topicId": "d42f5bea-7da9-4b42-9133-679ebadd4fc9",
+      "unitId": "749f82d5-10d9-4f55-b859-d8e54248df9f"
+    },
+    {
+      "sourceId": "multimodal-ai-beginner-modalities",
+      "topicId": "ee9bf7a4-613d-4939-992d-6d49b03a262b",
+      "unitId": "9d8f3c72-f675-4e86-a2b3-f4098244e125"
+    },
+    {
+      "sourceId": "multimodal-ai-intermediate-pipeline",
+      "topicId": "ee9bf7a4-613d-4939-992d-6d49b03a262b",
+      "unitId": "fc562cc3-c6e7-4533-9e96-c304d1609971"
+    },
+    {
+      "sourceId": "multimodal-ai-advanced-evaluation",
+      "topicId": "ee9bf7a4-613d-4939-992d-6d49b03a262b",
+      "unitId": "dba6e08c-46ff-445a-934d-01f829c97c4a"
+    },
+    {
+      "sourceId": "responsible-ai-beginner-principles",
+      "topicId": "6316e665-3b13-4206-a54d-4795ef8ec474",
+      "unitId": "36c6d5ed-d30f-4878-b1cb-94c1c9e29b91"
+    },
+    {
+      "sourceId": "responsible-ai-intermediate-impact",
+      "topicId": "6316e665-3b13-4206-a54d-4795ef8ec474",
+      "unitId": "f3f7d9c2-3d60-4f76-a58f-26f89619aef8"
+    },
+    {
+      "sourceId": "responsible-ai-advanced-governance",
+      "topicId": "6316e665-3b13-4206-a54d-4795ef8ec474",
+      "unitId": "254b1d76-47e2-47ff-a523-839a647f407c"
+    },
+    {
+      "sourceId": "ai-production-beginner-runtime",
+      "topicId": "07b651f1-2428-4b66-ad5c-3a3057de04dc",
+      "unitId": "c223f8ad-c811-4e69-a706-bb239b0caf64"
+    },
+    {
+      "sourceId": "ai-production-intermediate-resilience",
+      "topicId": "07b651f1-2428-4b66-ad5c-3a3057de04dc",
+      "unitId": "304480e2-1892-4fed-b5e0-c52af8b686dd"
+    },
+    {
+      "sourceId": "ai-production-advanced-architecture",
+      "topicId": "07b651f1-2428-4b66-ad5c-3a3057de04dc",
+      "unitId": "fb12a75c-2d68-4377-8c70-09c821055799"
+    },
+    {
+      "sourceId": "english-greetings-beginner-first-meeting",
+      "topicId": "8b798f5e-f05f-4bc9-842e-628cc850f4c0",
+      "unitId": "f3576b88-3be2-45fb-a167-aee366fbb4e1"
+    },
+    {
+      "sourceId": "english-greetings-intermediate-register",
+      "topicId": "8b798f5e-f05f-4bc9-842e-628cc850f4c0",
+      "unitId": "75f15bb0-e8dc-40d9-b48e-e019b9b8380f"
+    },
+    {
+      "sourceId": "english-greetings-advanced-pragmatics",
+      "topicId": "8b798f5e-f05f-4bc9-842e-628cc850f4c0",
+      "unitId": "f0526461-9289-466a-bdfd-f751f8e9696f"
+    },
+    {
+      "sourceId": "english-vocabulary-beginner-daily-words",
+      "topicId": "e477c6d7-0b1f-4692-b9c0-3e1ce98bb272",
+      "unitId": "9100bee8-3bc7-4b6d-a1fd-1577a9757ec7"
+    },
+    {
+      "sourceId": "english-vocabulary-intermediate-collocations",
+      "topicId": "e477c6d7-0b1f-4692-b9c0-3e1ce98bb272",
+      "unitId": "05d43737-0c67-4424-9e79-af7855c5f0ee"
+    },
+    {
+      "sourceId": "english-vocabulary-advanced-nuance",
+      "topicId": "e477c6d7-0b1f-4692-b9c0-3e1ce98bb272",
+      "unitId": "101e91c5-fe4d-4788-9526-7fbe37584fec"
+    },
+    {
+      "sourceId": "english-grammar-beginner-be-present",
+      "topicId": "4eed770a-5019-43b5-bea3-75b352d850ae",
+      "unitId": "9d0f20f1-3a8c-4d7e-9d5a-96280babdc8b"
+    },
+    {
+      "sourceId": "english-grammar-intermediate-time",
+      "topicId": "4eed770a-5019-43b5-bea3-75b352d850ae",
+      "unitId": "e6e81080-285d-4605-a365-e81d1ef54f40"
+    },
+    {
+      "sourceId": "english-grammar-advanced-meaning",
+      "topicId": "4eed770a-5019-43b5-bea3-75b352d850ae",
+      "unitId": "9b287164-b91c-4f47-a297-5808af8bbd3b"
+    },
+    {
+      "sourceId": "english-conversation-beginner-turns",
+      "topicId": "1c1f6708-8564-4fc2-bcbd-e56b997cd299",
+      "unitId": "d8e32d6c-1b6e-495f-a7bf-af79d6019e79"
+    },
+    {
+      "sourceId": "english-conversation-intermediate-follow-up",
+      "topicId": "1c1f6708-8564-4fc2-bcbd-e56b997cd299",
+      "unitId": "85cf7c82-ec30-469d-8d3e-3b04d55f4ca8"
+    },
+    {
+      "sourceId": "english-conversation-advanced-fluency",
+      "topicId": "1c1f6708-8564-4fc2-bcbd-e56b997cd299",
+      "unitId": "7f961006-f0f5-4985-aa31-237f532c2dd7"
+    },
+    {
+      "sourceId": "routing-fundamentals-beginner",
+      "topicId": "a9e2dbda-78ef-4937-b0ee-f1494d5cec1c",
+      "unitId": "8f69f526-51fb-4c02-83a4-22125b96deac"
+    },
+    {
+      "sourceId": "routing-fundamentals-intermediate",
+      "topicId": "a9e2dbda-78ef-4937-b0ee-f1494d5cec1c",
+      "unitId": "08f7ec26-c6ee-4128-881d-a9614f275c51"
+    },
+    {
+      "sourceId": "routing-fundamentals-advanced",
+      "topicId": "a9e2dbda-78ef-4937-b0ee-f1494d5cec1c",
+      "unitId": "a03453f0-1dcd-4f05-8abc-f3891dcf30e3"
+    },
+    {
+      "sourceId": "ip-subnetting-beginner",
+      "topicId": "b18c4831-d188-4543-9022-9d80101bf9da",
+      "unitId": "2b3bf81c-e960-46e5-a864-6f7fa75244ca"
+    },
+    {
+      "sourceId": "ip-subnetting-intermediate",
+      "topicId": "b18c4831-d188-4543-9022-9d80101bf9da",
+      "unitId": "b7b901bb-1b3b-48ec-89fe-cb16e9b0e2cc"
+    },
+    {
+      "sourceId": "ip-subnetting-advanced",
+      "topicId": "b18c4831-d188-4543-9022-9d80101bf9da",
+      "unitId": "9977e0be-a1cc-4d56-ab72-9dd35d401dfb"
+    },
+    {
+      "sourceId": "static-routing-beginner",
+      "topicId": "50b6388a-074b-4209-aaca-450c13fc4134",
+      "unitId": "e12e7ffe-f9d6-4492-abd0-bb68153a63ea"
+    },
+    {
+      "sourceId": "static-routing-intermediate",
+      "topicId": "50b6388a-074b-4209-aaca-450c13fc4134",
+      "unitId": "df410d34-ab1f-4aa6-8f65-3304338b2fb2"
+    },
+    {
+      "sourceId": "static-routing-advanced",
+      "topicId": "50b6388a-074b-4209-aaca-450c13fc4134",
+      "unitId": "35caa300-a2b2-466e-bba9-e2fad8d45b2f"
+    },
+    {
+      "sourceId": "ospf-beginner",
+      "topicId": "0dfe859a-04e2-460f-81f8-614bbd45fb8f",
+      "unitId": "2eb81a63-294f-4708-99eb-a7460ca1a33e"
+    },
+    {
+      "sourceId": "ospf-intermediate",
+      "topicId": "0dfe859a-04e2-460f-81f8-614bbd45fb8f",
+      "unitId": "5f42f0fb-0683-42aa-99b4-4314e9664a71"
+    },
+    {
+      "sourceId": "ospf-advanced",
+      "topicId": "0dfe859a-04e2-460f-81f8-614bbd45fb8f",
+      "unitId": "ce7e5dea-f6f6-450b-b0d1-fa9b051e0b37"
+    },
+    {
+      "sourceId": "bgp-beginner",
+      "topicId": "75708238-8798-48a1-a739-77f3563d94af",
+      "unitId": "195ecad6-98cc-4d75-ad31-1c4996e08b0b"
+    },
+    {
+      "sourceId": "bgp-intermediate",
+      "topicId": "75708238-8798-48a1-a739-77f3563d94af",
+      "unitId": "2cd60946-8536-4148-9e74-45e1c5566eef"
+    },
+    {
+      "sourceId": "bgp-advanced",
+      "topicId": "75708238-8798-48a1-a739-77f3563d94af",
+      "unitId": "1b5bc49f-29b5-44ff-a9d0-85e341daa1d0"
+    },
+    {
+      "sourceId": "routing-troubleshooting-beginner",
+      "topicId": "cfff8666-89be-447d-aca2-26ab2e148370",
+      "unitId": "e7d9fea7-594a-4d9b-b855-31bd4ab87615"
+    },
+    {
+      "sourceId": "routing-troubleshooting-intermediate",
+      "topicId": "cfff8666-89be-447d-aca2-26ab2e148370",
+      "unitId": "64ea2160-24af-4611-b21d-ad9fb5b14c7d"
+    },
+    {
+      "sourceId": "routing-troubleshooting-advanced",
+      "topicId": "cfff8666-89be-447d-aca2-26ab2e148370",
+      "unitId": "9e625232-e354-4dde-811b-c5f985dbe95c"
+    },
+    {
+      "sourceId": "floating-static-routing-beginner",
+      "topicId": "bf460af8-a210-46f9-b8e5-f26382456eae",
+      "unitId": "040bd1a4-f016-4d60-9146-6be3d77d4eeb"
+    },
+    {
+      "sourceId": "floating-static-routing-intermediate",
+      "topicId": "bf460af8-a210-46f9-b8e5-f26382456eae",
+      "unitId": "8cbddc5c-9c2d-49a7-9f66-c8cb39079846"
+    },
+    {
+      "sourceId": "floating-static-routing-advanced",
+      "topicId": "bf460af8-a210-46f9-b8e5-f26382456eae",
+      "unitId": "1140411c-2fae-4da0-8b3b-676a28575269"
+    }
+  ],
+  "prerequisiteEdges": 42,
+  "execution": "job-migrate-aiteacher-beta-8136-6ro20bv",
+  "executionStatus": "Succeeded",
+  "image": "craiteacherbeta8136.azurecr.io/aiteacher@sha256:eec351672dbaa63c26d561307977363c6892e74651454f7f49b9c5cbf4d10e8a",
+  "verifiedAtUtc": "2026-10-21T14:52:55.707372+00:00",
+  "jobDefinitionUnchanged": true
+}

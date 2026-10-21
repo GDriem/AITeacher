@@ -50,7 +50,7 @@ ejercicio y evaluación vinculan `objectiveIds`. Las referencias deben existir
 dentro del mismo snapshot, los IDs deben ser únicos y los prerrequisitos no pueden
 formar ciclos. No se aceptan referencias a otro documento ni a un banco externo.
 
-La publicación exige al menos un objetivo y, para **cada** objetivo, conceptos,
+La publicación de `kind: learningUnit` exige al menos un objetivo y, para **cada** objetivo, conceptos,
 lectura, práctica y evaluación. Todo el snapshot se publica junto: no puede
 apuntar a un borrador externo. Las evaluaciones de esta entrega son material
 editorial (`prompt` y `privateCriteria`), todavía sin corrección ni intentos. El
@@ -68,8 +68,9 @@ unidades en esta entrega. No existe todavía un índice RAG al que propagar reti
 
 El corpus `mcp_learning_server/content/learning_content.json` contiene 82 lecturas
 en 35 temas de origen. Carece de objetivos, ejercicios y evaluaciones. Se importa
-una unidad borrador por registro, con una lectura y sus referencias vacías. Debe
-completarse editorialmente antes de publicar. El registro original completo
+un borrador `kind: reading` por registro, con una lectura y sus referencias vacías.
+Ese material de solo lectura puede publicarse sin fabricar actividades. La unidad
+completa `kind: learningUnit` mantiene todos sus requisitos de cobertura. El registro original completo
 (incluidos ID, tema, nivel, fuente y keywords) queda en `revision.origin`.
 Los niveles originales son procedencia; no se convierten automáticamente en
 niveles del catálogo ni se infieren competencias.
@@ -103,3 +104,25 @@ permitirá omitir los registros que ya se hayan confirmado.
 El ensayo automatizado importa las 82 lecturas en una base temporal, verifica el
 origen y repite el lote después de una edición. No importa el corpus a producción,
 no altera Firestore y no cambia los escritores Python o React.
+
+
+## Publicación conservadora del catálogo original
+
+Desde el 21 de octubre existe el comando administrativo
+`--curriculum inspect|apply|reconcile`. Concilia las entradas del catálogo sin
+sobrescribirlas, reutiliza `CorpusImporter` y `EditorialService.Publish` y conserva
+revisiones/origen/publicaciones. Ejecuta una transacción serializable entre ambos
+esquemas y no toca datos de alumnos. Un conflicto editorial cancela todo el lote.
+Versiones modificadas y publicaciones retiradas no se reactivan automáticamente.
+
+`kind: reading` requiere al menos una lectura válida y arrays vacíos de conceptos,
+objetivos, prácticas, evaluaciones y prerrequisitos conceptuales. Publicar no
+acredita dominio. El registro importado original sigue reservado a autoría;
+`readingProvenance` expone explícitamente ID, tema, nivel y keywords de lectura.
+Los niveles no se convierten en competencias. Los prerrequisitos entre temas se
+preservan en `source-curriculum.json` y su endpoint autenticado, sin inventar
+referencias conceptuales. No existe un único nivel correcto para todo un tema.
+
+La beta Azure tiene 82 lecturas publicadas y su catálogo conciliado. Las actividades
+Python no se convierten en definiciones ejecutables: su equivalencia/curación
+sigue pendiente. [Procedimiento, límites e informes](../docs/curriculum-continuity.md).

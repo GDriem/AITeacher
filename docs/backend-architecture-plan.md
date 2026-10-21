@@ -1,5 +1,27 @@
 # Backend de AITeacher: arquitectura y ejecución
 
+## Estado curricular vigente — 21 de octubre de 2026
+
+La beta México ya contiene el currículo original: 3 materias, 9 categorías,
+35 temas y 82 lecturas publicadas, con 3 niveles originales y 42 relaciones
+entre temas conservadas en el manifiesto versionado. Conciliación y repetición
+reales sin diferencias ni duplicados; navegación por materia/categoría/tema/nivel
+verificada con Google de alumno en Chrome real. No se migraron datos de alumnos.
+
+Se añade material explícito `reading`, publicable sin inventar objetivos o
+actividades: exige lecturas válidas y prohíbe conceptos/objetivos/ejercicios/pruebas.
+`learningUnit` mantiene su cobertura completa. Las revisiones y publicaciones
+siguen inmutables. El nivel de cada lectura se conserva como procedencia pública
+acotada; no se asigna un nivel único artificial a todo el tema ni se infiere dominio.
+Las relaciones entre temas son orientación original, no puertas de progreso.
+
+IA/voz de la beta siguen sin configurar y su aceptación está abierta. También
+siguen abiertos equivalencias de actividades, proyectos, recomendaciones
+adaptativas, Google de autor/dos cuentas reales, calibración, restauración y corte.
+Los hitos 6/7 no se cierran. [Evidencia vigente](curriculum-continuity.md).
+Las descripciones con fecha anterior se conservan como historia de implementación.
+
+
 Estado: dirección aprobada por el usuario; implementación incremental.
 Este documento incluye las ampliaciones aprobadas de evaluaciones, unidades
 editoriales, apuntes y grafos. Es la referencia para las entregas del backend.

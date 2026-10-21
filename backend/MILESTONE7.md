@@ -1,5 +1,46 @@
 # Hito 7: ensayo de migración histórica
 
+## Estado vigente: corpus publicado y recorrido de lectura — 21 de octubre de 2026
+
+El hito 7 **permanece abierto**. Esta continuación cierra la importación/publicación
+del corpus y su descubrimiento en la beta, no la continuidad de actividades,
+la aceptación completa de IA/voz ni el corte productivo. Las descripciones con
+fecha anterior que siguen son evidencia histórica.
+
+| Criterio | Evidencia real | Estado |
+| --- | --- | --- |
+| Catálogo y corpus | Destino inspeccionado dos veces: vacío. Se crearon 3 materias, 9 categorías, 35 temas, una escala y 3 niveles; 82 lecturas importadas y publicadas | Aprobado en Azure |
+| Conciliación y repetición | 82 IDs de unidad y 35 IDs de tema conservados; repetición requiere 0 entradas y 0 publicaciones nuevas; `matches=true`, sin conflictos | Aprobado en Azure |
+| Recorrido de lectura | Chrome real con Google: filtros materia/categoría/tema/nivel, textos/fuentes y regreso conservando filtros; muestras de Redes, Inglés e IA | Aprobado para lectura |
+| Permisos | Alumno real sin herramientas de autoría; revisiones editoriales 403 y publicación legible con `origin: null`; Postman anónimo 25/25 | Aprobado para los límites probados; dos cuentas Google reales/autoría pendientes |
+| Actividades antiguas | El corpus no contiene objetivos, ejercicios ni evaluaciones. Se publican como material `reading`, sin fabricar cobertura | Equivalencias/curación y proyectos siguen pendientes |
+| IA y voz | La beta indica tutor no configurado; no se ofrecen como actividades disponibles | Credenciales/federación, configuración y aceptación de proveedores/micrófono/interrupción pendientes |
+| Hito 6 | No se traslada progreso ni se infiere dominio; `uncalibrated` se conserva | Calibración pendiente de muestras docentes reales |
+| Corte y operación | No cambian escritores Python, Firestore ni GCP; sin ampliación IAM/red | Observabilidad, restauración, reversión y corte del hito 8 abiertos |
+
+Beta: https://ca-aiteacher-beta-8136.thankfuldune-75a4eb8a.mexicocentral.azurecontainerapps.io
+
+Revisión `ca-aiteacher-beta-8136--0000008`; imagen por digest
+`sha256:eec351672dbaa63c26d561307977363c6892e74651454f7f49b9c5cbf4d10e8a`.
+El job existente ejecutó importación/publicación en una transacción serializable;
+su definición permaneció idéntica. No se aplicaron migraciones de esquema ni
+se trasladaron datos personales, historial o progreso en esta continuación.
+
+[Informe completo, diferencias y comandos](../docs/curriculum-continuity.md).
+[Conciliación Azure](../docs/curriculum-evidence/azure-reconcile.json) y
+[repetición](../docs/curriculum-evidence/azure-repeat.json) contienen los IDs fuente/destino.
+Las 42 relaciones originales entre temas se conservan en un manifiesto versionado
+servido con sesión; el modelo no las representa como prerrequisitos conceptuales.
+Los niveles pertenecen a cada lectura, no a una competencia o dominio acreditado.
+
+Validación: 9 pruebas de dominio, 80 de integración PostgreSQL, 5 Python de
+preservación/manifiesto y recuperación de informes; 25/25 aserciones Postman locales
+y nuevamente 25/25 reales en Azure, salida 0; dos recorridos Chromium locales
+con IA simulada. Axe sin infracciones a 320/768/1024/1440px. Google de alumno y
+muestras de lectura se probaron en Chrome real en Azure, sin simular proveedor.
+Esta evidencia no acredita ejecución de IA/voz ni equivalencia pedagógica.
+
+
 Incremento local: importar snapshots congelados de conversaciones y progreso Python
 en PostgreSQL, conciliarlos y revertir exclusivamente el lote del ensayo.
 El escritor de producción continúa en Python hasta el hito 8.
