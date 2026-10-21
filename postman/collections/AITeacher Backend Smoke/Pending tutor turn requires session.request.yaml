@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/tutor/conversations/00000000-0000-0000-0000-000000000001/pending-turn'
+order: 26000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Pending input requires a session", () => pm.response.to.have.status(401));

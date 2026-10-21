@@ -1,0 +1,28 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/assessments/attempts'
+order: 4500
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: |-
+    {"definitionRevisionId":"{{reviewDefinitionRevisionId}}","requestId":"{{reviewAttemptRequestId}}"}
+scripts:
+- type: beforeRequest
+  language: text/javascript
+  code: |-
+    // Read the scheduled snapshot rather than the active catalog definition.
+    if (!pm.collectionVariables.get('reviewAttemptRequestId')) pm.collectionVariables.set('reviewAttemptRequestId', pm.variables.replaceIn('{{$guid}}'));
+- type: afterResponse
+  language: text/javascript
+  code: |-
+    pm.test('Created or replayed historical attempt', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));
+    if (pm.response.code < 300) {
+      const attempt = pm.response.json();
+      pm.test('Uses the exact scheduled definition', () => pm.expect(attempt.definitionRevisionId).to.eql(pm.variables.get('reviewDefinitionRevisionId')));
+      pm.collectionVariables.set('attemptId', attempt.id);
+    }

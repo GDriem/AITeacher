@@ -1,0 +1,20 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/tutor/conversations/{{conversationId}}/pending-turn'
+order: 3500
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: |-
+    pm.test("Only the owner's pending request is available", () => pm.response.to.have.status(200));
+    pm.test("Recovery response is not cached", () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));
+    pm.test("Pending request can be replayed unchanged", () => {
+      const body = pm.response.json();
+      if (body.request === null) pm.expect(body.leaseUntil).to.eql(null);
+      else {
+        pm.expect(body.request.requestId).to.be.a('string');
+        pm.expect(body.request.version).to.be.above(0);
+        pm.expect(body.request.text).to.be.a('string');
+        pm.expect(body.leaseUntil).to.be.a('string');
+      }
+    });

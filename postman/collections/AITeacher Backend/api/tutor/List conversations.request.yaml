@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/tutor/conversations?offset=0&limit=50'
+order: 2000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Own conversation page",()=>{pm.response.to.have.status(200);pm.expect(pm.response.json().items).to.be.an("array");});

@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/assessments/attempts/00000000-0000-0000-0000-000000000001/review'
+order: 19000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Session required",()=>pm.response.to.have.status(401));

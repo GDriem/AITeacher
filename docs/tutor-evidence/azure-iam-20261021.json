@@ -1,0 +1,36 @@
+{
+  "verifiedAt": "2026-10-21T16:24:02.956166+00:00",
+  "authorization": "User approved docs/azure-tutor-iam-proposal.md in conversation",
+  "appId": "78c6aa25-8499-40fc-b1d9-8d81a9948f40",
+  "appObjectId": "13bb41c3-d154-4bb1-a869-e0871fd8f825",
+  "appNoSecretsOrApiPermissions": true,
+  "provider": {
+    "attributeCondition": "assertion.tid == '82090019-87c1-4439-918c-a31932facc9a' && assertion.oid == '9ab5894a-f252-4dc6-9aab-abcec7740613' && assertion.appid == '5af2d939-6b87-40e5-af8c-f4981681ae57'",
+    "attributeMapping": {
+      "google.subject": "assertion.oid"
+    },
+    "name": "projects/930398712637/locations/global/workloadIdentityPools/aiteacher-beta/providers/azure-runtime",
+    "oidc": {
+      "allowedAudiences": [
+        "api://78c6aa25-8499-40fc-b1d9-8d81a9948f40"
+      ],
+      "issuerUri": "https://sts.windows.net/82090019-87c1-4439-918c-a31932facc9a/"
+    },
+    "state": "ACTIVE"
+  },
+  "role": {
+    "etag": "BwZeXCovrQo=",
+    "includedPermissions": [
+      "aiplatform.endpoints.predict"
+    ],
+    "name": "projects/gen-lang-client-0364164089/roles/vertexBetaPredict",
+    "stage": "GA",
+    "title": "AITeacher beta inference"
+  },
+  "principal": "principal://iam.googleapis.com/projects/930398712637/locations/global/workloadIdentityPools/aiteacher-beta/subject/9ab5894a-f252-4dc6-9aab-abcec7740613",
+  "principalRoles": [
+    "projects/gen-lang-client-0364164089/roles/vertexBetaPredict"
+  ],
+  "azureRuntimeOrNetworkChanged": false,
+  "liveTokenExchangeVerified": false
+}

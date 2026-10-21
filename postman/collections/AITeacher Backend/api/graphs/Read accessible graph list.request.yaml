@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/graphs/conversations/{{conversationId}}/list?graphRevisionId={{graphRevisionId}}'
+order: 9000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Accessible list returned",()=>{pm.response.to.have.status(200);pm.expect(pm.response.headers.get("Content-Type")).to.include("text/html");pm.expect(pm.response.text()).to.include("<main>");});

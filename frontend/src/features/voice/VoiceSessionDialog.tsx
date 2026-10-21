@@ -8,6 +8,7 @@ import styles from "./VoiceSessionDialog.module.css";
 export interface VoiceSessionDialogProps {
   activeSessionId: string | null;
   studentId: string;
+  endpoint?: string;
   onClose: () => void;
   onFallback: () => void;
 }
@@ -20,11 +21,13 @@ const phaseCopy: Record<VoicePhase, { title: string; detail: string }> = {
   error: { title: "La voz no está disponible", detail: "Reintenta o vuelve al chat sin perder el contexto." },
 };
 
-export function VoiceSessionDialog({ activeSessionId, studentId, onClose, onFallback }: VoiceSessionDialogProps) {
-  const voice = useVoiceSession(studentId, activeSessionId);
+export function VoiceSessionDialog({ activeSessionId, studentId, endpoint, onClose, onFallback }: VoiceSessionDialogProps) {
+  const voice = useVoiceSession(studentId, activeSessionId, endpoint);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const copy = phaseCopy[voice.state.phase];
+  const copy = endpoint && voice.state.phase === "disconnected"
+    ? { title: "Activa el micrófono", detail: "Comienza cuando estés listo. Puedes finalizar la conversación en cualquier momento." }
+    : phaseCopy[voice.state.phase];
   const finishFromKeyboard = useEffectEvent(() => {
     voice.end();
     onClose();
@@ -112,7 +115,9 @@ export function VoiceSessionDialog({ activeSessionId, studentId, onClose, onFall
           ) : null}
         </section>
 
-        {voice.state.phase === "error" ? (
+        {endpoint && voice.state.phase === "disconnected" ? <div className={styles.recovery}>
+          <button type="button" onClick={() => void voice.reconnect()}>Comenzar por voz</button>
+        </div> : voice.state.phase === "error" ? (
           <div className={styles.recovery}>
             <button type="button" onClick={() => void voice.reconnect()}>Reconectar voz</button>
             <button type="button" onClick={fallback}>Continuar por texto</button>

@@ -12,7 +12,7 @@ import {
 import { initialVoiceState, voiceReducer, type VoicePhase } from "./voiceMachine";
 import { parseVoiceServerMessage } from "./voiceProtocol";
 
-export function useVoiceSession(studentId: string, sessionId: string | null) {
+export function useVoiceSession(studentId: string, sessionId: string | null, endpoint?: string) {
   const [state, dispatch] = useReducer(voiceReducer, initialVoiceState);
   const runtimeRef = useRef<VoiceRuntime>(createVoiceRuntime());
   const runRef = useRef(0);
@@ -79,6 +79,10 @@ export function useVoiceSession(studentId: string, sessionId: string | null) {
     try {
       const mediaDevices = (navigator as unknown as { mediaDevices?: MediaDevices }).mediaDevices;
       if (!mediaDevices) throw new Error("Este navegador no permite usar el micrófono.");
+      // Resume synchronously from an explicit start/reconnect click, before permission awaits.
+      const context = new AudioContext({ latencyHint: "interactive" });
+      runtimeRef.current.context = context;
+      const resumed = context.resume();
       const stream = await mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
@@ -86,14 +90,12 @@ export function useVoiceSession(studentId: string, sessionId: string | null) {
         for (const track of stream.getTracks()) track.stop();
         return;
       }
-      const context = new AudioContext({ latencyHint: "interactive" });
       runtimeRef.current.stream = stream;
-      runtimeRef.current.context = context;
-      await context.resume();
+      await resumed;
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const params = new URLSearchParams({ student_id: studentId });
       if (sessionId) params.set("session_id", sessionId);
-      const socket = new WebSocket(`${protocol}//${window.location.host}/ws/live?${params.toString()}`);
+      const socket = new WebSocket(`${protocol}//${window.location.host}${endpoint ?? `/ws/live?${params.toString()}`}`);
       runtimeRef.current.socket = socket;
       socket.binaryType = "arraybuffer";
       const handleMessage = (event: MessageEvent) => {
@@ -155,15 +157,15 @@ export function useVoiceSession(studentId: string, sessionId: string | null) {
         : error instanceof Error ? error.message : "No pudimos preparar el audio.";
       fail(runId, message);
     }
-  }, [beginCapture, cleanup, fail, moveTo, playPcm, sessionId, stopPlayback, studentId]);
+  }, [beginCapture, cleanup, fail, moveTo, playPcm, sessionId, stopPlayback, studentId, endpoint]);
 
   useEffect(() => {
-    void connect();
+    if (!endpoint) void connect();
     return () => {
       runRef.current += 1;
       cleanup();
     };
-  }, [connect, cleanup]);
+  }, [connect, cleanup, endpoint]);
 
   return {
     state,

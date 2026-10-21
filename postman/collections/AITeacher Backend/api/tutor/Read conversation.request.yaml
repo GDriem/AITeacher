@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/tutor/conversations/{{conversationId}}'
+order: 3000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Conversation available",()=>pm.response.to.have.status(200));

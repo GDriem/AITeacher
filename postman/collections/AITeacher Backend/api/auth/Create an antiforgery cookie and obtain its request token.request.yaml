@@ -1,0 +1,17 @@
+$kind: http-request
+description: ''
+url: '{{baseUrl}}/api/auth/csrf'
+method: GET
+headers:
+- key: Accept
+  value: application/json
+settings: {}
+order: 1000
+auth:
+  type: noauth
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: |-
+    pm.test('Expected success', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));
+    if (pm.response.code === 200) pm.collectionVariables.set('csrfToken', pm.response.json().requestToken);

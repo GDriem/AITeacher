@@ -1,0 +1,19 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/assessments/attempts/{{attemptId}}/submit'
+order: 13000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"answers\": [\n    {\n      \"questionRevisionId\": \"{{questionRevisionId}}\"\
+    ,\n      \"selectedOptionIds\": [],\n      \"text\": \"El historial persiste y\
+    \ el contexto usa solo una ventana acotada.\"\n    }\n  ]\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Pending review without scores",()=>{pm.response.to.have.status(200);
+    const r=pm.response.json(); pm.expect(r.status).to.eql("pendingReview"); pm.expect(r.fraction).to.eql(null);});

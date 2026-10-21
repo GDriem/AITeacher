@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/graphs/conversations/{{conversationId}}?graphRevisionId={{graphRevisionId}}'
+order: 8000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Map and comparison returned",()=>{pm.response.to.have.status(200);pm.expect(pm.response.json().comparison.masteryEvaluated).to.eql(false);});

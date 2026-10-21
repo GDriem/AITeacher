@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/learning/reviews'
+order: 18000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Session required",()=>pm.response.to.have.status(401));

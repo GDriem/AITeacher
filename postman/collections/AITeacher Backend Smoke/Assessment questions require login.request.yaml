@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/assessments/questions'
+order: 10000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Assessment requires login without keys",()=>{pm.response.to.have.status(401);pm.expect(pm.response.text()).not.to.include("correctOptionIds");});

@@ -1,0 +1,41 @@
+# .NET build and publish output
+**/bin/
+**/obj/
+artifacts/
+publish/
+
+# Test results, coverage and performance reports
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+coverage*.xml
+coverage*.json
+BenchmarkDotNet.Artifacts/
+
+# Local IDE and user settings
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.DS_Store
+
+# Local configuration, secrets and deployment credentials
+.env
+appsettings.Local.json
+appsettings.*.Local.json
+appsettings.local.json
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.p12
+*.key
+*.pubxml
+*.publishsettings
+
+# Local runtime data and logs
+.data/
+logs/
+*.log

@@ -1,0 +1,7 @@
+$kind: collection
+name: AITeacher Backend Smoke
+variables:
+- key: baseUrl
+  value: http://127.0.0.1:5080
+auth:
+  type: noauth

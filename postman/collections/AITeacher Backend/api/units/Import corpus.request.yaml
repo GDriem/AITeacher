@@ -1,0 +1,27 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/units/import'
+order: 9000
+headers:
+- key: Accept
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+- key: Content-Type
+  value: application/json
+body:
+  type: json
+  content: "{\n  \"records\": [\n    {\n      \"id\": \"postman-example-reading\"\
+    ,\n      \"topic\": \"context-window\",\n      \"title\": \"La memoria de trabajo\
+    \ del modelo\",\n      \"level\": \"beginner\",\n      \"text\": \"La ventana\
+    \ de contexto tiene un límite de tokens.\",\n      \"source\": \"Currículo propio\
+    \ AITeacher\",\n      \"keywords\": [\n        \"contexto\",\n        \"tokens\"\
+    \n      ]\n    }\n  ],\n  \"topicMappings\": {\n    \"context-window\": \"{{topicId}}\"\
+    \n  }\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: 'pm.test(''Expected 200'', () => pm.response.to.have.status(200));
+
+    pm.test("Import accounting", () => { const r = pm.response.json(); pm.expect(r.created
+    + r.skipped).to.eql(r.items.length); });'

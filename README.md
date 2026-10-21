@@ -138,6 +138,12 @@ alumno interrumpe. Si existe una conversación de texto activa, el backend aport
 al modelo su tema, actividad pendiente y última explicación sin exponer la API
 key al navegador.
 
+La voz recibe reglas para redirigir preguntas ajenas al tema verificado por el
+backend y resistir solicitudes de cambiar de rol o ignorar la lección. Sin tema
+verificado, pide seleccionar uno en el chat. Estas reglas se aplican mediante
+instrucciones al modelo; no hay un filtro independiente previo a reproducir el
+audio y su cumplimiento requiere evaluación con el modelo Live real.
+
 Configure `MODEL_PROVIDER=gemini` y una de estas opciones: `GOOGLE_API_KEY`, o
 `GOOGLE_GENAI_USE_VERTEXAI=true` junto con `GOOGLE_CLOUD_PROJECT`. La voz y el
 modelo Live se seleccionan con `GEMINI_LIVE_VOICE` y, opcionalmente,

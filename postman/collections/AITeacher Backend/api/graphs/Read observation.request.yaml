@@ -1,0 +1,9 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/graphs/observations/{{observationId}}'
+order: 6000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Observation returned",()=>pm.response.to.have.status(200));if(pm.response.code===200){const
+    o=pm.response.json();pm.collectionVariables.set("observationVersion",String(o.current.version));pm.collectionVariables.set("graphNodeId",o.current.fromNodeId);}

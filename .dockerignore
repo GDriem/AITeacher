@@ -1,4 +1,20 @@
 .env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+.azure
+.copilot-azure
+.aws
+.codex
+.agents
+.claude
+**/bin
+**/obj
+**/*credentials*.json
+**/*service-account*.json
+**/*.pem
+**/*.pfx
 .git
 .venv
 .pytest_cache
@@ -14,3 +30,6 @@ frontend/dist
 frontend/coverage
 frontend/playwright-report
 frontend/test-results
+
+# Locally extracted Google Cloud CLI is tooling, not application source.
+y/google-cloud-sdk

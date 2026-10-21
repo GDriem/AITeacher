@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/graphs/conversations/00000000-0000-0000-0000-000000000001/list?graphRevisionId=00000000-0000-0000-0000-000000000002'
+order: 16000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Graphs require session",()=>pm.response.to.have.status(401));

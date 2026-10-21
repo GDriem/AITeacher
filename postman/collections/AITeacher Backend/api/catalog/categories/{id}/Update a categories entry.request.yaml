@@ -1,0 +1,42 @@
+$kind: http-request
+description: Author only. Replaces name, slug, order and availability. Parent references
+  and scale purpose are immutable. Supply the last read version; concurrent or stale
+  saves return 409. No physical delete in this milestone.
+url: '{{baseUrl}}/api/catalog/categories/:id'
+method: PUT
+headers:
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+  disabled: false
+  description: (Required) Fetch /api/auth/csrf, retain its cookie and send requestToken
+    here. Fetch again after login or changing identity.
+- key: Content-Type
+  value: application/json
+- key: Accept
+  value: application/json
+pathVariables:
+- key: id
+  value: 1f13cc07-605d-9abc-024d-974d4e4c663a
+  disabled: false
+  description: '(Required) '
+body:
+  type: json
+  content: |
+    {
+      "version": 1,
+      "entry": {
+        "name": "Matemáticas",
+        "slug": "matematicas",
+        "sortOrder": 0,
+        "isAvailable": true
+      }
+    }
+settings: {}
+order: 2000
+auth:
+  type: noauth
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Expected success', () => pm.expect(pm.response.code).to.be.oneOf([200,
+    201, 204]));

@@ -1,0 +1,20 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/assessments/attempts/{{attemptId}}/review'
+order: 11000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"requestId\": \"{{rubricReviewRequestId}}\",\n  \"grades\": [\n\
+    \    {\n      \"questionRevisionId\": \"{{questionRevisionId}}\",\n      \"criteria\"\
+    : [\n        {\n          \"criterionId\": \"30000000-0000-0000-0000-000000000001\"\
+    ,\n          \"points\": 2\n        }\n      ],\n      \"feedback\": \"Justificación\
+    \ correcta.\"\n    }\n  ]\n}"
+scripts:
+- type: beforeRequest
+  language: text/javascript
+  code: if(!pm.collectionVariables.get("rubricReviewRequestId")) pm.collectionVariables.set("rubricReviewRequestId",pm.variables.replaceIn("{{$guid}}"));

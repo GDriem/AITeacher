@@ -1,0 +1,23 @@
+FROM node:24-bookworm-slim AS frontend
+WORKDIR /src/frontend
+RUN npm install --global pnpm@11.16.0
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY frontend/ ./
+RUN pnpm build:backend
+
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.1@sha256:d0a39ca4acefe992f26030f8fb8c60e1b14ac088822cb3fdfbe536ecf843a675 AS build
+WORKDIR /src
+COPY backend/ backend/
+COPY agent_app/static/pcm-capture-worklet.js agent_app/static/pcm-capture-worklet.js
+WORKDIR /src/backend
+RUN dotnet publish src/AITeacher.Api/AITeacher.Api.csproj --configuration Release --output /app/publish --no-self-contained
+COPY --from=frontend /src/frontend/dist/ /app/publish/wwwroot/
+
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-rc.1@sha256:0b9ad21f905462e6ab53320a6b69cfaceaac078a577c38bbeb6d47791556adb9 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish/ ./
+ENV ASPNETCORE_HTTP_PORTS=8080
+USER app
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "AITeacher.Api.dll"]

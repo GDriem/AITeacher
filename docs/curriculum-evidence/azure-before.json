@@ -1,0 +1,439 @@
+{
+  "mode": "inspect",
+  "source": "learning-content-v1",
+  "sourceReadings": 82,
+  "sourceTopics": 35,
+  "before": {
+    "subjects": 0,
+    "categories": 0,
+    "scales": 0,
+    "levels": 0,
+    "topics": 0,
+    "units": 0,
+    "published": 0
+  },
+  "catalogEntriesToCreate": 51,
+  "readingsToImportOrPublish": 82,
+  "imported": 0,
+  "published": 0,
+  "conflicts": [],
+  "matches": false,
+  "items": [
+    {
+      "sourceId": "ai-beginner-overview",
+      "topicId": "7376c949-f53a-46cf-a55d-66a146ab35b7",
+      "unitId": null
+    },
+    {
+      "sourceId": "ml-beginner-learning",
+      "topicId": "9bec6a7f-94aa-4d83-ac75-e1eb532c7fa2",
+      "unitId": null
+    },
+    {
+      "sourceId": "nn-beginner-neurons",
+      "topicId": "c404b34a-640e-4127-8e6a-8c77960c401b",
+      "unitId": null
+    },
+    {
+      "sourceId": "nn-intermediate-training",
+      "topicId": "c404b34a-640e-4127-8e6a-8c77960c401b",
+      "unitId": null
+    },
+    {
+      "sourceId": "nn-advanced-deep-architectures",
+      "topicId": "c404b34a-640e-4127-8e6a-8c77960c401b",
+      "unitId": null
+    },
+    {
+      "sourceId": "nlp-beginner-language",
+      "topicId": "904a6b73-50cb-48c9-a2ff-b5610bf99381",
+      "unitId": null
+    },
+    {
+      "sourceId": "language-models-beginner",
+      "topicId": "4c95c20d-8d68-4665-87dd-04cbbeece787",
+      "unitId": null
+    },
+    {
+      "sourceId": "llm-beginner-scale",
+      "topicId": "ca9abd0f-346d-4ee1-9cff-fed1c4aa40f1",
+      "unitId": null
+    },
+    {
+      "sourceId": "tokens-beginner-pieces",
+      "topicId": "d7a4c905-3538-4cb1-a4fe-2eb663dd3e3f",
+      "unitId": null
+    },
+    {
+      "sourceId": "embeddings-beginner-map",
+      "topicId": "27435918-de56-4528-aa5d-09309325bf46",
+      "unitId": null
+    },
+    {
+      "sourceId": "embeddings-intermediate-similarity",
+      "topicId": "27435918-de56-4528-aa5d-09309325bf46",
+      "unitId": null
+    },
+    {
+      "sourceId": "context-window-beginner",
+      "topicId": "acc6de3a-e2fe-424e-acfc-72f7c4d625a8",
+      "unitId": null
+    },
+    {
+      "sourceId": "rag-beginner-grounding",
+      "topicId": "f48fb6d8-5282-455f-9881-92cc23e4046f",
+      "unitId": null
+    },
+    {
+      "sourceId": "rag-intermediate-pipeline",
+      "topicId": "f48fb6d8-5282-455f-9881-92cc23e4046f",
+      "unitId": null
+    },
+    {
+      "sourceId": "tool-calling-beginner",
+      "topicId": "23492a8b-95ed-4df7-b133-0ca8c23ae036",
+      "unitId": null
+    },
+    {
+      "sourceId": "agents-beginner-loop",
+      "topicId": "c1e08c06-f076-48cb-b812-a18f1d1bff8b",
+      "unitId": null
+    },
+    {
+      "sourceId": "mcp-beginner-boundary",
+      "topicId": "2ceb8c80-6a6e-45ff-9d85-b48484ae1c55",
+      "unitId": null
+    },
+    {
+      "sourceId": "mcp-intermediate-transport",
+      "topicId": "2ceb8c80-6a6e-45ff-9d85-b48484ae1c55",
+      "unitId": null
+    },
+    {
+      "sourceId": "multi-agent-beginner-delegation",
+      "topicId": "830d6dfa-e8c6-49ef-9c61-353a0840c6f5",
+      "unitId": null
+    },
+    {
+      "sourceId": "prompt-engineering-beginner-instructions",
+      "topicId": "bd268c79-915a-4c7c-b599-83aa4f79fd1e",
+      "unitId": null
+    },
+    {
+      "sourceId": "prompt-engineering-intermediate-roles",
+      "topicId": "bd268c79-915a-4c7c-b599-83aa4f79fd1e",
+      "unitId": null
+    },
+    {
+      "sourceId": "prompt-engineering-advanced-design",
+      "topicId": "bd268c79-915a-4c7c-b599-83aa4f79fd1e",
+      "unitId": null
+    },
+    {
+      "sourceId": "hallucinations-evaluation-beginner",
+      "topicId": "fb5f0948-ab01-4dc2-888d-aadac5c12777",
+      "unitId": null
+    },
+    {
+      "sourceId": "hallucinations-evaluation-intermediate-metrics",
+      "topicId": "fb5f0948-ab01-4dc2-888d-aadac5c12777",
+      "unitId": null
+    },
+    {
+      "sourceId": "hallucinations-evaluation-advanced-pipeline",
+      "topicId": "fb5f0948-ab01-4dc2-888d-aadac5c12777",
+      "unitId": null
+    },
+    {
+      "sourceId": "agent-memory-beginner-state",
+      "topicId": "df69f9c2-6fec-4e3b-af83-ded7426ecfad",
+      "unitId": null
+    },
+    {
+      "sourceId": "agent-memory-intermediate-strategies",
+      "topicId": "df69f9c2-6fec-4e3b-af83-ded7426ecfad",
+      "unitId": null
+    },
+    {
+      "sourceId": "agent-memory-advanced-architecture",
+      "topicId": "df69f9c2-6fec-4e3b-af83-ded7426ecfad",
+      "unitId": null
+    },
+    {
+      "sourceId": "advanced-rag-beginner-chunking",
+      "topicId": "4d81a92b-32e6-4b23-8c3a-1c350e57df5f",
+      "unitId": null
+    },
+    {
+      "sourceId": "advanced-rag-intermediate-hybrid",
+      "topicId": "4d81a92b-32e6-4b23-8c3a-1c350e57df5f",
+      "unitId": null
+    },
+    {
+      "sourceId": "advanced-rag-advanced-evaluation",
+      "topicId": "4d81a92b-32e6-4b23-8c3a-1c350e57df5f",
+      "unitId": null
+    },
+    {
+      "sourceId": "ai-security-beginner-boundaries",
+      "topicId": "8004f922-f064-4042-ac1a-2785698fa331",
+      "unitId": null
+    },
+    {
+      "sourceId": "ai-security-intermediate-injection",
+      "topicId": "8004f922-f064-4042-ac1a-2785698fa331",
+      "unitId": null
+    },
+    {
+      "sourceId": "ai-security-advanced-threat-model",
+      "topicId": "8004f922-f064-4042-ac1a-2785698fa331",
+      "unitId": null
+    },
+    {
+      "sourceId": "observability-costs-beginner-signals",
+      "topicId": "44e56ecc-9186-4309-929b-e1d9d1c53de3",
+      "unitId": null
+    },
+    {
+      "sourceId": "observability-costs-intermediate-tracing",
+      "topicId": "44e56ecc-9186-4309-929b-e1d9d1c53de3",
+      "unitId": null
+    },
+    {
+      "sourceId": "observability-costs-advanced-optimization",
+      "topicId": "44e56ecc-9186-4309-929b-e1d9d1c53de3",
+      "unitId": null
+    },
+    {
+      "sourceId": "fine-tuning-beginner-choice",
+      "topicId": "077ee8d4-42ce-48d8-afe5-8e8b30ded4cf",
+      "unitId": null
+    },
+    {
+      "sourceId": "fine-tuning-intermediate-dataset",
+      "topicId": "077ee8d4-42ce-48d8-afe5-8e8b30ded4cf",
+      "unitId": null
+    },
+    {
+      "sourceId": "fine-tuning-advanced-lifecycle",
+      "topicId": "077ee8d4-42ce-48d8-afe5-8e8b30ded4cf",
+      "unitId": null
+    },
+    {
+      "sourceId": "multimodal-ai-beginner-modalities",
+      "topicId": "484fcaa1-6178-4207-8916-c09b14894865",
+      "unitId": null
+    },
+    {
+      "sourceId": "multimodal-ai-intermediate-pipeline",
+      "topicId": "484fcaa1-6178-4207-8916-c09b14894865",
+      "unitId": null
+    },
+    {
+      "sourceId": "multimodal-ai-advanced-evaluation",
+      "topicId": "484fcaa1-6178-4207-8916-c09b14894865",
+      "unitId": null
+    },
+    {
+      "sourceId": "responsible-ai-beginner-principles",
+      "topicId": "1124bb1e-c1c6-4038-8031-772c1cdaa906",
+      "unitId": null
+    },
+    {
+      "sourceId": "responsible-ai-intermediate-impact",
+      "topicId": "1124bb1e-c1c6-4038-8031-772c1cdaa906",
+      "unitId": null
+    },
+    {
+      "sourceId": "responsible-ai-advanced-governance",
+      "topicId": "1124bb1e-c1c6-4038-8031-772c1cdaa906",
+      "unitId": null
+    },
+    {
+      "sourceId": "ai-production-beginner-runtime",
+      "topicId": "ff3dbb5b-5c18-4794-9db1-f9ed2d60b095",
+      "unitId": null
+    },
+    {
+      "sourceId": "ai-production-intermediate-resilience",
+      "topicId": "ff3dbb5b-5c18-4794-9db1-f9ed2d60b095",
+      "unitId": null
+    },
+    {
+      "sourceId": "ai-production-advanced-architecture",
+      "topicId": "ff3dbb5b-5c18-4794-9db1-f9ed2d60b095",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-greetings-beginner-first-meeting",
+      "topicId": "41c3814f-7940-4cbd-803d-6621a0b93264",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-greetings-intermediate-register",
+      "topicId": "41c3814f-7940-4cbd-803d-6621a0b93264",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-greetings-advanced-pragmatics",
+      "topicId": "41c3814f-7940-4cbd-803d-6621a0b93264",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-vocabulary-beginner-daily-words",
+      "topicId": "4542b145-6409-481b-96b8-c0ed413578dd",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-vocabulary-intermediate-collocations",
+      "topicId": "4542b145-6409-481b-96b8-c0ed413578dd",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-vocabulary-advanced-nuance",
+      "topicId": "4542b145-6409-481b-96b8-c0ed413578dd",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-grammar-beginner-be-present",
+      "topicId": "2bc22fcd-f1d3-4d4d-8c60-fd4820907b24",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-grammar-intermediate-time",
+      "topicId": "2bc22fcd-f1d3-4d4d-8c60-fd4820907b24",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-grammar-advanced-meaning",
+      "topicId": "2bc22fcd-f1d3-4d4d-8c60-fd4820907b24",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-conversation-beginner-turns",
+      "topicId": "f065dbd2-537a-4e1c-81c9-1a5fdde30d00",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-conversation-intermediate-follow-up",
+      "topicId": "f065dbd2-537a-4e1c-81c9-1a5fdde30d00",
+      "unitId": null
+    },
+    {
+      "sourceId": "english-conversation-advanced-fluency",
+      "topicId": "f065dbd2-537a-4e1c-81c9-1a5fdde30d00",
+      "unitId": null
+    },
+    {
+      "sourceId": "routing-fundamentals-beginner",
+      "topicId": "ccc24913-44f7-4f20-ab59-1e6aeacff402",
+      "unitId": null
+    },
+    {
+      "sourceId": "routing-fundamentals-intermediate",
+      "topicId": "ccc24913-44f7-4f20-ab59-1e6aeacff402",
+      "unitId": null
+    },
+    {
+      "sourceId": "routing-fundamentals-advanced",
+      "topicId": "ccc24913-44f7-4f20-ab59-1e6aeacff402",
+      "unitId": null
+    },
+    {
+      "sourceId": "ip-subnetting-beginner",
+      "topicId": "d06cb99a-327e-4e20-b8fa-2f7e1d6d800a",
+      "unitId": null
+    },
+    {
+      "sourceId": "ip-subnetting-intermediate",
+      "topicId": "d06cb99a-327e-4e20-b8fa-2f7e1d6d800a",
+      "unitId": null
+    },
+    {
+      "sourceId": "ip-subnetting-advanced",
+      "topicId": "d06cb99a-327e-4e20-b8fa-2f7e1d6d800a",
+      "unitId": null
+    },
+    {
+      "sourceId": "static-routing-beginner",
+      "topicId": "70245cea-3aa6-4409-842b-9d20960e66fb",
+      "unitId": null
+    },
+    {
+      "sourceId": "static-routing-intermediate",
+      "topicId": "70245cea-3aa6-4409-842b-9d20960e66fb",
+      "unitId": null
+    },
+    {
+      "sourceId": "static-routing-advanced",
+      "topicId": "70245cea-3aa6-4409-842b-9d20960e66fb",
+      "unitId": null
+    },
+    {
+      "sourceId": "ospf-beginner",
+      "topicId": "b632b0b1-8d54-4d5f-bc85-0079f7734dd6",
+      "unitId": null
+    },
+    {
+      "sourceId": "ospf-intermediate",
+      "topicId": "b632b0b1-8d54-4d5f-bc85-0079f7734dd6",
+      "unitId": null
+    },
+    {
+      "sourceId": "ospf-advanced",
+      "topicId": "b632b0b1-8d54-4d5f-bc85-0079f7734dd6",
+      "unitId": null
+    },
+    {
+      "sourceId": "bgp-beginner",
+      "topicId": "4f4bddc8-f330-409a-bb07-4918e8724d6e",
+      "unitId": null
+    },
+    {
+      "sourceId": "bgp-intermediate",
+      "topicId": "4f4bddc8-f330-409a-bb07-4918e8724d6e",
+      "unitId": null
+    },
+    {
+      "sourceId": "bgp-advanced",
+      "topicId": "4f4bddc8-f330-409a-bb07-4918e8724d6e",
+      "unitId": null
+    },
+    {
+      "sourceId": "routing-troubleshooting-beginner",
+      "topicId": "1086ed51-e25d-42bb-bd64-f804ae278391",
+      "unitId": null
+    },
+    {
+      "sourceId": "routing-troubleshooting-intermediate",
+      "topicId": "1086ed51-e25d-42bb-bd64-f804ae278391",
+      "unitId": null
+    },
+    {
+      "sourceId": "routing-troubleshooting-advanced",
+      "topicId": "1086ed51-e25d-42bb-bd64-f804ae278391",
+      "unitId": null
+    },
+    {
+      "sourceId": "floating-static-routing-beginner",
+      "topicId": "ce9e18ce-d234-4267-adba-d8b1411a7152",
+      "unitId": null
+    },
+    {
+      "sourceId": "floating-static-routing-intermediate",
+      "topicId": "ce9e18ce-d234-4267-adba-d8b1411a7152",
+      "unitId": null
+    },
+    {
+      "sourceId": "floating-static-routing-advanced",
+      "topicId": "ce9e18ce-d234-4267-adba-d8b1411a7152",
+      "unitId": null
+    }
+  ],
+  "prerequisiteEdges": 42,
+  "execution": "job-migrate-aiteacher-beta-8136-8jsy1oi",
+  "executionStatus": "Succeeded",
+  "image": "craiteacherbeta8136.azurecr.io/aiteacher@sha256:eec351672dbaa63c26d561307977363c6892e74651454f7f49b9c5cbf4d10e8a",
+  "verifiedAtUtc": "2026-10-21T02:50:56.745744+00:00",
+  "jobDefinitionUnchanged": true
+}

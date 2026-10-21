@@ -1,0 +1,23 @@
+$kind: http-request
+description: Original topic relationships and reading levels. No learner state or mastery claims.
+url: '{{baseUrl}}/api/catalog/source-curriculum'
+method: GET
+headers:
+- key: Accept
+  value: application/json
+order: 6000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: |
+    pm.test('Authenticated source reference preserves topics and levels', () => {
+      pm.response.to.have.status(200);
+      const data = pm.response.json();
+      pm.expect(data.source).to.eql('learning-content-v1');
+      pm.expect(data.topics).to.have.lengthOf(35);
+      pm.expect(data.levels.map(x => x.slug)).to.eql(['beginner', 'intermediate', 'advanced']);
+      pm.expect(new Set(data.topics.map(x => x.slug)).size).to.eql(35);
+      for (const topic of data.topics) {
+        pm.expect(topic.prerequisites.every(slug => data.topics.some(x => x.slug === slug))).to.eql(true);
+      }
+    });

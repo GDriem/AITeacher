@@ -1,0 +1,27 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/learning/reviews'
+order: 4000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"requestId\": \"{{learningReviewRequestId}}\",\n  \"evidenceId\"\
+    : \"{{evidenceId}}\",\n  \"definitionRevisionId\": \"{{definitionRevisionId}}\"\
+    ,\n  \"dueAt\": \"{{reviewDueAt}}\"\n}"
+scripts:
+- type: beforeRequest
+  language: text/javascript
+  code: if(!pm.collectionVariables.get("learningReviewRequestId")) pm.collectionVariables.set("learningReviewRequestId",pm.variables.replaceIn("{{$guid}}"));
+- type: afterResponse
+  language: text/javascript
+  code: |-
+    pm.test('Review scheduled or replayed', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));
+    if (pm.response.code < 300) {
+      if (pm.collectionVariables.get('learningReviewId') !== pm.response.json().id) pm.collectionVariables.unset('reviewAttemptRequestId');
+      pm.collectionVariables.set('learningReviewId', pm.response.json().id);
+      pm.collectionVariables.set('reviewDefinitionRevisionId', pm.response.json().definitionRevisionId);
+    }

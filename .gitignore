@@ -246,6 +246,7 @@ __marimo__/
 !/docs/english-curriculum.md
 !/docs/google-auth-student-profiles-plan.md
 !/docs/react-frontend-migration-plan.md
+!/docs/backend-architecture-plan.md
 
 # React frontend build and test artifacts
 /frontend/node_modules/
@@ -268,3 +269,19 @@ pnpm-debug.log*
 /frontend/.pnpm/
 /.pnpm-store/
 /frontend/.pnpm-store-local/
+
+# Private Azure deployment sessions
+.copilot-azure/
+
+# Azure CLI deployment state can contain personal identity and runtime settings.
+/.azure/
+# Private keys, certificates and local cloud credentials.
+/.aws/
+*.pem
+*.pfx
+*.p12
+*.key
+# Versioned project plans and sanitized verification evidence.
+!/docs/ci-and-confidentiality.md
+
+!/docs/pr14-readiness.md

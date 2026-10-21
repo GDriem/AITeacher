@@ -1,0 +1,17 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/tutor/conversations'
+order: 1000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"unitId\": \"{{unitId}}\",\n  \"mode\": \"chat\"\n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Conversation created",()=>pm.response.to.have.status(201)); if(pm.response.code===201){const
+    c=pm.response.json();pm.collectionVariables.set("conversationId",c.id);pm.collectionVariables.set("conversationVersion",String(c.version));pm.collectionVariables.unset("turnRequestId");}

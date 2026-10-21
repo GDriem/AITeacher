@@ -1,0 +1,31 @@
+{
+  "verifiedAt": "2026-10-21T16:26:08.954815+00:00",
+  "buildRun": "nj4",
+  "beforeRevision": "ca-aiteacher-beta-8136--0000008",
+  "beforeImage": "craiteacherbeta8136.azurecr.io/aiteacher@sha256:eec351672dbaa63c26d561307977363c6892e74651454f7f49b9c5cbf4d10e8a",
+  "revision": "ca-aiteacher-beta-8136--0000009",
+  "image": "craiteacherbeta8136.azurecr.io/aiteacher@sha256:038a8ada25c68338f619bdfc64770dcdd6bb7a923f6f906146e357ebe8573e34",
+  "aiEnvironment": {
+    "AI__VertexAuthentication__Mode": "azureFederation",
+    "AI__VertexAuthentication__Audience": "//iam.googleapis.com/projects/930398712637/locations/global/workloadIdentityPools/aiteacher-beta/providers/azure-runtime",
+    "AI__VertexAuthentication__AzureResource": "api://78c6aa25-8499-40fc-b1d9-8d81a9948f40",
+    "AI__Capabilities__Tutor__Provider": "vertex",
+    "AI__Capabilities__Tutor__Model": "gemini-3.5-flash-lite",
+    "AI__Capabilities__Tutor__StructuredOutput": "true",
+    "AI__Capabilities__Tutor__ConfigurationVersion": "azure-vertex-beta-1",
+    "AI__Capabilities__Summary__Provider": "vertex",
+    "AI__Capabilities__Summary__Model": "gemini-3.5-flash-lite",
+    "AI__Capabilities__Summary__StructuredOutput": "true",
+    "AI__Capabilities__Summary__ConfigurationVersion": "azure-vertex-beta-1",
+    "AI__Providers__vertex__Endpoint": "https://aiplatform.googleapis.com/",
+    "AI__Providers__vertex__Project": "gen-lang-client-0364164089",
+    "AI__Providers__vertex__Location": "global",
+    "AI__Voice__Enabled": "false"
+  },
+  "identityPreserved": true,
+  "configurationPreserved": true,
+  "unrelatedTemplatePreserved": true,
+  "readyRevisionMatches": true,
+  "providerLiveVerified": true,
+  "liveEvidence": "azure-reading-text-20261021.json"
+}

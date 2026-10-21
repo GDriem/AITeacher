@@ -1,0 +1,21 @@
+$kind: http-request
+description: ''
+url: '{{baseUrl}}/api/auth/logout'
+method: POST
+headers:
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+  disabled: false
+  description: (Required) Fetch /api/auth/csrf, retain its cookie and send requestToken
+    here. Fetch again after login or changing identity.
+- key: Accept
+  value: application/problem+json
+settings: {}
+order: 4000
+auth:
+  type: noauth
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Expected success', () => pm.expect(pm.response.code).to.be.oneOf([200,
+    201, 204]));

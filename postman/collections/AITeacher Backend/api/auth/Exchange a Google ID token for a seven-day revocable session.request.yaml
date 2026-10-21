@@ -1,0 +1,34 @@
+$kind: http-request
+description: 'Google signature, issuer, audience, expiration and verified email are
+  validated server-side. Author access comes only from configured Google subjects.
+  Session cookie ait_dotnet_session is HttpOnly, SameSite=Lax, Path=/api and Secure
+  outside Development. Existing session cookie is revoked on replacement. No CORS
+  is enabled: browser clients must use a same-origin reverse proxy. Refresh the CSRF
+  request after login before any further write.'
+url: '{{baseUrl}}/api/auth/google'
+method: POST
+headers:
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+  disabled: false
+  description: (Required) Fetch /api/auth/csrf, retain its cookie and send requestToken
+    here. Fetch again after login or changing identity.
+- key: Content-Type
+  value: application/json
+- key: Accept
+  value: application/json
+body:
+  type: json
+  content: |
+    {
+      "credential": "{{googleCredential}}"
+    }
+settings: {}
+order: 2000
+auth:
+  type: noauth
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Expected success', () => pm.expect(pm.response.code).to.be.oneOf([200,
+    201, 204]));

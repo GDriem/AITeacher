@@ -1,0 +1,17 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/tutor/notes'
+order: 6000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"kind\": \"student\",\n  \"text\": \"Mi explicación con mis palabras.\"\
+    \n}"
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Student note created",()=>pm.response.to.have.status(201));if(pm.response.code===201){pm.collectionVariables.set("noteId",pm.response.json().id);pm.collectionVariables.set("noteVersion",String(pm.response.json().version));}

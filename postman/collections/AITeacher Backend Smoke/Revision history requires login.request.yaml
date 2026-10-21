@@ -1,0 +1,10 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/units/00000000-0000-0000-0000-000000000001/revisions'
+order: 8000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Editorial content requires login', () => { pm.response.to.have.status(401);
+    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');
+    pm.expect(pm.response.text()).not.to.include('privateCriteria'); });

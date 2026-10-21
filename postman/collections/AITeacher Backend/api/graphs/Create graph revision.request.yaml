@@ -1,0 +1,23 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/graphs/revisions'
+order: 1000
+headers:
+- key: Content-Type
+  value: application/json
+- key: X-CSRF-TOKEN
+  value: '{{csrfToken}}'
+body:
+  type: json
+  content: "{\n  \"graphId\": \"{{graphId}}\",\n  \"number\": 1,\n  \"topicId\": \"\
+    {{topicId}}\",\n  \"title\": \"Mapa curricular\",\n  \"nodes\": [\n    {\n   \
+    \   \"id\": \"11111111-1111-1111-1111-111111111111\",\n      \"unitId\": \"{{unitId}}\"\
+    ,\n      \"unitRevisionId\": \"{{revisionId}}\",\n      \"conceptId\": \"{{conceptId}}\"\
+    \n    }\n  ],\n  \"edges\": []\n}"
+scripts:
+- type: beforeRequest
+  language: text/javascript
+  code: if(!pm.collectionVariables.get("graphId")){pm.collectionVariables.set("graphId",pm.variables.replaceIn("{{$guid}}"));}
+- type: afterResponse
+  language: text/javascript
+  code: pm.test("Snapshot created",()=>pm.response.to.have.status(201)); if(pm.response.code===201){pm.collectionVariables.set("graphRevisionId",pm.response.json().id);}

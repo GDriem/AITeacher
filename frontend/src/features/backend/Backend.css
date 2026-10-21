@@ -1,0 +1,28 @@
+.backend-app { max-width: 76rem; margin: auto; padding: var(--space-6); }
+.backend-header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-4); }
+.backend-brand { color: var(--content-strong); font-weight: 700; font-size: var(--font-size-lg); }
+.backend-header p { margin: var(--space-2) 0 0; color: var(--content-muted); }
+.backend-app button { color: var(--content-strong); background: var(--surface-raised); border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); min-height: 2.75rem; }
+.backend-app button:hover:not(:disabled), .backend-app button[aria-current] { border-color: var(--action-primary); background: var(--surface-default); }
+.backend-app button:disabled { opacity: .55; cursor: default; }
+.backend-tabs, .backend-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-block: var(--space-6); }
+.backend-app h1 { font-size: var(--font-size-xl); margin-block: var(--space-6); }
+.backend-app h2 { margin-block-start: var(--space-7); }
+.backend-eyebrow { color: var(--content-muted); margin-top: var(--space-7); }
+.backend-panel, .backend-unit-list > li { background: var(--surface-default); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-6); margin-block: var(--space-4); overflow-wrap: anywhere; }
+.backend-panel h2:first-child, .backend-unit-list h2 { margin-top: 0; }
+.backend-unit-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--space-4); }
+.backend-field { display: grid; gap: var(--space-2); margin-block: var(--space-4); }
+.backend-field input, .backend-field select, .backend-field textarea { min-width: 0; width: 100%; color: var(--content-strong); background: var(--surface-sunken); border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: var(--space-3); }
+.backend-field textarea { min-height: 7rem; resize: vertical; }
+.backend-app fieldset { border: 1px solid var(--border-default); padding: var(--space-4); margin-block: var(--space-4); min-width: 0; }
+.backend-choice { display: flex; align-items: center; gap: var(--space-3); min-height: 2.75rem; }
+.backend-app a { color: var(--action-primary); }
+.backend-app pre { overflow-x: auto; max-width: 100%; }
+.backend-app svg { max-width: 100%; height: auto; }
+.backend-skip { position: absolute; top: -10rem; }
+.backend-skip:focus { position: static; }
+.backend-feedback { border-left: .25rem solid var(--status-guide); padding-left: var(--space-4); }
+@media (max-width: 40rem) { .backend-app { padding: var(--space-4); } .backend-panel { padding: var(--space-4); } }
+
+.backend-catalog-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 1rem; }
