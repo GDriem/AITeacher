@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json;
 using AITeacher.Api.Features.Tutor;
 using AITeacher.Modules.Curriculum.Publishing;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,7 @@ namespace AITeacher.Api.Tests;
 
 public sealed class TutorApiTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 {
-    private static async Task<HttpClient> Login(ApiHost host, string credential = "student-a")
+    private static async Task<HttpClient> Login(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> host, string credential = "student-a")
     {
         var client = host.CreateClient();
         await Csrf(client);
@@ -221,6 +222,58 @@ public sealed class TutorApiTests(ApiFixture fixture) : IClassFixture<ApiFixture
         await Ok(await a.PostAsJsonAsync(Url(failed) + "/turns", retry));
         Assert.Equal(2, (await a.GetFromJsonAsync<JsonObject>(Url(failed) + "/messages"))!["total"]!.GetValue<int>());
     }
+    private sealed class SimulatedProcessLoss : Exception;
+    private sealed class CrashAfterProviderReply : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            using var response = await base.SendAsync(request, ct);
+            // Emulate a process disappearing after reservation and HTTP I/O, without service cleanup.
+            throw new SimulatedProcessLoss();
+        }
+    }
+
+    [Fact]
+    public async Task Reload_recovers_original_pending_input_after_process_loss_and_lease_expiry()
+    {
+        var unit = await Publish();
+        using var providerHost = ProviderHost("azure");
+        using var crashedHost = providerHost.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            services.AddHttpClient("tutor-provider").AddHttpMessageHandler(() => new CrashAfterProviderReply())));
+        using var beforeCrash = await Login(crashedHost);
+        var c = await Conversation(beforeCrash, unit.Unit);
+        var original = new CreateTurnRequest(Guid.NewGuid(), 1, "Recuperar después de recargar");
+        Assert.Equal(HttpStatusCode.InternalServerError, (await beforeCrash.PostAsJsonAsync(Url(c) + "/turns", original)).StatusCode);
+        await crashedHost.DisposeAsync();
+
+        using var restartedHost = ProviderHost("azure");
+        using var reloaded = await Login(restartedHost);
+        var response = await reloaded.GetAsync(Url(c) + "/pending-turn");
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        var pending = await Ok(response);
+        var recovered = pending["request"]!.Deserialize<CreateTurnRequest>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        Assert.Equal(original, recovered);
+        using var other = await Login(restartedHost, "student-b");
+        using var author = await Login(restartedHost, "author");
+        using var anonymous = restartedHost.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync(Url(c) + "/pending-turn")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync(Url(c) + "/pending-turn")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await author.GetAsync(Url(c) + "/pending-turn")).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await reloaded.PostAsJsonAsync(Url(c) + "/turns", recovered)).StatusCode);
+        var now = fixture.Clock.Now;
+        try
+        {
+            fixture.Clock.Now = pending["leaseUntil"]!.GetValue<DateTimeOffset>().AddSeconds(1);
+            var result = await Ok(await reloaded.PostAsJsonAsync(Url(c) + "/turns", recovered));
+            Assert.Equal(original.RequestId, result["requestId"]!.GetValue<Guid>());
+            var replay = await Ok(await reloaded.PostAsJsonAsync(Url(c) + "/turns", recovered));
+            Assert.Equal(result["id"]!.GetValue<Guid>(), replay["id"]!.GetValue<Guid>());
+            Assert.Equal(2, (await reloaded.GetFromJsonAsync<JsonObject>(Url(c) + "/messages"))!["total"]!.GetValue<int>());
+            Assert.Null((await reloaded.GetFromJsonAsync<JsonObject>(Url(c) + "/pending-turn"))!["request"]);
+        }
+        finally { fixture.Clock.Now = now; }
+    }
+
     [Fact]
     public void Bounded_context_preserves_current_input_and_reports_truncation_without_old_sourced_messages()
     {
@@ -296,7 +349,8 @@ public sealed class TutorApiTests(ApiFixture fixture) : IClassFixture<ApiFixture
             var db = scope.ServiceProvider.GetRequiredService<TutorDbContext>();
             await db.Turns.Where(x => x.Id == reserved.Id).ExecuteUpdateAsync(set => set.SetProperty(x => x.LeaseUntil, fixture.Clock.GetUtcNow().AddMinutes(-1)));
         }
-        var recovered = b.PostAsJsonAsync(Url(c) + "/turns", request);
+        var recovery = (await b.GetFromJsonAsync<JsonObject>(Url(c) + "/pending-turn"))!["request"]!.Deserialize<CreateTurnRequest>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        var recovered = b.PostAsJsonAsync(Url(c) + "/turns", recovery);
         Assert.Equal(HttpStatusCode.Conflict, (await pending).StatusCode);
         await Ok(await recovered);
         Assert.Equal(2, (await a.GetFromJsonAsync<JsonObject>(Url(c) + "/messages"))!["total"]!.GetValue<int>());

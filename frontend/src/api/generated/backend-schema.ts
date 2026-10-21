@@ -785,6 +785,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tutor/conversations/{id}/pending-turn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recover the original pending request after reload
+         * @description Only the owning student can read the active reservation's immutable input. Both fields are null when no turn is pending. Resend request unchanged to the turns endpoint; a live lease returns 409, an expired lease can be reclaimed with fencing against late responses. This read has no side effects.
+         */
+        get: operations["readPendingTutorTurn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tutor/conversations/{id}/messages": {
         parameters: {
             query?: never;
@@ -1776,6 +1796,11 @@ export interface components {
             activeTurnId: string | null;
             /** Format: date-time */
             createdAt: string;
+        };
+        PendingTutorTurn: {
+            request: components["schemas"]["CreateTutorTurn"] | null;
+            /** Format: date-time */
+            leaseUntil: string | null;
         };
         CreateTutorTurn: {
             /** Format: uuid */
@@ -5639,6 +5664,43 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
+            };
+        };
+    };
+    readPendingTutorTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending request or null */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingTutorTurn"];
+                };
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conversation unavailable to caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

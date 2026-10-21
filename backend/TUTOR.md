@@ -186,3 +186,15 @@ voz, embeddings, RAG global, worker, herramientas con efectos ni migración de d
 El historial completo se conserva en SQL; solo entra una ventana en los prompts.
 Los resúmenes son apuntes explícitos, no memoria automática del tutor. La lectura
 y práctica se conectan al chat por IDs editoriales; no corrigen intentos del hito 3.
+
+## Recuperar un turno después de recargar
+
+`GET /api/tutor/conversations/{id}/pending-turn` permite al alumno propietario
+recuperar `{ request: { requestId, version, text }, leaseUntil }`; ambos campos son
+`null` si no hay reserva pendiente. La respuesta lleva `Cache-Control: no-store`
+y devuelve 404 a otras cuentas, incluido el autor. No devuelve tokens de lease.
+React consulta esta operación al retomar y ofrece **Recuperar mensaje pendiente**.
+Se reenvía el cuerpo original sin cambiar la versión por la versión reservada.
+Antes de vencer el lease se mantiene el 409; después se reclama la misma reserva.
+El fencing por token descarta respuestas tardías y la solicitud idempotente no
+inserta un segundo mensaje del alumno. No requiere migración de datos.

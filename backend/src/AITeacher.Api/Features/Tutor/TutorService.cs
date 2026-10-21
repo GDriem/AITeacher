@@ -46,6 +46,18 @@ public sealed class TutorService(TutorDbContext db, ITutorContent content, Conte
         var row = await db.Conversations.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.StudentId == Actor(user), ct);
         return row is null ? Results.NotFound() : Results.Ok(ConversationView(row));
     }
+    public async Task<IResult> PendingTurn(Guid id, ClaimsPrincipal user, CancellationToken ct)
+    {
+        if (!await Owns(id, user, ct)) return Results.NotFound();
+        // Read the active reservation and its immutable input in one database snapshot.
+        var pending = await (from c in db.Conversations.AsNoTracking()
+                             join t in db.Turns.AsNoTracking() on c.ActiveTurnId equals t.Id
+                             join m in db.Messages.AsNoTracking() on t.Id equals m.TurnId
+                             where c.Id == id && c.StudentId == Actor(user) && t.State == "pending" && m.Role == "user"
+                             select new { request = new CreateTurnRequest(t.RequestId, t.ReservedVersion - 1, m.Text), t.LeaseUntil })
+            .SingleOrDefaultAsync(ct);
+        return Results.Ok(new { request = pending?.request, leaseUntil = pending?.LeaseUntil });
+    }
     public async Task<IResult> Messages(Guid id, int offset, int limit, ClaimsPrincipal user, CancellationToken ct)
     {
         if (!Page(offset, limit)) return Invalid("Invalid pagination.");

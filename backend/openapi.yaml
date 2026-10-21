@@ -2610,6 +2610,39 @@ paths:
         schema:
           type: string
           format: uuid
+  /api/tutor/conversations/{id}/pending-turn:
+    get:
+      operationId: readPendingTutorTurn
+      summary: Recover the original pending request after reload
+      tags: [Tutor]
+      description: >-
+        Only the owning student can read the active reservation's immutable input.
+        Both fields are null when no turn is pending. Resend request unchanged to
+        the turns endpoint; a live lease returns 409, an expired lease can be
+        reclaimed with fencing against late responses. This read has no side effects.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Pending request or null
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum: [no-store]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingTutorTurn'
+        '401':
+          description: Session required
+        '404':
+          description: Conversation unavailable to caller
   /api/tutor/conversations/{id}/messages:
     get:
       operationId: listTutorMessages
@@ -5572,6 +5605,18 @@ components:
       - version
       - activeTurnId
       - createdAt
+    PendingTutorTurn:
+      type: object
+      properties:
+        request:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/CreateTutorTurn'
+        leaseUntil:
+          type: string
+          format: date-time
+          nullable: true
+      required: [request, leaseUntil]
     CreateTutorTurn:
       type: object
       properties:

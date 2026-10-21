@@ -17,6 +17,7 @@ export function Tutor({ unit, mode, activityId }: { unit: Schema["UnitResponse"]
   const voice = useQuery({ queryKey: ["voice-availability"], queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/voice", { signal })) });
   const conversations = useQuery({ queryKey: ["conversations", listOffset], queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/conversations", { signal, params: { query: { offset: listOffset, limit: 20 } } })) });
   const conversation = useQuery({ queryKey: ["conversation", id], enabled: Boolean(id), queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/conversations/{id}", { signal, params: { path: { id: required(id) } } })) });
+  const pending = useQuery({ queryKey: ["pending-turn", id], enabled: Boolean(id), queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/conversations/{id}/pending-turn", { signal, params: { path: { id: required(id) } } })) });
   const messages = useQuery({ queryKey: ["messages", id, offset], enabled: Boolean(id), queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/conversations/{id}/messages", { signal, params: { path: { id: required(id) }, query: { offset, limit: 20 } } })) });
   const start = useMutation({ mutationFn: async () => result(await backend.POST("/api/tutor/conversations", { body: { unitId: unit.id, mode, activityId } })),
     onSuccess: (value) => { setId(value.id); request.current = null; setOffset(0); void queries.invalidateQueries({ queryKey: ["conversations"] }); } });
@@ -27,12 +28,17 @@ export function Tutor({ unit, mode, activityId }: { unit: Schema["UnitResponse"]
       setOffset(Math.floor(Math.max(0, total - 1) / 20) * 20);
       void queries.invalidateQueries({ queryKey: ["messages", id] });
       void queries.invalidateQueries({ queryKey: ["conversation", id] });
+    }, onSettled: () => {
+      void queries.invalidateQueries({ queryKey: ["pending-turn", id] });
+      void queries.invalidateQueries({ queryKey: ["conversation", id] });
     } });
   const save = useMutation({ mutationFn: async (messageId: string | null) => result(await backend.POST("/api/tutor/notes", {
     body: messageId ? { kind: "savedMessage", conversationId: id, messageId } : { kind: "summary", conversationId: id },
   })), onSuccess: () => { void queries.invalidateQueries({ queryKey: ["notes"] }); } });
   const submit = () => {
-    if (!conversation.data || !text.trim()) return;
+    const original = request.current ?? pending.data?.request;
+    if (original) { request.current = original; send.mutate(original); return; }
+    if (!conversation.data || !text.trim() || pending.isPending || pending.isError || conversation.data.activeTurnId) return;
     request.current ??= { requestId: crypto.randomUUID(), version: conversation.data.version, text };
     send.mutate(request.current);
   };
@@ -57,8 +63,12 @@ export function Tutor({ unit, mode, activityId }: { unit: Schema["UnitResponse"]
         <Pages offset={offset} total={messages.data.total} change={setOffset} />
       </>}
       <form onSubmit={(event) => { event.preventDefault(); submit(); }}><Field title="Tu mensaje"><textarea required maxLength={4000} value={text}
-        disabled={send.isPending || send.isError} onChange={(event) => setText(event.target.value)} /></Field>
-        <button type="submit" disabled={!conversation.data || send.isPending || send.isError || !text.trim()}>{send.isPending ? "Preparando respuesta…" : "Enviar"}</button></form>
+        disabled={send.isPending || send.isError || pending.isPending || pending.isError || Boolean(pending.data.request) || Boolean(conversation.data?.activeTurnId)} onChange={(event) => setText(event.target.value)} /></Field>
+        <button type="submit" disabled={!conversation.data || send.isPending || send.isError || pending.isPending || pending.isError || Boolean(pending.data.request) || Boolean(conversation.data.activeTurnId) || !text.trim()}>{send.isPending ? "Preparando respuesta…" : "Enviar"}</button></form>
+      {pending.isError ? <Failure error={pending.error} retry={() => void pending.refetch()} /> : null}
+      {pending.data?.request ? <div role="status"><p>Hay un mensaje pendiente: {pending.data.request.text}</p>
+        <p>Si la solicitud anterior se interrumpió, puedes recuperarla. Si sigue activa, espera a que venza su reserva y reintenta.</p>
+        <button type="button" disabled={send.isPending} onClick={submit}>Recuperar mensaje pendiente</button></div> : null}
       {send.isError ? <Failure error={send.error} retry={submit} /> : null}
       {send.isPending ? <p role="status">El tutor está preparando tu respuesta.</p> : null}
       <button type="button" disabled={save.isPending || send.isPending} onClick={() => save.mutate(null)}>Guardar resumen de la conversación</button>

@@ -283,3 +283,5 @@ pnpm-debug.log*
 *.key
 # Versioned project plans and sanitized verification evidence.
 !/docs/ci-and-confidentiality.md
+
+!/docs/pr14-readiness.md
