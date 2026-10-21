@@ -31,11 +31,21 @@ def report_from_logs(raw):
         try:
             value = json.loads(line)
             if isinstance(value, dict) and 'Log' in value:
-                value = json.loads(value['Log'])
+                value = json.loads(value['Log'].removeprefix('F '))
             if isinstance(value, dict) and value.get('source') == 'learning-content-v1' and 'matches' in value:
                 return value
         except (ValueError, TypeError):
-            pass
+            # The ACA logs CLI sometimes emits an unescaped JSON envelope and
+            # prefixes the container record with CRI's 'F '. Decode only our
+            # complete report object, never treat the job status as evidence.
+            start = line.find('{"mode":')
+            if start >= 0:
+                try:
+                    value, _ = json.JSONDecoder().raw_decode(line[start:])
+                    if value.get('source') == 'learning-content-v1' and 'matches' in value:
+                        return value
+                except (ValueError, TypeError):
+                    pass
     raise RuntimeError('Execution logs contain no complete reconciliation report. Do not infer success.')
 
 def main():
@@ -43,9 +53,12 @@ def main():
     parser.add_argument('mode', choices=['inspect', 'apply', 'reconcile'])
     parser.add_argument('--image', required=True)
     parser.add_argument('--report', type=Path, required=True)
+    parser.add_argument('--execution', help='Recover evidence from an already started execution; never start a new one')
     args = parser.parse_args()
     if not re.fullmatch(r'craiteacherbeta8136\.azurecr\.io/aiteacher@sha256:[0-9a-f]{64}', args.image):
         parser.error('Use an immutable digest in the approved beta registry.')
+    if args.execution and not re.fullmatch(re.escape(JOB) + r'-[a-z0-9]+', args.execution):
+        parser.error('Execution must belong to the existing beta job.')
     if args.report.exists():
         parser.error('Report exists; use a new filename to preserve evidence.')
     definition = json.loads(az('containerapp', 'job', 'show', '--name', JOB, '--resource-group', GROUP))
@@ -67,13 +80,17 @@ def main():
         path = Path(directory) / 'execution.json'
         path.write_text(json.dumps(template))
         path.chmod(0o600)
-        execution = json.loads(az('containerapp', 'job', 'start', '--name', JOB, '--resource-group', GROUP, '--yaml', str(path)))['name']
+        execution = args.execution or json.loads(az('containerapp', 'job', 'start', '--name', JOB, '--resource-group', GROUP, '--yaml', str(path)))['name']
     print(f'{args.mode}: execution {execution}', flush=True)
     deadline = time.monotonic() + 600
     previous = None
     while time.monotonic() < deadline:
-        state = json.loads(az('containerapp', 'job', 'execution', 'show', '--name', JOB, '--resource-group', GROUP,
-                             '--job-execution-name', execution))['properties']['status']
+        remote = json.loads(az('containerapp', 'job', 'execution', 'show', '--name', JOB, '--resource-group', GROUP,
+                               '--job-execution-name', execution))['properties']
+        executed = remote['template']['containers'][0]
+        if executed['image'] != args.image or executed['args'] != ['--curriculum', args.mode]:
+            raise RuntimeError('Execution image or operation differs from the requested evidence.')
+        state = remote['status']
         if state != previous:
             print(f'Execution status: {state}', flush=True)
             previous = state
