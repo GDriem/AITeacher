@@ -44,3 +44,29 @@ utilizan proveedores cloud reales. La auditoría final no aprueba ni fusiona la 
   incluidos caída/recarga del tutor y ambos tipos de repaso histórico.
 - Colecciones Postman válidas; recorrido histórico documentado. No cambia el
   contrato de inicio de intentos ni requiere migraciones.
+
+## Fase 3: validación y barrido de gaps
+
+Se revisó el diff completo contra `b2a3ad235d4e520c3e320d212c3e146442393d6b`
+y el delta desde `92ecdbe`, incluidos contratos, aislamiento de identidad, permisos,
+publicaciones, intentos, rúbricas, aprendizaje, tutor, historial y sus consumidores
+React. Se encontró un gap relacionado: crear una conversación tras un error de
+envío conservaba `send.isError` y bloqueaba el formulario nuevo. Se restablece la
+mutación al crear la conversación, con una prueba de regresión. El reintento de
+recuperación también se prueba después de un fallo que libera la reserva.
+
+Validación completa local:
+
+- .NET: 93/93 API y 9/9 dominio; build BrowserHost sin warnings ni errores.
+- Python: 274/274 (tres avisos conocidos de dependencias).
+- React: 48/48; TypeScript y ESLint aprobados.
+- Builds Python y .NET, budgets y comprobación de ambos contratos/tipos aprobados.
+- OpenAPI y colecciones: sin incidencias; smoke HTTP 26/26 aserciones.
+- Chromium: 5/5, incluidos ambos ciclos históricos y caída/recarga del tutor.
+- Simulación Postman: solicitudes HTTP observadas; PostgreSQL real local.
+- Gitleaks: historial completo sin secretos; actionlint, bash -n y diff --check válidos.
+
+No se llamó ningún proveedor cloud ni se desplegó. Las aceptaciones operativas
+humanas ya documentadas para Azure/voz permanecen fuera de esta validación local.
+La decisión final de readiness exige verificar CI en el head subido y releer los
+hilos, incluso después de resolverlos; no se aprueba ni fusiona la PR.

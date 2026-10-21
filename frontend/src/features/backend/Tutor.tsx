@@ -20,7 +20,7 @@ export function Tutor({ unit, mode, activityId }: { unit: Schema["UnitResponse"]
   const pending = useQuery({ queryKey: ["pending-turn", id], enabled: Boolean(id), queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/conversations/{id}/pending-turn", { signal, params: { path: { id: required(id) } } })) });
   const messages = useQuery({ queryKey: ["messages", id, offset], enabled: Boolean(id), queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/conversations/{id}/messages", { signal, params: { path: { id: required(id) }, query: { offset, limit: 20 } } })) });
   const start = useMutation({ mutationFn: async () => result(await backend.POST("/api/tutor/conversations", { body: { unitId: unit.id, mode, activityId } })),
-    onSuccess: (value) => { setId(value.id); request.current = null; setOffset(0); void queries.invalidateQueries({ queryKey: ["conversations"] }); } });
+    onSuccess: (value) => { setId(value.id); request.current = null; send.reset(); setOffset(0); void queries.invalidateQueries({ queryKey: ["conversations"] }); } });
   const send = useMutation({ mutationFn: async (body: Schema["CreateTutorTurn"]) => result(await backend.POST("/api/tutor/conversations/{id}/turns", { params: { path: { id: required(id) } }, body })),
     onSuccess: () => {
       request.current = null; setText("");

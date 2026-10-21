@@ -32,8 +32,8 @@ export AITEACHER_TEST_POSTGRES='Host=127.0.0.1;Port=55432;Database=postgres;User
 ```
 
 Ejecutar ese comando desde la raíz del repositorio. Arranca su simulación Postman,
-ejecuta .NET, lint de contratos/colecciones, 25 aserciones smoke sobre HTTP y
-Chromium sobre una base aleatoria. Cierra sus procesos y elimina las bases de
+ejecuta .NET, lint de contratos/colecciones, 26 aserciones smoke sobre HTTP y
+cinco recorridos Chromium sobre una base aleatoria. Cierra sus procesos y elimina las bases de
 prueba. Google se sustituye únicamente en `backend/tests/AITeacher.BrowserHost`;
 ese ejecutable no es un destino de despliegue. La CI contiene el mismo recorrido,
 sin credenciales cloud ni publicación a un workspace Postman; todavía no se ha
