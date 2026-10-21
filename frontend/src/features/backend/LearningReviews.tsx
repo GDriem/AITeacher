@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { backend, result, required } from "./client";
+import { backend, result, required, type Schema } from "./client";
 import { Busy, Failure, Field, Pages } from "./Shared";
 import { AttemptView, OwnAttempts } from "./Assessments";
 
@@ -35,10 +35,34 @@ export function LearningReviews() {
     {schedule.isError ? <Failure error={schedule.error} /> : null}{schedule.isSuccess ? <p role="status">Repaso programado.</p> : null}
     <h2>Repasos programados</h2>{reviews.isPending ? <Busy /> : reviews.isError ? <Failure error={reviews.error} retry={() => void reviews.refetch()} /> : <>
       {reviews.data.items.length === 0 ? <p>Todavía no tienes repasos programados.</p> : reviews.data.items.map((item) => <article className="backend-panel" key={item.id}><h3>{new Date(item.dueAt).toLocaleString()}</h3><p>{item.completedAt ? "Completado con un intento corregido" : "Pendiente"}</p>
+        {!item.completedAt ? <StartReviewAttempt review={item} select={setAttemptId} /> : null}
         {!item.completedAt ? <button type="button" disabled={!attemptId || complete.isPending} onClick={() => complete.mutate(item.id)}>Completar con el intento seleccionado</button> : null}</article>)}
       <Pages offset={offset} total={reviews.data.total} change={setOffset} /></>}
     {complete.isError ? <Failure error={complete.error} /> : null}
     <p>Para completar un repaso, selecciona un intento nuevo de su evaluación, iniciado después de la fecha prevista y completamente corregido.</p>
     <OwnAttempts select={setAttemptId} />{attemptId ? <AttemptView key={attemptId} id={attemptId} /> : null}
   </section>;
+}
+
+function StartReviewAttempt({ review, select }: { review: Schema["LearningReview"]; select: (id: string) => void }) {
+  const queries = useQueryClient();
+  const requestId = useRef<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const due = new Date(review.dueAt).getTime();
+  useEffect(() => {
+    if (now >= due) return;
+    const timer = window.setTimeout(() => setNow(Date.now()), Math.min(due - now, 2_147_483_647));
+    return () => window.clearTimeout(timer);
+  }, [due, now]);
+  const start = useMutation({ mutationFn: async () => {
+    requestId.current ??= crypto.randomUUID();
+    return result(await backend.POST("/api/assessments/attempts", { body: { definitionRevisionId: review.definitionRevisionId, requestId: requestId.current } }));
+  }, onSuccess: (attempt) => {
+    requestId.current = null;
+    select(attempt.id);
+    void queries.invalidateQueries({ queryKey: ["attempts"] });
+  } });
+  return <><button type="button" disabled={now < due || start.isPending} onClick={() => start.mutate()}>Iniciar intento del repaso</button>
+    {now < due ? <p>Podrás iniciar el intento cuando llegue la fecha prevista.</p> : null}
+    {start.isError ? <Failure error={start.error} retry={() => start.mutate()} /> : null}</>;
 }

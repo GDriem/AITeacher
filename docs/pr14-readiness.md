@@ -28,3 +28,19 @@ utilizan proveedores cloud reales. La auditoría final no aprueba ni fusiona la 
 - Prueba React de remontaje con caché nueva y reintento 409: 1/1.
 - TypeScript y ESLint sin incidencias; OpenAPI y ambas colecciones Postman válidos.
 - Diff revisado, sin migración requerida.
+
+## Fase 2 verificada
+
+- Inicio desde el repaso con su definición exacta y requestId estable entre
+  reintentos; se selecciona y abre el intento devuelto y se actualiza el historial.
+- La acción se habilita al llegar a dueAt sin recargar.
+- 2/2 pruebas API históricas (cerrada y rúbrica), más 6/6 pruebas avanzadas
+  existentes: R1, evidencia, repaso, publicación R2, inicio desde dueAt, entrega,
+  corrección cuando corresponde y finalización idempotente.
+- Se verifican límite de intentos, propietario, permisos docentes y rechazo de
+  intentos anteriores, de R2, sin corrección o ya usados en otro repaso.
+- React: 2/2 pruebas nuevas; TypeScript y ESLint sin incidencias.
+- Chromium: 5/5 recorridos contra .NET/PostgreSQL y simulación HTTP reales,
+  incluidos caída/recarga del tutor y ambos tipos de repaso histórico.
+- Colecciones Postman válidas; recorrido histórico documentado. No cambia el
+  contrato de inicio de intentos ni requiere migraciones.

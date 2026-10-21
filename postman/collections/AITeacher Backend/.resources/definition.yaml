@@ -48,5 +48,9 @@ variables:
   value: ''
 - key: learningReviewId
   value: ''
+- key: reviewDefinitionRevisionId
+  value: ''
+- key: reviewAttemptRequestId
+  value: ''
 auth:
   type: noauth

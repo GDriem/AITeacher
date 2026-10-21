@@ -16,6 +16,22 @@ using Microsoft.Extensions.Logging;
 // This executable is a test harness, never a deployment target. The API has no fake-login switch.
 internal static class BrowserHost
 {
+    private sealed class SimulatedProcessLoss : Exception;
+    private sealed class ProcessLossHandler : DelegatingHandler
+    {
+        private int crashed;
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var response = await base.SendAsync(request, ct);
+            if ((await request.Content!.ReadAsStringAsync(ct)).Contains("__PROCESS_LOSS__") && Interlocked.Exchange(ref crashed, 1) == 0)
+            {
+                response.Dispose();
+                throw new SimulatedProcessLoss();
+            }
+            return response;
+        }
+    }
+
     public static async Task Main(string[] args)
     {
         Directory.SetCurrentDirectory(AppContext.BaseDirectory);
@@ -92,8 +108,10 @@ internal static class BrowserHost
                 ["Learning:WorkerEnabled"] = "true", ["Logging:LogLevel:Default"] = "Warning"
             };
             var voiceBuilder = WebApplication.CreateBuilder();
-            voiceBuilder.WebHost.UseUrls("http://127.0.0.1:0"); voiceBuilder.Logging.ClearProviders();
+            voiceBuilder.WebHost.UseUrls("http://127.0.0.1:5089"); voiceBuilder.Logging.ClearProviders();
             await using var voiceMock = voiceBuilder.Build(); voiceMock.UseWebSockets();
+            // Loopback-only test clock control, absent from the production API.
+            voiceMock.MapPost("/clock", (DateTimeOffset now) => { fixture.Clock.Now = now; return Microsoft.AspNetCore.Http.Results.Ok(); });
             voiceMock.Map("/live", async context =>
             {
                 using var socket = await context.WebSockets.AcceptWebSocketAsync();
@@ -119,7 +137,8 @@ internal static class BrowserHost
             var voiceAddress = voiceMock.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single().Replace("http:", "ws:");
             settings["AI:Voice:Enabled"] = "true"; settings["AI:Voice:Project"] = "browser-project";
             settings["AI:Voice:Location"] = "us-central1"; settings["AI:Voice:Model"] = "synthetic-live"; settings["AI:Voice:Endpoint"] = voiceAddress + "/live";
-            await using var host = new ApiHost(fixture.Connection, fixture.Clock, settings);
+            await using var host = new ApiHost(fixture.Connection, fixture.Clock, settings, services =>
+                services.AddHttpClient("tutor-provider").AddHttpMessageHandler(() => new ProcessLossHandler()));
             host.UseKestrel(5088);
             using var scope = host.Services.CreateScope();
             await scope.ServiceProvider.GetRequiredService<AITeacher.Api.Features.Editorial.CurriculumMigration>().Run("apply", default);

@@ -54,3 +54,18 @@ la evidencia de toda la prueba se emite al corregirla. El consumidor de
 Aprendizaje ya está disponible de forma optativa y conserva evidencia deduplicada,
 sin atribuir dominio. Los párrafos anteriores describen la entrega original del
 hito 3; no implican que siga pendiente ese consumidor.
+
+## Repasos de revisiones históricas en React
+
+En **Repasos**, cada repaso pendiente permite **Iniciar intento del repaso** cuando
+llega `dueAt`. La acción usa exactamente `definitionRevisionId` del repaso, aunque
+el catálogo publique otra revisión de la unidad. Conserva el `requestId` al
+reintentar un inicio fallido y abre el intento devuelto (también en un replay).
+El intento queda disponible en **Mis intentos anteriores**. Un inicio confirmado
+permite solicitar otro intento si hace falta; todos consumen el límite existente.
+
+La finalización conserva las reglas del servidor: intento propio de la definición
+exacta, iniciado desde `dueAt`, entregado, completamente corregido si usa rúbrica
+y no utilizado por otro repaso. Un intento previo a la fecha no lo completa.
+Actualizar la publicación no altera preguntas ni rúbricas fijadas en R1. No se
+modifican contratos de inicio, permisos, máximo de intentos ni migraciones.

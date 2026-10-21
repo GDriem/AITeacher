@@ -147,3 +147,127 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
     expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   }
 });
+
+async function apiPost(page: Page, url: string, data: unknown) {
+  const csrf = await page.request.get("/api/auth/csrf");
+  const { requestToken } = await csrf.json() as { requestToken: string };
+  const response = await page.request.post(url, { data, headers: { "X-CSRF-TOKEN": requestToken } });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return await response.json() as Record<string, unknown>;
+}
+
+async function advanceClock(page: Page, now: string) {
+  expect((await page.request.post(`http://127.0.0.1:5089/clock?now=${encodeURIComponent(now)}`)).ok()).toBeTruthy();
+}
+
+test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async ({ page }) => {
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Vectores Beta" });
+  await page.getByRole("button", { name: "Abrir unidad", exact: true }).click();
+  await page.getByRole("button", { name: "Abrir conversación", exact: true }).click();
+  const creation = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/api/tutor/conversations"));
+  await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
+  const { id } = await (await creation).json() as { id: string };
+  await page.getByLabel("Tu mensaje", { exact: true }).fill("__PROCESS_LOSS__ Recuperar mi conversación");
+  await page.getByRole("button", { name: "Enviar", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await page.reload();
+  await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Vectores Beta" });
+  await page.getByRole("button", { name: "Abrir unidad", exact: true }).click();
+  await page.getByRole("button", { name: "Abrir conversación", exact: true }).click();
+  await page.getByLabel("Retomar una conversación").selectOption(id);
+  await expect(page.getByRole("button", { name: "Recuperar mensaje pendiente" })).toBeVisible();
+  const pending = await (await page.request.get(`/api/tutor/conversations/${id}/pending-turn`)).json() as { request: unknown; leaseUntil: string };
+  await advanceClock(page, new Date(new Date(pending.leaseUntil).getTime() + 1000).toISOString());
+  const recovery = page.waitForRequest((r) => r.method() === "POST" && r.url().endsWith(`/conversations/${id}/turns`));
+  await page.getByRole("button", { name: "Recuperar mensaje pendiente" }).click();
+  expect((await recovery).postDataJSON()).toEqual(pending.request);
+  await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Recuperar mensaje pendiente" })).toHaveCount(0);
+  const history = await (await page.request.get(`/api/tutor/conversations/${id}/messages`)).json() as { total: number };
+  expect(history.total).toBe(2);
+});
+
+for (const open of [false, true]) test(`repaso histórico R1 después de publicar R2 (${open ? "rúbrica" : "cerrada"})`, async ({ page }) => {
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  await advanceClock(page, new Date().toISOString());
+  const tag = open ? "rúbrica" : "cerrada";
+  const entry = { name: `Histórico ${tag}`, slug: `historical-${crypto.randomUUID()}` };
+  const subject = await apiPost(page, "/api/catalog/subjects", entry);
+  const category = await apiPost(page, "/api/catalog/categories", { subjectId: subject.id, entry });
+  const topic = await apiPost(page, "/api/catalog/topics", { subjectId: subject.id, categoryId: category.id, entry });
+  const concept = crypto.randomUUID(), objective = crypto.randomUUID(), correct = crypto.randomUUID(), criterion = crypto.randomUUID();
+  const document = { title: `Unidad histórica ${tag}`, concepts: [{ id: concept, name: "Idea histórica" }], objectives: [{ id: objective, description: "Aplicar R1", conceptIds: [concept] }],
+    readings: [{ id: crypto.randomUUID(), title: "Lectura R1", text: "Contenido R1", source: "Sintético", objectiveIds: [objective] }],
+    exercises: [{ id: crypto.randomUUID(), prompt: "Aplicar", objectiveIds: [objective] }], assessments: [{ id: crypto.randomUUID(), prompt: "Evaluar", privateCriteria: "PRIVATE-R1", objectiveIds: [objective] }], prerequisites: [] };
+  const unit = await apiPost(page, "/api/units", { topicId: topic.id, document }) as { id: string; version: number; revision: { id: string } };
+  await apiPost(page, `/api/units/${unit.id}/revisions/${unit.revision.id}/publish`, { version: 1 });
+  const question = await apiPost(page, "/api/assessments/questions", { id: crypto.randomUUID(), number: 1, document: {
+    unitId: unit.id, unitRevisionId: unit.revision.id, objectiveIds: [objective], conceptIds: [concept],
+    type: open ? "openResponse" : "singleChoice", prompt: `Pregunta R1 ${tag}`,
+    options: open ? [] : [{ id: correct, text: "Respuesta R1" }, { id: crypto.randomUUID(), text: "Otra" }], correctOptionIds: open ? [] : [correct],
+    scoringPolicy: open ? "rubric" : "exactMatch", rubric: open ? { version: 1, criteria: [{ id: criterion, description: "Justificar R1", maxPoints: 1 }], privateGuidance: "PRIVATE-R1" } : null } });
+  const definition = await apiPost(page, "/api/assessments/definitions", { id: crypto.randomUUID(), number: 1, document: {
+    title: `Evaluación R1 ${tag}`, unitId: unit.id, unitRevisionId: unit.revision.id, objectiveIds: [objective], questionRevisionIds: [question.id], mode: "assessment", timeLimitMinutes: 10, maxAttempts: 2, feedback: "afterSubmission", assistance: "none" } });
+  // Obtain evidence in the real assessment/evidence pipeline before scheduling.
+  await switchUser(page, "student-a");
+  const initial = await apiPost(page, "/api/assessments/attempts", { definitionRevisionId: definition.id, requestId: crypto.randomUUID() });
+  await apiPost(page, `/api/assessments/attempts/${String(initial.id)}/submit`, { answers: [{ questionRevisionId: question.id, selectedOptionIds: open ? [] : [correct], ...(open ? { text: "Justificación inicial" } : {}) }] });
+  if (open) {
+    await switchUser(page, "author");
+    await apiPost(page, `/api/assessments/attempts/${String(initial.id)}/review`, { requestId: crypto.randomUUID(), grades: [{ questionRevisionId: question.id, criteria: [{ criterionId: criterion, points: 1 }], feedback: "Correcto" }] });
+    await switchUser(page, "student-a");
+  }
+  await expect.poll(async () => {
+    const evidence = await (await page.request.get("/api/learning/evidence?limit=100")).json() as { items: { attemptId: string }[] };
+    return evidence.items.some((item) => item.attemptId === initial.id);
+  }, { timeout: 15000 }).toBeTruthy();
+  await page.getByRole("button", { name: "Repasos", exact: true }).click();
+  const evidence = await (await page.request.get("/api/learning/evidence?limit=100")).json() as { items: { id: string; attemptId: string }[] };
+  const sourceEvidence = evidence.items.find((item) => item.attemptId === initial.id);
+  expect(sourceEvidence).toBeDefined();
+  await page.getByLabel("Evidencia para repasar").selectOption(sourceEvidence?.id ?? "");
+  await page.getByLabel("Evaluación para el repaso").selectOption(String(definition.id));
+  const due = new Date(Date.now() + 120000);
+  const local = new Date(due.getTime() - due.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  await page.getByLabel("Fecha y hora del repaso").fill(local);
+  await page.getByRole("button", { name: "Programar repaso", exact: true }).click();
+  await expect(page.getByText("Repaso programado.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Iniciar intento del repaso" })).toBeDisabled();
+  await switchUser(page, "author");
+  const r2 = await apiPost(page, `/api/units/${unit.id}/revisions`, { version: 2, document: { ...document, title: "Publicación R2" } }) as { revision: { id: string }; version: number };
+  await apiPost(page, `/api/units/${unit.id}/revisions/${r2.revision.id}/publish`, { version: r2.version });
+  // Advance both test clocks; the production API still owns all date checks.
+  const afterDue = new Date(due.getTime() + 120000).toISOString();
+  await advanceClock(page, afterDue);
+  await page.clock.setFixedTime(new Date(afterDue));
+  await switchUser(page, "student-a");
+  const active = await (await page.request.get(`/api/units/${unit.id}`)).json() as { revision: { id: string } };
+  expect(active.revision.id).toBe(r2.revision.id);
+  await page.getByRole("button", { name: "Repasos", exact: true }).click();
+  const started = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/api/assessments/attempts"));
+  await page.getByRole("button", { name: "Iniciar intento del repaso" }).click();
+  const attempt = await (await started).json() as { id: string; definitionRevisionId: string };
+  expect(attempt.definitionRevisionId).toBe(definition.id);
+  await expect(page.getByRole("heading", { name: `Evaluación R1 ${tag}`, exact: true })).toBeVisible();
+  if (open) await page.getByLabel("Tu respuesta", { exact: true }).fill("Justifico con el contenido histórico R1.");
+  else await page.getByRole("radio", { name: "Respuesta R1", exact: true }).check();
+  await page.getByRole("button", { name: "Entregar respuestas", exact: true }).click();
+  if (open) {
+    await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
+    await switchUser(page, "author");
+    await page.getByRole("button", { name: "Autoría", exact: true }).click();
+    await page.getByRole("button", { name: "Corregir entregas", exact: true }).click();
+    await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).filter({ hasText: "Pendiente de corrección" }).getByRole("button", { name: "Consultar entrega" }).click();
+    await page.getByLabel("Justificar R1 · máximo 1").fill("1");
+    await page.getByLabel("Feedback al alumno").fill("Corregido con la rúbrica de R1.");
+    await page.getByRole("button", { name: "Confirmar corrección final" }).click();
+    await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
+    await switchUser(page, "student-a");
+    await page.getByRole("button", { name: "Repasos", exact: true }).click();
+    await page.getByText("Mis intentos anteriores", { exact: true }).click();
+    await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).first().getByRole("button", { name: "Consultar", exact: true }).click();
+  } else await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Completar con el intento seleccionado" }).click();
+  await expect(page.getByText("Completado con un intento corregido", { exact: true }).last()).toBeVisible();
+});

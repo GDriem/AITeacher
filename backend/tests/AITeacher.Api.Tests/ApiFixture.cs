@@ -39,7 +39,7 @@ public sealed class TestVertexCredential : IVertexCredential
     public Task<string> Token(CancellationToken ct) => Task.FromResult("simulation-vertex-token");
 }
 
-public sealed class ApiHost(string connection, TestClock clock, IReadOnlyDictionary<string, string>? settings = null) : WebApplicationFactory<Program>
+public sealed class ApiHost(string connection, TestClock clock, IReadOnlyDictionary<string, string>? settings = null, Action<IServiceCollection>? configure = null) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -66,6 +66,7 @@ public sealed class ApiHost(string connection, TestClock clock, IReadOnlyDiction
             }
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(clock);
+            configure?.Invoke(services);
         });
     }
 }
