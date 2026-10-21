@@ -6,7 +6,8 @@ http.createServer(async (req, res) => {
   const send = (status, body) => { res.writeHead(status, {'Content-Type':'application/json'}); res.end(JSON.stringify(body)); };
   const azure = req.url === '/openai/v1/chat/completions';
   const gemini = /^\/v1beta\/models\/[^/]+:generateContent$/.test(req.url);
-  if (req.method !== 'POST' || (!azure && !gemini)) return send(501, {error:'Endpoint not modeled'});
+  const vertex = /^\/v1\/projects\/contract-project\/locations\/us-central1\/publishers\/google\/models\/[^/]+:generateContent$/.test(req.url);
+  if (req.method !== 'POST' || (!azure && !gemini && !vertex)) return send(501, {error:'Endpoint not modeled'});
   let body = req.body;
   if (typeof body === 'string') body = JSON.parse(body);
   if (!body) { let raw = ''; for await (const chunk of req) raw += chunk; body = JSON.parse(raw); }
@@ -15,7 +16,9 @@ http.createServer(async (req, res) => {
   const schema = azure ? body.response_format?.json_schema?.schema : body.generationConfig?.responseJsonSchema;
   if (!system || !payload || !schema || schema.required.join(',') !== 'text,sourceIds' ||
       (azure && (!req.headers['api-key'] || !body.model || body.max_completion_tokens !== 2048 || !body.response_format.json_schema.strict)) ||
-      (gemini && (!req.headers['x-goog-api-key'] || body.generationConfig.responseMimeType !== 'application/json' || body.generationConfig.maxOutputTokens !== 2048)))
+      ((gemini || vertex) && (body.generationConfig.responseMimeType !== 'application/json' || body.generationConfig.maxOutputTokens !== 2048)) ||
+      (gemini && !req.headers['x-goog-api-key']) ||
+      (vertex && (req.headers.authorization !== 'Bearer simulation-vertex-token' || req.headers['x-goog-api-key'])))
     return send(400, {error:'Contract mismatch'});
   if (payload.includes('PRIVATE-ANSWER') || payload.includes('correctOptionIds')) return send(400, {error:'Private content leaked'});
   if (payload.includes('__RECOVER__') && !transientFailures.has(payload)) { transientFailures.add(payload); return send(429, {error:'Transient rate limit'}); }

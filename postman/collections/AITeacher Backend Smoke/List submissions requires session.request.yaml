@@ -1,0 +1,8 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/assessments/submissions'
+order: 24000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: pm.test('Review submissions require a session', function () { pm.response.to.have.status(401); });

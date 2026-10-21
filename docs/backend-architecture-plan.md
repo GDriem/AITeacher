@@ -33,6 +33,60 @@ editoriales, apuntes y grafos. Es la referencia para las entregas del backend.
 Actualización aprobada: Azure será el destino principal de infraestructura,
 aprovechando los créditos disponibles, con proveedores de IA mixtos.
 
+## Continuación vigente — 20 de octubre de 2026
+
+La salida acordada es una beta pública en Azure. El usuario confirmó que todavía
+no hay muestras docentes para calibrar dominio; esa validación se hará cuando
+existan, manteniendo `uncalibrated` y sin inventar umbrales. Esto no elimina la
+validación técnica de Google, aislamiento, proveedores, datos y reversión.
+
+Entregas de esta continuación:
+
+- Ensayo autorizado con Firestore real: 128 documentos (111 conversaciones,
+  312 mensajes, 17 progresos y 31 evaluaciones históricas). Importación repetida
+  y conciliación de IDs/propietarios/huellas/cantidades sin diferencias. Reversión
+  idempotente conserva otro lote; reactivar el lote revertido se rechaza. Base
+  aleatoria de ensayo eliminada, snapshot privado 0600 fuera de Git. No hubo
+  congelación de producción; se requiere un snapshot nuevo al corte.
+- Modo React `.NET` por build, con tipos OpenAPI y CSRF. Catálogo/unidad editorial,
+  publicación, lectura/práctica, evaluaciones cerradas y abiertas, corrección
+  docente, tutor, apuntes, grafos con corrección, repasos e historial privado.
+  Listas nuevas de intentos propios y entregas para autores evitan IDs manuales
+  sin exponer respuestas, puntuaciones ni identidades en sus metadatos.
+- Recorrido Chromium aprobado contra HTTP/.NET/PostgreSQL reales, con Google
+  sustituido solo en el host de pruebas y proveedores IA simulados por HTTP.
+  Incluye dos alumnos y autoría; WCAG A/AA y 2.1 AA sin infracciones a
+  320/768/1024/1440px, sin desbordamientos ni errores de página.
+- Adaptador Vertex OAuth/ADC en .NET con fuentes y salida validadas. Smoke
+  real sintético aprobado con endpoint global y modelo configurado. Puente
+  Python de Gemini Live real: dos turnos y reconexión aprobados. El nuevo protocolo
+  .NET completó también dos turnos contra Vertex Live real, sin retener audio ni
+  transcripciones. Gateway .NET autenticado con contexto de unidad, un cupo por
+  alumno y límite global entre réplicas mediante PostgreSQL; aislamiento, audio,
+  interrupción de protocolo y reconexión comprobados localmente. Chromium verificó
+  captura con micrófono sintético, envío y reproducción en el flujo React nuevo.
+  Faltan login Google, micrófono físico e interrupción contra el proveedor real.
+- Runner local y job de CI para .NET, PostgreSQL, simulación HTTP Postman,
+  lint OpenAPI/colecciones, 25 aserciones smoke y navegador. La ejecución local
+  completa pasó; GitHub Actions todavía no se ha ejecutado con estos cambios.
+
+Pendientes que continúan abiertos: Google real contra .NET; continuidad editorial
+de actividades antiguas sin inventar equivalencias; micrófono físico e interrupción
+con voz real; ingestión durable, originales/Blob, embeddings/pgvector y
+evaluación híbrida; streaming; costos de IA por operación; aceptación de contenido
+y calidad pedagógica por proveedor; infraestructura Azure, observabilidad,
+backup/restauración y corte con conservación de escrituras nuevas en una reversión.
+No se declara cerrado el hito 7 ni se han retirado escritores o recursos GCP.
+
+Azure: suscripción activa identificada, precios minoristas consultados y restricciones
+de PostgreSQL revisadas en eastus/eastus2/centralus. `eastus` es provisional:
+cuota de entornos disponible y PostgreSQL 17/B1ms admitido, pero varias cuotas
+numéricas no pudieron verificarse. Créditos y capacidad total no confirmados.
+Todavía no se han generado IaC ni provisionado recursos.
+
+Las secciones de estado por hito que siguen conservan la historia de aceptación.
+Para el estado vigente de migración consulte también `backend/MILESTONE7.md`.
+
 ## Objetivo y decisiones
 
 Construir un backend en .NET 11 con ASP.NET Core, monolito modular y funcionalidades
@@ -495,6 +549,23 @@ OpenAPI y ambas colecciones validaron sin incidencias. Se ensayaron por CLI
 exportación, migraciones, importación, repetición, conciliación y reversión sobre
 un snapshot sintético; la conciliación posterior detectó la ausencia con salida 2.
 No se ensayaron login Google ni proveedores de voz reales.
+
+Ampliación al retomar el hito 7:
+
+- Extracción directa de las colecciones Firestore de conversaciones y progreso
+  mediante una transacción de solo lectura, con proyecto/base explícitos y ADC.
+  Preserva sesiones archivadas/vencidas y payloads sin recalcular resúmenes;
+  no abre repositorios con efectos de purga ni modifica datos Firestore.
+- La salida validada se publica completa con permisos 0600, sin sobrescritura.
+  Fallos de lectura, esquema o propiedad cancelan el snapshot.
+- 55 pruebas Python aprobadas de exportación, repositorios y configuración/cupos
+  de voz. Incluyen el SDK Firestore real sobre gRPC local con datos sintéticos,
+  error de permisos en la segunda colección y rollback; no validan IAM ni datos
+  reales. No se repitieron .NET ni Postman en esta ampliación.
+- Tabla de aceptación para pasar al hito 8 en `backend/MILESTONE7.md`. Continúan
+  pendientes proyecto/base confirmados y snapshot real, conciliación/reversión
+  de ese snapshot, equivalencia editorial, React sobre .NET y voz real.
+  No se declara cerrado el hito 7 ni se cambia el escritor productivo.
 
 ## Retomar en otra sesión
 

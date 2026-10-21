@@ -1,0 +1,17 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/assessments/attempts?offset=0&limit=20'
+order: 25000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: |
+    pm.test('Own attempt metadata excludes answers and private feedback', function () {
+      pm.response.to.have.status(200);
+      pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');
+      for (const item of pm.response.json().items) {
+        pm.expect(item).not.to.have.property('answers');
+        pm.expect(item).not.to.have.property('scores');
+        pm.expect(item).not.to.have.property('studentId');
+      }
+    });

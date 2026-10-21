@@ -6,6 +6,66 @@
 
 # Tutor y apuntes — hito 4
 
+Actualización de beta, 20 de octubre de 2026: React dispone de un modo .NET
+con lectura/práctica/chat, fuentes y apuntes, verificado con navegador y
+PostgreSQL reales. La descripción original de abajo conserva el alcance inicial.
+El escritor productivo todavía no ha cambiado. Se añadió el adaptador `vertex`
+con OAuth/ADC; `azure` y `gemini` conservan su autenticación por clave.
+
+Para reutilizar el proyecto GCP sin API key:
+
+```sh
+export AI__Capabilities__Tutor__Provider=vertex
+export AI__Capabilities__Tutor__Model=gemini-3.5-flash-lite
+export AI__Capabilities__Tutor__StructuredOutput=true
+export AI__Providers__vertex__Endpoint=https://aiplatform.googleapis.com/
+export AI__Providers__vertex__Project=gen-lang-client-0364164089
+export AI__Providers__vertex__Location=global
+```
+
+El adaptador usa Application Default Credentials con scope cloud-platform;
+Azure requiere configurar explícitamente su identidad federada hacia GCP o el
+secreto aprobado, sin copiar credenciales personales dentro de una imagen.
+`Summary` se configura por separado. Timeout de 30 segundos incluyendo
+obtención del token y lectura de la respuesta. Se mantienen fuentes verificadas,
+contexto acotado, ausencia de fallback y logs sin prompts ni credenciales.
+El ensayo sintético con el endpoint global fue satisfactorio; `us` lo rechazó.
+No se afirma equivalencia ni calidad pedagógica a partir de un smoke.
+Referencia: [Vertex generateContent y OAuth](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/quickstart).
+
+## Voz en el modo .NET
+
+`GET /api/tutor/voice` informa disponibilidad con sesión. El WebSocket
+`/api/tutor/conversations/{id}/voice` exige propietario, publicación vigente y
+Origin idéntico al host. React inicia captura con un clic explícito y reutiliza
+el worklet PCM servido por el host .NET en `/static/pcm-capture-worklet.js`.
+
+La voz está deshabilitada por defecto. Configuración explícita para Vertex Live:
+
+```sh
+export AI__Voice__Enabled=true
+export AI__Voice__Project=gen-lang-client-0364164089
+export AI__Voice__Location=us-central1
+export AI__Voice__Model=gemini-live-2.5-flash-native-audio
+export AI__Voice__MaxConcurrentSessions=4
+```
+
+Usa ADC y contexto acotado de la unidad/actividad, sin claves privadas ni IDs de
+alumno. No persiste audio, transcripciones ni evidencia. Un bloqueo de sesión
+PostgreSQL por alumno y un conjunto global de cupos limitan conexiones entre
+réplicas; todas deben usar el mismo límite global. Duración máxima 10 minutos,
+inicio limitado a 20 segundos. La disponibilidad de cuota de voz no garantiza
+capacidad del proveedor. El contrato OpenAPI describe los frames y errores.
+
+Verificación del 20 de octubre: dos turnos sintéticos contra Vertex Live real
+desde .NET; audio recibido y descartado. Gateway local: aislamiento de alumnos,
+origen, cupos entre hosts, PCM, interrupción de protocolo, cierre y reconexión.
+Chromium: micrófono sintético, transcripción y reproducción en React/.NET.
+Quedan Google real, micrófono físico e interrupción contra el proveedor real.
+No se ha cambiado la ruta de voz productiva Python.
+
+## Contrato inicial del tutor de texto
+
 Contrato implementado, definido antes de desarrollar: API autenticada bajo `/api/tutor`,
 CSRF en escrituras, `Cache-Control: no-store`, aislamiento por alumno incluso para
 los autores. No cambia el escritor Python ni conecta todavía React.

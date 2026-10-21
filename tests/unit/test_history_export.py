@@ -1,6 +1,8 @@
 import copy
 import importlib.util
 import json
+import stat
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -51,3 +53,34 @@ def test_export_rejects_duplicate_json_properties(tmp_path):
     source.write_text('{"a":1,"a":2}')
     with pytest.raises(ValueError):
         export.read_map(source)
+
+
+def test_snapshot_is_private_complete_and_never_overwrites(tmp_path):
+    path = tmp_path / "history.json"
+    snapshot = export.prepare({"session-1": _serialize_session(make_session())}, {}, "local", uuid4())
+    export.write_snapshot(snapshot, path)
+    assert json.loads(path.read_text()) == snapshot
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    with pytest.raises(FileExistsError):
+        export.write_snapshot({"different": True}, path)
+    assert json.loads(path.read_text()) == snapshot
+    assert list(tmp_path.iterdir()) == [path]
+
+
+def test_snapshot_serialization_failure_leaves_no_file(tmp_path):
+    path = tmp_path / "history.json"
+    with pytest.raises(ValueError):
+        export.write_snapshot({"invalid": float("nan")}, path)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_firestore_timestamps_keep_nanoseconds_and_reject_lossy_values():
+    from google.api_core.datetime_helpers import DatetimeWithNanoseconds
+
+    stamp = DatetimeWithNanoseconds.from_rfc3339("2020-01-01T00:00:00.123456789Z")
+    assert export.firestore_json({"nested": [stamp]}) == {
+        "nested": ["2020-01-01T00:00:00.123456789Z"]}
+    assert export.firestore_json(datetime(2020, 1, 1, tzinfo=UTC)).startswith("2020-01-01")
+    for value in (b"private", object(), datetime(2020, 1, 1), {1: "key"}):
+        with pytest.raises(ValueError):
+            export.firestore_json(value)

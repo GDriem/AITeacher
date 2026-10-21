@@ -1,0 +1,17 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/assessments/submissions?offset=0&limit=20'
+order: 26000
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: |
+    pm.test('Author review list exposes metadata only', function () {
+      pm.response.to.have.status(200);
+      pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');
+      for (const item of pm.response.json().items) {
+        pm.expect(item.submittedAt).to.be.a('string');
+        pm.expect(item).not.to.have.property('answers');
+        pm.expect(item).not.to.have.property('studentId');
+      }
+    });

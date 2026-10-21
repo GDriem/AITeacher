@@ -1,19 +1,20 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Net.Http.Headers;
 
 namespace AITeacher.Api.Features.Tutor;
 
 // Fixed capability routing: configuration chooses providers, callers and models cannot override it.
 public sealed class TutorProviders(IConfiguration configuration, IHttpClientFactory clients, IHostEnvironment environment,
-    ILogger<TutorProviders> logger)
+    ILogger<TutorProviders> logger, IVertexCredential vertexCredential)
 {
     public ProviderSelection Select(string capability)
     {
         var section = configuration.GetSection("AI:Capabilities:" + capability);
         var choice = new ProviderSelection(section["Provider"] ?? "disabled", section["Model"] ?? "",
             section["ConfigurationVersion"] ?? "1", section.GetValue("StructuredOutput", false));
-        if (!choice.StructuredOutput || choice.Provider is not ("mock" or "azure" or "gemini") ||
+        if (!choice.StructuredOutput || choice.Provider is not ("mock" or "azure" or "gemini" or "vertex") ||
             (choice.Provider == "mock" && !environment.IsDevelopment()) || string.IsNullOrWhiteSpace(choice.Model))
             throw new TutorUnavailableException();
         if (choice.Provider != "mock") _ = Endpoint(choice.Provider);
@@ -25,10 +26,15 @@ public sealed class TutorProviders(IConfiguration configuration, IHttpClientFact
         var section = configuration.GetSection("AI:Providers:" + provider);
         if (!Uri.TryCreate(section["Endpoint"], UriKind.Absolute, out var uri) ||
             (uri.Scheme != "https" && !(environment.IsDevelopment() && uri.IsLoopback && uri.Scheme == "http")) ||
-            uri.Query.Length != 0 || uri.UserInfo.Length != 0 || string.IsNullOrWhiteSpace(section["ApiKey"]))
+            uri.Query.Length != 0 || uri.Fragment.Length != 0 || uri.UserInfo.Length != 0 ||
+            (provider != "vertex" && string.IsNullOrWhiteSpace(section["ApiKey"])))
+            throw new TutorUnavailableException();
+        if (provider == "vertex" && (!Segment(section["Project"]) || !Segment(section["Location"])))
             throw new TutorUnavailableException();
         return (new Uri(uri.AbsoluteUri.TrimEnd('/') + "/"), section["ApiKey"]!);
     }
+    private static bool Segment(string? value) => !string.IsNullOrWhiteSpace(value) && value.Length <= 120 &&
+        value.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
 
     // A small shared schema; the application validates IDs and text even when a provider claims schema support.
     private static readonly object Schema = new { type = "object", additionalProperties = false,
@@ -37,7 +43,7 @@ public sealed class TutorProviders(IConfiguration configuration, IHttpClientFact
 
     public async Task<ProviderReply> Generate(ProviderSelection selection, TutorContext context, CancellationToken ct)
     {
-        if (!selection.StructuredOutput || selection.Provider is not ("mock" or "azure" or "gemini") ||
+        if (!selection.StructuredOutput || selection.Provider is not ("mock" or "azure" or "gemini" or "vertex") ||
             (selection.Provider == "mock" && !environment.IsDevelopment()) || string.IsNullOrWhiteSpace(selection.Model))
             throw new TutorUnavailableException();
         var timer = Stopwatch.StartNew();
@@ -49,10 +55,13 @@ public sealed class TutorProviders(IConfiguration configuration, IHttpClientFact
                     "[Mock] Revisemos la actividad paso a paso. ¿Cómo explicarías la idea principal?", context.Sources.Take(1).Select(x => x.Id).ToArray());
             else
             {
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(TimeSpan.FromSeconds(30));
                 var (endpoint, key) = Endpoint(selection.Provider);
-                using var request = new HttpRequestMessage(HttpMethod.Post, selection.Provider == "azure"
-                    ? new Uri(endpoint, "openai/v1/chat/completions")
-                    : new Uri(endpoint, "v1beta/models/" + Uri.EscapeDataString(selection.Model) + ":generateContent"));
+                var path = selection.Provider == "azure" ? "openai/v1/chat/completions" : selection.Provider == "vertex"
+                    ? $"v1/projects/{configuration["AI:Providers:vertex:Project"]}/locations/{configuration["AI:Providers:vertex:Location"]}/publishers/google/models/{Uri.EscapeDataString(selection.Model)}:generateContent"
+                    : "v1beta/models/" + Uri.EscapeDataString(selection.Model) + ":generateContent";
+                using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(endpoint, path));
                 if (selection.Provider == "azure")
                 {
                     request.Headers.Add("api-key", key);
@@ -62,15 +71,23 @@ public sealed class TutorProviders(IConfiguration configuration, IHttpClientFact
                 }
                 else
                 {
-                    request.Headers.Add("x-goog-api-key", key);
+                    if (selection.Provider == "vertex")
+                    {
+                        var token = await vertexCredential.Token(timeout.Token);
+                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    }
+                    else request.Headers.Add("x-goog-api-key", key);
                     request.Content = JsonContent.Create(new { systemInstruction = new { parts = new[] { new { text = context.System } } },
                         contents = new[] { new { role = "user", parts = new[] { new { text = context.Payload } } } },
                         generationConfig = new { maxOutputTokens = 2048, responseMimeType = "application/json", responseJsonSchema = Schema } });
                 }
-                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                timeout.CancelAfter(TimeSpan.FromSeconds(30));
                 using var response = await clients.CreateClient("tutor-provider").SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-                if (!response.IsSuccessStatusCode) throw new TutorUnavailableException();
+                if (!response.IsSuccessStatusCode)
+                {
+                    logger.LogWarning("AI provider {Provider} model {Model} returned HTTP {StatusCode}",
+                        selection.Provider, selection.Model, (int)response.StatusCode);
+                    throw new TutorUnavailableException();
+                }
                 // Bound response allocation, including bodies from faulty gateways.
                 await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
                 using var bounded = new MemoryStream();

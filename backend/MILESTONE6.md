@@ -14,6 +14,12 @@ reales, la calibración y la aceptación pedagógica. El hito 6 sigue abierto.
 [Estado curricular y evidencia](../docs/curriculum-continuity.md).
 
 
+Decisión para la beta (20 de octubre de 2026): el usuario confirmó que aún no
+hay muestras docentes reales. La calibración se realizará después de reunirlas
+durante la beta pública en Azure. Se conserva `uncalibrated`, sin umbrales ni
+afirmaciones de dominio. La evaluación avanzada y la corrección humana cuentan
+ahora con interfaz React; esta decisión no equivale a validación pedagógica.
+
 Incremento de evaluación con corrección por autor. Los tipos `openResponse`,
 `caseAnalysis` y `practicalExercise` usan `scoringPolicy: rubric`, opciones y claves
 vacías y una `rubric` obligatoria. La rúbrica queda embebida en la revisión

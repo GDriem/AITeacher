@@ -4,6 +4,52 @@ Implementación incremental del [plan aprobado](../docs/backend-architecture-pla
 El host ASP.NET Core se ejecuta separado de FastAPI; React y Python siguen usando
 sus contratos y escritores actuales. Azure es el destino del despliegue final.
 
+## Estado vigente de la beta, 20 de octubre de 2026
+
+React ya tiene modo .NET: catálogo editorial, unidades/lectura/práctica, evaluaciones
+cerradas y abiertas, corrección docente, tutor, apuntes, mapas, repasos e historial.
+El despliegue actual sigue usando Python; el nuevo modo se selecciona por build:
+
+```sh
+cd frontend
+pnpm api:backend:check
+pnpm build:backend
+# Desarrollo con la API .NET en localhost:5080:
+VITE_BACKEND=dotnet pnpm dev
+```
+
+En producción el bundle se incorpora a `wwwroot` del host para conservar el mismo
+origen de cookies y CSRF. El host sirve el shell de React para rutas de navegación;
+no convierte rutas API, WebSocket, health o assets inexistentes en páginas HTML.
+El pipeline de imágenes y el proxy Azure todavía deben prepararse y verificarse.
+
+Para la regresión reproducible con PostgreSQL local y dependencias de frontend
+instaladas (sin cuenta Google ni modelos reales):
+
+```sh
+export AITEACHER_TEST_POSTGRES='Host=127.0.0.1;Port=55432;Database=postgres;Username=aiteacher;Password=aiteacher-local'
+.venv/bin/python backend/scripts/run-local-checks.py
+```
+
+Ejecutar ese comando desde la raíz del repositorio. Arranca su simulación Postman,
+ejecuta .NET, lint de contratos/colecciones, 25 aserciones smoke sobre HTTP y
+Chromium sobre una base aleatoria. Cierra sus procesos y elimina las bases de
+prueba. Google se sustituye únicamente en `backend/tests/AITeacher.BrowserHost`;
+ese ejecutable no es un destino de despliegue. La CI contiene el mismo recorrido,
+sin credenciales cloud ni publicación a un workspace Postman; todavía no se ha
+observado una ejecución de GitHub Actions de estos cambios.
+
+Se ensayaron exportación real de Firestore, importación repetida, conciliación y
+reversión sobre 128 documentos, sin diferencias ni modificaciones del origen.
+Vertex .NET y Gemini Live Python/.NET respondieron a entradas sintéticas reales.
+React/.NET incluye voz autenticada con captura de micrófono sintético comprobada;
+los límites por alumno y globales usan bloqueos PostgreSQL entre réplicas.
+Detalle y límites en [MILESTONE7.md](MILESTONE7.md). El hito 7 sigue abierto por
+continuidad editorial, Google real, micrófono físico/interrupción reales y Azure.
+La calibración se pospone hasta reunir datos de beta; se conserva `uncalibrated`.
+El historial de entregas y resultados anteriores se conserva debajo; este apartado
+es el estado más reciente.
+
 ## Ejecutar los hitos 1–7 (hitos 6 y 7 parciales)
 
 Desde `backend/`, con Docker y el SDK fijado en `global.json`:
@@ -257,3 +303,13 @@ El ciclo CLI de importación/repetición/conciliación/reversión se ensayó con
 sintéticos en una base temporal. Contrato y colecciones validados. No se ha cerrado
 el hito 7: faltan datos Firestore reales, continuidad editorial, React y voz real.
 Python sigue siendo el escritor de producción y no se han creado recursos Azure.
+
+Ampliación posterior del hito 7: el mismo exportador admite `--firestore-project`
+y `--firestore-database`, con colecciones explícitas y una transacción de solo
+lectura para conversaciones/progreso. Publica un snapshot completo con permisos
+0600 sin sobrescribir archivos; no usa repositorios que purgan sesiones antiguas.
+55 pruebas Python aprobadas verifican exportación, SDK sobre gRPC local,
+repositorios y regresión de voz. No se accedió a Firestore real ni se repitieron
+las pruebas .NET/Postman en esta ampliación. Véanse el comando y la tabla de
+aceptación en [MILESTONE7.md](MILESTONE7.md): el hito 7 sigue abierto por datos
+reales, continuidad editorial, recorrido React y voz real.

@@ -1,3 +1,4 @@
+using AITeacher.Api.Infrastructure;
 using AITeacher.Api.Features.History;
 using AITeacher.Api.Features.Learning;
 using AITeacher.Api.Features.Graphs;
@@ -14,7 +15,8 @@ using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 var connection = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Configure ConnectionStrings:Postgres before starting the backend.");
-builder.Services.AddDbContext<HistoryDbContext>(options => options.UseNpgsql(connection,
+builder.Services.AddAzureHosting(builder.Configuration, builder.Environment);
+builder.Services.AddDbContext<HistoryDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<PostgresConnections>().Pooled,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "history")));
 builder.Services.AddScoped<HistoryMigration>();
 builder.Services.AddProblemDetails();
@@ -22,19 +24,19 @@ builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddValidation();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
-builder.Services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(connection,
+builder.Services.AddDbContext<IdentityDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<PostgresConnections>().Pooled,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "identity")));
-builder.Services.AddDbContext<CatalogDbContext>(options => options.UseNpgsql(connection,
+builder.Services.AddDbContext<CatalogDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<PostgresConnections>().Pooled,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "curriculum")));
-builder.Services.AddDbContext<EditorialDbContext>(options => options.UseNpgsql(connection,
+builder.Services.AddDbContext<EditorialDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<PostgresConnections>().Pooled,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "content")));
-builder.Services.AddDbContext<AssessmentDbContext>(options => options.UseNpgsql(connection,
+builder.Services.AddDbContext<AssessmentDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<PostgresConnections>().Pooled,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "assessments")));
-builder.Services.AddDbContext<TutorDbContext>(options => options.UseNpgsql(connection,
+builder.Services.AddDbContext<TutorDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<PostgresConnections>().Pooled,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "conversations")));
-builder.Services.AddDbContext<GraphDbContext>(options => options.UseNpgsql(connection,
+builder.Services.AddDbContext<GraphDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<PostgresConnections>().Pooled,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "graphs")));
-builder.Services.AddDbContext<LearningDbContext>(options => options.UseNpgsql(connection,
+builder.Services.AddDbContext<LearningDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<PostgresConnections>().Pooled,
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "learning")));
 builder.Services.AddScoped<IAssessmentEvidenceFeed, AssessmentEvidenceFeed>();
 builder.Services.AddScoped<LearningService>();
@@ -46,6 +48,8 @@ builder.Services.AddScoped<ITutorContent, TutorContent>();
 builder.Services.AddScoped<TutorService>();
 builder.Services.AddSingleton<ContextBuilder>();
 builder.Services.AddScoped<TutorProviders>();
+builder.Services.AddScoped<LiveVoice>();
+builder.Services.AddSingleton<IVertexCredential, VertexCredential>();
 builder.Services.AddHttpClient("tutor-provider", client => client.Timeout = Timeout.InfiniteTimeSpan)
     .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
 builder.Services.AddSingleton<IVertexCredential, ConfiguredVertexCredential>();
@@ -75,6 +79,8 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+if (args.Contains("--bootstrap-data-protection-key", StringComparer.Ordinal))
+    await PrivateKeyBootstrap.Run(builder.Configuration);
 // Explicit command: migrations are never applied implicitly by API startup.
 if (args.Contains("--migrate", StringComparer.Ordinal))
 {
@@ -142,14 +148,24 @@ if (args.Contains("--history", StringComparer.Ordinal))
     }
     return;
 }
+if (args.Contains("--grant-runtime-access", StringComparer.Ordinal))
+{
+    await RuntimeDatabaseAccess.Grant(app.Services.GetRequiredService<PostgresConnections>(), app.Configuration);
+    return;
+}
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
-    app.UseHttpsRedirection();
+    app.UseWhen(context => context.Request.Path != "/health" && context.Request.Path != "/health/ready",
+        secure => secure.UseHttpsRedirection());
 }
 app.UseAuthentication();
+app.UseWebSockets();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.Use(async (context, next) =>
@@ -177,6 +193,23 @@ app.MapTutor();
 app.MapGraphs();
 app.MapLearning();
 app.MapHistory();
+app.MapGet("/static/pcm-capture-worklet.js", () => Results.File(
+    Path.Combine(AppContext.BaseDirectory, "voice-assets", "pcm-capture-worklet.js"), "text/javascript; charset=utf-8"));
+// React is public static content; private data still requires API authorization.
+// Unknown API/WebSocket paths must retain their real 404 instead of receiving the SPA.
+app.MapFallback(async context =>
+{
+    var root = app.Environment.WebRootPath;
+    var shell = root is null ? null : Path.Combine(root, "index.html");
+    if (context.Request.Path.StartsWithSegments("/api") || context.Request.Path.StartsWithSegments("/ws") ||
+        context.Request.Path.StartsWithSegments("/health") || shell is null || !File.Exists(shell))
+    {
+        await Results.Problem(statusCode: 404, title: "Not found").ExecuteAsync(context);
+        return;
+    }
+    context.Response.Headers.CacheControl = "no-store";
+    await Results.File(shell, "text/html; charset=utf-8").ExecuteAsync(context);
+});
 app.Run();
 
 public partial class Program;

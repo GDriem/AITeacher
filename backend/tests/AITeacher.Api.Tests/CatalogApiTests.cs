@@ -5,6 +5,7 @@ using AITeacher.Api.Features.Catalog;
 using AITeacher.Api.Features.Identity;
 using AITeacher.Modules.Curriculum.Catalog;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,6 +54,59 @@ public sealed class CatalogApiTests(ApiFixture fixture) : IClassFixture<ApiFixtu
         var unknown = await client.GetAsync("/missing");
         Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
         Assert.Equal("application/problem+json", unknown.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task Authentication_bootstrap_exposes_only_public_config_and_own_profile()
+    {
+        using var anonymous = Client();
+        var response = await anonymous.GetAsync("/api/auth/status");
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        var status = (await response.Content.ReadFromJsonAsync<JsonObject>())!;
+        Assert.True(status["enabled"]!.GetValue<bool>());
+        Assert.False(status["authenticated"]!.GetValue<bool>());
+        Assert.Null(status["profile"]);
+        Assert.Equal("test-client", status["googleClientId"]!.GetValue<string>());
+        Assert.Equal(4, status.Count);
+        using var student = await Login("student-a");
+        var mine = (await student.GetFromJsonAsync<JsonObject>("/api/auth/status"))!;
+        Assert.True(mine["authenticated"]!.GetValue<bool>());
+        Assert.False(mine["profile"]!["canAuthor"]!.GetValue<bool>());
+        Assert.Null(mine["profile"]!["googleSubject"]);
+        var config = fixture.Host.Services.GetRequiredService<IConfiguration>();
+        try
+        {
+            config["Authentication:GoogleClientId"] = "";
+            var missing = (await anonymous.GetFromJsonAsync<JsonObject>("/api/auth/status"))!;
+            Assert.True(missing["enabled"]!.GetValue<bool>());
+            Assert.Null(missing["googleClientId"]);
+        }
+        finally { config["Authentication:GoogleClientId"] = "test-client"; }
+    }
+
+    [Fact]
+    public async Task React_shell_does_not_hide_unknown_api_websocket_health_or_asset_paths()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "aiteacher-web-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "index.html"), "<!doctype html><html><body>Public React shell</body></html>");
+            await using var host = fixture.Host.WithWebHostBuilder(builder => builder.UseWebRoot(root));
+            using var client = host.CreateClient();
+            var shell = await client.GetAsync("/tutor");
+            Assert.Equal(HttpStatusCode.OK, shell.StatusCode);
+            Assert.Contains("Public React shell", await shell.Content.ReadAsStringAsync());
+            Assert.True(shell.Headers.CacheControl?.NoStore);
+            foreach (var path in new[] { "/api/not-present", "/ws/not-present", "/health/not-present", "/assets/not-present.js" })
+            {
+                var response = await client.GetAsync(path);
+                Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+                Assert.DoesNotContain("Public React shell", await response.Content.ReadAsStringAsync());
+            }
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/tutor/notes")).StatusCode);
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     [Fact]

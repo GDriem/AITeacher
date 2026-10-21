@@ -1,6 +1,16 @@
 {
   "$schema": "Presupuestos de carga en KB gzip, por grupo de chunk. La línea base se midió en R9 (docs/react-frontend-migration-plan.md).",
   "groups": {
+    "backendBeta": {
+      "description": "Interfaz beta .NET con actividades y autoría; se descarga solo en el build dotnet.",
+      "chunks": ["BackendApp"],
+      "budgetKb": 100
+    },
+    "legacyShell": {
+      "description": "Shell y proveedor de sesiones del build Python existente.",
+      "chunks": ["LegacyApp", "client"],
+      "budgetKb": 70
+    },
     "core": {
       "description": "Vendor + shell compartido por todas las rutas (siempre descargado).",
       "chunks": ["index", "compiler-runtime", "catalogQueries", "catalogLabels", "googleIdentity"],

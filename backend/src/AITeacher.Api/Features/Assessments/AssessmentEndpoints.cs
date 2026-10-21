@@ -21,6 +21,8 @@ public static class AssessmentEndpoints
         group.MapGet("/attempts/{id:guid}/review", (Guid id, AssessmentService s, CancellationToken ct) => s.GetReview(id, ct)).RequireAuthorization("Author");
         group.MapPost("/attempts/{id:guid}/review", (Guid id, ReviewRequest request, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.Review(id, request, user, ct)).RequireAuthorization("Author");
         group.MapPost("/attempts", (StartAttemptRequest request, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.Start(request, user, ct));
+        group.MapGet("/attempts", (int? offset, int? limit, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.ListAttempts(offset ?? 0, limit ?? 20, user, false, ct));
+        group.MapGet("/submissions", (int? offset, int? limit, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.ListAttempts(offset ?? 0, limit ?? 20, user, true, ct)).RequireAuthorization("Author");
         group.MapGet("/attempts/{id:guid}", (Guid id, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.GetAttempt(id, user, ct));
         group.MapPost("/attempts/{id:guid}/submit", (Guid id, SubmitAttemptRequest request, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.Submit(id, request, user, ct));
     }

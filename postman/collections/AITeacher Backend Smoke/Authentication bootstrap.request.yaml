@@ -1,0 +1,17 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}/api/auth/status'
+order: 4500
+scripts:
+- type: afterResponse
+  language: text/javascript
+  code: |
+    pm.test('Public authentication bootstrap requires login and excludes private configuration', function () {
+      pm.response.to.have.status(200);
+      const status = pm.response.json();
+      pm.expect(status.enabled).to.eql(true);
+      pm.expect(status.authenticated).to.eql(false);
+      pm.expect(status.profile).to.eql(null);
+      pm.expect(Object.keys(status).sort()).to.eql(['authenticated', 'enabled', 'googleClientId', 'profile']);
+      pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');
+    });

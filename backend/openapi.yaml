@@ -38,6 +38,56 @@ tags:
 security:
 - sessionCookie: []
 paths:
+  /api/tutor/voice:
+    get:
+      operationId: getVoiceAvailability
+      summary: Read whether authenticated live voice is configured
+      tags: [Tutor]
+      responses:
+        '200':
+          description: Server-selected availability; no credentials or model overrides
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enabled]
+                properties:
+                  enabled: {type: boolean}
+        '401': {description: Session required}
+  /api/tutor/conversations/{id}/voice:
+    get:
+      operationId: connectLiveVoice
+      summary: Upgrade an owned active conversation to live voice
+      description: Same-origin WebSocket only, with the authenticated API cookie. Session and active publication are verified before a provider connection. One connection per student across replicas via a dedicated PostgreSQL session lock, released on disconnect or failure. Ten-minute maximum; provider setup times out after 20 seconds. Client binary frames are mono PCM16 at 16kHz, maximum 32768 bytes. JSON commands are text (maximum 4000 characters) or stop_audio. Server emits ready (sample_rate 24000), transcript (user or tutor), interrupted and turn_complete; binary frames are PCM16 at 24kHz. Credentials remain on the server. Audio and transcripts are not persisted or treated as evidence. Reconnection obtains a new provider session with the authorized unit/activity context; ephemeral voice dialogue is not automatically restored.
+      tags: [Tutor]
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      responses:
+        '101': {description: WebSocket upgrade succeeded}
+        '400': {description: WebSocket upgrade required}
+        '401': {description: Session required}
+        '403': {description: Same-origin Origin required}
+        '404': {description: Conversation absent or belongs to another student}
+        '409': {description: Conversation publication changed or withdrawn}
+        '429': {description: Student already connected or global voice capacity reached}
+        '503': {description: 'Voice disabled, misconfigured or provider unavailable'}
+  /api/auth/status:
+    get:
+      operationId: getAuthenticationStatus
+      summary: Read public Google configuration and current session
+      description: Always requires login for private operations. Returns the public OAuth client ID and a profile only for the current authenticated session. Response uses Cache-Control no-store. No credentials, subjects or author allowlists are exposed.
+      tags: [Identity]
+      security: []
+      responses:
+        '200':
+          description: Public configuration and optional own profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationStatus'
   /api/catalog/subjects:
     get:
       operationId: listSubjects
@@ -2129,6 +2179,22 @@ paths:
           type: string
           format: uuid
   /api/assessments/attempts:
+    get:
+      operationId: listOwnAssessmentAttempts
+      summary: List own attempt metadata for resuming or reading feedback
+      tags: [Assessments]
+      description: Private paginated metadata, newest first with ID tie-breaker. Never includes answers, scores, keys or private rubrics. Cache-Control no-store.
+      parameters:
+      - {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}
+      - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Own attempts
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AssessmentAttemptPage'}
+        '400': {description: Invalid pagination}
+        '401': {description: Session required}
     post:
       operationId: startAttempt
       summary: startAttempt
@@ -3729,6 +3795,24 @@ paths:
             text/html:
               schema:
                 type: string
+  /api/assessments/submissions:
+    get:
+      operationId: listAssessmentSubmissions
+      summary: List submitted attempt metadata for human review
+      tags: [Assessments]
+      description: Author only. Submitted attempt metadata across students, including closed and already reviewed attempts. No answers, scores or student identities. Read an authorized review by ID for grading. Newest first with ID tie-breaker. Cache-Control no-store.
+      parameters:
+      - {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}
+      - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Submitted attempt metadata
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AssessmentAttemptPage'}
+        '400': {description: Invalid pagination}
+        '401': {description: Session required}
+        '403': {description: Author required}
   /api/assessments/attempts/{id}/review:
     get:
       operationId: readRubricReview
@@ -4327,6 +4411,22 @@ components:
           nullable: true
         entry:
           $ref: '#/components/schemas/EntryRequest'
+    AuthenticationStatus:
+      type: object
+      required: [enabled, authenticated, googleClientId, profile]
+      properties:
+        enabled:
+          type: boolean
+          enum: [true]
+        authenticated:
+          type: boolean
+        googleClientId:
+          type: string
+          nullable: true
+        profile:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/StudentProfile'
     StudentProfile:
       type: object
       required:
@@ -5312,6 +5412,29 @@ components:
           - partialCredit
           - rubric
       additionalProperties: false
+    AssessmentAttemptSummary:
+      type: object
+      additionalProperties: false
+      required: [id, definitionRevisionId, startedAt, expiresAt, submittedAt, title, mode, status]
+      properties:
+        id: {type: string, format: uuid}
+        definitionRevisionId: {type: string, format: uuid}
+        startedAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+        submittedAt: {type: string, format: date-time, nullable: true}
+        title: {type: string}
+        mode: {type: string, enum: [practice, assessment]}
+        status: {type: string, enum: [inProgress, submitted, expired, pendingReview]}
+    AssessmentAttemptPage:
+      type: object
+      required: [items, total, offset, limit]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/AssessmentAttemptSummary'}
+        total: {type: integer}
+        offset: {type: integer}
+        limit: {type: integer}
     AssessmentAttempt:
       type: object
       required:
@@ -5536,6 +5659,7 @@ components:
           - mock
           - azure
           - gemini
+          - vertex
         model:
           type: string
         configurationVersion:
@@ -6478,8 +6602,9 @@ components:
           items:
             $ref: '#/components/schemas/AssessmentAnswer'
         review:
-          $ref: '#/components/schemas/AssessmentReviewSnapshot'
           nullable: true
+          allOf:
+          - $ref: '#/components/schemas/AssessmentReviewSnapshot'
       additionalProperties: false
     LearningEvidence:
       type: object

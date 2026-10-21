@@ -129,6 +129,28 @@ public sealed partial class AssessmentService(AssessmentDbContext db, IAssessmen
         var attempt = await db.Attempts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.StudentId == student, ct);
         return attempt is null ? Results.NotFound() : Results.Ok(await AttemptResponse(attempt, ct));
     }
+    public async Task<IResult> ListAttempts(int offset, int limit, ClaimsPrincipal user, bool submissions, CancellationToken ct)
+    {
+        if (offset < 0 || limit is < 1 or > 100) return Invalid("Invalid pagination.");
+        var student = Actor(user);
+        var query = db.Attempts.AsNoTracking().Where(a => submissions ? a.SubmittedAt != null : a.StudentId == student);
+        var total = await query.CountAsync(ct);
+        var rows = await (from a in query
+                          join definition in db.Revisions.AsNoTracking() on a.DefinitionRevisionId equals definition.Id
+                          orderby a.StartedAt descending, a.Id
+                          select new { a.Id, a.DefinitionRevisionId, a.StartedAt, a.ExpiresAt, a.SubmittedAt, definition.DocumentJson,
+                              reviewed = db.Reviews.Any(r => r.AttemptId == a.Id) }).Skip(offset).Take(limit).ToArrayAsync(ct);
+        var definitions = rows.Select(r => Read<DefinitionDocument>(r.DocumentJson)).ToArray();
+        var questionIds = definitions.SelectMany(d => d.QuestionRevisionIds).Distinct().ToArray();
+        var questions = await db.Revisions.AsNoTracking().Where(r => questionIds.Contains(r.Id)).Select(r => new { r.Id, r.DocumentJson }).ToArrayAsync(ct);
+        var rubricIds = questions.Where(q => IsRubric(Read<QuestionDocument>(q.DocumentJson))).Select(q => q.Id).ToHashSet();
+        var now = clock.GetUtcNow();
+        var items = rows.Select((row, index) => new { row.Id, row.DefinitionRevisionId, row.StartedAt, row.ExpiresAt, row.SubmittedAt,
+            definitions[index].Title, definitions[index].Mode,
+            status = row.SubmittedAt is null ? now >= row.ExpiresAt ? "expired" : "inProgress"
+                : !row.reviewed && definitions[index].QuestionRevisionIds.Any(rubricIds.Contains) ? "pendingReview" : "submitted" });
+        return Results.Ok(new { items, total, offset, limit });
+    }
     private async Task<object> AttemptResponse(AssessmentAttempt a, CancellationToken ct)
     {
         var definition = await db.Revisions.AsNoTracking().SingleAsync(x => x.Id == a.DefinitionRevisionId, ct);

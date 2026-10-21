@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: aiteacher
       POSTGRES_USER: aiteacher
-      POSTGRES_PASSWORD: aiteacher-local
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aiteacher-local}
     ports:
       - "127.0.0.1:55432:5432"
     volumes:

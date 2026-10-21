@@ -8,12 +8,27 @@ namespace AITeacher.Api.Features.Identity;
 
 public sealed record GoogleLoginRequest([property: Required, StringLength(8192, MinimumLength = 1)] string Credential);
 public sealed record StudentProfile(string StudentId, string Email, string DisplayName, bool CanAuthor);
+public sealed record AuthenticationStatus(bool Enabled, bool Authenticated, string? GoogleClientId, StudentProfile? Profile);
 
 public static class IdentityEndpoints
 {
     public static void MapIdentity(this WebApplication app)
     {
         var group = app.MapGroup("/api/auth");
+        group.MapGet("/status", async (HttpContext context, IConfiguration configuration, IdentityDbContext db, CancellationToken ct) =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            StudentProfile? profile = null;
+            if (context.User.Identity?.IsAuthenticated == true)
+            {
+                var id = context.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                var student = await db.Students.AsNoTracking().SingleAsync(x => x.Id == id, ct);
+                profile = new(student.Id, student.Email, student.DisplayName, context.User.IsInRole("Author"));
+            }
+            var clientId = configuration["Authentication:GoogleClientId"];
+            return Results.Ok(new AuthenticationStatus(true, profile is not null,
+                string.IsNullOrWhiteSpace(clientId) ? null : clientId, profile));
+        }).AllowAnonymous();
         group.MapGet("/csrf", (HttpContext context, IAntiforgery antiforgery) =>
         {
             context.Response.Headers.CacheControl = "no-store";

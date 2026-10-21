@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroupName": {"value": "rg-aiteacher-beta-8136"},
+    "location": {"value": "mexicocentral"},
+    "resourcePrefix": {"value": "aiteacher-beta-8136"},
+    "googleClientId": {"value": "REPLACE_WITH_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com"},
+    "authorGoogleSubjects": {"value": []},
+    "appEnvironment": {"value": {"AI__Voice__Enabled": "false"}},
+    "secretEnvironment": {"value": {}}
+  }
+}

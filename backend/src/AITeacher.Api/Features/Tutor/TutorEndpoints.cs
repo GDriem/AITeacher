@@ -20,6 +20,8 @@ public static class TutorEndpoints
         group.MapPost("/conversations", (CreateConversationRequest r, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.Create(r, u, ct));
         group.MapGet("/conversations", (int? offset, int? limit, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.List(offset ?? 0, limit ?? 50, u, ct));
         group.MapGet("/conversations/{id:guid}", (Guid id, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.Get(id, u, ct));
+        group.MapGet("/conversations/{id:guid}/voice", (Guid id, HttpContext context, LiveVoice voice, CancellationToken ct) => voice.Run(id, context, ct));
+        group.MapGet("/voice", (IConfiguration configuration) => Results.Ok(new { enabled = LiveVoice.Enabled(configuration) }));
         group.MapGet("/conversations/{id:guid}/messages", (Guid id, int? offset, int? limit, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.Messages(id, offset ?? 0, limit ?? 50, u, ct));
         group.MapPost("/conversations/{id:guid}/turns", (Guid id, CreateTurnRequest r, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.Turn(id, r, u, ct));
         group.MapPost("/notes", (CreateNoteRequest r, ClaimsPrincipal u, TutorService s, CancellationToken ct) => s.CreateNote(r, u, ct));

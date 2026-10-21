@@ -34,6 +34,10 @@ public sealed class TestGoogleVerifier : IGoogleIdentityVerifier
             _ => (GoogleIdentity?)null
         });
 }
+public sealed class TestVertexCredential : IVertexCredential
+{
+    public Task<string> Token(CancellationToken ct) => Task.FromResult("simulation-vertex-token");
+}
 
 public sealed class ApiHost(string connection, TestClock clock, IReadOnlyDictionary<string, string>? settings = null) : WebApplicationFactory<Program>
 {
@@ -55,6 +59,11 @@ public sealed class ApiHost(string connection, TestClock clock, IReadOnlyDiction
         {
             services.RemoveAll<IGoogleIdentityVerifier>();
             services.AddScoped<IGoogleIdentityVerifier, TestGoogleVerifier>();
+            if (settings?.GetValueOrDefault("TestHarness:RealVertexCredential") != "true")
+            {
+                services.RemoveAll<IVertexCredential>();
+                services.AddSingleton<IVertexCredential, TestVertexCredential>();
+            }
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(clock);
         });

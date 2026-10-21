@@ -1,9 +1,9 @@
 $kind: http-request
 method: GET
-url: '{{baseUrl}}/missing'
+url: '{{baseUrl}}/api/does-not-exist'
 order: 6000
 scripts:
 - type: afterResponse
   language: text/javascript
-  code: pm.test('Unknown route', function () { pm.response.to.have.status(404); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');
+  code: pm.test('Unknown API route', function () { pm.response.to.have.status(404); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');
     });

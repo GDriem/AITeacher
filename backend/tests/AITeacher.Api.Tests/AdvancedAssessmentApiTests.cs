@@ -70,6 +70,39 @@ public sealed class AdvancedAssessmentApiTests(ApiFixture fixture) : IClassFixtu
         return await scope.ServiceProvider.GetRequiredService<AssessmentDbContext>().EvidenceEvents.CountAsync(x => x.AttemptId == attempt);
     }
 
+    [Fact]
+    public async Task Attempt_lists_preserve_ownership_feedback_and_author_boundaries()
+    {
+        using var author = await Login(); using var student = await Login("student-a"); using var other = await Login("student-b");
+        using var anonymous = fixture.Host.CreateClient();
+        var setup = await Create(author, "never");
+        var mine = await Start(student, setup); var theirs = await Start(other, setup);
+        var response = await student.GetAsync(Root + "/attempts?limit=100");
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        var page = await Success(response);
+        var rows = page["items"]!.AsArray().Select(x => x!.AsObject()).ToArray();
+        Assert.Contains(rows, x => Id(x) == mine);
+        Assert.DoesNotContain(rows, x => Id(x) == theirs);
+        foreach (var row in rows)
+        {
+            Assert.Equal(8, row.Count);
+            Assert.Null(row["answers"]); Assert.Null(row["scores"]); Assert.Null(row["fraction"]); Assert.Null(row["studentId"]);
+        }
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync(Root + "/attempts")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.GetAsync(Root + "/submissions")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await student.GetAsync(Root + "/attempts?offset=-1")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await author.GetAsync(Root + "/submissions?limit=101")).StatusCode);
+        await Success(await student.PostAsJsonAsync(Attempt(mine) + "/submit", Correct(setup)));
+        var submissions = await Success(await author.GetAsync(Root + "/submissions?limit=100"));
+        var submitted = submissions["items"]!.AsArray().Select(x => x!.AsObject()).ToArray();
+        Assert.Contains(submitted, x => Id(x) == mine && x["status"]!.GetValue<string>() == "submitted");
+        Assert.DoesNotContain(submitted, x => Id(x) == theirs);
+        var text = submissions.ToJsonString();
+        Assert.DoesNotContain("PRIVATE-EDITORIAL", text); Assert.DoesNotContain("correctOptionIds", text); Assert.DoesNotContain("fraction", text);
+        var first = await student.GetStringAsync(Root + "/attempts?limit=1");
+        Assert.Equal(first, await student.GetStringAsync(Root + "/attempts?limit=1"));
+    }
+
     [Theory]
     [InlineData("openResponse", "afterSubmission")]
     [InlineData("caseAnalysis", "afterSubmission")]

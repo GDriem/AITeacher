@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Azure Data Protection transitives need patched cryptography packages. -->
+    <!-- Explicit security servicing pins for DataProtection dependencies on the retained preview runtime. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" NoWarn="NU1510" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.13" NoWarn="NU1510" />
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.4" />
+    <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Keys" Version="1.6.4" />
     <PackageReference Include="Google.Apis.Auth" Version="1.77.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.1" />
@@ -23,5 +30,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Features/Editorial/source-curriculum.json" />
+    <Content Include="../../../agent_app/static/pcm-capture-worklet.js" Link="voice-assets/pcm-capture-worklet.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

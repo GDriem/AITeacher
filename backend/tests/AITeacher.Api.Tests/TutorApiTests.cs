@@ -161,13 +161,15 @@ public sealed class TutorApiTests(ApiFixture fixture) : IClassFixture<ApiFixture
             ["AI:Capabilities:Tutor:Provider"] = tutor, ["AI:Capabilities:Tutor:Model"] = "contract-model",
             ["AI:Capabilities:Summary:Provider"] = summary, ["AI:Capabilities:Summary:Model"] = "contract-summary",
             ["AI:Providers:azure:Endpoint"] = url + "/azure/", ["AI:Providers:azure:ApiKey"] = "simulation-key",
-            ["AI:Providers:gemini:Endpoint"] = url + "/gemini/", ["AI:Providers:gemini:ApiKey"] = "simulation-key"
+            ["AI:Providers:gemini:Endpoint"] = url + "/gemini/", ["AI:Providers:gemini:ApiKey"] = "simulation-key",
+            ["AI:Providers:vertex:Endpoint"] = url + "/gemini/", ["AI:Providers:vertex:Project"] = "contract-project", ["AI:Providers:vertex:Location"] = "us-central1"
         });
     }
 
     [Theory]
     [InlineData("azure", "gemini")]
     [InlineData("gemini", "azure")]
+    [InlineData("vertex", "azure")]
     public async Task Real_adapters_use_HTTP_contracts_and_route_capabilities_independently(string provider, string summary)
     {
         var unit = await Publish(); using var host = ProviderHost(provider, summary); using var client = await Login(host);
