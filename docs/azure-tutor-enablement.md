@@ -2,6 +2,34 @@
 
 ## Continuación autorizada — 21/10/2026
 
+**Tutor de texto y Summary ya funcionan en Azure** en la revisión `0000009`.
+Build ACR `nj4`, digest
+`sha256:038a8ada25c68338f619bdfc64770dcdd6bb7a923f6f906146e357ebe8573e34`.
+Se verificó igualdad de identidad, configuración de plataforma y template ajeno
+a imagen/variables IA antes y después de actualizar; sin migraciones/importación.
+[Informe de activación](tutor-evidence/azure-activation-20261021.json).
+
+Primera cuenta Google real en Chrome: lectura OSPF publicada, dos turnos con
+continuidad, fuente RFC 2328 desplegada, mensaje guardado y Summary generado.
+GET autenticados en navegador confirmaron modo reading/activityId, versión de
+conversación 3, cuatro mensajes, lease liberado y que todos los source IDs,
+unit IDs y revision IDs coinciden con la lectura/publicación activa. El origen
+editorial permanece oculto. Summary registra exactamente esos cuatro message IDs
+y ninguna fuente nueva; ambos apuntes persisten al recargar.
+[Evidencia sin textos ni identidades](tutor-evidence/azure-reading-text-20261021.json).
+
+Vertex real desde Azure registró latencias de 2188ms y 1074ms para los turnos,
+1170ms para Summary; 1635 tokens de entrada y 326 de salida en total.
+[Métricas sanitizadas](tutor-evidence/azure-text-metrics-20261021.json).
+No se decodificó ni exportó un JWT: el intercambio STS y respuesta Vertex reales
+demuestran aceptación de issuer/audience/condiciones configuradas, que permanecen
+sin relajar. Es evidencia operativa, no aceptación pedagógica.
+
+Postman real anónimo pasó 25/25 aserciones, salida 0, incluyendo readiness,
+sesión obligatoria y límites de rutas API. Siguen pendientes segunda cuenta
+Google, fallo controlado/recuparación en Azure, autoría y voz humana. La voz
+permanece deshabilitada.
+
 El usuario aprobó explícitamente la propuesta IAM y activación de texto/Summary.
 Se volvió a comprobar revisión `0000008`, digest e identidad runtime sin cambios,
 tenant correcto y ausencia de colisiones antes de crear objetos.
@@ -14,8 +42,9 @@ objectId y clientId exactos; binding individual con una sola permission
 permisos de datos. No se cambiaron identidad, red ni SQL de Azure.
 [Informe IAM sin credenciales](tutor-evidence/azure-iam-20261021.json).
 
-La aprobación ya no es el bloqueo de esta fase. Falta desplegar y comprobar
-intercambio STS/Vertex reales y recorrido autenticado. La voz continúa false.
+La aprobación ya no es el bloqueo de esta fase. Despliegue, STS/Vertex y recorrido
+de una cuenta ya se comprobaron; quedan las aceptaciones indicadas arriba.
+La voz continúa false.
 Las secciones de diagnóstico siguientes describen el estado previo.
 
 ## Fase 1 — diagnóstico verificado, 21 de octubre de 2026

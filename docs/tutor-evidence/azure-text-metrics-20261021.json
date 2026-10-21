@@ -1,0 +1,14 @@
+[
+  {
+    "time": "2026-10-21T16:27:01.7082335+00:00",
+    "metric": "F       AI operation Tutor provider vertex model gemini-3.5-flash-lite config azure-vertex-beta-1 skill tutor-v1 latencyMs 2188 inputTokens 597 outputTokens 92"
+  },
+  {
+    "time": "2026-10-21T16:27:20.8739248+00:00",
+    "metric": "F       AI operation Tutor provider vertex model gemini-3.5-flash-lite config azure-vertex-beta-1 skill tutor-v1 latencyMs 1074 inputTokens 694 outputTokens 107"
+  },
+  {
+    "time": "2026-10-21T16:27:43.7427221+00:00",
+    "metric": "F       AI operation Summary provider vertex model gemini-3.5-flash-lite config azure-vertex-beta-1 skill tutor-v1 latencyMs 1170 inputTokens 344 outputTokens 127"
+  }
+]
