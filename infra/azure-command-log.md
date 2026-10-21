@@ -1555,3 +1555,18 @@ az containerapp job show --name job-migrate-aiteacher-beta-8136 --resource-group
 ```
 
 Resultado del comando iniciado 2026-10-21T14:54:03.467007+00:00: exit `0`, duración `1.8s`.
+
+## 2026-10-21 — Identidad federada del CD beta (aprobada por el propietario)
+
+Comandos de modificación ejecutados con la cuenta Owner, tras aprobación explícita:
+
+```bash
+az identity create -g rg-aiteacher-beta-8136 -n id-aiteacher-beta-8136-github-cd -l mexicocentral --subscription 1350d930-7008-4b43-923d-6a7cd66701bc
+az identity federated-credential create --subscription 1350d930-7008-4b43-923d-6a7cd66701bc -g rg-aiteacher-beta-8136 --identity-name id-aiteacher-beta-8136-github-cd --name github-aiteacher-beta --issuer https://token.actions.githubusercontent.com --subject 'repo:GDriem@34953083/AITeacher@1310182865:environment:beta' --audiences api://AzureADTokenExchange
+az role definition create --role-definition infra/github-beta-cd-role.json
+# Una vez por cada recurso: ACR, app y los dos jobs.
+az role assignment create --assignee-object-id 6befc0f2-2101-4f3a-92c4-c215be16f9a4 --assignee-principal-type ServicePrincipal --role fd5f6715-1f84-49c1-b737-db8da5064d34 --scope <ID del recurso>
+```
+
+Resultado: los cuatro comandos terminaron con exit `0`. `az role assignment list --all --include-inherited`
+muestra solo las cuatro asignaciones por recurso, sin roles heredados.

@@ -106,7 +106,23 @@ No se crean GitHub Secrets. Los secretos de ejecución permanecen en Key Vault,
 referencias de Container Apps, identidades administradas y mecanismos actuales
 de Azure/Google. No se copian parámetros privados a GitHub ni al contexto Docker.
 
-## Propuesta concreta de Azure: pendiente de aprobación
+## Configuración de Azure aplicada
+
+Aprobada por el propietario y aplicada el 21 de octubre de 2026:
+
+| Elemento | Valor real |
+|---|---|
+| Identidad | `id-aiteacher-beta-8136-github-cd`, client ID `1e65d0e9-851d-4cf3-b0a3-b287ada635c2`, principal `6befc0f2-2101-4f3a-92c4-c215be16f9a4` |
+| Federación | `github-aiteacher-beta`, subject inmutable de abajo |
+| Rol personalizado | `AITeacher Beta CD`, ID `fd5f6715-1f84-49c1-b737-db8da5064d34` |
+| Asignaciones | Exactamente las cuatro de abajo; sin heredadas (`--include-inherited`) |
+| GitHub | `AZURE_CLIENT_ID` en el environment `beta` |
+
+Para revocar el acceso del CD sin tocar runtime ni migrador: eliminar las cuatro
+asignaciones o la credencial federada; `BETA_CD_ENABLED=false` detiene el CD sin
+cambios en Azure.
+
+## Diseño de la identidad federada
 
 Destino: suscripción y grupo anteriores, `mexicocentral`. Crear una identidad
 administrada de usuario **`id-aiteacher-beta-8136-github-cd`** separada de runtime
@@ -289,6 +305,5 @@ Evidencia de esta entrega, 21 de octubre de 2026:
 - Environment `beta`, política exclusiva rama `main`, variables de tenant y
   suscripción y switch de repositorio `BETA_CD_ENABLED=false`: creados y releídos
   realmente mediante GitHub API. `AZURE_CLIENT_ID` sigue ausente.
-- No se creó identidad/federación/rol Azure, no se publicó imagen, no se ejecutaron
-  jobs ni se actualizó la beta con este CD. OIDC, RBAC efectivo, migraciones y
-  verificación posterior al despliegue están pendientes del primer run aprobado.
+- En la entrega inicial no se creó identidad/federación/rol Azure; se crearon
+  después, tras aprobación (ver «Configuración de Azure aplicada»).
