@@ -255,6 +255,37 @@ reactivar automatización, corregir/revertir el código por PR, esperar el CI pu
 del nuevo main y revisar antes de cambiar `BETA_CD_ENABLED=true`; reactivar sin
 corregir puede volver a publicar la versión fallida.
 
+## Activación y primer despliegue: resultados reales
+
+22 de octubre de 2026 (UTC), PR #15 integrada como `7e5f749a0a32ffd22b927e0c782bae27551f56a0`.
+
+| Paso | Evidencia |
+|---|---|
+| CI push de main | Run `39696683397`, los cuatro jobs `success` |
+| CD automático con switch en `false` | Run `39697073610`: `validate` aceptó el SHA; `deploy` omitido |
+| `verify-access` con la identidad federada | Run `39697130748`: OIDC y selección de suscripción correctos con roles solo por recurso, token ACR, lecturas de app/revisión/jobs. Sin cambios |
+| `BETA_CD_ENABLED` | Cambiado a `true` tras la verificación, con aprobación del propietario |
+| Primer `deploy` manual | Run `39697255534`, `success` |
+| Imagen | `craiteacherbeta8136.azurecr.io/aiteacher@sha256:d9b83ab660e228ea24081e7cbcbb3a650269ae53242d743dfc44fa0eaf4bea55`, manifiesto OCI simple, etiqueta `git-7e5f749…-39697255534-1` |
+| Migración | `job-migrate-aiteacher-beta-8136-yvdmuw8`, args `--migrate`, `Succeeded` (00:04:19–00:04:51) |
+| Permisos SQL | `job-grant-aiteacher-beta-8136-dv6u5s2`, args `--grant-runtime-access`, `Succeeded` (00:04:56–00:05:26) |
+| Revisión | `ca-aiteacher-beta-8136--cd-39697255534-1`, activa, Healthy, 100 % del tráfico; la anterior era `--0000009` con `sha256:038a8ada…` |
+| Verificaciones | `verify-azure.sh` aprobado en el run y repetido localmente; smoke Postman: 26 requests, 26 tests, 0 fallos |
+| Conservación | Identidad runtime y del registro, ingress externo solo HTTPS, escala mínima y variables de la app sin cambios; plantillas almacenadas de ambos jobs intactas (siguen con su imagen y args originales) |
+
+No hizo falta ningún permiso adicional: `managedEnvironments/join/action` no fue
+requerido por el PATCH. Desde este punto, cada CI push exitoso de main despliega
+automáticamente, **incluidos cambios solo de documentación**, que vuelven a
+ejecutar las migraciones (idempotentes) y crean una revisión nueva.
+
+Siguen fuera de este CD las comprobaciones manuales de login real con Google,
+micrófono/voz, tutor IA y aislamiento entre cuentas.
+
+Rollback para este primer despliegue: imagen anterior
+`sha256:038a8ada25c68338f619bdfc64770dcdd6bb7a923f6f906146e357ebe8573e34`
+(revisión `--0000009`), con el procedimiento de «Volver a la imagen anterior».
+Antes de usarla, confirmar que el esquema que dejó `yvdmuw8` es compatible con ella.
+
 ## Correcciones de la revisión previa a la activación
 
 Revisión del 21 de octubre de 2026, antes de crear permisos en Azure:
