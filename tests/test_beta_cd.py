@@ -268,3 +268,113 @@ def test_success_orders_migrations_revalidation_publish_and_checks(monkeypatch):
     monkeypatch.setattr(update.subprocess, "run", lambda args, **kwargs: calls.append(args[0]))
     update.main()
     assert calls == ["validate", "migrate", "grant", "validate", "publish", ("ready", "rev"), "ready", "bash", "/postman"]
+
+
+@pytest.mark.parametrize(("paths", "deploy"), [
+    (["docs/azure-beta-cd.md", "infra/README.md", "README.md"], False),
+    ([], False),
+    (["docs/x.md", "backend/src/AITeacher.Api/Program.cs"], True),
+    (["frontend/src/App.tsx"], True),
+    (["agent_app/static/pcm-capture-worklet.js"], True),
+    (["backend/Dockerfile.azure"], True),
+    (["backend/scripts/update-azure-beta.py"], True),
+    ([".github/workflows/cd-beta.yml"], True),
+    ([".dockerignore"], True),
+    (["postman/collections/AITeacher Backend Smoke/Health.request.yaml"], True),
+    ([".github/workflows/ci.yml", "agent_app/api/main.py", "backendx/file"], False),
+    (None, True),
+])
+def test_requires_deploy_only_for_image_or_cd_inputs(paths, deploy):
+    assert update.requires_deploy(paths) is deploy
+
+
+def test_changed_paths_requires_ancestor_and_sees_both_sides_of_renames(tmp_path, monkeypatch):
+    import subprocess
+    def git(*args):
+        return subprocess.run(["git", "-C", str(tmp_path), *args], check=True,
+                              capture_output=True, text=True).stdout.strip()
+    git("init", "-q")
+    git("config", "user.email", "t@example.invalid")
+    git("config", "user.name", "t")
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend/app.cs").write_text("code")
+    git("add", ".")
+    git("commit", "-qm", "base")
+    base = git("rev-parse", "HEAD")
+    (tmp_path / "docs").mkdir()
+    git("mv", "backend/app.cs", "docs/app.md")
+    git("commit", "-qm", "rename")
+    head = git("rev-parse", "HEAD")
+    monkeypatch.setattr(update, "ROOT", tmp_path)
+    assert sorted(update.changed_paths(base, head)) == ["backend/app.cs", "docs/app.md"]
+    assert update.requires_deploy(update.changed_paths(base, head))
+    assert update.changed_paths(head, base) is None
+    assert update.changed_paths("f" * 40, head) is None
+    assert update.changed_paths(head, head) == []
+
+
+def scope_env(monkeypatch, tmp_path, event):
+    monkeypatch.setenv("VALIDATED_SHA", SHA)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", event)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.setattr(update, "note", lambda _: None)
+    monkeypatch.setattr(update, "app_state", lambda: {"containers": [{"image": IMAGE}],
+                                                       "latest": "rev", "ready": "rev"})
+
+
+def test_manual_deploy_always_publishes_without_reading_azure(monkeypatch, tmp_path):
+    scope_env(monkeypatch, tmp_path, "workflow_dispatch")
+    monkeypatch.setattr(update, "app_state", lambda: pytest.fail("no Azure read needed"))
+    assert update.scope() is True
+    assert (tmp_path / "output").read_text() == "deploy=true\n"
+
+
+@pytest.mark.parametrize(("revision", "paths", "deploy"), [
+    ("c" * 40, ["docs/azure-beta-cd.md"], False),
+    ("c" * 40, ["backend/src/x.cs"], True),
+    ("c" * 40, None, True),
+    (None, ["docs/azure-beta-cd.md"], True),
+])
+def test_ci_deploy_skips_only_for_known_base_without_deployable_change(monkeypatch, tmp_path, revision, paths, deploy):
+    scope_env(monkeypatch, tmp_path, "workflow_run")
+    seen = []
+    monkeypatch.setattr(update, "deployed_revision", lambda image: seen.append(image) or revision)
+    monkeypatch.setattr(update, "changed_paths", lambda base, head: (base, head) == ("c" * 40, SHA) and paths)
+    assert update.scope() is deploy
+    assert seen == [IMAGE]
+    assert (tmp_path / "output").read_text() == f"deploy={'true' if deploy else 'false'}\n"
+
+
+@pytest.mark.parametrize("state", [
+    {"containers": [{"image": update.REGISTRY + ":latest"}], "latest": "rev", "ready": "rev"},
+    {"containers": [{"image": IMAGE}], "latest": "new", "ready": "rev"},
+    {"containers": [{"image": IMAGE}, {"image": IMAGE}], "latest": "rev", "ready": "rev"},
+])
+def test_unstable_or_unexpected_app_state_deploys(monkeypatch, tmp_path, state):
+    scope_env(monkeypatch, tmp_path, "workflow_run")
+    monkeypatch.setattr(update, "app_state", lambda: state)
+    monkeypatch.setattr(update, "deployed_revision", lambda image: pytest.fail("label must not be trusted"))
+    assert update.scope() is True
+
+
+def test_deployed_revision_accepts_only_full_sha_labels(monkeypatch):
+    import subprocess
+    outputs = iter(['{"org.opencontainers.image.revision": "' + "a" * 40 + '"}',
+                    '{"org.opencontainers.image.title": "ubuntu"}', "null",
+                    '{"org.opencontainers.image.revision": "v1.2"}'])
+    monkeypatch.setattr(update.subprocess, "run",
+                        lambda args, **kwargs: subprocess.CompletedProcess(args, 0, next(outputs), ""))
+    assert [update.deployed_revision(IMAGE) for _ in range(4)] == ["a" * 40, None, None, None]
+
+
+def test_every_mutating_deploy_step_is_gated_by_scope():
+    import re
+    workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/cd-beta.yml").read_text()
+    deploy = workflow[workflow.index("  deploy:\n"):]
+    steps = re.split(r"\n      - ", deploy)
+    scope_index = next(i for i, step in enumerate(steps) if "--scope" in step)
+    assert "fetch-depth: 0" in steps[1]
+    for step in steps[scope_index + 1:]:
+        if "Clear local registry session" in step:
+            continue
+        assert "if: steps.scope.outputs.deploy == 'true'" in step, step.splitlines()[0]
