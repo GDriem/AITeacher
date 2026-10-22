@@ -124,3 +124,20 @@ it("no muestra bajo esta unidad una conversación de otra unidad", async () => {
   expect(screen.queryByLabelText("Tu mensaje")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Conversar por voz" })).not.toBeInTheDocument();
 });
+
+it("no muestra mensajes ni formulario mientras la conversación no confirma su unidad", async () => {
+  const origin = window.location.origin;
+  const unit = { id: "unit", topicId: "topic", revision: { id: "r1" } } as Schema["UnitResponse"];
+  server.use(
+    http.get(`${origin}/api/tutor/voice`, () => HttpResponse.json({ enabled: false })),
+    http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json({ items: [], total: 0 })),
+    http.get(`${origin}/api/tutor/conversations/rota`, () => HttpResponse.json({ title: "Error" }, { status: 500 })),
+    http.get(`${origin}/api/tutor/conversations/rota/pending-turn`, () => HttpResponse.json({ request: null, leaseUntil: null })),
+    http.get(`${origin}/api/tutor/conversations/rota/messages`, () => HttpResponse.json({ items: [{ id: "m", role: "assistant", text: "Mensaje sin unidad confirmada", sources: [] }], total: 1 })),
+  );
+  render(<MemoryRouter><QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><Tutor unit={unit} mode="chat" conversationId="rota" openConversation={() => undefined} /></QueryClientProvider></MemoryRouter>);
+  expect(screen.queryByLabelText("Tu mensaje")).not.toBeInTheDocument();
+  await screen.findByRole("alert");
+  expect(screen.queryByText("Mensaje sin unidad confirmada")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Tu mensaje")).not.toBeInTheDocument();
+});

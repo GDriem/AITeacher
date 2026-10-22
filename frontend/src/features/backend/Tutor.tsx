@@ -65,8 +65,10 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
     {conversations.data ? <Pages offset={listOffset} total={conversations.data.total} change={setListOffset} /> : null}
     {start.isError ? <Failure error={start.error} /> : null}
     {conversations.isError ? <Failure error={conversations.error} retry={() => void conversations.refetch()} /> : null}
-    {id && conversation.data && conversation.data.unitId !== unit.id
-      // El id llega de la URL: un enlace editado o de otra unidad no debe mostrar sus mensajes bajo esta unidad.
+    {id && conversation.isPending ? <Busy />
+    : id && conversation.isError ? <Failure error={conversation.error} retry={() => void conversation.refetch()} />
+    // El id llega de la URL: un enlace editado o de otra unidad no debe mostrar sus mensajes bajo esta unidad.
+    : id && conversation.data && conversation.data.unitId !== unit.id
       ? <EmptyState title="Esta conversación pertenece a otra unidad" description="El enlace abre una conversación que no corresponde a esta unidad."
         action={<Link className={buttonClass("primary")} to={tutorPath(conversation.data.unitId, conversation.data.mode, conversation.data.activityId ?? undefined, conversation.data.id)}>Ir a la unidad de la conversación</Link>} />
     : id ? <>
@@ -74,7 +76,6 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
       {voice.data?.enabled && conversation.data ? <div className={shared.actions}><Button disabled={send.isPending} onClick={() => setVoiceOpen(true)}>Conversar por voz</Button><p>La voz no guarda mensajes ni acredita progreso. Al reconectar se retoma el contexto de la actividad.</p></div> : null}
       {voiceOpen ? <Suspense fallback={<Busy />}><VoiceSessionDialog activeSessionId={id} studentId="" endpoint={`/api/tutor/conversations/${encodeURIComponent(id)}/voice`}
         onClose={() => setVoiceOpen(false)} onFallback={() => setVoiceOpen(false)} /></Suspense> : null}
-      {conversation.isError ? <Failure error={conversation.error} retry={() => void conversation.refetch()} /> : null}
       {messages.isPending ? <Busy /> : messages.isError ? <Failure error={messages.error} retry={() => void messages.refetch()} /> : <>
         {messages.data.items.map((item) => <article className={panel} key={item.id} id={`message-${item.id}`}><h3>{item.role === "user" ? "Tú" : "Tutor"}</h3>
           <TutorMarkdown>{item.text}</TutorMarkdown>{item.sources.map((source) => <details key={source.id}><summary>Fuente: {source.title}</summary><p>{source.excerpt}</p><p>{source.source}</p></details>)}
