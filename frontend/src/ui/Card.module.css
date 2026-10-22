@@ -1,0 +1,26 @@
+.card {
+  min-width: 0;
+  padding: var(--space-6);
+  background: var(--surface-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow-wrap: anywhere;
+}
+
+.compact {
+  padding: var(--space-4);
+}
+
+.card > :first-child {
+  margin-block-start: 0;
+}
+
+.card > :last-child {
+  margin-block-end: 0;
+}
+
+@media (max-width: 40rem) {
+  .card {
+    padding: var(--space-4);
+  }
+}

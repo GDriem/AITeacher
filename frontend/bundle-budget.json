@@ -2,9 +2,15 @@
   "$schema": "Presupuestos de carga en KB gzip, por grupo de chunk. La línea base se midió en R9 (docs/react-frontend-migration-plan.md).",
   "groups": {
     "backendBeta": {
-      "description": "Interfaz beta .NET con actividades y autoría; se descarga solo en el build dotnet.",
-      "chunks": ["BackendApp"],
-      "budgetKb": 100
+      "description": "Interfaz beta .NET del alumno (shell, rutas y pantallas) más el chunk común con Autoría; se descarga solo en el build dotnet.",
+      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después.",
+      "chunks": ["BackendApp", "Shared"],
+      "budgetKb": 120
+    },
+    "backendAuthoring": {
+      "description": "Autoría del build .NET (unidades, catálogo y corrección); se descarga solo al entrar en /autoria.",
+      "chunks": ["AuthorSpace", "CatalogEditor", "ReviewQueue"],
+      "budgetKb": 20
     },
     "legacyShell": {
       "description": "Shell y proveedor de sesiones del build Python existente.",

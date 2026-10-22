@@ -2,10 +2,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
+import { useState } from "react";
 import { expect, it } from "vitest";
 import { server } from "../../test/server";
 import { Tutor } from "./Tutor";
 import type { Schema } from "./client";
+
+// Igual que la ruta del tutor: la conversación abierta es estado externo y cambiarla remonta el componente.
+function RoutedTutor({ unit }: { unit: Schema["UnitResponse"] }) {
+  const [id, setId] = useState<string | null>(null);
+  return <Tutor key={id ?? "nueva"} unit={unit} mode="chat" conversationId={id} openConversation={setId} />;
+}
 
 it("recupera tras remontar la solicitud persistida, conserva el cuerpo en 409 y no crea otro turno", async () => {
   const origin = window.location.origin;
@@ -30,7 +37,7 @@ it("recupera tras remontar la solicitud persistida, conserva el cuerpo en 409 y 
       return HttpResponse.json({ id: "turn", version: 2, messages: [] });
     }),
   );
-  const mount = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}><Tutor unit={unit} mode="chat" /></QueryClientProvider>);
+  const mount = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}><RoutedTutor unit={unit} /></QueryClientProvider>);
   const user = userEvent.setup();
   const first = mount();
   await user.selectOptions(await screen.findByLabelText("Retomar una conversación"), "conversation");
@@ -65,7 +72,7 @@ it("permite una nueva conversación después de un error de envío", async () =>
     http.post(`${origin}/api/tutor/conversations/:id/turns`, () => HttpResponse.json({}, { status: 503 })),
   );
   const user = userEvent.setup();
-  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><Tutor unit={unit} mode="chat" /></QueryClientProvider>);
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><RoutedTutor unit={unit} /></QueryClientProvider>);
   await user.click(screen.getByRole("button", { name: "Nueva conversación" }));
   await waitFor(() => expect(screen.getByLabelText("Tu mensaje")).toBeEnabled());
   await user.type(screen.getByLabelText("Tu mensaje"), "Hola");

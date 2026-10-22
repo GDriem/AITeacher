@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { backend, result, required, type Schema } from "./client";
 import { Busy, Failure, Field, Pages } from "./Shared";
 import { AttemptView, OwnAttempts } from "./Assessments";
+import { Button } from "../../ui";
+import { panel } from "./panel";
 
 export function LearningReviews() {
   const queries = useQueryClient();
@@ -31,12 +33,12 @@ export function LearningReviews() {
       <Field title="Evaluación para el repaso"><select required value={definitionId} onChange={(event) => { setDefinitionId(event.target.value); request.current = null; }}><option value="">Selecciona una evaluación</option>{definitions.data.items.filter((item) => item.unitRevisionId === selectedEvidence?.unitRevisionId).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></Field>
       <Pages offset={definitionOffset} total={definitions.data.total} change={setDefinitionOffset} />
       <Field title="Fecha y hora del repaso"><input required type="datetime-local" value={dueAt} onChange={(event) => { setDueAt(event.target.value); request.current = null; }} /></Field>
-      <button type="submit" disabled={schedule.isPending}>Programar repaso</button></form>}
+      <Button type="submit" variant="primary" disabled={schedule.isPending}>Programar repaso</Button></form>}
     {schedule.isError ? <Failure error={schedule.error} /> : null}{schedule.isSuccess ? <p role="status">Repaso programado.</p> : null}
     <h2>Repasos programados</h2>{reviews.isPending ? <Busy /> : reviews.isError ? <Failure error={reviews.error} retry={() => void reviews.refetch()} /> : <>
-      {reviews.data.items.length === 0 ? <p>Todavía no tienes repasos programados.</p> : reviews.data.items.map((item) => <article className="backend-panel" key={item.id}><h3>{new Date(item.dueAt).toLocaleString()}</h3><p>{item.completedAt ? "Completado con un intento corregido" : "Pendiente"}</p>
+      {reviews.data.items.length === 0 ? <p>Todavía no tienes repasos programados.</p> : reviews.data.items.map((item) => <article className={panel} key={item.id}><h3>{new Date(item.dueAt).toLocaleString()}</h3><p>{item.completedAt ? "Completado con un intento corregido" : "Pendiente"}</p>
         {!item.completedAt ? <StartReviewAttempt review={item} select={setAttemptId} /> : null}
-        {!item.completedAt ? <button type="button" disabled={!attemptId || complete.isPending} onClick={() => complete.mutate(item.id)}>Completar con el intento seleccionado</button> : null}</article>)}
+        {!item.completedAt ? <Button disabled={!attemptId || complete.isPending} onClick={() => complete.mutate(item.id)}>Completar con el intento seleccionado</Button> : null}</article>)}
       <Pages offset={offset} total={reviews.data.total} change={setOffset} /></>}
     {complete.isError ? <Failure error={complete.error} /> : null}
     <p>Para completar un repaso, selecciona un intento nuevo de su evaluación, iniciado después de la fecha prevista y completamente corregido.</p>
@@ -62,7 +64,7 @@ function StartReviewAttempt({ review, select }: { review: Schema["LearningReview
     select(attempt.id);
     void queries.invalidateQueries({ queryKey: ["attempts"] });
   } });
-  return <><button type="button" disabled={now < due || start.isPending} onClick={() => start.mutate()}>Iniciar intento del repaso</button>
+  return <><Button disabled={now < due || start.isPending} onClick={() => start.mutate()}>Iniciar intento del repaso</Button>
     {now < due ? <p>Podrás iniciar el intento cuando llegue la fecha prevista.</p> : null}
     {start.isError ? <Failure error={start.error} retry={() => start.mutate()} /> : null}</>;
 }

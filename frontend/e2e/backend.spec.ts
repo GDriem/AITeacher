@@ -23,6 +23,15 @@ async function googleForTests(page: Page, credential: string) {
 
 async function login(page: Page) {
   await page.getByRole("button", { name: "Continuar con Google", exact: true }).click();
+  await expect(page.getByRole("navigation", { name: "Navegación principal" })).toBeVisible();
+}
+
+function mainNav(page: Page, name: string) {
+  return page.getByRole("navigation", { name: "Navegación principal" }).getByRole("link", { name, exact: true });
+}
+
+async function openCatalog(page: Page) {
+  await mainNav(page, "Catálogo").click();
   await expect(page.getByRole("heading", { name: "Continúa aprendiendo" })).toBeVisible();
 }
 
@@ -37,8 +46,8 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await googleForTests(page, "author"); await page.goto("/"); await login(page);
-  await page.getByRole("button", { name: "Autoría", exact: true }).click();
-  await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("button", { name: "Catálogo", exact: true }).click();
+  await mainNav(page, "Autoría").click();
+  await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Catálogo", exact: true }).click();
   await page.getByLabel("Nombre", { exact: true }).fill("Curso Beta"); await page.getByRole("button", { name: "Guardar entrada" }).click();
   await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("");
   await page.getByLabel("Qué quieres administrar").selectOption("categories");
@@ -48,7 +57,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByLabel("Nombre", { exact: true }).fill("Vectores Beta"); await page.getByLabel("Materia", { exact: true }).selectOption({ label: "Curso Beta" });
   await page.getByLabel("Categoría", { exact: true }).selectOption({ label: "Fundamentos Beta" }); await page.getByRole("button", { name: "Guardar entrada" }).click();
   await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("");
-  await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("button", { name: "Unidades", exact: true }).click();
+  await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Unidades", exact: true }).click();
   await page.getByRole("button", { name: "Crear unidad", exact: true }).click(); await page.getByLabel("Tema de la nueva unidad").selectOption({ label: "Vectores Beta" });
   await page.getByLabel("Título de la unidad").fill("Unidad Beta de vectores");
   await page.getByRole("button", { name: "Añadir concepto", exact: true }).click(); await page.getByLabel("Nombre del concepto").fill("Concepto Beta");
@@ -79,16 +88,20 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByLabel("Título de referencia curricular").fill("Mapa Beta"); await page.getByRole("button", { name: "Publicar referencia curricular" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Referencia curricular publicada" })).toBeVisible();
 
-  await switchUser(page, "student-a"); await expect(page.getByRole("button", { name: "Autoría", exact: true })).toHaveCount(0);
-  await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Vectores Beta" });
-  await page.getByRole("button", { name: "Abrir unidad" }).click(); await expect(page.getByRole("heading", { name: "Lectura de vectores", exact: true })).toBeVisible();
+  await switchUser(page, "student-a"); await expect(mainNav(page, "Autoría")).toHaveCount(0);
+  await openCatalog(page); await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Vectores Beta" });
+  await page.getByRole("link", { name: "Abrir unidad" }).click(); await expect(page.getByRole("heading", { name: "Lectura de vectores", exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("PRIVATE-EDITORIAL-BROWSER"); await expect(page.locator("body")).not.toContainText("PRIVATE-RUBRIC-BROWSER");
   await page.getByRole("button", { name: "Iniciar Evaluación cerrada beta", exact: true }).click();
+  await expect(page).toHaveURL(/\/evaluaciones\/[^/]+$/); await expect(page.getByRole("heading", { name: "Intento de evaluación", level: 1 })).toBeFocused();
   await page.getByRole("radio", { name: "Características", exact: true }).check(); await page.getByRole("button", { name: "Entregar respuestas" }).click();
   await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
+  await page.reload(); await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
+  await page.goBack(); await expect(page.getByRole("heading", { name: "Unidad Beta de vectores", level: 1 })).toBeVisible();
   await page.getByRole("button", { name: "Iniciar Evaluación abierta beta", exact: true }).click(); await page.getByLabel("Tu respuesta", { exact: true }).fill("Comparo características para justificar similitud.");
   await page.getByRole("button", { name: "Entregar respuestas" }).click(); await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Abrir conversación", exact: true }).click(); await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
+  await page.goBack();
+  await page.getByRole("link", { name: "Abrir conversación", exact: true }).click(); await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Quiero explorar Concepto Beta."); await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Guardar mensaje en apuntes", exact: true }).last().click(); await expect(page.getByText("Apunte guardado.", { exact: true })).toBeVisible();
@@ -105,40 +118,42 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
     expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   }
-  await page.getByRole("button", { name: "Apuntes", exact: true }).click(); await expect(page.getByRole("heading", { name: "Mensaje guardado", exact: true })).toBeVisible();
+  await mainNav(page, "Apuntes").click(); await expect(page.getByRole("heading", { name: "Mensaje guardado", exact: true })).toBeVisible();
   await page.getByLabel("Nuevo apunte").fill("Mi idea privada de la beta"); await page.getByRole("button", { name: "Guardar apunte", exact: true }).click();
   await expect(page.getByText("Mi idea privada de la beta", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Historial", exact: true }).click(); await page.getByRole("button", { name: "Historia de vectores · 1 mensajes", exact: true }).click();
+  await mainNav(page, "Historial").click(); await page.getByRole("button", { name: "Historia de vectores · 1 mensajes", exact: true }).click();
   await expect(page.getByText("Mi explicación histórica", { exact: true })).toBeVisible(); await expect(page.locator("body")).not.toContainText("PRIVATE-HISTORICAL-KEY");
-  await switchUser(page, "author"); await page.getByRole("button", { name: "Autoría", exact: true }).click(); await page.getByRole("button", { name: "Corregir entregas", exact: true }).click();
+  await switchUser(page, "author"); await mainNav(page, "Autoría").click(); await page.getByRole("link", { name: "Corregir entregas", exact: true }).click();
   await page.getByRole("listitem").filter({ hasText: "Evaluación abierta beta" }).getByRole("button", { name: "Consultar entrega" }).click();
   await page.getByLabel("Justificación coherente · máximo 1").fill("1"); await page.getByLabel("Feedback al alumno").fill("La comparación está justificada.");
   await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
-  await switchUser(page, "student-b"); await page.getByRole("button", { name: "Apuntes", exact: true }).click(); await expect(page.getByText("Todavía no hay apuntes.", { exact: true })).toBeVisible();
+  await switchUser(page, "student-b"); await mainNav(page, "Apuntes").click(); await expect(page.getByText("Todavía no hay apuntes.", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Mi idea privada de la beta");
-  await page.getByRole("button", { name: "Historial", exact: true }).click(); await expect(page.getByText("No hay conversaciones históricas importadas para tu cuenta.", { exact: true })).toBeVisible();
+  await mainNav(page, "Historial").click(); await expect(page.getByText("No hay conversaciones históricas importadas para tu cuenta.", { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
 
 test("catálogo migrado: materias, categorías, niveles y lecturas sin actividades ficticias", async ({ page }) => {
-  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page); await openCatalog(page);
   await page.getByLabel("Materia", { exact: true }).selectOption({ label: "Redes" });
   await page.getByLabel("Categoría", { exact: true }).selectOption({ label: "Enrutamiento" });
   await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Enrutamiento dinámico con OSPF" });
   await expect(page.getByText(/Antes se recomienda: Enrutamiento estático/)).toBeVisible();
   await page.getByLabel("Nivel de lectura").selectOption({ label: "Principiante" });
-  await expect(page.getByRole("status")).toContainText("1 materiales publicados en 1 temas");
-  await page.getByRole("button", { name: "Abrir unidad", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "materiales publicados" })).toContainText("1 materiales publicados en 1 temas");
+  await page.getByRole("link", { name: "Abrir unidad", exact: true }).click();
   await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
   await expect(page.getByText(/^Fuente:/)).toBeVisible();
   await expect(page.getByRole("button", { name: /Iniciar .*beta/ })).toHaveCount(0);
-  await page.getByRole("button", { name: "Consultar esta lectura con el tutor" }).click();
+  await page.getByRole("link", { name: "Consultar esta lectura con el tutor" }).click();
+  await expect(page.getByText("Consulta sobre una lectura", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Nueva conversación" }).click();
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Explica la idea de esta lectura.");
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Volver al catálogo" }).click();
+  await page.goBack(); await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
+  await page.getByRole("link", { name: "Volver al catálogo" }).click();
   await expect(page.getByLabel("Materia", { exact: true })).toHaveValue(/.+/);
   await expect(page.getByLabel("Nivel de lectura")).toHaveValue("beginner");
   for (const width of [320, 768, 1024, 1440]) {
@@ -146,6 +161,42 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
     expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   }
+});
+
+test("navegación por teclado: rutas, foco, recarga y Atrás conservan la vista", async ({ page }) => {
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await page.goto("/apuntes");
+  await expect(page.getByRole("heading", { name: "Tus apuntes", level: 1 })).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Saltar al contenido" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#learning-content")).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  for (let step = 0; step < 12 && !(await mainNav(page, "Catálogo").evaluate((node) => node === document.activeElement)); step++) await page.keyboard.press("Shift+Tab");
+  await expect(mainNav(page, "Catálogo")).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/catalogo$/);
+  await expect(page.getByRole("heading", { name: "Continúa aprendiendo", level: 1 })).toBeFocused();
+  await page.getByLabel("Materia", { exact: true }).selectOption({ label: "Redes" });
+  await expect(page).toHaveURL(/materia=/);
+  await page.getByRole("link", { name: "Abrir unidad", exact: true }).first().focus(); await page.keyboard.press("Enter");
+  const unit = page.getByRole("heading", { level: 1 });
+  await expect(unit).toBeFocused();
+  const title = await unit.textContent() ?? "";
+  await page.reload(); await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
+  await page.goBack(); await expect(page.getByLabel("Materia", { exact: true })).toHaveValue(/.+/);
+  await page.goForward(); await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
+  await page.goto("/no-existe"); await expect(page.getByRole("heading", { name: "Esta página no existe", level: 1 })).toBeVisible();
+  await page.goto("/autoria"); await expect(page).toHaveURL(/\/$/);
+  await page.setViewportSize({ width: 320, height: 640 });
+  const repasos = mainNav(page, "Repasos");
+  const box = await repasos.boundingBox();
+  expect(box && box.y + box.height).toBeLessThanOrEqual(640);
+  await repasos.focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Repasos y evidencias", level: 1 })).toBeFocused();
+  await expect(repasos).toHaveAttribute("aria-current", "page");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
 });
 
 async function apiPost(page: Page, url: string, data: unknown) {
@@ -161,21 +212,20 @@ async function advanceClock(page: Page, now: string) {
 }
 
 test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async ({ page }) => {
-  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page); await openCatalog(page);
   await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Vectores Beta" });
-  await page.getByRole("button", { name: "Abrir unidad", exact: true }).click();
-  await page.getByRole("button", { name: "Abrir conversación", exact: true }).click();
+  await page.getByRole("link", { name: "Abrir unidad", exact: true }).click();
+  await page.getByRole("link", { name: "Abrir conversación", exact: true }).click();
   const creation = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/api/tutor/conversations"));
   await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
   const { id } = await (await creation).json() as { id: string };
   await page.getByLabel("Tu mensaje", { exact: true }).fill("__PROCESS_LOSS__ Recuperar mi conversación");
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
+  // La conversación vive en la URL: recargar la reabre sin volver a elegirla.
+  await expect(page).toHaveURL(new RegExp(`/tutor/${id}$`));
   await page.reload();
-  await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Vectores Beta" });
-  await page.getByRole("button", { name: "Abrir unidad", exact: true }).click();
-  await page.getByRole("button", { name: "Abrir conversación", exact: true }).click();
-  await page.getByLabel("Retomar una conversación").selectOption(id);
+  await expect(page.getByLabel("Retomar una conversación")).toHaveValue(id);
   await expect(page.getByRole("button", { name: "Recuperar mensaje pendiente" })).toBeVisible();
   const pending = await (await page.request.get(`/api/tutor/conversations/${id}/pending-turn`)).json() as { request: unknown; leaseUntil: string };
   await advanceClock(page, new Date(new Date(pending.leaseUntil).getTime() + 1000).toISOString());
@@ -222,7 +272,7 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
     const evidence = await (await page.request.get("/api/learning/evidence?limit=100")).json() as { items: { attemptId: string }[] };
     return evidence.items.some((item) => item.attemptId === initial.id);
   }, { timeout: 15000 }).toBeTruthy();
-  await page.getByRole("button", { name: "Repasos", exact: true }).click();
+  await mainNav(page, "Repasos").click();
   const evidence = await (await page.request.get("/api/learning/evidence?limit=100")).json() as { items: { id: string; attemptId: string }[] };
   const sourceEvidence = evidence.items.find((item) => item.attemptId === initial.id);
   expect(sourceEvidence).toBeDefined();
@@ -244,7 +294,7 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
   await switchUser(page, "student-a");
   const active = await (await page.request.get(`/api/units/${unit.id}`)).json() as { revision: { id: string } };
   expect(active.revision.id).toBe(r2.revision.id);
-  await page.getByRole("button", { name: "Repasos", exact: true }).click();
+  await mainNav(page, "Repasos").click();
   const started = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/api/assessments/attempts"));
   await page.getByRole("button", { name: "Iniciar intento del repaso" }).click();
   const attempt = await (await started).json() as { id: string; definitionRevisionId: string };
@@ -256,15 +306,15 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
   if (open) {
     await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
     await switchUser(page, "author");
-    await page.getByRole("button", { name: "Autoría", exact: true }).click();
-    await page.getByRole("button", { name: "Corregir entregas", exact: true }).click();
+    await mainNav(page, "Autoría").click();
+    await page.getByRole("link", { name: "Corregir entregas", exact: true }).click();
     await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).filter({ hasText: "Pendiente de corrección" }).getByRole("button", { name: "Consultar entrega" }).click();
     await page.getByLabel("Justificar R1 · máximo 1").fill("1");
     await page.getByLabel("Feedback al alumno").fill("Corregido con la rúbrica de R1.");
     await page.getByRole("button", { name: "Confirmar corrección final" }).click();
     await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
     await switchUser(page, "student-a");
-    await page.getByRole("button", { name: "Repasos", exact: true }).click();
+    await mainNav(page, "Repasos").click();
     await page.getByText("Mis intentos anteriores", { exact: true }).click();
     await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).first().getByRole("button", { name: "Consultar", exact: true }).click();
   } else await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
