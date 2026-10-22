@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using AITeacher.Modules.Curriculum.Catalog;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,9 +15,18 @@ public sealed record LevelRequest(Guid ScaleId, [property: Required] EntryReques
 public sealed record TopicRequest(Guid SubjectId, Guid CategoryId, Guid? LevelId, [property: Required] EntryRequest Entry,
     [property: StringLength(CatalogEndpoints.DescriptionMaxLength)] string? Description = null);
 public sealed record UpdateEntryRequest([property: Range(1, long.MaxValue)] long Version, [property: Required] EntryRequest Entry);
-// PUT replaces the description too: omitting it or sending blank text clears it.
-public sealed record UpdateTopicRequest([property: Range(1, long.MaxValue)] long Version, [property: Required] EntryRequest Entry,
-    [property: StringLength(CatalogEndpoints.DescriptionMaxLength)] string? Description = null);
+// PUT distingue el campo ausente de null: si falta, se conserva la descripción guardada (clientes
+// que no la conocen no la borran); con null o texto en blanco, se borra.
+public sealed record UpdateTopicRequest([property: Range(1, long.MaxValue)] long Version, [property: Required] EntryRequest Entry)
+{
+    private readonly string? description;
+
+    // System.Text.Json sólo invoca el init cuando la propiedad viene en el cuerpo, incluso con null.
+    [StringLength(CatalogEndpoints.DescriptionMaxLength)]
+    public string? Description { get => description; init { description = value; HasDescription = true; } }
+
+    [JsonIgnore] public bool HasDescription { get; private init; }
+}
 public sealed record EntryResponse(Guid Id, string Name, string Slug, int SortOrder, bool IsAvailable, long Version,
     Guid? SubjectId = null, Guid? CategoryId = null, Guid? ScaleId = null, Guid? LevelId = null, string? Purpose = null,
     string? Description = null);
@@ -39,7 +49,11 @@ public static class CatalogEndpoints
         MapReadAndUpdate<Level>(group, "levels");
         MapRead<Topic>(group, "topics");
         group.MapPut("/topics/{id:guid}", (Guid id, UpdateTopicRequest request, CatalogDbContext db, CancellationToken ct) =>
-            Update<Topic>(id, request.Version, db, topic => { Apply(topic, request.Entry); topic.Description = Normalize(request.Description); }, ct))
+            Update<Topic>(id, request.Version, db, topic =>
+            {
+                Apply(topic, request.Entry);
+                if (request.HasDescription) topic.Description = Normalize(request.Description);
+            }, ct))
             .RequireAuthorization("Author");
         group.MapPost("/subjects", (EntryRequest request, CatalogDbContext db, CancellationToken ct) =>
             Create(new Subject(), request, "subjects", db, ct)).RequireAuthorization("Author");

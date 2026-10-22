@@ -326,7 +326,7 @@ export interface paths {
         get: operations["getTopics"];
         /**
          * Update a topics entry
-         * @description Author only. Replaces name, slug, order, availability and description; an omitted or blank description clears it. Subject, category and level are immutable. Supply the last read version; concurrent or stale saves return 409. No physical delete in this milestone.
+         * @description Author only. Replaces name, slug, order and availability. An omitted description keeps the stored one; null or blank text clears it. Subject, category and level are immutable. Supply the last read version; concurrent or stale saves return 409. No physical delete in this milestone.
          */
         put: operations["updateTopics"];
         post?: never;
@@ -1368,7 +1368,7 @@ export interface components {
             /** Format: int64 */
             version: number;
             entry: components["schemas"]["EntryRequest"];
-            /** @description Plain text for students, not HTML. Trimmed; blank text is stored as null. */
+            /** @description Plain text for students, not HTML. Omit it to keep the stored description; null or blank text clears it. Trimmed otherwise. */
             description?: string | null;
         };
         AuthenticationStatus: {

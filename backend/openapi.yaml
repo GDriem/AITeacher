@@ -1087,10 +1087,10 @@ paths:
     put:
       operationId: updateTopics
       summary: Update a topics entry
-      description: Author only. Replaces name, slug, order, availability and description;
-        an omitted or blank description clears it. Subject, category and level are
-        immutable. Supply the last read version; concurrent or stale saves return
-        409. No physical delete in this milestone.
+      description: Author only. Replaces name, slug, order and availability. An omitted
+        description keeps the stored one; null or blank text clears it. Subject,
+        category and level are immutable. Supply the last read version; concurrent
+        or stale saves return 409. No physical delete in this milestone.
       tags:
       - Catalog
       parameters:
@@ -4472,8 +4472,8 @@ components:
           type: string
           nullable: true
           maxLength: 600
-          description: Plain text for students, not HTML. Trimmed; blank text is stored
-            as null.
+          description: Plain text for students, not HTML. Omit it to keep the stored
+            description; null or blank text clears it. Trimmed otherwise.
     AuthenticationStatus:
       type: object
       required: [enabled, authenticated, googleClientId, profile]

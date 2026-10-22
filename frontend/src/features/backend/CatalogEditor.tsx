@@ -26,7 +26,7 @@ export function CatalogEditor() {
   const changeKind = (value: typeof kind) => { setKind(value); setOffset(0); reset(); };
   const save = useMutation({ mutationFn: async () => {
     const entry = { name, slug, sortOrder, isAvailable: available };
-    // PUT reemplaza la descripción: se envía siempre, y vacía la borra.
+    // Se envía siempre: vacía la borra; si faltara, el servidor conservaría la guardada.
     if (editing && kind === "topics") return result(await backend.PUT("/api/catalog/topics/{id}", { params: { path: { id: editing.id } }, body: { version: editing.version, entry, description } }));
     if (editing) return result(await backend.PUT(`/api/catalog/${kind}/{id}`, { params: { path: { id: editing.id } }, body: { version: editing.version, entry } }));
     if (kind === "subjects") return result(await backend.POST("/api/catalog/subjects", { body: entry }));
