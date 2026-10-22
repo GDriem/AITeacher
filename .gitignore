@@ -287,3 +287,4 @@ pnpm-debug.log*
 !/docs/pr14-readiness.md
 !/docs/azure-beta-cd.md
 !/docs/azure-beta-acceptance.md
+!/docs/ui-ux-beta-plan.md
