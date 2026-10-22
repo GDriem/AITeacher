@@ -1,0 +1,58 @@
+/* Separación vertical entre paneles; la superficie la aporta `cardClass` (ver panel.ts). */
+.panel {
+  margin-block: var(--space-4);
+}
+
+.panel h2:first-child,
+.panel h3:first-child {
+  margin-block-start: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-block: var(--space-6);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+  margin-block: var(--space-4);
+}
+
+.field input,
+.field select,
+.field textarea {
+  min-width: 0;
+  width: 100%;
+  min-height: 2.75rem;
+  color: var(--content-strong);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.field textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.75rem;
+}
+
+.eyebrow {
+  color: var(--content-muted);
+  margin-block-start: var(--space-7);
+}
+
+.feedback {
+  border-inline-start: 0.25rem solid var(--status-guide);
+  padding-inline-start: var(--space-4);
+}

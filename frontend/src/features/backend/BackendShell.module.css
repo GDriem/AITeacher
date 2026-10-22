@@ -1,0 +1,293 @@
+.boot {
+  width: min(100% - var(--space-8), 48rem);
+  margin: var(--space-12) auto;
+}
+
+.app {
+  min-height: 100dvh;
+}
+
+.skipLink {
+  position: fixed;
+  z-index: 100;
+  inset-block-start: var(--space-3);
+  inset-inline-start: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  color: var(--content-inverse);
+  background: var(--action-primary);
+  border-radius: var(--radius-sm);
+  transform: translateY(-180%);
+}
+
+.skipLink:focus {
+  transform: translateY(0);
+}
+
+.header,
+.main,
+.error {
+  width: min(100% - var(--space-8), var(--content-max));
+  margin-inline: auto;
+}
+
+.header {
+  min-height: 5rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--content-strong);
+  text-decoration: none;
+}
+
+.brand > span:last-child {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.brand strong {
+  font-size: var(--font-size-lg);
+  letter-spacing: -0.03em;
+}
+
+.brand small {
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+}
+
+.brandMark {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.brandMark i {
+  height: 70%;
+  border-radius: var(--radius-xs);
+  background: var(--status-guide);
+}
+
+.brandMark i:nth-child(2) {
+  height: 100%;
+  background: var(--status-mastery);
+}
+
+.brandMark i:nth-child(3) {
+  height: 48%;
+  background: var(--status-attention);
+}
+
+.nav ul {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav a {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  color: var(--content-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.nav svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.nav a:hover,
+.nav a[aria-current="page"] {
+  color: var(--content-strong);
+  border-color: var(--border-default);
+  background: var(--surface-subtle);
+}
+
+.account {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--content-inverse);
+  background: var(--status-guide);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.name {
+  max-width: 12rem;
+  overflow: hidden;
+  color: var(--content-strong);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error {
+  margin-block: var(--space-4) 0;
+  color: var(--status-danger);
+}
+
+/* Contenido de cada pantalla: tipografía y controles comunes de las vistas .NET.
+   `:where()` mantiene la especificidad mínima y `:not([class])` deja intactos los componentes de `ui/`. */
+.main {
+  padding-block: var(--space-8) var(--space-12);
+}
+
+.main:focus {
+  outline: none;
+}
+
+.main :where(h1:not([class])) {
+  font-size: var(--font-size-xl);
+  margin-block: var(--space-6);
+}
+
+.main :where(h2:not([class])) {
+  margin-block-start: var(--space-7);
+}
+
+.main :where(a:not([class])) {
+  color: var(--action-primary);
+}
+
+.main :where(fieldset) {
+  min-width: 0;
+  margin-block: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.main :where(pre) {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.main :where(svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+.toasts {
+  inset-block-end: var(--space-4);
+}
+
+/* Barra inferior en móvil; el contenido reserva su altura y la del área segura. */
+@media (max-width: 48rem) {
+  .header,
+  .main,
+  .error {
+    width: min(100% - var(--space-5), var(--content-max));
+  }
+
+  .header {
+    min-height: 4rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+  }
+
+  .brand small,
+  .name {
+    display: none;
+  }
+
+  .nav {
+    position: fixed;
+    z-index: 40;
+    inset-inline: 0;
+    inset-block-end: 0;
+    padding-block-end: env(safe-area-inset-bottom);
+    background: var(--surface-default);
+    border-top: 1px solid var(--border-default);
+  }
+
+  .nav ul {
+    justify-content: stretch;
+    gap: 0;
+  }
+
+  .nav li {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  .nav a {
+    width: 100%;
+    min-height: 3.5rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-1);
+    padding-inline: var(--space-1);
+    border: 0;
+    border-radius: 0;
+    font-size: var(--font-size-xs);
+  }
+
+  .nav a span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav a[aria-current="page"] {
+    color: var(--action-primary);
+    background: var(--surface-raised);
+    box-shadow: inset 0 0.1875rem 0 var(--action-primary);
+  }
+
+  .main {
+    padding-block: var(--space-5) calc(3.5rem + var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .toasts {
+    inset-block-end: calc(3.5rem + var(--space-3) + env(safe-area-inset-bottom));
+  }
+}
+
+/* En 320 px el texto de marca no cabe junto al perfil; el enlace conserva su nombre accesible. */
+@media (max-width: 23.99rem) {
+  .brand > span:last-child {
+    display: none;
+  }
+}

@@ -1,0 +1,36 @@
+.skeleton {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.line {
+  height: 1rem;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(90deg, var(--surface-default), var(--surface-raised), var(--surface-default));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.line:first-child {
+  height: 1.5rem;
+  width: 60%;
+}
+
+.line:last-child:not(:first-child) {
+  width: 80%;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}

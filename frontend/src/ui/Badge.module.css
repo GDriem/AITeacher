@@ -1,0 +1,18 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.125rem var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.neutral { color: var(--content-muted); }
+.info { color: var(--status-guide); }
+.success { color: var(--status-mastery); }
+.warning { color: var(--status-attention); }
+.danger { color: var(--status-danger); }

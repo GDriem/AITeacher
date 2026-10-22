@@ -28,9 +28,14 @@ backend.use({
   },
 });
 
+// ASP.NET Core añade `traceId` a cada ProblemDetails; se muestra para que el alumno pueda citarlo.
+function traceId(error: unknown) {
+  return typeof error === "object" && error !== null && "traceId" in error && typeof error.traceId === "string" ? error.traceId : null;
+}
+
 export function result<T>(response: { data?: T; error?: unknown; response: Response }): T {
   if (response.data !== undefined) return response.data;
-  throw new ApiError(errorMessage(response.error, response.response.status), { status: response.response.status });
+  throw new ApiError(errorMessage(response.error, response.response.status), { status: response.response.status, correlationId: traceId(response.error) });
 }
 
 export function message(error: unknown) {

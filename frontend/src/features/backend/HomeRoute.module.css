@@ -1,0 +1,25 @@
+.spaces {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.space {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.space h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.space p {
+  margin: 0;
+  color: var(--content-muted);
+}

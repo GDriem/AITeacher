@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { backend, result, required, type Schema } from "./client";
 import { Busy, Failure, Field, Pages } from "./Shared";
+import { Button } from "../../ui";
+import shared from "./Shared.module.css";
+import { panel } from "./panel";
 
 const relations = { requires: "requiere", explains: "explica", applies: "aplica", differsFrom: "se diferencia de" };
 const stages = { mention: "Mención", exploration: "Exploración", understanding: "Comprensión declarada" };
@@ -22,7 +25,7 @@ export function ConceptMap({ topicId, conversationId, messages }: { topicId: str
     </>}
     {graphId ? <><Field title="Mensaje para buscar menciones"><select value={messageId} onChange={(event) => setMessageId(event.target.value)}>
       <option value="">Selecciona un mensaje tuyo de esta página</option>{messages.filter((item) => item.role === "user").map((item) => <option key={item.id} value={item.id}>{item.text.slice(0, 90)}</option>)}</select></Field>
-      <button type="button" disabled={!messageId || extract.isPending} onClick={() => extract.mutate()}>Buscar menciones</button>
+      <Button disabled={!messageId || extract.isPending} onClick={() => extract.mutate()}>Buscar menciones</Button>
       {extract.isError ? <Failure error={extract.error} /> : null}
       {graph.isPending ? <Busy /> : graph.isError ? <Failure error={graph.error} retry={() => void graph.refetch()} /> : <GraphView map={graph.data} />}
     </> : null}
@@ -50,12 +53,12 @@ function Observation({ observation, names }: { observation: Schema["GraphObserva
   const correct = useMutation({ mutationFn: async (status: "accepted" | "rejected") => result(await backend.POST("/api/graphs/observations/{id}/corrections", {
     params: { path: { id: observation.id } }, body: { ...observation.current, stage, status, reason },
   })), onSuccess: () => { void queries.invalidateQueries({ queryKey: ["map", observation.conversationId, observation.graphRevisionId] }); } });
-  return <article className="backend-panel"><p>{names.get(observation.current.fromNodeId)} · {stages[observation.current.stage]} · {observation.current.status === "accepted" ? "Aceptada" : observation.current.status === "rejected" ? "Rechazada" : "Pendiente"}</p>
+  return <article className={panel}><p>{names.get(observation.current.fromNodeId)} · {stages[observation.current.stage]} · {observation.current.status === "accepted" ? "Aceptada" : observation.current.status === "rejected" ? "Rechazada" : "Pendiente"}</p>
     <a href={observation.sourceUrl} target="_blank" rel="noopener noreferrer">Ver mensaje de origen</a>
     <Field title="Tipo de observación"><select value={stage} onChange={(event) => setStage(event.target.value as typeof stage)}>{Object.entries(stages).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
     <Field title="Motivo de tu corrección"><input required maxLength={2000} value={reason} onChange={(event) => setReason(event.target.value)} /></Field>
-    <div className="backend-actions"><button type="button" disabled={!reason.trim() || correct.isPending} onClick={() => correct.mutate("accepted")}>Aceptar observación</button>
-      <button type="button" disabled={!reason.trim() || correct.isPending} onClick={() => correct.mutate("rejected")}>Rechazar observación</button></div>
+    <div className={shared.actions}><Button disabled={!reason.trim() || correct.isPending} onClick={() => correct.mutate("accepted")}>Aceptar observación</Button>
+      <Button disabled={!reason.trim() || correct.isPending} onClick={() => correct.mutate("rejected")}>Rechazar observación</Button></div>
     {correct.isError ? <Failure error={correct.error} /> : null}
     <details><summary>Historial de cambios</summary><ol>{observation.history.map((item) => <li key={item.version}>{new Date(item.createdAt).toLocaleString()} · {item.reason || "Observación original"}</li>)}</ol></details>
   </article>;
