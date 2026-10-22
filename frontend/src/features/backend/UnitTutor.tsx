@@ -28,9 +28,10 @@ export function UnitTutor() {
   if (unit.isError) return <Failure error={unit.error} retry={() => void unit.refetch()} />;
   if (availability.isError) return <Failure error={availability.error} retry={() => void availability.refetch()} />;
   const title = unit.data.revision.document.title;
+  // La miga vuelve a la pestaña de origen: la práctica guiada sale de Practicar.
   return <section>
     <PageHeader title={`Tutor: ${title}`} eyebrow={modes[conversation.data?.mode ?? mode]}
-      breadcrumbs={[...unitCrumbs(state, unit.data.topicId, topic.data?.name), { label: title, to: `/unidades/${encodeURIComponent(unitId)}`, state }, { label: "Tutor" }]} />
+      breadcrumbs={[...unitCrumbs(state, unit.data.topicId, topic.data?.name), { label: title, to: `/unidades/${encodeURIComponent(unitId)}${mode === "practice" ? "?pestana=practicar" : ""}`, state }, { label: "Tutor" }]} />
     {availability.data.enabled
       // Cada conversación monta su propio Tutor: cambiarla descarta solicitudes en memoria, pero el turno pendiente se recupera del servidor.
       ? <Tutor key={conversationId ?? "nueva"} unit={unit.data} mode={mode} activityId={activityId} conversationId={conversationId}

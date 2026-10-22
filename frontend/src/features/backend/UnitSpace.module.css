@@ -140,3 +140,21 @@
     max-width: calc(100% - 2 * var(--space-3));
   }
 }
+
+/* Aviso que ocupa el sitio del botón del tutor cuando no se pudo comprobar su disponibilidad. */
+.tutorFailure {
+  position: fixed;
+  z-index: 30;
+  inset-inline-end: var(--space-5);
+  inset-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
+  max-width: min(24rem, calc(100% - 2 * var(--space-5)));
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 48rem) {
+  .tutorFailure {
+    inset-inline-end: var(--space-3);
+    inset-block-end: calc(3.5rem + var(--space-3) + env(safe-area-inset-bottom));
+    max-width: calc(100% - 2 * var(--space-3));
+  }
+}

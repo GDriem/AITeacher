@@ -265,8 +265,9 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   const category = await apiPost(page, "/api/catalog/categories", { subjectId: subject.id, entry });
   const topic = await apiPost(page, "/api/catalog/topics", { subjectId: subject.id, categoryId: category.id, entry });
   const concept = crypto.randomUUID(), objective = crypto.randomUUID();
-  const readings = ["Primera lectura larga", "Segunda lectura larga"].map((title) => ({ id: crypto.randomUUID(), title,
-    text: Array.from({ length: 24 }, (_, index) => `Párrafo ${String(index + 1)} de ${title}.`).join("\n\n"), source: "Sintético", objectiveIds: [objective] }));
+  // La segunda lectura es corta: al final de la página no puede subir hasta arriba y la primera sigue asomando.
+  const readings = ([["Primera lectura larga", 24], ["Segunda lectura corta", 2]] as const).map(([title, paragraphs]) => ({ id: crypto.randomUUID(), title,
+    text: Array.from({ length: paragraphs }, (_, index) => `Párrafo ${String(index + 1)} de ${title}.`).join("\n\n"), source: "Sintético", objectiveIds: [objective] }));
   const exercises = ["Compara dos ejemplos.", "Explica tu criterio."].map((prompt) => ({ id: crypto.randomUUID(), prompt, objectiveIds: [objective] }));
   const unit = await apiPost(page, "/api/units", { topicId: topic.id, document: { title: "Unidad con pestañas", concepts: [{ id: concept, name: "Idea" }],
     objectives: [{ id: objective, description: "Comparar ejemplos", conceptIds: [concept] }], readings, exercises,
@@ -293,11 +294,17 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await expect(index.getByRole("link", { name: "Primera lectura larga", exact: true })).toHaveAttribute("aria-current", "true");
   const ask = page.getByRole("link", { name: /^Preguntar al tutor/ });
   await expect(ask).toHaveAccessibleName("Preguntar al tutor sobre «Primera lectura larga»");
-  await index.getByRole("link", { name: "Segunda lectura larga", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Segunda lectura larga", level: 2 })).toBeFocused();
-  await expect(ask).toHaveAccessibleName("Preguntar al tutor sobre «Segunda lectura larga»");
+  await index.getByRole("link", { name: "Segunda lectura corta", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Segunda lectura corta", level: 2 })).toBeFocused();
+  await expect(ask).toHaveAccessibleName("Preguntar al tutor sobre «Segunda lectura corta»");
   await expect(ask).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[1]?.id ?? ""}$`));
-  await expect(index.getByRole("link", { name: "Segunda lectura larga", exact: true })).toHaveAttribute("aria-current", "true");
+  await expect(index.getByRole("link", { name: "Segunda lectura corta", exact: true })).toHaveAttribute("aria-current", "true");
+  await expect(index.getByRole("link", { name: "Primera lectura larga", exact: true })).not.toHaveAttribute("aria-current", "true");
+  // Al desplazarse el alumno se suelta la elección del índice; al final de la página manda la última lectura visible.
+  await expect.poll(() => page.evaluate(() => Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight - 1)).toBe(true);
+  await page.mouse.wheel(0, 400);
+  await expect(ask).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[1]?.id ?? ""}$`));
+  await expect(index.getByRole("link", { name: "Segunda lectura corta", exact: true })).toHaveAttribute("aria-current", "true");
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   // Practicar: el contexto pasa al ejercicio visible y Atrás devuelve a la misma pestaña.
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -306,6 +313,8 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await ask.click();
   await expect(page).toHaveURL(new RegExp(`/tutor\\?modo=practice&actividad=${exercises[0]?.id ?? ""}$`));
   await expect(page.getByText("Práctica guiada", { exact: true })).toBeVisible();
+  // La miga de la unidad vuelve a Practicar, de donde salió la práctica guiada.
+  await expect(page.getByRole("link", { name: "Unidad con pestañas", exact: true })).toHaveAttribute("href", /\?pestana=practicar$/);
   await page.goBack(); await expect(tab("Practicar")).toHaveAttribute("aria-selected", "true");
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   await tab("Aprender").click();
@@ -328,6 +337,15 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
       await page.evaluate(() => window.scrollTo(0, 0));
     }
   }
+  // Si falla la disponibilidad del tutor, un aviso con reintento ocupa el sitio del botón.
+  await page.route("**/api/tutor/availability", (route) => route.fulfill({ status: 503, contentType: "application/problem+json",
+    body: JSON.stringify({ title: "Servicio no disponible", status: 503 }) }));
+  await page.reload();
+  const notice = page.getByRole("alert").filter({ hasText: "No pudimos comprobar el tutor" });
+  await expect(notice).toBeVisible({ timeout: 15_000 }); await expect(ask).toHaveCount(0);
+  await page.unroute("**/api/tutor/availability");
+  await notice.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(ask).toBeVisible(); await expect(notice).toHaveCount(0);
 });
 
 test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async ({ page }) => {

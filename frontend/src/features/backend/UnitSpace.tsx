@@ -32,7 +32,7 @@ export function UnitSpace() {
   const tabs: TabId[] = !loaded ? [] : loaded.kind === "reading" ? ["aprender"] : ["aprender", ...(loaded.exercises.length ? ["practicar" as const] : []), "evaluar"];
   const tab = isTab(requested) && tabs.includes(requested) ? requested : "aprender";
   const candidates = contextItems(loaded, tab);
-  const current = useVisible(candidates.map((item) => item.id));
+  const [current, choose] = useVisible(candidates.map((item) => item.id));
   const visible = candidates.find((item) => item.id === current);
   if (unit.isPending) return <Busy />;
   if (unit.isError) return <Failure error={unit.error} retry={() => void unit.refetch()} />;
@@ -44,10 +44,11 @@ export function UnitSpace() {
     return next;
   }, { replace: true, state });
   const provenance = document.readingProvenance?.level;
-  const level = provenance ? sourceLevels.data?.find((entry) => entry.slug === provenance)?.name ?? provenance : catalogLevel.data?.name;
+  // El slug solo se muestra si el currículo de origen ya respondió sin ese nivel: mientras carga no hay insignia.
+  const level = provenance ? sourceLevels.data?.find((entry) => entry.slug === provenance)?.name ?? (sourceLevels.isPending ? undefined : provenance) : catalogLevel.data?.name;
   const tutor = visible ? tutorPath(unitId, visible.mode, visible.id) : tutorPath(unitId);
 
-  const learn = <Learn document={document} current={current} />;
+  const learn = <Learn document={document} current={current} choose={choose} />;
   return <section className={styles.unit}>
     <PageHeader title={document.title} breadcrumbs={[...unitCrumbs(state, unit.data.topicId, topic.data?.name), { label: document.title }]}
       eyebrow={<span className={styles.meta}>
@@ -65,15 +66,23 @@ export function UnitSpace() {
     ]} />}
     {availability.data?.enabled ? <Link className={buttonClass("primary", "md", styles.tutor)} to={tutor} state={state}>
       Preguntar al tutor<span className={styles.context}>{visible ? ` sobre «${visible.title}»` : " sobre esta unidad"}</span>
-    </Link> : null}
+    </Link> : availability.isError ? <div className={styles.tutorFailure}>
+      {/* Un fallo transitorio no deja la unidad sin tutor: el aviso ocupa el sitio del botón y permite reintentar. */}
+      <Failure title="No pudimos comprobar el tutor" error={availability.error} retry={() => void availability.refetch()} />
+    </div> : null}
   </section>;
 }
 
-/** Salta a una lectura sin sumar el ancla al historial: Atrás sigue volviendo a la pantalla anterior. */
-function jump(id: string) {
+/**
+ * Salta a una lectura sin sumar el ancla al historial: Atrás sigue volviendo a la
+ * pantalla anterior. La lectura elegida pasa a ser la actual aunque el scroll no
+ * pueda subirla hasta arriba (una última lectura corta).
+ */
+function jump(id: string, choose: (id: string) => void) {
   const target = document.getElementById(readingAnchor(id));
   target?.scrollIntoView({ block: "start" });
   target?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  choose(id);
 }
 
 /** Lecturas o ejercicios de la pestaña activa que pueden dar contexto al tutor; Evaluar no aporta ninguno. */
@@ -83,12 +92,12 @@ function contextItems(document: UnitDocument | undefined, tab: TabId): Visible[]
   return document.readings.map((reading) => ({ mode: "reading", id: reading.id, title: reading.title }));
 }
 
-function Learn({ document, current }: { document: UnitDocument; current: string | null }) {
+function Learn({ document, current, choose }: { document: UnitDocument; current: string | null; choose: (id: string) => void }) {
   const items = document.readings;
   const wide = useMedia("(min-width: 64rem)");
   // El índice solo orienta cuando hay más de una lectura.
   const index = items.length > 1 ? <ol className={styles.indexList}>{items.map((item) => <li key={item.id}>
-    <a href={`#${readingAnchor(item.id)}`} aria-current={current === item.id ? "true" : undefined} onClick={(event) => { event.preventDefault(); jump(item.id); }}>{item.title}</a>
+    <a href={`#${readingAnchor(item.id)}`} aria-current={current === item.id ? "true" : undefined} onClick={(event) => { event.preventDefault(); jump(item.id, choose); }}>{item.title}</a>
   </li>)}</ol> : null;
   return <div className={index ? styles.withIndex : undefined}>
     {index ? wide
@@ -119,33 +128,64 @@ function Practice({ document, unitId, state, tutorEnabled }: { document: UnitDoc
   </div>;
 }
 
+/** Gestos con los que el alumno desplaza la página por su cuenta. */
+const scrollKeys = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
+
 /**
  * Elemento `[data-visible]` que el alumno tiene a la vista: el primero, en orden
- * del documento, que asoma en los dos tercios superiores de la pantalla. Sin
- * ninguno visible (o sin IntersectionObserver) vale null: conversación libre.
+ * del documento, que asoma en los dos tercios superiores de la pantalla; tras
+ * desplazarse hasta el final de la página, el último de ellos, porque ya no puede
+ * subir más. Sin ninguno
+ * visible (o sin IntersectionObserver) vale null: conversación libre.
+ *
+ * `choose` fija un elemento como actual (un salto desde el índice) hasta que el
+ * alumno vuelve a desplazarse por su cuenta.
  */
 function useVisible(ids: string[]) {
-  const [current, setCurrent] = useState<string | null>(null);
+  const [observed, setObserved] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<{ id: string; key: string } | null>(null);
   const key = ids.join(",");
   useEffect(() => {
     const order = key ? key.split(",") : [];
     if (!order.length || typeof IntersectionObserver === "undefined") return;
     const shown = new Set<string>();
+    const pick = () => {
+      const visible = order.filter((id) => shown.has(id));
+      // Solo cuenta el final si hubo desplazamiento: una pestaña que cabe en pantalla sigue empezando por el primero.
+      const bottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
+      setObserved((bottom ? visible.at(-1) : visible[0]) ?? null);
+    };
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         const id = entry.target instanceof HTMLElement ? entry.target.dataset.visible ?? "" : "";
         if (entry.isIntersecting) shown.add(id); else shown.delete(id);
       }
-      setCurrent(order.find((id) => shown.has(id)) ?? null);
+      pick();
     }, { rootMargin: "0px 0px -33% 0px" });
     for (const id of order) {
       const node = document.querySelector(`[data-visible="${CSS.escape(id)}"]`);
       if (node) observer.observe(node);
     }
-    return () => observer.disconnect();
+    // Llegar al final no siempre cambia qué elementos cortan la zona observada.
+    window.addEventListener("scroll", pick, { passive: true });
+    return () => { observer.disconnect(); window.removeEventListener("scroll", pick); };
   }, [key]);
+  useEffect(() => {
+    if (!chosen) return;
+    // El salto se desplaza solo (y con suavidad): se suelta con el siguiente gesto del alumno, no con ese scroll.
+    const release = () => setChosen(null);
+    const onKey = (event: KeyboardEvent) => { if (scrollKeys.has(event.key)) release(); };
+    const events = ["wheel", "touchmove", "pointerdown"] as const;
+    for (const name of events) window.addEventListener(name, release, { passive: true });
+    window.addEventListener("keydown", onKey);
+    return () => {
+      for (const name of events) window.removeEventListener(name, release);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [chosen]);
+  const current = chosen?.key === key ? chosen.id : observed;
   // Un id de otra pestaña ya no cuenta: el panel saliente se desmontó.
-  return current && ids.includes(current) ? current : null;
+  return [current && ids.includes(current) ? current : null, (id: string) => setChosen({ id, key })] as const;
 }
 
 function useMedia(query: string) {

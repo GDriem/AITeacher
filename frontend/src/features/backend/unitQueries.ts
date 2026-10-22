@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { CatalogData } from "./catalogQueries";
 import { backend, required, result } from "./client";
 
 /** Unidad tal como la estudia el alumno: siempre la publicación activa, nunca un borrador más nuevo. */
@@ -54,7 +55,11 @@ export function catalogPath(state: unknown) {
 
 /** Nombres de los niveles del currículo de origen; solo se piden cuando la unidad es una lectura con nivel. */
 export function useSourceLevels(level: string | undefined) {
+  const client = useQueryClient();
+  // Si el alumno viene del catálogo, sus niveles ya están en caché: no se repite la petición.
+  const catalog = () => client.getQueryData<CatalogData>(["curriculum-explorer"]);
   return useQuery({ queryKey: ["source-curriculum"], enabled: Boolean(level), staleTime: Infinity,
+    initialData: () => catalog()?.source.levels, initialDataUpdatedAt: () => client.getQueryState(["curriculum-explorer"])?.dataUpdatedAt,
     queryFn: async ({ signal }) => result(await backend.GET("/api/catalog/source-curriculum", { signal })).levels });
 }
 

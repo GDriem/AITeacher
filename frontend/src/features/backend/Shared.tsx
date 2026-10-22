@@ -4,8 +4,8 @@ import { Button, ErrorState, Skeleton } from "../../ui";
 import { message } from "./client";
 import styles from "./Shared.module.css";
 
-export function Failure({ error, retry }: { error: unknown; retry?: () => void }) {
-  return <ErrorState message={message(error)} traceId={error instanceof ApiError ? error.correlationId : null} onRetry={retry} />;
+export function Failure({ error, retry, title }: { error: unknown; retry?: () => void; title?: string }) {
+  return <ErrorState title={title} message={message(error)} traceId={error instanceof ApiError ? error.correlationId : null} onRetry={retry} />;
 }
 
 export function Busy() { return <Skeleton />; }
