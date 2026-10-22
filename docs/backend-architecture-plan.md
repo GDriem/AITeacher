@@ -70,7 +70,7 @@ Entregas de esta continuación:
   lint OpenAPI/colecciones, 25 aserciones smoke y navegador. La ejecución local
   completa pasó; GitHub Actions todavía no se ha ejecutado con estos cambios.
 
-Pendientes que continúan abiertos: Google real contra .NET; continuidad editorial
+Pendientes que continúan abiertos: continuidad editorial
 de actividades antiguas sin inventar equivalencias; micrófono físico e interrupción
 con voz real; ingestión durable, originales/Blob, embeddings/pgvector y
 evaluación híbrida; streaming; costos de IA por operación; aceptación de contenido
@@ -331,8 +331,9 @@ de dominio y catorce pruebas de integración contra una base PostgreSQL real ais
 Las pruebas recrean el host y verifican persistencia, permisos, aislamiento de
 perfiles, CSRF, revocación/vencimiento, referencias y ediciones concurrentes.
 El adaptador Google se sustituye por un puerto de prueba en esta suite. La
-validación con una cuenta Google real queda pendiente de configurar el Client ID
-y los autores; no se afirma haber completado ese ensayo ni integrado React.
+validación con cuentas Google reales se completó el 22 de octubre de 2026 en la
+beta de Azure: dos cuentas, autor resuelto por `sub` y 404 en acceso cruzado
+(ver `docs/azure-beta-acceptance.md`).
 
 Hito 2 implementado y verificado localmente:
 
@@ -580,8 +581,9 @@ pruebas requieren `AITEACHER_TEST_POSTGRES` con permiso CREATEDB y la simulació
 Postman local con `AITEACHER_TEST_AI_URL`; crean y eliminan solo su base aleatoria.
 Las instrucciones completas están en `backend/README.md`.
 
-Pendiente de aceptación externa del hito 1: probar login con Google real y el `sub`
-de un autor. La API está lista para ese ensayo; el frontend continúa en Python.
+Aceptación externa del hito 1 cerrada el 22 de octubre de 2026: login con Google
+real en dos cuentas, `sub` del autor resuelto (`canAuthor` solo en A) y acceso
+cruzado rechazado con 404 en la beta; detalle en `docs/azure-beta-acceptance.md`.
 Los hitos 2 y 3 están verificados localmente; consulte `backend/EDITORIAL.md`
 y `backend/ASSESSMENTS.md`. El backend del hito 4 está implementado con regresión
 local; consulte `backend/TUTOR.md` para configuración, simulaciones y aceptación
