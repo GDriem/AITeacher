@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { Badge, Button, Dialog, EmptyState, ErrorState, PageHeader, Skeleton, Tabs, Toast, ToastRegion } from ".";
+import { Badge, Button, Dialog, EmptyState, ErrorState, PageHeader, Skeleton, Tabs, Toast, ToastRegion, TopicCard } from ".";
 
 // jsdom no implementa <dialog> modal; el navegador real se cubre en e2e (foco atrapado y Escape).
 beforeAll(() => {
@@ -84,5 +84,13 @@ describe("ui", () => {
     await user.click(screen.getByRole("button", { name: "Eliminar apunte" }));
     await user.click(screen.getByRole("button", { name: "Sí, eliminar" }));
     expect(screen.getByRole("button", { name: "Eliminar apunte" })).toHaveFocus();
+  });
+
+  it("TopicCard enlaza por el título y describe material y niveles", () => {
+    render(<MemoryRouter><ul><TopicCard title="OSPF" to="/temas/ospf" eyebrow="Redes" summary="2 lecturas" levels={["Principiante", "Avanzado"]} /></ul></MemoryRouter>);
+    const link = screen.getByRole("link", { name: "OSPF" });
+    expect(link).toHaveAttribute("href", "/temas/ospf");
+    expect(link).toHaveAccessibleDescription("2 lecturas Principiante Avanzado");
+    expect(screen.getByRole("list", { name: "Niveles disponibles" })).toBeInTheDocument();
   });
 });

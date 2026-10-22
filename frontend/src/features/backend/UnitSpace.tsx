@@ -4,7 +4,7 @@ import { PageHeader, buttonClass } from "../../ui";
 import { required } from "./client";
 import { Busy, Failure } from "./Shared";
 import { Assessments } from "./Assessments";
-import { catalogPath, tutorPath, useStudyUnit, useTutorAvailability } from "./unitQueries";
+import { topicPath, tutorPath, unitCrumbs, useStudyUnit, useTutorAvailability, useUnitTopic } from "./unitQueries";
 import { panel } from "./panel";
 
 export function UnitSpace() {
@@ -12,13 +12,13 @@ export function UnitSpace() {
   const state: unknown = useLocation().state;
   const availability = useTutorAvailability();
   const unit = useStudyUnit(unitId);
-  const back = catalogPath(state);
+  const topic = useUnitTopic(unit.data?.topicId);
   if (unit.isPending) return <Busy />;
   if (unit.isError) return <Failure error={unit.error} retry={() => void unit.refetch()} />;
   const document = unit.data.revision.document;
   return <section>
-    <PageHeader title={document.title} breadcrumbs={[{ label: "Catálogo", to: back }, { label: document.title }]}
-      actions={<Link className={buttonClass("ghost")} to={back}>Volver al catálogo</Link>} />
+    <PageHeader title={document.title} breadcrumbs={[...unitCrumbs(state, unit.data.topicId, topic.data?.name), { label: document.title }]}
+      actions={<Link className={buttonClass("ghost")} to={topicPath(unit.data.topicId)} state={state}>Volver al tema</Link>} />
     {document.kind === "reading" ? <p>Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.</p> : <h2>Qué vas a aprender</h2>}
     <ul>{document.objectives.map((objective) => <li key={objective.id}>{objective.description}</li>)}</ul>
     {document.readings.map((reading) => <article key={reading.id} className={panel}><h2>{reading.title}</h2>

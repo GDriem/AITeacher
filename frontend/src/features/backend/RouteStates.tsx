@@ -1,4 +1,4 @@
-import { Link, Navigate, isRouteErrorResponse, useParams, useRouteError } from "react-router-dom";
+import { Link, isRouteErrorResponse, useRouteError } from "react-router-dom";
 import styles from "./BackendShell.module.css";
 import { EmptyState, ErrorState, PageHeader, Skeleton, buttonClass } from "../../ui";
 
@@ -18,12 +18,6 @@ export function RouteError() {
     <ErrorState message={isRouteErrorResponse(error) ? `${String(error.status)}: ${error.statusText}` : "La pantalla no pudo cargarse."}
       action={<Link className={buttonClass("ghost", "sm")} to="/">Volver al inicio</Link>} onRetry={() => window.location.reload()} />
   </section>;
-}
-
-// Hasta que exista la página de tema (fase 2), el tema abre el catálogo filtrado.
-export function TopicRedirect() {
-  const { topicId = "" } = useParams();
-  return <Navigate to={`/catalogo?${new URLSearchParams({ tema: topicId }).toString()}`} replace />;
 }
 
 /** Primera carga de una ruta diferida (por ejemplo, al recargar dentro de Autoría). */

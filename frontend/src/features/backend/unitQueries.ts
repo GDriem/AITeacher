@@ -32,6 +32,20 @@ export function tutorPath(unitId: string, mode: TutorMode = "chat", activityId?:
   return `/unidades/${encodeURIComponent(unitId)}/tutor${conversationId ? `/${encodeURIComponent(conversationId)}` : ""}${search}`;
 }
 
+/** Tema de una unidad, para sus migas. Es una sola lectura: no exige cargar el catálogo completo. */
+export function useUnitTopic(topicId: string | undefined) {
+  return useQuery({ queryKey: ["catalog-topic", topicId], enabled: Boolean(topicId),
+    queryFn: async ({ signal }) => result(await backend.GET("/api/catalog/topics/{id}", { params: { path: { id: topicId ?? "" } }, signal })) });
+}
+
+/** Página de un tema; el estado de navegación conserva los filtros del catálogo. */
+export function topicPath(topicId: string) { return `/temas/${encodeURIComponent(topicId)}`; }
+
+/** Migas Catálogo › Tema › … de una unidad; el tema no es enlace si todavía se está cargando. */
+export function unitCrumbs(state: unknown, topicId: string, topicName: string | undefined) {
+  return [{ label: "Catálogo", to: catalogPath(state), state }, { label: topicName ?? "Tema", to: topicName ? topicPath(topicId) : undefined, state }];
+}
+
 /** Vuelve al catálogo con los filtros que el alumno tenía al abrir la unidad. */
 export function catalogPath(state: unknown) {
   const search = typeof state === "object" && state !== null && "catalogSearch" in state && typeof state.catalogSearch === "string" ? state.catalogSearch : "";

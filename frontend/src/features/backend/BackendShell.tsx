@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useOnlineStatus } from "../../app/connectivity";
 import { useRouteFocus } from "../../app/useRouteFocus";
 import { Button, Toast, ToastRegion } from "../../ui";
 import type { Schema } from "./client";
 import styles from "./BackendShell.module.css";
 
-interface Destination { to: string; label: string; icon: ReactNode; end?: boolean }
+interface Destination { to: string; label: string; icon: ReactNode; end?: boolean; sections?: string[] }
 
 // Trazos de 24 px; el texto de cada enlace es su nombre accesible.
 const icon = (path: string) => <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={path} /></svg>;
 const destinations: Destination[] = [
   { to: "/", label: "Inicio", end: true, icon: icon("M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z") },
-  { to: "/catalogo", label: "Catálogo", icon: icon("M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z") },
+  // Tema y unidad cuelgan del catálogo: su enlace sigue activo dentro de ellos.
+  { to: "/catalogo", label: "Catálogo", sections: ["/temas", "/unidades"], icon: icon("M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z") },
   { to: "/apuntes", label: "Apuntes", icon: icon("M7 4h7l4 4v12H7zM14 4v4h4M10 12h5M10 16h5") },
   { to: "/repasos", label: "Repasos", icon: icon("M19 8a7.5 7.5 0 1 0 .5 6M19 4v4h-4") },
   { to: "/historial", label: "Historial", icon: icon("M12 7v5l3 2M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9M4.5 5v4h4") },
@@ -40,6 +41,7 @@ export function BackendShell({ profile, logout, pending, error, children }: {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
+  const { pathname } = useLocation();
   const items = profile.canAuthor ? [...destinations, authoring] : destinations;
   return <div className={styles.app}>
     <a className={styles.skipLink} href="#learning-content">Saltar al contenido</a>
@@ -50,7 +52,10 @@ export function BackendShell({ profile, logout, pending, error, children }: {
       </NavLink>
       <nav className={styles.nav} aria-label="Navegación principal">
         <ul>{items.map((item) => <li key={item.to}>
-          <NavLink to={item.to} end={item.end}>{item.icon}<span>{item.label}</span></NavLink>
+          {item.sections?.some((section) => pathname.startsWith(`${section}/`))
+            // Dentro de una sección hija el enlace no es la página actual, sino su ubicación (aria-current="location").
+            ? <Link to={item.to} aria-current="location">{item.icon}<span>{item.label}</span></Link>
+            : <NavLink to={item.to} end={item.end}>{item.icon}<span>{item.label}</span></NavLink>}
         </li>)}</ul>
       </nav>
       <div className={styles.account}>

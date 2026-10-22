@@ -10,3 +10,4 @@ export { PageHeader, type Breadcrumb } from "./PageHeader";
 export { Skeleton } from "./Skeleton";
 export { Tabs, type TabItem } from "./Tabs";
 export { Toast, ToastRegion, type ToastTone } from "./Toast";
+export { TopicCard } from "./TopicCard";

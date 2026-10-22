@@ -1,0 +1,91 @@
+/* Mismo lenguaje visual que la tarjeta de tema del build Python (CatalogScreen.module.css). */
+.card {
+  position: relative;
+  min-width: 0;
+  min-height: 11rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+  overflow-wrap: anywhere;
+}
+
+.card:hover {
+  border-color: rgba(108, 167, 255, 0.5);
+  background: rgba(108, 167, 255, 0.06);
+}
+
+.card:focus-within {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 0.2rem rgba(155, 194, 255, 0.18);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--status-guide);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.link {
+  color: var(--content-strong);
+  text-decoration: none;
+}
+
+/* El área clicable cubre la tarjeta; el foco visible lo da `.card:focus-within`. */
+.link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.link:focus-visible {
+  outline: none;
+}
+
+.details {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.summary,
+.note {
+  margin: 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.levels li {
+  padding: var(--space-1) var(--space-2);
+  color: var(--content-default);
+  border-radius: var(--radius-xs);
+  background: rgba(237, 245, 255, 0.06);
+  font-size: var(--font-size-xs);
+}
+
+.arrow {
+  margin-block-start: auto;
+  align-self: flex-end;
+  color: var(--action-primary);
+  font-weight: 800;
+}
