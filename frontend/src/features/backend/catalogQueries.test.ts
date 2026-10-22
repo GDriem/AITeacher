@@ -25,7 +25,7 @@ const data: CatalogData = {
   ],
   source: {
     source: "beta",
-    topics: [{ slug: "ospf", name: "OSPF", subject: "redes", category: "enr", prerequisites: ["estatico", "subredes"] }],
+    topics: [{ slug: "ospf", name: "OSPF", subject: "redes", category: "enr", prerequisites: ["estatico", "vacio", "subredes"] }],
     levels: [{ slug: "beginner", name: "Principiante" }, { slug: "advanced", name: "Avanzado" }],
   },
 };
@@ -38,9 +38,9 @@ describe("catálogo del alumno", () => {
     expect(topics.find((topic) => topic.entry.id === "ospf")?.levels).toEqual(["beginner", "advanced"]);
   });
 
-  it("enlaza prerrequisitos disponibles y nombra los que no están en el catálogo", () => {
+  it("enlaza prerrequisitos con material y nombra sin enlace los que no están en el catálogo", () => {
     const prerequisites = topics.find((topic) => topic.entry.id === "ospf")?.prerequisites ?? [];
-    expect(prerequisites.map((item) => [item.name, item.entry?.id])).toEqual([["Enrutamiento estático", "estatico"], ["subredes", undefined]]);
+    expect(prerequisites.map((item) => [item.name, item.entry?.id])).toEqual([["Enrutamiento estático", "estatico"], ["Sin material", undefined], ["subredes", undefined]]);
   });
 
   it("agrupa por materia y categoría respetando el orden editorial", () => {

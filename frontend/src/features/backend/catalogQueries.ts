@@ -41,7 +41,7 @@ export interface CatalogTopic {
   units: Unit[];
   /** Niveles con material publicado, en el orden del currículo de origen. */
   levels: string[];
-  /** Prerrequisitos del currículo de origen; `entry` existe cuando el tema está disponible en el catálogo. */
+  /** Prerrequisitos del currículo de origen; `entry` existe cuando el tema está disponible y tiene material publicado. */
   prerequisites: { slug: string; name: string; entry?: Entry }[];
 }
 export interface CatalogGroup { subject: Entry; categories: { category: Entry; topics: CatalogTopic[] }[] }
@@ -56,6 +56,9 @@ export function catalogTopics(data: CatalogData): CatalogTopic[] {
   const categories = new Map(data.categories.filter((entry) => entry.isAvailable && entry.subjectId != null && subjects.has(entry.subjectId)).map((entry) => [entry.id, entry]));
   const available = data.topics.filter((entry) => entry.isAvailable && entry.categoryId != null && categories.has(entry.categoryId));
   const bySlug = new Map(available.map((entry) => [entry.slug, entry]));
+  // Sólo se enlazan prerrequisitos con material publicado: los demás no tienen página de tema.
+  const published = new Set(data.units.map((unit) => unit.topicId));
+  const linked = (slug: string) => { const entry = bySlug.get(slug); return entry && published.has(entry.id) ? entry : undefined; };
   const levelOrder = data.source.levels.map((level) => level.slug);
   return available.sort(bySortOrder).flatMap((entry) => {
     const units = data.units.filter((unit) => unit.topicId === entry.id).sort((left, right) => left.number - right.number);
@@ -68,7 +71,7 @@ export function catalogTopics(data: CatalogData): CatalogTopic[] {
       entry, subject, category, units,
       levels: [...levelOrder.filter((level) => present.has(level)), ...[...present].filter((level) => !levelOrder.includes(level))],
       prerequisites: (reference?.prerequisites ?? []).map((slug) => ({
-        slug, entry: bySlug.get(slug), name: bySlug.get(slug)?.name ?? data.source.topics.find((item) => item.slug === slug)?.name ?? slug,
+        slug, entry: linked(slug), name: bySlug.get(slug)?.name ?? data.source.topics.find((item) => item.slug === slug)?.name ?? slug,
       })),
     }];
   });

@@ -13,11 +13,12 @@ export function CurriculumExplorer() {
   const category = search.get("categoria") ?? "";
   const level = search.get("nivel") ?? "";
   const text = search.get("q") ?? "";
+  // flushSync: React Router aplica la navegación en una transición, y la búsqueda controlada por la URL perdería el cursor.
   const filter = (changes: Record<string, string>) => setSearch((previous) => {
     const next = new URLSearchParams(previous);
     for (const [key, value] of Object.entries(changes)) if (value) next.set(key, value); else next.delete(key);
     return next;
-  }, { replace: true });
+  }, { replace: true, flushSync: true });
   const clear = () => setSearch(new URLSearchParams(), { replace: true });
   const subjectLabel = useId();
   const levelLabel = useId();
