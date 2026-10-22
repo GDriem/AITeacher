@@ -17,7 +17,7 @@ fecha anterior que siguen son evidencia histórica.
 | Catálogo y corpus | Destino inspeccionado dos veces: vacío. Se crearon 3 materias, 9 categorías, 35 temas, una escala y 3 niveles; 82 lecturas importadas y publicadas | Aprobado en Azure |
 | Conciliación y repetición | 82 IDs de unidad y 35 IDs de tema conservados; repetición requiere 0 entradas y 0 publicaciones nuevas; `matches=true`, sin conflictos | Aprobado en Azure |
 | Recorrido de lectura | Chrome real con Google: filtros materia/categoría/tema/nivel, textos/fuentes y regreso conservando filtros; muestras de Redes, Inglés e IA | Aprobado para lectura |
-| Permisos | Alumno real sin herramientas de autoría; revisiones editoriales 403 y publicación legible con `origin: null`; Postman anónimo 25/25 | Aprobado para los límites probados; dos cuentas Google reales/autoría pendientes |
+| Permisos | Alumno real sin herramientas de autoría; revisiones editoriales 403 y publicación legible con `origin: null`; Postman anónimo 25/25 | Aprobado. Dos cuentas Google reales el 22/10/2026: `canAuthor` solo en el autor y acceso cruzado 404 (`docs/azure-beta-acceptance.md`); flujo editorial con el autor real sin ensayar |
 | Actividades antiguas | El corpus no contiene objetivos, ejercicios ni evaluaciones. Se publican como material `reading`, sin fabricar cobertura | Equivalencias/curación y proyectos siguen pendientes |
 | IA y voz | La beta indica tutor no configurado; no se ofrecen como actividades disponibles | Credenciales/federación, configuración y aceptación de proveedores/micrófono/interrupción pendientes |
 | Hito 6 | No se traslada progreso ni se infiere dominio; `uncalibrated` se conserva | Calibración pendiente de muestras docentes reales |

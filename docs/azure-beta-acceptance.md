@@ -102,6 +102,37 @@ Usar un nombre inequívoco, por ejemplo `PRUEBA ACEPTACIÓN AAAA-MM-DD`, y retir
 - Registrar resultado global (aprobado / fallos con `traceId`) en la PR o issue
   de seguimiento, sin datos personales.
 
+## Resultado: ensayo de dos cuentas del 22 de octubre de 2026
+
+Ejecutado por el propietario a partir de las 04:51 UTC sobre la
+revisión `ca-aiteacher-beta-8136--cd-39721819854-1` (imagen `sha256:ba304834…`).
+La revisión no cambió durante la prueba y no corría ningún CD. Dos cuentas Google
+distintas: A, autor, y B, alumno. No se registran correos ni contenido.
+
+| # | Resultado | Evidencia |
+|---|---|---|
+| 0.1–0.2 | Revisión Healthy con 100 % del tráfico; sin CD en curso | Salida de `az` y `gh` |
+| 1.1 | Sin sesión, `authenticated:false` y 401 en `/api/auth/me`, `/api/history/conversations`, `/api/units` y `/api/tutor/availability` | Códigos HTTP |
+| 1.2 | Login con Google real en ambas cuentas; `GET /api/auth/me` 200 | `studentId` distintos con prefijo `google-` |
+| 0.3 | El `sub` configurado como autor se resuelve: A `canAuthor:true` y B `canAuthor:false` | Respuestas de `/api/auth/me` |
+| 2.3 | Dos turnos del tutor contra Vertex `gemini-3.5-flash-lite`, 200 en 2,4 s y 1,1 s | Logs de consola, 04:52:27 y 04:53:07 |
+| 5.x | B solicitó un recurso de conversación de A: **404** sin contenido | `traceId 00-fac4d5ebd16c27db74b36ab129f7e968-cdff92ec75fb404a-02` |
+
+Resultado global: **aprobado** para login Google real, resolución del autor por
+`sub` y aislamiento entre cuentas en la configuración real.
+
+Alcance y límites, sin ocultarlos:
+
+- La evidencia de acceso cruzado es una ruta observada por el propietario. Las
+  demás (5.2–5.4) comparten la misma comprobación de propiedad, cubierta en CI por
+  `HistoryApiTests`, `AssessmentApiTests` y las pruebas del tutor; no se repitieron
+  una a una contra la beta.
+- No se ejecutó el paso 3 (evaluación) ni la sección 6 (editorial); la voz sigue
+  deshabilitada (4.2).
+- Application Insights no registra solicitudes (`requests` vacío), así que los
+  códigos HTTP no se pueden corroborar desde Azure; los logs de consola solo
+  confirman los turnos del tutor y las solicitudes autenticadas con CSRF.
+
 ## Automatización posible sin credenciales reales
 
 Propuesta, no implementada:
