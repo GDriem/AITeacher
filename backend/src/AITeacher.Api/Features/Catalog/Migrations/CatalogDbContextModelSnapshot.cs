@@ -217,6 +217,10 @@ namespace AITeacher.Api.Features.Catalog.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("boolean");
 
@@ -254,6 +258,8 @@ namespace AITeacher.Api.Features.Catalog.Migrations
 
                     b.ToTable("topics", "curriculum", t =>
                         {
+                            t.HasCheckConstraint("ck_topics_description", "\"Description\" IS NULL OR length(btrim(\"Description\")) > 0");
+
                             t.HasCheckConstraint("ck_topics_name", "length(btrim(\"Name\")) > 0");
 
                             t.HasCheckConstraint("ck_topics_order", "\"SortOrder\" >= 0");

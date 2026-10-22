@@ -45,6 +45,8 @@ public sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> options)
             b.HasOne<Category>().WithMany().HasForeignKey(x => new { x.SubjectId, x.CategoryId })
                 .HasPrincipalKey(x => new { x.SubjectId, x.Id }).OnDelete(DeleteBehavior.Restrict);
             b.HasOne<Level>().WithMany().HasForeignKey(x => x.LevelId).OnDelete(DeleteBehavior.Restrict);
+            b.Property(x => x.Description).HasMaxLength(CatalogEndpoints.DescriptionMaxLength);
+            b.ToTable(t => t.HasCheckConstraint("ck_topics_description", "\"Description\" IS NULL OR length(btrim(\"Description\")) > 0"));
         });
     }
 

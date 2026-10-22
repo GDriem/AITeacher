@@ -114,3 +114,12 @@ export function materialCount(units: Unit[]) {
   return [readings ? `${String(readings)} ${readings === 1 ? "lectura" : "lecturas"}` : null,
     complete ? `${String(complete)} ${complete === 1 ? "unidad" : "unidades"}` : null].filter(Boolean).join(" · ");
 }
+
+/** Extracto de la descripción para la tarjeta del catálogo: corta en un límite de palabra, sin pasar de `max` caracteres. */
+export function excerpt(text: string | null | undefined, max = 140) {
+  const flat = (text ?? "").replace(/\s+/g, " ").trim();
+  if (flat.length <= max) return flat || null;
+  const cut = flat.slice(0, max - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max / 2 ? cut.slice(0, space) : cut).replace(/[\s.,;:]+$/, "")}…`;
+}

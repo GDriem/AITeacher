@@ -1,7 +1,8 @@
 $kind: http-request
-description: Author only. Replaces name, slug, order and availability. Parent references
-  and scale purpose are immutable. Supply the last read version; concurrent or stale
-  saves return 409. No physical delete in this milestone.
+description: Author only. Replaces name, slug, order, availability and description;
+  an omitted or blank description clears it. Subject, category and level are immutable.
+  Supply the last read version; concurrent or stale saves return 409. No physical
+  delete in this milestone.
 url: '{{baseUrl}}/api/catalog/topics/:id'
 method: PUT
 headers:
@@ -29,7 +30,8 @@ body:
         "slug": "matematicas",
         "sortOrder": 0,
         "isAvailable": true
-      }
+      },
+      "description": "Ecuaciones, funciones y su uso para modelar problemas."
     }
 settings: {}
 order: 2000

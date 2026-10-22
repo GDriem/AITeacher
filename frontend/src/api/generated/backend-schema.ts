@@ -326,7 +326,7 @@ export interface paths {
         get: operations["getTopics"];
         /**
          * Update a topics entry
-         * @description Author only. Replaces name, slug, order and availability. Parent references and scale purpose are immutable. Supply the last read version; concurrent or stale saves return 409. No physical delete in this milestone.
+         * @description Author only. Replaces name, slug, order, availability and description; an omitted or blank description clears it. Subject, category and level are immutable. Supply the last read version; concurrent or stale saves return 409. No physical delete in this milestone.
          */
         put: operations["updateTopics"];
         post?: never;
@@ -1330,6 +1330,8 @@ export interface components {
             levelId?: string | null;
             /** @enum {string|null} */
             purpose?: "difficulty" | "proficiency" | "mastery" | null;
+            /** @description Topics only; null when no description has been written. Plain text, escape when rendering. */
+            description?: string | null;
         };
         UpdateEntryRequest: {
             /** Format: int64 */
@@ -1359,6 +1361,15 @@ export interface components {
             /** Format: uuid */
             levelId?: string | null;
             entry: components["schemas"]["EntryRequest"];
+            /** @description Plain text for students, not HTML. Trimmed; blank text is stored as null. */
+            description?: string | null;
+        };
+        UpdateTopicRequest: {
+            /** Format: int64 */
+            version: number;
+            entry: components["schemas"]["EntryRequest"];
+            /** @description Plain text for students, not HTML. Trimmed; blank text is stored as null. */
+            description?: string | null;
         };
         AuthenticationStatus: {
             /** @enum {boolean} */
@@ -3721,7 +3732,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateEntryRequest"];
+                "application/json": components["schemas"]["UpdateTopicRequest"];
             };
         };
         responses: {

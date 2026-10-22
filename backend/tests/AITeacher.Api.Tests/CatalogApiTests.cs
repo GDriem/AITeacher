@@ -206,6 +206,42 @@ public sealed class CatalogApiTests(ApiFixture fixture) : IClassFixture<ApiFixtu
     }
 
     [Fact]
+    public async Task Topic_description_is_written_by_authors_versioned_and_read_by_students()
+    {
+        using var author = await Login();
+        var subject = await Create(author, "subjects", Entry());
+        var category = await Create(author, "categories", new { subjectId = subject["id"]!.GetValue<Guid>(), entry = Entry() });
+        var parents = new { subjectId = subject["id"]!.GetValue<Guid>(), categoryId = category["id"]!.GetValue<Guid>() };
+        var topic = await Create(author, "topics", new { parents.subjectId, parents.categoryId, entry = Entry(), description = "  Qué es una ecuación lineal.  " });
+        Assert.Equal("Qué es una ecuación lineal.", topic["description"]!.GetValue<string>());
+        Assert.Null((await Create(author, "topics", new { parents.subjectId, parents.categoryId, entry = Entry(), description = "   " }))["description"]);
+        Assert.Null((await Create(author, "subjects", Entry()))["description"]);
+        var tooLong = new string('x', CatalogEndpoints.DescriptionMaxLength + 1);
+        Assert.Equal(HttpStatusCode.BadRequest, (await author.PostAsJsonAsync("/api/catalog/topics", new { parents.subjectId, parents.categoryId, entry = Entry(), description = tooLong })).StatusCode);
+
+        var url = "/api/catalog/topics/" + topic["id"]!.GetValue<Guid>();
+        var slug = topic["slug"]!.GetValue<string>();
+        Assert.Equal(HttpStatusCode.BadRequest, (await author.PutAsJsonAsync(url, new { version = 1, entry = Entry(slug), description = tooLong })).StatusCode);
+        var limit = new string('y', CatalogEndpoints.DescriptionMaxLength);
+        var saved = await (await author.PutAsJsonAsync(url, new { version = 1, entry = Entry(slug), description = limit })).Content.ReadFromJsonAsync<JsonObject>();
+        Assert.Equal(limit, saved!["description"]!.GetValue<string>());
+        Assert.Equal(2, saved["version"]!.GetValue<int>());
+        Assert.Equal(HttpStatusCode.Conflict, (await author.PutAsJsonAsync(url, new { version = 1, entry = Entry(slug), description = "Obsoleta" })).StatusCode);
+
+        using var student = await Login("student-a");
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.PutAsJsonAsync(url, new { version = 2, entry = Entry(slug), description = "Intruso" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.PostAsJsonAsync("/api/catalog/topics", new { parents.subjectId, parents.categoryId, entry = Entry(), description = "Intruso" })).StatusCode);
+        Assert.Equal(limit, (await student.GetFromJsonAsync<JsonObject>(url))!["description"]!.GetValue<string>());
+        var page = await student.GetFromJsonAsync<JsonObject>("/api/catalog/topics?limit=100");
+        Assert.Contains(page!["items"]!.AsArray(), x => x!["id"]!.GetValue<Guid>() == topic["id"]!.GetValue<Guid>() && x["description"]!.GetValue<string>() == limit);
+
+        // PUT replaces the whole entry: omitting the description clears it.
+        var cleared = await (await author.PutAsJsonAsync(url, new { version = 2, entry = Entry(slug) })).Content.ReadFromJsonAsync<JsonObject>();
+        Assert.Null(cleared!["description"]);
+        Assert.Equal(3, cleared["version"]!.GetValue<int>());
+    }
+
+    [Fact]
     public async Task Duplicate_slug_returns_conflict_without_database_details()
     {
         using var client = await Login();

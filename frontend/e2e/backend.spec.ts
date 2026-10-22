@@ -64,8 +64,16 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Guardar entrada" }).click(); await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("");
   await page.getByLabel("Qué quieres administrar").selectOption("topics");
   await page.getByLabel("Nombre", { exact: true }).fill("Vectores Beta"); await page.getByLabel("Materia", { exact: true }).selectOption({ label: "Curso Beta" });
-  await page.getByLabel("Categoría", { exact: true }).selectOption({ label: "Fundamentos Beta" }); await page.getByRole("button", { name: "Guardar entrada" }).click();
+  await page.getByLabel("Categoría", { exact: true }).selectOption({ label: "Fundamentos Beta" });
+  await page.getByLabel("Descripción", { exact: true }).fill("Borrador de la descripción."); await page.getByRole("button", { name: "Guardar entrada" }).click();
   await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("");
+  // Editar la descripción usa la versión leída; el contador acompaña al campo.
+  const topicDescription = "Vectores para comparar características y medir similitud entre ejemplos.";
+  await page.getByRole("button", { name: "Vectores Beta · disponible", exact: true }).click();
+  await expect(page.getByLabel("Descripción", { exact: true })).toHaveValue("Borrador de la descripción.");
+  await page.getByLabel("Descripción", { exact: true }).fill(topicDescription);
+  await expect(page.getByLabel("Descripción", { exact: true })).toHaveAccessibleDescription(new RegExp(`^${String(topicDescription.length)} de 600 caracteres`));
+  await page.getByRole("button", { name: "Guardar entrada" }).click(); await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("");
   await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Unidades", exact: true }).click();
   await page.getByRole("button", { name: "Crear unidad", exact: true }).click(); await page.getByLabel("Tema de la nueva unidad").selectOption({ label: "Vectores Beta" });
   await page.getByLabel("Título de la unidad").fill("Unidad Beta de vectores");
@@ -98,6 +106,12 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.getByRole("status").filter({ hasText: "Referencia curricular publicada" })).toBeVisible();
 
   await switchUser(page, "student-a"); await expect(mainNav(page, "Autoría")).toHaveCount(0);
+  await openCatalog(page); await page.getByLabel("Buscar temas o lecturas").fill("Vectores Beta");
+  await expect(page.getByRole("listitem").filter({ has: page.getByRole("link", { name: "Vectores Beta", exact: true }) })).toContainText(topicDescription);
+  await page.getByRole("link", { name: "Vectores Beta", exact: true }).click();
+  await expect(page.getByText(topicDescription, { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Material publicado: 1 unidad\./)).toBeVisible();
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   await openUnit(page, "Vectores Beta", "Unidad Beta de vectores"); await expect(page.getByRole("heading", { name: "Lectura de vectores", exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("PRIVATE-EDITORIAL-BROWSER"); await expect(page.locator("body")).not.toContainText("PRIVATE-RUBRIC-BROWSER");
   await page.getByRole("button", { name: "Iniciar Evaluación cerrada beta", exact: true }).click();
@@ -159,6 +173,8 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeFocused();
   await expect(page.getByRole("complementary", { name: "Antes se recomienda" }).getByRole("link", { name: /^Enrutamiento estático/ })).toHaveAttribute("href", /\/temas\//);
   await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
+  // Sin descripción editorial, el resumen del material la sustituye.
+  await expect(page.getByText(/^Material publicado: \d+ lecturas? en \d+ nivel/)).toBeVisible();
   const beginner = page.getByRole("region", { name: /^Principiante/ });
   await beginner.getByRole("link").first().click();
   await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();

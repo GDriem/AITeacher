@@ -1087,9 +1087,10 @@ paths:
     put:
       operationId: updateTopics
       summary: Update a topics entry
-      description: Author only. Replaces name, slug, order and availability. Parent
-        references and scale purpose are immutable. Supply the last read version;
-        concurrent or stale saves return 409. No physical delete in this milestone.
+      description: Author only. Replaces name, slug, order, availability and description;
+        an omitted or blank description clears it. Subject, category and level are
+        immutable. Supply the last read version; concurrent or stale saves return
+        409. No physical delete in this milestone.
       tags:
       - Catalog
       parameters:
@@ -1099,7 +1100,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateEntryRequest'
+              $ref: '#/components/schemas/UpdateTopicRequest'
       responses:
         '200':
           description: Saved entry with incremented version
@@ -4385,6 +4386,11 @@ components:
           - proficiency
           - mastery
           - null
+        description:
+          type: string
+          nullable: true
+          description: Topics only; null when no description has been written. Plain
+            text, escape when rendering.
     UpdateEntryRequest:
       type: object
       required:
@@ -4444,6 +4450,30 @@ components:
           nullable: true
         entry:
           $ref: '#/components/schemas/EntryRequest'
+        description:
+          type: string
+          nullable: true
+          maxLength: 600
+          description: Plain text for students, not HTML. Trimmed; blank text is stored
+            as null.
+    UpdateTopicRequest:
+      type: object
+      required:
+      - version
+      - entry
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        entry:
+          $ref: '#/components/schemas/EntryRequest'
+        description:
+          type: string
+          nullable: true
+          maxLength: 600
+          description: Plain text for students, not HTML. Trimmed; blank text is stored
+            as null.
     AuthenticationStatus:
       type: object
       required: [enabled, authenticated, googleClientId, profile]

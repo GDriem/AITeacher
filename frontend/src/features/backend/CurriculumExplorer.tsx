@@ -2,7 +2,7 @@ import { useId } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Button, EmptyState, PageHeader, TopicCard, buttonClass } from "../../ui";
 import { Busy, Failure, Field } from "./Shared";
-import { catalogTopics, filterCatalog, groupCatalog, materialCount, useCatalog } from "./catalogQueries";
+import { catalogTopics, excerpt, filterCatalog, groupCatalog, materialCount, useCatalog } from "./catalogQueries";
 import styles from "./CurriculumExplorer.module.css";
 
 export function CurriculumExplorer() {
@@ -79,7 +79,7 @@ export function CurriculumExplorer() {
             <h3 id={`category-${section.category.id}`} className={styles.categoryTitle}>{section.category.name}</h3>
             <ul className={styles.grid}>{section.topics.map((topic) => <TopicCard key={topic.entry.id} headingLevel={4} title={topic.entry.name}
               to={`/temas/${encodeURIComponent(topic.entry.id)}`} state={{ catalogSearch: location.search }}
-              summary={materialCount(topic.units)}
+              eyebrow={materialCount(topic.units)} summary={excerpt(topic.entry.description)}
               levels={(level ? [level] : topic.levels).map((slug) => levelNames.get(slug) ?? slug)}
               note={topic.prerequisites.length ? `Antes se recomienda: ${topic.prerequisites.map((item) => item.name).join(", ")}.` : null} />)}</ul>
           </section>)}
