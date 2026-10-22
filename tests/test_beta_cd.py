@@ -307,6 +307,13 @@ def test_changed_paths_requires_ancestor_and_sees_both_sides_of_renames(tmp_path
     head = git("rev-parse", "HEAD")
     monkeypatch.setattr(update, "ROOT", tmp_path)
     assert sorted(update.changed_paths(base, head)) == ["backend/app.cs", "docs/app.md"]
+    (tmp_path / "frontend").mkdir()
+    (tmp_path / "frontend/lección.svg").write_text("<svg/>")
+    git("add", ".")
+    git("commit", "-qm", "non-ascii")
+    accented = git("rev-parse", "HEAD")
+    assert update.changed_paths(head, accented) == ["frontend/lección.svg"]
+    assert update.requires_deploy(update.changed_paths(head, accented))
     assert update.requires_deploy(update.changed_paths(base, head))
     assert update.changed_paths(head, base) is None
     assert update.changed_paths("f" * 40, head) is None
@@ -374,7 +381,29 @@ def test_every_mutating_deploy_step_is_gated_by_scope():
     steps = re.split(r"\n      - ", deploy)
     scope_index = next(i for i, step in enumerate(steps) if "--scope" in step)
     assert "fetch-depth: 0" in steps[1]
+    read_only = ("actions/setup-node", "Install existing functional check tooling",
+                 "Clear local registry session")
     for step in steps[scope_index + 1:]:
-        if "Clear local registry session" in step:
+        if any(marker in step for marker in read_only):
+            continue
+        if "--smoke" in step:
+            assert "if: steps.scope.outputs.deploy == 'false'" in step
             continue
         assert "if: steps.scope.outputs.deploy == 'true'" in step, step.splitlines()[0]
+    assert any("--smoke" in step for step in steps[scope_index + 1:])
+
+
+def test_skipped_deploy_still_runs_read_only_smoke(monkeypatch):
+    calls = []
+    monkeypatch.setattr(update.shutil, "which", lambda _: "/postman")
+    monkeypatch.setattr(update, "note", lambda _: None)
+    monkeypatch.setattr(update, "app_state", lambda: pytest.fail("no Azure read needed"))
+    monkeypatch.setattr(update.subprocess, "run", lambda args, **kwargs: calls.append(args[0]))
+    update.verify_running()
+    assert calls == ["bash", "/postman"]
+
+
+def test_skipped_deploy_smoke_requires_postman(monkeypatch):
+    monkeypatch.setattr(update.shutil, "which", lambda _: None)
+    with pytest.raises(ValueError):
+        update.verify_running()

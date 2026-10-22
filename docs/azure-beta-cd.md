@@ -60,9 +60,15 @@ en solo lectura si hace falta publicar:
    escribe el build del CD) con el token de pull ya obtenido.
 3. Si ese SHA es ancestro del SHA validado, calcula `git diff --name-only
    --no-renames` entre ambos (checkout con historial completo).
-4. Omite build, migraciones, PATCH y smoke solo si ningún archivo empieza por
+4. Omite build, migraciones y PATCH solo si ningún archivo empieza por
    `backend/`, `frontend/`, `agent_app/static/`, ni es `.dockerignore`,
    `.github/workflows/cd-beta.yml` o la colección `AITeacher Backend Smoke`.
+   Las rutas se leen sin comillas (`core.quotePath=false`) para que un nombre
+   con tildes o eñes no escape al filtro.
+5. Al omitir, `--smoke` ejecuta igualmente `verify-azure.sh` y el smoke Postman
+   contra la beta en ejecución, en solo lectura. Así, si un despliegue anterior
+   publicó pero falló el smoke, un merge posterior solo de docs también falla en
+   vez de quedar en verde con la beta rota.
 
 Cualquier duda despliega: imagen sin etiqueta (las de `az acr build`), etiqueta
 que no es un SHA completo, SHA que no es ancestro (p. ej. tras un rollback manual
@@ -412,7 +418,7 @@ leyendo el código de la extensión instalada, **no ejecutándolo**.
 - `--scope` ejecutado localmente en solo lectura contra la app y el ACR con la
   cuenta del propietario: leyó `revision=c73386b` y decidió omitir (diff vacío).
   Contra el historial real, la PR #16 se habría omitido y la #15 desplegado.
-- Probado localmente: 35 pruebas nuevas en `tests/test_beta_cd.py` (59 en el
+- Probado localmente: 37 pruebas nuevas en `tests/test_beta_cd.py` (61 en el
   archivo) y la suite Python completa sin fallos; `actionlint 1.7.12` y
   `git diff --check` aprobados.
 - Pendiente: primera omisión real en GitHub Actions (el merge de esta PR toca

@@ -161,18 +161,21 @@ jobs:
           sbom: false
           tags: craiteacherbeta8136.azurecr.io/aiteacher:git-${{ needs.validate.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           labels: org.opencontainers.image.revision=${{ needs.validate.outputs.sha }}
-      - if: steps.scope.outputs.deploy == 'true'
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      # Both paths need the smoke tooling; installing it changes nothing in Azure.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
       - name: Install existing functional check tooling
-        if: steps.scope.outputs.deploy == 'true'
         run: npm install -g postman-cli@1.75.0
       - name: Migrate, grant runtime SQL access, update by digest and verify
         if: steps.scope.outputs.deploy == 'true'
         env:
           IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: python3 backend/scripts/update-azure-beta.py
+      - name: Verify the running beta when the deploy is skipped
+        # Read-only; keeps a smoke failure from an earlier deploy visible on docs-only merges.
+        if: steps.scope.outputs.deploy == 'false'
+        run: python3 backend/scripts/update-azure-beta.py --smoke
       - name: Clear local registry session
         if: always()
         run: docker logout craiteacherbeta8136.azurecr.io

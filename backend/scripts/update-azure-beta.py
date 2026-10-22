@@ -207,7 +207,8 @@ def changed_paths(base, head):
         return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, timeout=60)
     if git("merge-base", "--is-ancestor", base, head).returncode != 0:
         return None
-    diff = git("diff", "--name-only", "--no-renames", base, head)
+    # Unquoted paths: the default quotePath would hide non-ASCII names from DEPLOYABLE.
+    diff = git("-c", "core.quotePath=false", "diff", "--name-only", "--no-renames", base, head)
     diff.check_returncode()
     return diff.stdout.splitlines()
 
@@ -241,6 +242,22 @@ def scope():
     return deploy
 
 
+def smoke(postman):
+    """Read-only HTTPS, readiness and Postman checks against the running beta."""
+    subprocess.run(["bash", str(ROOT / "backend/scripts/verify-azure.sh"), f"https://{HOST}"], check=True)
+    subprocess.run([postman, "collection", "run", str(ROOT / "postman/collections/AITeacher Backend Smoke"),
+                    "--env-var", f"baseUrl=https://{HOST}", "--no-report-events"], check=True, timeout=300)
+
+
+def verify_running():
+    """Skipped deploys still check the running beta, so a failed earlier smoke stays visible."""
+    postman = shutil.which("postman")
+    if not postman:
+        raise ValueError("Install Postman CLI before the smoke")
+    smoke(postman)
+    note("Deploy skipped; the running beta passed HTTPS, readiness and Postman smoke.")
+
+
 def main():
     image = f"{REGISTRY}@{os.environ['IMAGE_DIGEST']}"
     if not immutable(image):
@@ -264,9 +281,7 @@ def main():
     if current != previous:
         raise ValueError("Application changed outside the CD lock; refusing to overwrite it")
     wait_revision(image, publish(image))
-    subprocess.run(["bash", str(ROOT / "backend/scripts/verify-azure.sh"), f"https://{HOST}"], check=True)
-    subprocess.run([postman, "collection", "run", str(ROOT / "postman/collections/AITeacher Backend Smoke"),
-                    "--env-var", f"baseUrl=https://{HOST}", "--no-report-events"], check=True, timeout=300)
+    smoke(postman)
     note("HTTPS, readiness, React, worklet, 404 boundaries and existing Postman smoke passed. "
          "Real Google login, voice and AI acceptance remain separate.")
 
@@ -276,5 +291,7 @@ if __name__ == "__main__":
         verify_access()
     elif sys.argv[1:] == ["--scope"]:
         scope()
+    elif sys.argv[1:] == ["--smoke"]:
+        verify_running()
     else:
         main()
