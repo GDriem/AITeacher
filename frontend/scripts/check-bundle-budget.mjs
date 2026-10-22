@@ -54,16 +54,20 @@ for (const [groupName, group] of Object.entries(groups)) {
   );
 }
 
+// Un chunk sin presupuesto falla: Rolldown nombra los chunks comunes por su
+// módulo de cabecera, así que un refactor puede renombrar uno gobernado (como
+// "Shared") y su peso dejaría de contarse sin que ningún grupo lo notara.
 const ungoverned = [...gzipKbByChunk.keys()].filter((name) => !governedChunks.has(name));
 if (ungoverned.length > 0) {
-  console.log("\nChunks sin presupuesto asignado (añádelos a bundle-budget.json):");
+  failed = true;
+  console.error("\nChunks sin presupuesto asignado (añádelos a bundle-budget.json):");
   for (const name of ungoverned) {
-    console.log(`  •  ${name.padEnd(16)} ${gzipKbByChunk.get(name)?.toFixed(2) ?? "0.00"} kB`);
+    console.error(`  •  ${name.padEnd(16)} ${gzipKbByChunk.get(name)?.toFixed(2) ?? "0.00"} kB`);
   }
 }
 
 if (failed) {
-  console.error("\nEl build excede el presupuesto de carga aceptado.");
+  console.error("\nEl build excede el presupuesto de carga aceptado o tiene chunks sin presupuesto.");
   process.exit(1);
 }
 

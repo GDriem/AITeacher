@@ -226,6 +226,11 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async
   await expect(page).toHaveURL(new RegExp(`/tutor/${id}$`));
   await page.reload();
   await expect(page.getByLabel("Retomar una conversación")).toHaveValue(id);
+  // Recorrer el select con flechas sólo elige; abrir otra conversación requiere confirmarlo.
+  await page.getByLabel("Retomar una conversación").focus();
+  await page.keyboard.press("ArrowUp"); await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(new RegExp(`/tutor/${id}$`));
+  await expect(page.getByLabel("Retomar una conversación")).toBeFocused();
   await expect(page.getByRole("button", { name: "Recuperar mensaje pendiente" })).toBeVisible();
   const pending = await (await page.request.get(`/api/tutor/conversations/${id}/pending-turn`)).json() as { request: unknown; leaseUntil: string };
   await advanceClock(page, new Date(new Date(pending.leaseUntil).getTime() + 1000).toISOString());

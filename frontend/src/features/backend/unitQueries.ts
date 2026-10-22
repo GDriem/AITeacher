@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { backend, result } from "./client";
+import { backend, required, result } from "./client";
 
 /** Unidad tal como la estudia el alumno: siempre la publicación activa, nunca un borrador más nuevo. */
 export function useStudyUnit(unitId: string) {
@@ -14,6 +14,11 @@ export function useStudyUnit(unitId: string) {
 
 export function useTutorAvailability() {
   return useQuery({ queryKey: ["tutor-availability"], queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/availability", { signal })) });
+}
+
+/** Conversación del tutor; la comparten la ruta (modo del encabezado) y el panel del tutor. */
+export function useTutorConversation(id: string | null) {
+  return useQuery({ queryKey: ["conversation", id], enabled: Boolean(id), queryFn: async ({ signal }) => result(await backend.GET("/api/tutor/conversations/{id}", { signal, params: { path: { id: required(id) } } })) });
 }
 
 export type TutorMode = "chat" | "reading" | "practice";
