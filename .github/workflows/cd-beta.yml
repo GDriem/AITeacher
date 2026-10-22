@@ -120,6 +120,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.validate.outputs.sha }}
+          # Full history to diff against the commit of the running image.
+          fetch-depth: 0
           persist-credentials: false
       - name: Revalidate after the deployment lock and environment rules
         run: python3 backend/scripts/beta_ci_guard.py
@@ -139,9 +141,15 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - name: Authenticate to existing ACR with the federated session
         run: az acr login --name craiteacherbeta8136
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Skip when nothing deployable changed since the running image
+        id: scope
+        # Read-only; manual deploys always publish. Unknown base image means deploy.
+        run: python3 backend/scripts/update-azure-beta.py --scope
+      - if: steps.scope.outputs.deploy == 'true'
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Build and publish the validated source
         id: image
+        if: steps.scope.outputs.deploy == 'true'
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
@@ -153,15 +161,21 @@ jobs:
           sbom: false
           tags: craiteacherbeta8136.azurecr.io/aiteacher:git-${{ needs.validate.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           labels: org.opencontainers.image.revision=${{ needs.validate.outputs.sha }}
+      # Both paths need the smoke tooling; installing it changes nothing in Azure.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
       - name: Install existing functional check tooling
         run: npm install -g postman-cli@1.75.0
       - name: Migrate, grant runtime SQL access, update by digest and verify
+        if: steps.scope.outputs.deploy == 'true'
         env:
           IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: python3 backend/scripts/update-azure-beta.py
+      - name: Verify the running beta when the deploy is skipped
+        # Read-only; keeps a smoke failure from an earlier deploy visible on docs-only merges.
+        if: steps.scope.outputs.deploy == 'false'
+        run: python3 backend/scripts/update-azure-beta.py --smoke
       - name: Clear local registry session
         if: always()
         run: docker logout craiteacherbeta8136.azurecr.io

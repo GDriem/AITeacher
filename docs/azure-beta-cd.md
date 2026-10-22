@@ -48,6 +48,37 @@ rechaza publicar el SHA superado. Entre la última lectura de main y el PATCH ha
 una ventana inevitable; el lock evita que ese PATCH sustituya un despliegue más
 nuevo del mismo workflow.
 
+### Omisión de despliegues sin cambios desplegables
+
+`workflow_run` no admite filtros de rutas. Por eso, **después** del lock, de la
+revalidación y del login OIDC, el paso `--scope` de `update-azure-beta.py` decide
+en solo lectura si hace falta publicar:
+
+1. Lee la app: debe tener un solo contenedor, imagen por digest del ACR fijo y
+   `latestRevisionName == latestReadyRevisionName`.
+2. Lee la etiqueta OCI `org.opencontainers.image.revision` de esa imagen (la
+   escribe el build del CD) con el token de pull ya obtenido.
+3. Si ese SHA es ancestro del SHA validado, calcula `git diff --name-only
+   --no-renames` entre ambos (checkout con historial completo).
+4. Omite build, migraciones y PATCH solo si ningún archivo empieza por
+   `backend/`, `frontend/`, `agent_app/static/`, ni es `.dockerignore`,
+   `.github/workflows/cd-beta.yml` o la colección `AITeacher Backend Smoke`.
+   Las rutas se leen sin comillas (`core.quotePath=false`) para que un nombre
+   con tildes o eñes no escape al filtro.
+5. Al omitir, `--smoke` ejecuta igualmente `verify-azure.sh` y el smoke Postman
+   contra la beta en ejecución, en solo lectura. Así, si un despliegue anterior
+   publicó pero falló el smoke, un merge posterior solo de docs también falla en
+   vez de quedar en verde con la beta rota.
+
+Cualquier duda despliega: imagen sin etiqueta (las de `az acr build`), etiqueta
+que no es un SHA completo, SHA que no es ancestro (p. ej. tras un rollback manual
+a otra rama), app inestable o varios contenedores. Un despliegue **manual**
+(`workflow_dispatch`) siempre publica. Se compara contra lo que corre en Azure, no
+contra el commit padre: si un CD de código falló antes de publicar, el siguiente
+commit de docs incluye esos cambios en el diff y sí despliega. La validación de
+SHA/CI, el lock y la revalidación no cambian. El resumen de Actions registra la
+decisión y el motivo.
+
 ## Reutilización del despliegue existente
 
 | Pieza | Función y uso en CD |
@@ -237,19 +268,36 @@ Después de comprobar compatibilidad, un operador autorizado puede volver a
 publicar el digest anterior en la misma app:
 
 ```bash
-# Sustituir DIGEST_ANTERIOR por el sha256 de Previous image; no usar una etiqueta.
+# DIGEST_ANTERIOR: solo los 64 hex de Previous image (sin el prefijo sha256:); nunca una etiqueta.
+# Confirmar antes que el manifiesto sigue en ACR:
+az acr manifest show-metadata --subscription 1350d930-7008-4b43-923d-6a7cd66701bc --registry craiteacherbeta8136 \
+  --name aiteacher@sha256:DIGEST_ANTERIOR --query "{digest:digest,tags:tags}" -o json
 az containerapp update --subscription 1350d930-7008-4b43-923d-6a7cd66701bc \
   --resource-group rg-aiteacher-beta-8136 --name ca-aiteacher-beta-8136 \
   --container-name api --image craiteacherbeta8136.azurecr.io/aiteacher@sha256:DIGEST_ANTERIOR \
-  --output none
+  --revision-suffix rollback-AAAAMMDDhhmm --output none
 bash backend/scripts/verify-azure.sh https://ca-aiteacher-beta-8136.thankfuldune-75a4eb8a.mexicocentral.azurecontainerapps.io
 postman collection run 'postman/collections/AITeacher Backend Smoke' \
   --env-var baseUrl=https://ca-aiteacher-beta-8136.thankfuldune-75a4eb8a.mexicocentral.azurecontainerapps.io \
   --no-report-events
 ```
 
-Comprobar además que `latestReadyRevisionName` corresponda a una revisión Healthy
-con ese digest. Registrar motivo y resultado. Este rollback operativo no pasa
+Comprobar además que `latestReadyRevisionName` sea `ca-aiteacher-beta-8136--rollback-…`,
+Healthy, con ese digest, y que escala (1–2 réplicas, una regla), nombres de
+variables, identidad e ingress sigan iguales. Registrar motivo y resultado.
+
+Con la extensión `containerapp` 1.3.0b5, `--image` envía un PATCH que solo
+contiene `template.containers` (copiados de la app, con variables, recursos y
+sondas) y el sufijo; no envía configuración, secretos, ingress, escala ni
+identidad. El CD usa en cambio GET/PATCH REST de la plantilla completa con la API
+`2025-07-01`; ambos caminos crean una revisión nueva en modo Single. No activar
+revisiones inactivas antiguas: en modo Single no reciben tráfico y conservan su
+configuración de entonces.
+
+Tras un rollback, la omisión por alcance compara contra la etiqueta de la imagen
+restaurada: un main posterior que toque código desplegable vuelve a publicarse
+(por eso se pone antes `BETA_CD_ENABLED=false`); si solo hay docs, la imagen
+restaurada se mantiene, lo cual es correcto porque su código coincide. Este rollback operativo no pasa
 por la entrada manual de CD, que solo admite la punta de main validada. Para
 reactivar automatización, corregir/revertir el código por PR, esperar el CI push
 del nuevo main y revisar antes de cambiar `BETA_CD_ENABLED=true`; reactivar sin
@@ -275,16 +323,108 @@ corregir puede volver a publicar la versión fallida.
 
 No hizo falta ningún permiso adicional: `managedEnvironments/join/action` no fue
 requerido por el PATCH. Desde este punto, cada CI push exitoso de main despliega
-automáticamente, **incluidos cambios solo de documentación**, que vuelven a
-ejecutar las migraciones (idempotentes) y crean una revisión nueva.
+automáticamente. Hasta la omisión por alcance (sección anterior), eso incluía
+cambios solo de documentación: el merge de la PR #16 (`c73386b`, solo
+`docs/azure-beta-cd.md`) disparó el run `39698729310`, que reconstruyó, migró y
+creó `ca-aiteacher-beta-8136--cd-39698729310-1` (Healthy, smoke 26/26) con una
+imagen de código idéntico a la anterior.
 
 Siguen fuera de este CD las comprobaciones manuales de login real con Google,
-micrófono/voz, tutor IA y aislamiento entre cuentas.
+micrófono/voz, tutor IA y aislamiento entre cuentas; ver
+[azure-beta-acceptance.md](azure-beta-acceptance.md).
 
-Rollback para este primer despliegue: imagen anterior
-`sha256:038a8ada25c68338f619bdfc64770dcdd6bb7a923f6f906146e357ebe8573e34`
-(revisión `--0000009`), con el procedimiento de «Volver a la imagen anterior».
-Antes de usarla, confirmar que el esquema que dejó `yvdmuw8` es compatible con ella.
+## Operación posterior a la activación
+
+Revisión del 22 de octubre de 2026 (UTC), en solo lectura salvo donde se indica.
+
+### Gobernanza de main
+
+El propietario reactivó `enforce_admins`. Comprobado vía API: `enforce_admins`
+activo, una aprobación requerida con descarte de aprobaciones obsoletas, los
+cuatro checks requeridos en modo estricto, sin force push ni borrado y sin
+rulesets. Con un único colaborador que no puede aprobar sus propias PR, cada
+merge necesita un segundo revisor con permiso de escritura o un cambio de
+protección aprobado expresamente; no hay bypass.
+
+### Retención de imágenes en ACR
+
+Inventario real (`craiteacherbeta8136`, SKU Basic, repositorio único `aiteacher`):
+
+| Digest | Etiqueta | Creado (UTC) | Referencias |
+|---|---|---|---|
+| `4920860d…08275` | `beta-privatekey-20261020` | 2026-10-20 23:55 | Plantillas almacenadas de ambos jobs; `infra/recreate-azure.md`; revisiones inactivas `ro9dwpb`, `0000001` |
+| `5eeae7a0…dc2df3` | `beta-diagnostics-20261021` | 2026-10-21 00:44 | Revisiones inactivas `0000002`–`0000007` |
+| `eec35167…10e8a` | `curriculum-20261021-v1` | 2026-10-21 02:47 | Revisión inactiva `0000008` |
+| `038a8ada…73e34` | `tutor-wif-20261021` | 2026-10-21 16:24 | Revisión inactiva `0000009`; evidencia de activación del tutor |
+| `d9b83ab6…bea55` | `git-7e5f749…-39697255534-1` | 2026-10-22 00:04 | **Anterior** (`cd-39697255534-1`) |
+| `529e5c4b…e38da` | `git-c73386b…-39698729310-1` | 2026-10-22 00:17 | **Actual** (`cd-39698729310-1`, 100 %) |
+
+Cada manifiesto declara ~116–118 MB, pero comparten capas: el uso real es
+193,7 MB de 10 GiB (1,8 %). No hay manifiestos sin etiqueta. La política de
+retención de ACR (`retentionPolicy`) y el soft delete están deshabilitados; la
+retención automática de manifiestos sin etiqueta es exclusiva de Premium y
+`acr purge` requiere ACR Tasks con costo por ejecución.
+
+Política propuesta, **no aplicada** (todo borrado requiere aprobación del propietario):
+
+- Conservar siempre: la imagen de la revisión activa, la `Previous image` del
+  último CD exitoso, todo digest referenciado por las plantillas almacenadas de
+  los jobs o por documentación operativa de recreación (hoy `4920860d`) y la
+  última imagen previa al CD (`038a8ada`) hasta cerrar su ventana de rollback.
+- Conservar además las cinco imágenes `git-*` más recientes.
+- Candidatas a borrar, solo cuando el uso supere 5 GiB o haya más de 20
+  manifiestos: el resto, tras confirmar que ninguna revisión activa ni job las
+  usa. Hoy serían `5eeae7a0` y `eec35167`, con un ahorro mínimo por capas compartidas,
+  así que **no se recomienda borrar nada ahora**.
+- Proceso manual del propietario: listar con `az acr manifest list-metadata`,
+  revisar referencias (`az containerapp revision list --all`, `job show`) y borrar
+  por digest con `az acr manifest delete`. La identidad CD no tiene `delete` y
+  no debe recibirlo.
+- Opcional, requiere aprobación porque cambia Azure: bloquear el borrado de los
+  digests protegidos con `az acr repository update --image aiteacher@sha256:… --delete-enabled false`.
+
+### Simulacro de rollback (sin ejecutar)
+
+Validado contra el estado real, sin cambiar la app:
+
+| Elemento | Resultado |
+|---|---|
+| Actual | `cd-39698729310-1`, `sha256:529e5c4b…`, etiqueta OCI `revision=c73386b` |
+| Anterior | `cd-39697255534-1`, `sha256:d9b83ab660e228ea24081e7cbcbb3a650269ae53242d743dfc44fa0eaf4bea55`, presente en ACR |
+| Diferencia de código | `7e5f749..c73386b` solo cambia `docs/azure-beta-cd.md`: la imagen anterior es funcionalmente idéntica |
+| Previa al CD | `038a8ada…`, presente en ACR, sin etiqueta OCI de revisión |
+| Plantilla de la app | Un contenedor `api` (imagen, env, recursos, sondas), escala 1–2 con una regla, sin volúmenes |
+
+**Rollback de imagen**: cambia solo el binario que sirve tráfico; es rápido y
+reversible republicando otro digest. **Migraciones**: el último cambio en
+`backend/src/**/Migrations` es `6d0dbe9` (19 de octubre de 2026), anterior a las
+seis imágenes del ACR, de modo que hoy todas comparten el mismo conjunto de
+migraciones EF y un rollback de imagen no enfrenta incompatibilidad de esquema.
+Cuando una PR añada migraciones, esa compatibilidad deja de estar garantizada:
+revertir la imagen no deshace SQL ni datos; la base solo se recupera con
+corrección hacia adelante o restauración a un punto en tiempo de PostgreSQL
+(retención de backup de 7 días), en un procedimiento separado y aprobado.
+
+Correcciones aplicadas al procedimiento: el marcador del digest era ambiguo
+(`sha256:` duplicado si se pegaba el valor completo), se añadió la verificación
+de presencia en ACR y un sufijo `rollback-…` trazable. El comando se validó
+leyendo el código de la extensión instalada, **no ejecutándolo**.
+
+### Evidencia de esta revisión
+
+- Comprobado realmente: protección de main, variables, runs `39697255534` y
+  `39698729310`, revisiones, plantillas de jobs, inventario y uso del ACR, y
+  presencia de `d9b83ab6…` con `az acr manifest show-metadata`.
+- `--scope` ejecutado localmente en solo lectura contra la app y el ACR con la
+  cuenta del propietario: leyó `revision=c73386b` y decidió omitir (diff vacío).
+  Contra el historial real, la PR #16 se habría omitido y la #15 desplegado.
+- Probado localmente: 37 pruebas nuevas en `tests/test_beta_cd.py` (61 en el
+  archivo) y la suite Python completa sin fallos; `actionlint 1.7.12` y
+  `git diff --check` aprobados.
+- Pendiente: primera omisión real en GitHub Actions (el merge de esta PR toca
+  `cd-beta.yml` y `backend/`, así que **desplegará**; la omisión se observará en
+  el siguiente merge solo de docs), la aceptación manual y cualquier borrado o
+  bloqueo en ACR.
 
 ## Correcciones de la revisión previa a la activación
 

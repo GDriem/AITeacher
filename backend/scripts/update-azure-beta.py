@@ -25,6 +25,9 @@ APP_URL = (f"https://management.azure.com/subscriptions/{SUBSCRIPTION}/resourceG
            f"/providers/Microsoft.App/containerApps/{APP}?api-version={API}")
 # Fields the CLI execution model keeps; anything else would be dropped silently.
 EXECUTION_FIELDS = {"name", "image", "imageType", "command", "args", "env", "resources"}
+# Docker build inputs plus the CD procedure itself; any other change leaves the image as is.
+DEPLOYABLE = ("backend/", "frontend/", "agent_app/static/", ".dockerignore",
+              ".github/workflows/cd-beta.yml", "postman/collections/AITeacher Backend Smoke/")
 
 
 def az(*args, query=None):
@@ -189,6 +192,72 @@ def verify_access():
          f"`{app['containers'][0]['image']}`. No image, job or application change was made.")
 
 
+def deployed_revision(image):
+    """Commit label written by the CD build; None for images built outside CD."""
+    labels = subprocess.run(["docker", "buildx", "imagetools", "inspect", image,
+                             "--format", "{{json .Image.Config.Labels}}"],
+                            check=True, capture_output=True, text=True, timeout=120).stdout
+    revision = (json.loads(labels) or {}).get("org.opencontainers.image.revision", "")
+    return revision if re.fullmatch(r"[0-9a-f]{40}", revision) else None
+
+
+def changed_paths(base, head):
+    """Files changed from base to head, or None when base is not an ancestor of head."""
+    def git(*args):
+        return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, timeout=60)
+    if git("merge-base", "--is-ancestor", base, head).returncode != 0:
+        return None
+    # Unquoted paths: the default quotePath would hide non-ASCII names from DEPLOYABLE.
+    diff = git("-c", "core.quotePath=false", "diff", "--name-only", "--no-renames", base, head)
+    diff.check_returncode()
+    return diff.stdout.splitlines()
+
+
+def requires_deploy(paths):
+    return paths is None or any(
+        path.startswith(prefix) if prefix.endswith("/") else path == prefix
+        for path in paths for prefix in DEPLOYABLE)
+
+
+def scope():
+    """Read-only: skip a CI-triggered deploy only if nothing deployable changed since the running image."""
+    sha = os.environ["VALIDATED_SHA"]
+    if os.environ.get("GITHUB_EVENT_NAME") != "workflow_run":
+        deploy, reason = True, "manual deploy always publishes"
+    else:
+        app = app_state()
+        image = app["containers"][0]["image"] if len(app["containers"]) == 1 else None
+        stable = immutable(image) and app["ready"] and app["latest"] == app["ready"]
+        base = deployed_revision(image) if stable else None
+        paths = changed_paths(base, sha) if base else None
+        deploy = requires_deploy(paths)
+        if paths is None:
+            reason = "running image has no CD revision label that is an ancestor of this commit"
+        else:
+            reason = f"{len(paths)} file(s) changed since running commit `{base}`"
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+            output.write(f"deploy={'true' if deploy else 'false'}\n")
+    note(f"Deploy scope for `{sha}`: {'deploy' if deploy else 'skipped, no deployable change'} ({reason}).")
+    return deploy
+
+
+def smoke(postman):
+    """Read-only HTTPS, readiness and Postman checks against the running beta."""
+    subprocess.run(["bash", str(ROOT / "backend/scripts/verify-azure.sh"), f"https://{HOST}"], check=True)
+    subprocess.run([postman, "collection", "run", str(ROOT / "postman/collections/AITeacher Backend Smoke"),
+                    "--env-var", f"baseUrl=https://{HOST}", "--no-report-events"], check=True, timeout=300)
+
+
+def verify_running():
+    """Skipped deploys still check the running beta, so a failed earlier smoke stays visible."""
+    postman = shutil.which("postman")
+    if not postman:
+        raise ValueError("Install Postman CLI before the smoke")
+    smoke(postman)
+    note("Deploy skipped; the running beta passed HTTPS, readiness and Postman smoke.")
+
+
 def main():
     image = f"{REGISTRY}@{os.environ['IMAGE_DIGEST']}"
     if not immutable(image):
@@ -212,12 +281,17 @@ def main():
     if current != previous:
         raise ValueError("Application changed outside the CD lock; refusing to overwrite it")
     wait_revision(image, publish(image))
-    subprocess.run(["bash", str(ROOT / "backend/scripts/verify-azure.sh"), f"https://{HOST}"], check=True)
-    subprocess.run([postman, "collection", "run", str(ROOT / "postman/collections/AITeacher Backend Smoke"),
-                    "--env-var", f"baseUrl=https://{HOST}", "--no-report-events"], check=True, timeout=300)
+    smoke(postman)
     note("HTTPS, readiness, React, worklet, 404 boundaries and existing Postman smoke passed. "
          "Real Google login, voice and AI acceptance remain separate.")
 
 
 if __name__ == "__main__":
-    verify_access() if sys.argv[1:] == ["--verify-access"] else main()
+    if sys.argv[1:] == ["--verify-access"]:
+        verify_access()
+    elif sys.argv[1:] == ["--scope"]:
+        scope()
+    elif sys.argv[1:] == ["--smoke"]:
+        verify_running()
+    else:
+        main()
