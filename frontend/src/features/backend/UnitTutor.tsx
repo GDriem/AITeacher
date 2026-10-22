@@ -3,7 +3,7 @@ import { EmptyState, PageHeader } from "../../ui";
 import { required } from "./client";
 import { Busy, Failure } from "./Shared";
 import { Tutor } from "./Tutor";
-import { catalogPath, tutorPath, useStudyUnit, useTutorAvailability, useTutorConversation, type TutorMode } from "./unitQueries";
+import { tutorPath, unitCrumbs, useStudyUnit, useTutorAvailability, useTutorConversation, useUnitTopic, type TutorMode } from "./unitQueries";
 
 const modes: Record<TutorMode, string> = { chat: "Conversación libre sobre la unidad", reading: "Consulta sobre una lectura", practice: "Práctica guiada" };
 const isMode = (value: string | null): value is TutorMode => value === "chat" || value === "reading" || value === "practice";
@@ -21,6 +21,7 @@ export function UnitTutor() {
   const activityId = search.get("actividad") ?? undefined;
   const unit = useStudyUnit(unitId);
   const availability = useTutorAvailability();
+  const topic = useUnitTopic(unit.data?.topicId);
   // El encabezado describe la conversación abierta, aunque la URL traiga otro `modo`.
   const conversation = useTutorConversation(conversationId);
   if (unit.isPending || availability.isPending) return <Busy />;
@@ -29,7 +30,7 @@ export function UnitTutor() {
   const title = unit.data.revision.document.title;
   return <section>
     <PageHeader title={`Tutor: ${title}`} eyebrow={modes[conversation.data?.mode ?? mode]}
-      breadcrumbs={[{ label: "Catálogo", to: catalogPath(state), state }, { label: title, to: `/unidades/${encodeURIComponent(unitId)}`, state }, { label: "Tutor" }]} />
+      breadcrumbs={[...unitCrumbs(state, unit.data.topicId, topic.data?.name), { label: title, to: `/unidades/${encodeURIComponent(unitId)}`, state }, { label: "Tutor" }]} />
     {availability.data.enabled
       // Cada conversación monta su propio Tutor: cambiarla descarta solicitudes en memoria, pero el turno pendiente se recupera del servidor.
       ? <Tutor key={conversationId ?? "nueva"} unit={unit.data} mode={mode} activityId={activityId} conversationId={conversationId}

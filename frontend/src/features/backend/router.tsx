@@ -8,7 +8,8 @@ import { AttemptRoute } from "./AttemptRoute";
 import { Notes } from "./Notes";
 import { LearningReviews } from "./LearningReviews";
 import { Archive } from "./Archive";
-import { NotFound, RouteError, RouteLoading, TopicRedirect } from "./RouteStates";
+import { TopicPage } from "./TopicPage";
+import { NotFound, RouteError, RouteLoading } from "./RouteStates";
 
 /** Rutas del build .NET (docs/ui-ux-beta-plan.md, «Arquitectura de información»). */
 export const router = createBrowserRouter([{
@@ -20,7 +21,7 @@ export const router = createBrowserRouter([{
     children: [
       { index: true, Component: HomeRoute },
       { path: "catalogo", Component: CurriculumExplorer },
-      { path: "temas/:topicId", Component: TopicRedirect },
+      { path: "temas/:topicId", Component: TopicPage },
       { path: "unidades/:unitId", Component: UnitSpace },
       { path: "unidades/:unitId/tutor", Component: UnitTutor },
       { path: "unidades/:unitId/tutor/:conversationId", Component: UnitTutor },

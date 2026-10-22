@@ -32,7 +32,16 @@ function mainNav(page: Page, name: string) {
 
 async function openCatalog(page: Page) {
   await mainNav(page, "Catálogo").click();
-  await expect(page.getByRole("heading", { name: "Continúa aprendiendo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Explora el catálogo" })).toBeVisible();
+}
+
+/** Catálogo → tema → unidad, por los nombres accesibles de cada tarjeta. */
+async function openUnit(page: Page, topic: string, unit: string) {
+  await openCatalog(page); await page.getByLabel("Buscar temas o lecturas").fill(topic);
+  await page.getByRole("link", { name: topic, exact: true }).click();
+  await expect(page.getByRole("heading", { name: topic, level: 1 })).toBeVisible();
+  await page.getByRole("link", { name: unit, exact: true }).click();
+  await expect(page.getByRole("heading", { name: unit, level: 1 })).toBeVisible();
 }
 
 async function switchUser(page: Page, credential: string) {
@@ -89,8 +98,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.getByRole("status").filter({ hasText: "Referencia curricular publicada" })).toBeVisible();
 
   await switchUser(page, "student-a"); await expect(mainNav(page, "Autoría")).toHaveCount(0);
-  await openCatalog(page); await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Vectores Beta" });
-  await page.getByRole("link", { name: "Abrir unidad" }).click(); await expect(page.getByRole("heading", { name: "Lectura de vectores", exact: true })).toBeVisible();
+  await openUnit(page, "Vectores Beta", "Unidad Beta de vectores"); await expect(page.getByRole("heading", { name: "Lectura de vectores", exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("PRIVATE-EDITORIAL-BROWSER"); await expect(page.locator("body")).not.toContainText("PRIVATE-RUBRIC-BROWSER");
   await page.getByRole("button", { name: "Iniciar Evaluación cerrada beta", exact: true }).click();
   await expect(page).toHaveURL(/\/evaluaciones\/[^/]+$/); await expect(page.getByRole("heading", { name: "Intento de evaluación", level: 1 })).toBeFocused();
@@ -136,14 +144,26 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
 
 test("catálogo migrado: materias, categorías, niveles y lecturas sin actividades ficticias", async ({ page }) => {
   await googleForTests(page, "student-a"); await page.goto("/"); await login(page); await openCatalog(page);
-  await page.getByLabel("Materia", { exact: true }).selectOption({ label: "Redes" });
-  await page.getByLabel("Categoría", { exact: true }).selectOption({ label: "Enrutamiento" });
-  await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Enrutamiento dinámico con OSPF" });
-  await expect(page.getByText(/Antes se recomienda: Enrutamiento estático/)).toBeVisible();
-  await page.getByLabel("Nivel de lectura").selectOption({ label: "Principiante" });
-  await expect(page.getByRole("status").filter({ hasText: "materiales publicados" })).toContainText("1 materiales publicados en 1 temas");
-  await page.getByRole("link", { name: "Abrir unidad", exact: true }).click();
+  const ospf = "Enrutamiento dinámico con OSPF";
+  await page.getByRole("group", { name: "Materia" }).getByRole("button", { name: "Redes", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Enrutamiento", level: 3 })).toBeVisible();
+  await page.getByLabel("Buscar temas o lecturas").fill("ospf");
+  await page.getByRole("group", { name: "Nivel de lectura" }).getByRole("button", { name: "Principiante", exact: true }).click();
+  await expect(page).toHaveURL(/nivel=beginner/);
+  const card = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: ospf, exact: true }) });
+  await expect(card).toContainText("Antes se recomienda: Enrutamiento estático");
+  await expect(card).toContainText(/\d+ lecturas?/);
+  await expect(page.getByRole("status").filter({ hasText: "material" })).toContainText(/^\d+ temas? · \d+ materia/);
+  await card.getByRole("link", { name: ospf, exact: true }).click();
+  // Tema: prerrequisitos como enlaces, unidades agrupadas por nivel y Catálogo activo en la navegación.
+  await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeFocused();
+  await expect(page.getByRole("complementary", { name: "Antes se recomienda" }).getByRole("link", { name: /^Enrutamiento estático/ })).toHaveAttribute("href", /\/temas\//);
+  await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
+  const beginner = page.getByRole("region", { name: /^Principiante/ });
+  await beginner.getByRole("link").first().click();
   await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: ospf, exact: true })).toBeVisible();
+  await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
   await expect(page.getByText(/^Fuente:/)).toBeVisible();
   await expect(page.getByRole("button", { name: /Iniciar .*beta/ })).toHaveCount(0);
   await page.getByRole("link", { name: "Consultar esta lectura con el tutor" }).click();
@@ -153,9 +173,22 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
   await page.goBack(); await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
-  await page.getByRole("link", { name: "Volver al catálogo" }).click();
-  await expect(page.getByLabel("Materia", { exact: true })).toHaveValue(/.+/);
-  await expect(page.getByLabel("Nivel de lectura")).toHaveValue("beginner");
+  await page.getByRole("link", { name: "Volver al tema" }).click();
+  await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeVisible();
+  for (const width of [320, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  }
+  await page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: "Catálogo", exact: true }).click();
+  await expect(page.getByLabel("Buscar temas o lecturas")).toHaveValue("ospf");
+  await expect(page.getByRole("group", { name: "Nivel de lectura" }).getByRole("button", { name: "Principiante", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "page");
+  // Estado vacío con siguiente paso.
+  await page.getByLabel("Buscar temas o lecturas").fill("zzz-sin-resultados");
+  await expect(page.getByRole("heading", { name: "No encontramos temas con estos filtros" })).toBeVisible();
+  await page.getByRole("button", { name: "Quitar filtros", exact: true }).click();
+  await expect(page).toHaveURL(/\/catalogo$/);
   for (const width of [320, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
@@ -176,16 +209,22 @@ test("navegación por teclado: rutas, foco, recarga y Atrás conservan la vista"
   await expect(mainNav(page, "Catálogo")).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/catalogo$/);
-  await expect(page.getByRole("heading", { name: "Continúa aprendiendo", level: 1 })).toBeFocused();
-  await page.getByLabel("Materia", { exact: true }).selectOption({ label: "Redes" });
+  await expect(page.getByRole("heading", { name: "Explora el catálogo", level: 1 })).toBeFocused();
+  const redes = page.getByRole("group", { name: "Materia" }).getByRole("button", { name: "Redes", exact: true });
+  await redes.focus(); await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/materia=/);
-  await page.getByRole("link", { name: "Abrir unidad", exact: true }).first().focus(); await page.keyboard.press("Enter");
-  const unit = page.getByRole("heading", { level: 1 });
-  await expect(unit).toBeFocused();
-  const title = await unit.textContent() ?? "";
+  await page.getByRole("main").getByRole("list").first().getByRole("link").first().focus(); await page.keyboard.press("Enter");
+  const heading = page.getByRole("heading", { level: 1 });
+  await expect(heading).toBeFocused();
+  const topic = await heading.textContent() ?? "";
+  await page.getByRole("main").getByRole("region").first().getByRole("link").first().focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: topic, exact: true })).toBeVisible();
+  await expect(heading).toBeFocused();
+  const title = await heading.textContent() ?? "";
   await page.reload(); await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
-  await page.goBack(); await expect(page.getByLabel("Materia", { exact: true })).toHaveValue(/.+/);
-  await page.goForward(); await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
+  await page.goBack(); await expect(page.getByRole("heading", { name: topic, level: 1 })).toBeVisible();
+  await page.goBack(); await expect(redes).toHaveAttribute("aria-pressed", "true");
+  await page.goForward(); await expect(page.getByRole("heading", { name: topic, level: 1 })).toBeVisible();
   await page.goto("/no-existe"); await expect(page.getByRole("heading", { name: "Esta página no existe", level: 1 })).toBeVisible();
   await page.goto("/autoria"); await expect(page).toHaveURL(/\/$/);
   await page.setViewportSize({ width: 320, height: 640 });
@@ -212,9 +251,8 @@ async function advanceClock(page: Page, now: string) {
 }
 
 test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async ({ page }) => {
-  await googleForTests(page, "student-a"); await page.goto("/"); await login(page); await openCatalog(page);
-  await page.getByLabel("Tema", { exact: true }).selectOption({ label: "Vectores Beta" });
-  await page.getByRole("link", { name: "Abrir unidad", exact: true }).click();
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await openUnit(page, "Vectores Beta", "Unidad Beta de vectores");
   await page.getByRole("link", { name: "Abrir conversación", exact: true }).click();
   const creation = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/api/tutor/conversations"));
   await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();

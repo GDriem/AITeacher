@@ -1,17 +1,79 @@
-.filters {
+.toolbar {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-default);
 }
 
-.units {
+.toolbar > div {
+  margin-block: 0;
+}
+
+.chipRow {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-  gap: var(--space-4);
+  gap: var(--space-2);
+}
+
+.chipLabel {
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-block: var(--space-5);
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.summary p {
+  margin: 0;
+}
+
+.subject + .subject {
+  margin-block-start: var(--space-10);
+}
+
+.subjectTitle {
+  margin-block: 0 var(--space-2);
+  font-size: var(--font-size-lg);
+}
+
+.categoryTitle {
+  margin-block: var(--space-6) var(--space-3);
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.unit h3 {
-  margin-block-start: 0;
 }
