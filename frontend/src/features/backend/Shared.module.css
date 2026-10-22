@@ -47,11 +47,6 @@
   min-height: 2.75rem;
 }
 
-.eyebrow {
-  color: var(--content-muted);
-  margin-block-start: var(--space-7);
-}
-
 .feedback {
   border-inline-start: 0.25rem solid var(--status-guide);
   padding-inline-start: var(--space-4);

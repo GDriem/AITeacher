@@ -212,6 +212,14 @@
   inset-block-end: var(--space-4);
 }
 
+/* Con la navegación de autor (seis enlaces) el lema y el nombre no caben en tabletas y escritorios estrechos; marca y avatar se conservan. */
+@media (max-width: 72rem) {
+  .brand small,
+  .name {
+    display: none;
+  }
+}
+
 /* Barra inferior en móvil; el contenido reserva su altura y la del área segura. */
 @media (max-width: 48rem) {
   .header,

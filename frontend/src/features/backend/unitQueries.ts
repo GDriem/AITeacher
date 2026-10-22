@@ -51,3 +51,15 @@ export function catalogPath(state: unknown) {
   const search = typeof state === "object" && state !== null && "catalogSearch" in state && typeof state.catalogSearch === "string" ? state.catalogSearch : "";
   return `/catalogo${search}`;
 }
+
+/** Nombres de los niveles del currículo de origen; solo se piden cuando la unidad es una lectura con nivel. */
+export function useSourceLevels(level: string | undefined) {
+  return useQuery({ queryKey: ["source-curriculum"], enabled: Boolean(level), staleTime: Infinity,
+    queryFn: async ({ signal }) => result(await backend.GET("/api/catalog/source-curriculum", { signal })).levels });
+}
+
+/** Nivel editorial del tema, cuando el autor le asignó uno. */
+export function useCatalogLevel(levelId: string | undefined) {
+  return useQuery({ queryKey: ["catalog-level", levelId], enabled: Boolean(levelId),
+    queryFn: async ({ signal }) => result(await backend.GET("/api/catalog/levels/{id}", { params: { path: { id: levelId ?? "" } }, signal })) });
+}
