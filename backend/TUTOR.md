@@ -1,8 +1,9 @@
 > Estado vigente 21/10/2026: Tutor y Summary funcionan con Vertex federado en
 > Azure, revisión `0000009`. Dos turnos contextuales, fuentes de la publicación
 > activa, mensaje guardado y resumen persistente verificados con Google real.
-> [Evidencia y pendientes](../docs/azure-tutor-enablement.md). Segunda cuenta,
-> fallo/recuperación operativos y voz humana siguen pendientes; voz deshabilitada.
+> [Evidencia y pendientes](../docs/azure-tutor-enablement.md). Segunda cuenta
+> aprobada el 22/10/2026 (`docs/azure-beta-acceptance.md`). Fallo/recuperación
+> operativos y voz humana siguen pendientes; voz deshabilitada.
 
 # Tutor y apuntes — hito 4
 

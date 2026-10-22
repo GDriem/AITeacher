@@ -22,7 +22,8 @@ Las relaciones entre temas son orientación original, no puertas de progreso.
 
 IA/voz de la beta siguen sin configurar y su aceptación está abierta. También
 siguen abiertos equivalencias de actividades, proyectos, recomendaciones
-adaptativas, Google de autor/dos cuentas reales, calibración, restauración y corte.
+adaptativas, calibración, restauración y corte. Google de autor y dos cuentas
+reales se aprobaron el 22 de octubre de 2026 (`azure-beta-acceptance.md`).
 Los hitos 6/7 no se cierran. [Evidencia vigente](curriculum-continuity.md).
 Las descripciones con fecha anterior se conservan como historia de implementación.
 
