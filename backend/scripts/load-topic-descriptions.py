@@ -26,9 +26,18 @@ SESSION_COOKIE = 'ait_dotnet_session'
 
 
 class ApiError(RuntimeError):
+    """HTTP error with its status, or a transport error with status None (no URL or headers)."""
+
     def __init__(self, status, title):
-        super().__init__(f'HTTP {status}: {title}')
+        super().__init__(f'HTTP {status}: {title}' if status is not None else f'Transport error: {title}')
         self.status = status
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A 30x would forward the session cookie to the redirect target; surface it as HTTPError instead."""
+
+    def redirect_request(self, *args, **kwargs):
+        return None
 
 
 class Api:
@@ -42,6 +51,7 @@ class Api:
         # One origin only, so a plain dict is enough; cookiejar mishandles dotless hosts such as localhost.
         self.cookies = {SESSION_COOKIE: session}
         self.csrf = None
+        self.opener = urllib.request.build_opener(_NoRedirect)
 
     def request(self, method, path, body=None):
         headers = {'Accept': 'application/json', 'Cookie': '; '.join(f'{k}={v}' for k, v in self.cookies.items())}
@@ -52,7 +62,7 @@ class Api:
         if method != 'GET':
             headers['X-CSRF-TOKEN'] = self.csrf or ''
         try:
-            with urllib.request.urlopen(urllib.request.Request(self.base + path, data, headers, method=method), timeout=30) as response:
+            with self.opener.open(urllib.request.Request(self.base + path, data, headers, method=method), timeout=30) as response:
                 for header in response.headers.get_all('Set-Cookie') or []:
                     name, _, value = header.split(';', 1)[0].partition('=')
                     self.cookies[name.strip()] = value.strip()
@@ -63,6 +73,9 @@ class Api:
             except ValueError:
                 title = ''
             raise ApiError(error.code, title) from None
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            # After HTTPError, its subclass. Only the type name: the reason may carry the host.
+            raise ApiError(None, type(error).__name__) from None
 
     def login_check(self):
         me = self.request('GET', '/api/auth/me')

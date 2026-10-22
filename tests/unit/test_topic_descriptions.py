@@ -1,7 +1,11 @@
 """Approved topic descriptions and their non-overwriting loader."""
+import http.server
 import importlib.util
 import json
 from pathlib import Path
+import socket
+import threading
+import urllib.error
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -94,3 +98,86 @@ def test_plain_http_is_refused_outside_localhost():
     with pytest.raises(SystemExit):
         loader.Api('http://beta.example.test', 'token')
     assert loader.Api('http://127.0.0.1:5088', 'token').base == 'http://127.0.0.1:5088'
+
+
+class Recorder(http.server.BaseHTTPRequestHandler):
+    """Local server that redirects /redirect elsewhere and records every request it receives."""
+
+    seen = []
+    target = ''
+
+    def do_GET(self):
+        Recorder.seen.append((self.path, self.headers.get('Cookie')))
+        if self.path == '/redirect':
+            self.send_response(302)
+            self.send_header('Location', Recorder.target)
+            self.end_headers()
+        else:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{}')
+
+    def log_message(self, *args):
+        pass
+
+
+@pytest.fixture
+def local_server():
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Recorder)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    Recorder.seen = []
+    Recorder.target = f'http://127.0.0.1:{server.server_port}/leak'
+    yield f'http://127.0.0.1:{server.server_port}'
+    server.shutdown()
+    server.server_close()
+
+
+def test_redirects_are_not_followed_so_the_session_cookie_stays_on_the_origin(local_server):
+    with pytest.raises(loader.ApiError) as raised:
+        loader.Api(local_server, 'secreto').request('GET', '/redirect')
+    assert raised.value.status == 302
+    assert [path for path, _ in Recorder.seen] == ['/redirect']
+
+
+@pytest.mark.parametrize('error', [urllib.error.URLError('refused by beta.example.test'), TimeoutError('timed out'), ConnectionResetError('reset')])
+def test_transport_errors_become_api_errors_without_url_or_cause(error):
+    api = loader.Api('http://127.0.0.1:5088', 'secreto')
+
+    def fail(*args, **kwargs):
+        raise error
+
+    api.opener.open = fail
+    with pytest.raises(loader.ApiError) as raised:
+        api.request('PUT', '/api/catalog/topics/1', {'version': 1})
+    assert raised.value.status is None
+    assert str(raised.value) == f'Transport error: {type(error).__name__}'
+    assert raised.value.__cause__ is None and raised.value.__suppress_context__
+
+
+def test_unreachable_server_is_reported_as_a_transport_error():
+    # A closed port refuses the connection: urllib raises URLError, not HTTPError.
+    with socket.socket() as probe:
+        probe.bind(('127.0.0.1', 0))
+        port = probe.getsockname()[1]
+    with pytest.raises(loader.ApiError) as raised:
+        loader.Api(f'http://127.0.0.1:{port}', 'secreto').request('GET', '/api/auth/me')
+    assert raised.value.status is None
+    assert 'secreto' not in str(raised.value) and str(port) not in str(raised.value)
+
+
+def test_a_network_error_mid_apply_is_reported_as_failed_and_the_rest_continue():
+    class FlakyApi(FakeApi):
+        def update_topic(self, topic, description):
+            if topic['slug'] == 'empty':
+                raise loader.ApiError(None, 'TimeoutError')
+            super().update_topic(topic, description)
+
+    api = FlakyApi(CATALOG + [topic('6', 'later')])
+    source = SOURCE + [{'subject': 'net', 'category': 'routing', 'slug': 'later', 'description': 'Texto de later.'}]
+    report, ok = loader.run(api, source, apply=True)
+    assert api.writes == [('6', 3, 'Texto de later.')]
+    assert actions(report)['empty'] == 'failed' and actions(report)['later'] == 'written'
+    assert next(item for item in report['items'] if item['slug'] == 'empty')['error'] == 'Transport error: TimeoutError'
+    assert json.loads(json.dumps(report))['counts']['failed'] == 1 and not ok

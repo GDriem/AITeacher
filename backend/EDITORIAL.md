@@ -164,6 +164,8 @@ python3 backend/scripts/load-topic-descriptions.py --base-url https://<host> --a
 ```
 
 El informe JSON clasifica cada tema como `write`/`written`, `skip`, `same`,
-`missing`, `conflict` o `failed`. Sale con código 1 si hay temas ausentes,
+`missing`, `conflict` o `failed`. Un error de red o una redirección (el script no
+las sigue, para que la cookie no salga del origen) cuentan como `failed` y la carga
+sigue con los demás temas. Sale con código 1 si hay temas ausentes,
 conflictos o fallos. Repetirlo después de una carga completa no cambia nada.
 Ejecútelo después de que la migración `TopicDescription` llegue al entorno.
