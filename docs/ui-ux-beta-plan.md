@@ -108,7 +108,11 @@ teclado; presupuesto `backendBeta` revisado y justificado.
   Mapa conceptual en panel lateral plegable; en móvil, hoja inferior.
 - **Evaluación**: pantalla dedicada, una pregunta por paso, progreso, tiempo
   restante si aplica, confirmación antes de enviar y resultado con feedback
-  según la política (`never`, posterior, inmediato).
+  según la política (`never`, posterior, inmediato). El contrato sólo define
+  `afterSubmission` y `never`: `afterSubmission` sin rúbrica muestra la nota al
+  entregar (inmediato); con rúbrica queda «Pendiente de corrección docente» y la
+  nota llega al corregir (posterior); `never` registra la entrega sin nota ni
+  aciertos.
 - **Apuntes, repasos e historial**: listas con estado vacío útil y enlace de
   vuelta al origen (mensaje, unidad o conversación).
 - **Voz**: botón solo si `/api/tutor/voice` la habilita; mientras siga apagada

@@ -1,0 +1,232 @@
+/* Intento de evaluación: una pregunta por paso con progreso y tiempo fijos arriba. */
+.screen {
+  max-inline-size: 48rem;
+  padding-block-end: var(--space-8);
+}
+
+/* Barra de estado: se pega al borde superior mientras la pregunta se desplaza. */
+.status {
+  position: sticky;
+  z-index: 20;
+  inset-block-start: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+  margin-block: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-default);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.progress {
+  flex: 1 1 12rem;
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.progressLabel {
+  margin: 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.bar {
+  block-size: 0.5rem;
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+}
+
+.bar span {
+  display: block;
+  block-size: 100%;
+  background: var(--action-primary);
+  border-radius: inherit;
+  transition: inline-size 160ms ease-out;
+}
+
+.clock {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--content-strong);
+}
+
+.clockLabel {
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+}
+
+.urgent {
+  color: var(--status-danger);
+}
+
+.notice {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: 0.25rem solid var(--status-danger);
+  background: var(--surface-subtle);
+}
+
+/* Navegador de preguntas: un botón por pregunta; el borde marca las respondidas. */
+.steps ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.stepButton {
+  min-inline-size: 2.75rem;
+  min-block-size: 2.75rem;
+  color: var(--content-default);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.stepButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.done {
+  border-color: var(--status-mastery);
+  box-shadow: inset 0 -0.2rem 0 var(--status-mastery);
+}
+
+.stepButton[aria-current="step"] {
+  color: var(--content-inverse);
+  background: var(--action-primary);
+  border-color: var(--action-primary);
+  font-weight: 700;
+}
+
+.question {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface-default);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.stepTitle {
+  margin: 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fieldset {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.prompt {
+  padding: 0;
+  margin-block-end: var(--space-4);
+  color: var(--content-strong);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.options {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.option {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  border-color: var(--action-primary);
+  background: var(--surface-subtle);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.actions > :last-child {
+  margin-inline-start: auto;
+}
+
+.result {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.result > h2,
+.result > h3 {
+  margin-block-end: 0;
+}
+
+.score {
+  margin: 0;
+  color: var(--content-strong);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+}
+
+.review {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reviewItem {
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.reviewItem p {
+  margin-block: var(--space-2) 0;
+}
+
+.reviewPrompt {
+  color: var(--content-strong);
+  font-weight: 700;
+}
+
+.answer {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+  .question {
+    padding: var(--space-4);
+  }
+}

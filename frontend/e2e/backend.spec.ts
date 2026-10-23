@@ -116,13 +116,13 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.locator("body")).not.toContainText("PRIVATE-EDITORIAL-BROWSER"); await expect(page.locator("body")).not.toContainText("PRIVATE-RUBRIC-BROWSER");
   await page.getByRole("tab", { name: "Evaluar", exact: true }).click(); await expect(page).toHaveURL(/pestana=evaluar/);
   await page.getByRole("button", { name: "Iniciar Evaluación cerrada beta", exact: true }).click();
-  await expect(page).toHaveURL(/\/evaluaciones\/[^/]+$/); await expect(page.getByRole("heading", { name: "Intento de evaluación", level: 1 })).toBeFocused();
-  await page.getByRole("radio", { name: "Características", exact: true }).check(); await page.getByRole("button", { name: "Entregar respuestas" }).click();
+  await expect(page).toHaveURL(/\/evaluaciones\/[^/]+$/); await expect(page.getByRole("heading", { name: "Evaluación cerrada beta", level: 1 })).toBeFocused();
+  await page.getByRole("radio", { name: "Características", exact: true }).check(); await submitAttempt(page);
   await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
   await page.reload(); await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
   await page.goBack(); await expect(page.getByRole("heading", { name: "Unidad Beta de vectores", level: 1 })).toBeVisible();
   await page.getByRole("button", { name: "Iniciar Evaluación abierta beta", exact: true }).click(); await page.getByLabel("Tu respuesta", { exact: true }).fill("Comparo características para justificar similitud.");
-  await page.getByRole("button", { name: "Entregar respuestas" }).click(); await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
+  await submitAttempt(page); await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
   await page.goBack();
   // En Evaluar no hay lectura ni ejercicio a la vista: el botón abre la conversación libre.
   await expect(page.getByRole("tab", { name: "Evaluar", exact: true })).toHaveAttribute("aria-selected", "true");
@@ -272,6 +272,12 @@ async function apiPost(page: Page, url: string, data: unknown) {
   return await response.json() as Record<string, unknown>;
 }
 
+/** Entrega desde el intento abierto pasando por la confirmación. */
+async function submitAttempt(page: Page) {
+  await page.getByRole("button", { name: "Entregar respuestas", exact: true }).click();
+  await page.getByRole("dialog", { name: "¿Entregar la evaluación?" }).getByRole("button", { name: "Sí, entregar", exact: true }).click();
+}
+
 async function advanceClock(page: Page, now: string) {
   expect((await page.request.post(`http://127.0.0.1:5089/clock?now=${encodeURIComponent(now)}`)).ok()).toBeTruthy();
 }
@@ -291,6 +297,18 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
     objectives: [{ id: objective, description: "Comparar ejemplos", conceptIds: [concept] }], readings, exercises,
     assessments: [{ id: crypto.randomUUID(), prompt: "Evaluar", privateCriteria: "PRIVATE-TABS", objectiveIds: [objective] }], prerequisites: [] } }) as { id: string; revision: { id: string } };
   await apiPost(page, `/api/units/${unit.id}/revisions/${unit.revision.id}/publish`, { version: 1 });
+  // Evaluación de tres pasos (cerrada, múltiple y con rúbrica) para el intento por pasos del final.
+  const options = (...texts: string[]) => texts.map((text) => ({ id: crypto.randomUUID(), text }));
+  const single = options("Comparar rasgos", "Memorizar"), multiple = options("Color", "Tamaño", "Precio"), criterion = crypto.randomUUID();
+  const base = { unitId: unit.id, unitRevisionId: unit.revision.id, objectiveIds: [objective], conceptIds: [concept] };
+  const stepQuestions = await Promise.all([
+    { ...base, type: "singleChoice", prompt: "¿Qué haces al comparar?", options: single, correctOptionIds: [single[0]?.id], scoringPolicy: "exactMatch", rubric: null },
+    { ...base, type: "multipleChoice", prompt: "¿Qué rasgos son visibles?", options: multiple, correctOptionIds: [multiple[0]?.id, multiple[1]?.id], scoringPolicy: "partialCredit", rubric: null },
+    { ...base, type: "openResponse", prompt: "Justifica tu criterio.", options: [], correctOptionIds: [], scoringPolicy: "rubric",
+      rubric: { version: 1, criteria: [{ id: criterion, description: "Justificación", maxPoints: 1 }], privateGuidance: "PRIVATE-STEPS" } },
+  ].map((document) => apiPost(page, "/api/assessments/questions", { id: crypto.randomUUID(), number: 1, document })));
+  await apiPost(page, "/api/assessments/definitions", { id: crypto.randomUUID(), number: 1, document: { title: "Evaluación por pasos", unitId: unit.id, unitRevisionId: unit.revision.id,
+    objectiveIds: [objective], questionRevisionIds: stepQuestions.map((question) => question.id), mode: "assessment", timeLimitMinutes: 30, maxAttempts: 2, feedback: "afterSubmission", assistance: "none" } });
   // Se recorre con la sesión del autor: la unidad publicada se estudia igual y la suite no supera el límite de 20 logins por minuto del host.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/unidades/${unit.id}`);
@@ -374,6 +392,50 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await page.unroute("**/api/tutor/availability");
   await notice.getByRole("button", { name: "Reintentar", exact: true }).click();
   await expect(ask).toBeVisible(); await expect(notice).toHaveCount(0);
+  // Evaluación por pasos con teclado: la URL guarda la pregunta, recargar conserva paso y borrador y Atrás sale del intento.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await tab("Evaluar").click();
+  await page.getByRole("button", { name: "Iniciar Evaluación por pasos", exact: true }).focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Evaluación por pasos", level: 1 })).toBeFocused();
+  await expect(page.getByText(/^Tiempo restante \d{1,2}:\d{2}$/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pregunta 1 de 3" })).toBeVisible();
+  await page.getByRole("radio", { name: "Comparar rasgos", exact: true }).focus(); await page.keyboard.press("Space");
+  await expect(page.getByRole("progressbar", { name: "1 de 3 respondidas" })).toBeVisible();
+  // Enter dentro del formulario avanza; el foco pasa al título de la nueva pregunta.
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/pregunta=2$/); await expect(page.getByRole("heading", { name: "Pregunta 2 de 3" })).toBeFocused();
+  await page.keyboard.press("Tab"); await page.keyboard.press("Space");
+  await expect(page.getByRole("checkbox", { name: "Color", exact: true })).toBeChecked();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Pregunta 2 de 3" })).toBeVisible(); await expect(page.getByRole("checkbox", { name: "Color", exact: true })).toBeChecked();
+  await page.goBack(); await expect(tab("Evaluar")).toHaveAttribute("aria-selected", "true");
+  await page.goForward(); await expect(page.getByRole("heading", { name: "Pregunta 2 de 3" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Preguntas" }).getByRole("button", { name: "Pregunta 3, sin responder" }).click();
+  await expect(page).toHaveURL(/pregunta=3$/);
+  await page.getByLabel("Tu respuesta", { exact: true }).fill("Comparo rasgos visibles.");
+  for (const width of [320, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  }
+  // Confirmación con teclado: Escape vuelve sin entregar y devuelve el foco.
+  const deliver = page.getByRole("button", { name: "Entregar respuestas", exact: true });
+  await deliver.focus(); await page.keyboard.press("Enter");
+  const confirmation = page.getByRole("dialog", { name: "¿Entregar la evaluación?" });
+  await expect(confirmation).toContainText("Respondiste 3 de 3 preguntas.");
+  await expect(confirmation).toContainText("Las respuestas abiertas quedarán pendientes de corrección docente.");
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  await page.keyboard.press("Escape"); await expect(confirmation).toHaveCount(0); await expect(deliver).toBeFocused();
+  await page.keyboard.press("Enter"); await confirmation.getByRole("button", { name: "Sí, entregar", exact: true }).focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Tu entrega" })).toBeFocused();
+  await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Resultado:/)).toHaveCount(0); await expect(page.locator("body")).not.toContainText("PRIVATE-STEPS");
+  await page.reload(); await expect(page.getByText("Tu respuesta: Comparo rasgos visibles.", { exact: true })).toBeVisible();
+  for (const width of [320, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  }
 });
 
 test("tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a altura completa", async ({ page }) => {
@@ -520,7 +582,7 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
   await expect(page.getByRole("heading", { name: `Evaluación R1 ${tag}`, exact: true })).toBeVisible();
   if (open) await page.getByLabel("Tu respuesta", { exact: true }).fill("Justifico con el contenido histórico R1.");
   else await page.getByRole("radio", { name: "Respuesta R1", exact: true }).check();
-  await page.getByRole("button", { name: "Entregar respuestas", exact: true }).click();
+  await submitAttempt(page);
   if (open) {
     await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
     await switchUser(page, "author");

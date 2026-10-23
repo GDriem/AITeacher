@@ -1,12 +1,10 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { backend, result, type Schema } from "./client";
-import { Busy, Failure, Field, Pages } from "./Shared";
+import { Busy, Failure, Pages } from "./Shared";
 import { attemptLabels } from "./labels";
 import { Button } from "../../ui";
-import shared from "./Shared.module.css";
-import { panel } from "./panel";
 
 export function Assessments({ unit }: { unit: Schema["UnitResponse"] }) {
   const [offset, setOffset] = useState(0);
@@ -40,42 +38,4 @@ export function OwnAttempts({ select }: { select: (id: string) => void }) {
         <Button onClick={() => select(item.id)}>{item.status === "inProgress" ? "Retomar" : "Consultar"}</Button></li>)}</ul>}
       <Pages offset={offset} total={attempts.data.total} change={setOffset} /></>}
   </details>;
-}
-
-export function AttemptView({ id, headingLevel = 3 }: { id: string; headingLevel?: 2 | 3 }) {
-  const Heading = headingLevel === 2 ? "h2" : "h3";
-  const queries = useQueryClient();
-  const [answers, setAnswers] = useState<Record<string, { selectedOptionIds: string[]; text?: string }>>({});
-  const submission = useRef<Schema["SubmitAssessmentAttempt"] | null>(null);
-  const attempt = useQuery({ queryKey: ["attempt", id], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/attempts/{id}", { signal, params: { path: { id } } })) });
-  const submit = useMutation({ mutationFn: async (body: Schema["SubmitAssessmentAttempt"]) => result(await backend.POST("/api/assessments/attempts/{id}/submit", { params: { path: { id } }, body })),
-    onSuccess: (value) => { queries.setQueryData(["attempt", id], value); void queries.invalidateQueries({ queryKey: ["attempts"] }); } });
-  if (attempt.isPending) return <Busy />;
-  if (attempt.isError) return <Failure error={attempt.error} retry={() => void attempt.refetch()} />;
-  const value = attempt.data;
-  const locked = value.status !== "inProgress" || submit.isPending || submit.isError;
-  const send = () => {
-    submission.current ??= { answers: value.questions.map((question) => ({ questionRevisionId: question.revisionId, ...(answers[question.revisionId] ?? { selectedOptionIds: [] }) })) };
-    submit.mutate(submission.current);
-  };
-  return <article className={panel}><Heading>{value.title}</Heading><p role="status">{attemptLabels[value.status]}</p>
-    <p>Vence: {new Date(value.expiresAt).toLocaleString()}. Ayudas durante la evaluación: ninguna.</p>
-    <form onSubmit={(event) => { event.preventDefault(); send(); }}>{value.questions.map((question, index) => {
-      const answer = answers[question.revisionId] ?? value.answers?.find((item) => item.questionRevisionId === question.revisionId) ?? { selectedOptionIds: [] };
-      const open = ["openResponse", "caseAnalysis", "practicalExercise"].includes(question.type);
-      return <fieldset key={question.revisionId} disabled={locked}><legend>{index + 1}. {question.prompt}</legend>
-        {open ? <Field title="Tu respuesta"><textarea maxLength={20000} value={answer.text ?? ""} onChange={(event) => setAnswers((previous) => ({ ...previous, [question.revisionId]: { selectedOptionIds: [], text: event.target.value } }))} /></Field>
-          : question.options.map((option) => <label className={shared.choice} key={option.id}><input type={question.type === "multipleChoice" ? "checkbox" : "radio"}
-            name={`question-${question.revisionId}`} checked={answer.selectedOptionIds.includes(option.id)} onChange={(event) => {
-              const selectedOptionIds = question.type !== "multipleChoice" ? [option.id] : event.target.checked ? [...answer.selectedOptionIds, option.id] : answer.selectedOptionIds.filter((item) => item !== option.id);
-              setAnswers((previous) => ({ ...previous, [question.revisionId]: { selectedOptionIds } }));
-            }} />{option.text}</label>)}
-      </fieldset>;
-    })}
-      {value.status === "inProgress" ? <Button type="submit" variant="primary" disabled={locked}>Entregar respuestas</Button> : null}</form>
-    {submit.isError ? <Failure error={submit.error} retry={send} /> : null}
-    {value.status === "pendingReview" ? <p>Tu docente revisará las respuestas con la rúbrica fijada al iniciar.</p> : null}
-    {value.fraction !== null ? <p className={shared.feedback}>Resultado: {Math.round(value.fraction * 100)} %</p> : value.submittedAt ? <p>El resultado se mostrará según la política de esta evaluación.</p> : null}
-    {value.scores?.map((score) => <p key={score.questionRevisionId}>{score.feedback}</p>)}
-  </article>;
 }

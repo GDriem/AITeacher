@@ -3,7 +3,6 @@ import { BackendRoot } from "./BackendRoot";
 import { HomeRoute } from "./HomeRoute";
 import { CurriculumExplorer } from "./CurriculumExplorer";
 import { UnitSpace } from "./UnitSpace";
-import { AttemptRoute } from "./AttemptRoute";
 import { Notes } from "./Notes";
 import { LearningReviews } from "./LearningReviews";
 import { Archive } from "./Archive";
@@ -25,7 +24,8 @@ export const router = createBrowserRouter([{
       // El tutor (chat, mapa y voz) también se descarga aparte: la unidad, el catálogo y el inicio no lo necesitan.
       { path: "unidades/:unitId/tutor", lazy: async () => ({ Component: (await import("./UnitTutor")).UnitTutor }) },
       { path: "unidades/:unitId/tutor/:conversationId", lazy: async () => ({ Component: (await import("./UnitTutor")).UnitTutor }) },
-      { path: "evaluaciones/:attemptId", Component: AttemptRoute },
+      // El intento (pasos, tiempo y resultado) se descarga al abrirlo desde Evaluar o Repasos.
+      { path: "evaluaciones/:attemptId", lazy: async () => ({ Component: (await import("./AttemptRoute")).AttemptRoute }) },
       { path: "apuntes", Component: Notes },
       { path: "repasos", Component: LearningReviews },
       { path: "historial", Component: Archive },
