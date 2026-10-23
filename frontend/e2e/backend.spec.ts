@@ -114,6 +114,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   await openUnit(page, "Vectores Beta", "Unidad Beta de vectores"); await expect(page.getByRole("heading", { name: "Lectura de vectores", exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("PRIVATE-EDITORIAL-BROWSER"); await expect(page.locator("body")).not.toContainText("PRIVATE-RUBRIC-BROWSER");
+  await page.getByRole("tab", { name: "Evaluar", exact: true }).click(); await expect(page).toHaveURL(/pestana=evaluar/);
   await page.getByRole("button", { name: "Iniciar Evaluación cerrada beta", exact: true }).click();
   await expect(page).toHaveURL(/\/evaluaciones\/[^/]+$/); await expect(page.getByRole("heading", { name: "Intento de evaluación", level: 1 })).toBeFocused();
   await page.getByRole("radio", { name: "Características", exact: true }).check(); await page.getByRole("button", { name: "Entregar respuestas" }).click();
@@ -123,7 +124,10 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Iniciar Evaluación abierta beta", exact: true }).click(); await page.getByLabel("Tu respuesta", { exact: true }).fill("Comparo características para justificar similitud.");
   await page.getByRole("button", { name: "Entregar respuestas" }).click(); await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
   await page.goBack();
-  await page.getByRole("link", { name: "Abrir conversación", exact: true }).click(); await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
+  // En Evaluar no hay lectura ni ejercicio a la vista: el botón abre la conversación libre.
+  await expect(page.getByRole("tab", { name: "Evaluar", exact: true })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("link", { name: "Preguntar al tutor sobre esta unidad", exact: true }).click(); await expect(page).toHaveURL(/\/tutor$/);
+  await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Quiero explorar Concepto Beta."); await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Guardar mensaje en apuntes", exact: true }).last().click(); await expect(page.getByText("Apunte guardado.", { exact: true })).toBeVisible();
@@ -182,7 +186,11 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
   await expect(page.getByText(/^Fuente:/)).toBeVisible();
   await expect(page.getByRole("button", { name: /Iniciar .*beta/ })).toHaveCount(0);
-  await page.getByRole("link", { name: "Consultar esta lectura con el tutor" }).click();
+  // Una lectura no tiene pestañas vacías; el botón del tutor lleva su contexto.
+  await expect(page.getByRole("tablist")).toHaveCount(0);
+  await expect(page.getByText("Lectura", { exact: true })).toBeVisible(); await expect(page.getByText("Nivel: Principiante", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: /^Preguntar al tutor sobre «/ }).click();
+  await expect(page).toHaveURL(/\/tutor\?modo=reading&actividad=/);
   await expect(page.getByText("Consulta sobre una lectura", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Nueva conversación" }).click();
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Explica la idea de esta lectura.");
@@ -266,10 +274,110 @@ async function advanceClock(page: Page, now: string) {
   expect((await page.request.post(`http://127.0.0.1:5089/clock?now=${encodeURIComponent(now)}`)).ok()).toBeTruthy();
 }
 
+test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tutor", async ({ page }) => {
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  const entry = { name: "Pestañas Beta", slug: `tabs-${crypto.randomUUID()}` };
+  const subject = await apiPost(page, "/api/catalog/subjects", entry);
+  const category = await apiPost(page, "/api/catalog/categories", { subjectId: subject.id, entry });
+  const topic = await apiPost(page, "/api/catalog/topics", { subjectId: subject.id, categoryId: category.id, entry });
+  const concept = crypto.randomUUID(), objective = crypto.randomUUID();
+  // Las dos últimas son cortas: elegir la penúltima debe conservar su contexto al pulsar el tutor.
+  const readings = ([["Primera lectura larga", 24], ["Segunda lectura corta", 2], ["Tercera lectura corta", 2]] as const).map(([title, paragraphs]) => ({ id: crypto.randomUUID(), title,
+    text: Array.from({ length: paragraphs }, (_, index) => `Párrafo ${String(index + 1)} de ${title}.`).join("\n\n"), source: "Sintético", objectiveIds: [objective] }));
+  const exercises = ["Compara dos ejemplos.", "Explica tu criterio."].map((prompt) => ({ id: crypto.randomUUID(), prompt, objectiveIds: [objective] }));
+  const unit = await apiPost(page, "/api/units", { topicId: topic.id, document: { title: "Unidad con pestañas", concepts: [{ id: concept, name: "Idea" }],
+    objectives: [{ id: objective, description: "Comparar ejemplos", conceptIds: [concept] }], readings, exercises,
+    assessments: [{ id: crypto.randomUUID(), prompt: "Evaluar", privateCriteria: "PRIVATE-TABS", objectiveIds: [objective] }], prerequisites: [] } }) as { id: string; revision: { id: string } };
+  await apiPost(page, `/api/units/${unit.id}/revisions/${unit.revision.id}/publish`, { version: 1 });
+  // Se recorre con la sesión del autor: la unidad publicada se estudia igual y la suite no supera el límite de 20 logins por minuto del host.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/unidades/${unit.id}`);
+  await expect(page.getByRole("heading", { name: "Unidad con pestañas", level: 1 })).toBeVisible();
+  await expect(page.getByText("Tema:", { exact: false }).getByRole("link", { name: "Pestañas Beta", exact: true })).toHaveAttribute("href", /\/temas\//);
+  await expect(page.getByText("Unidad", { exact: true })).toBeVisible();
+  // Tabulación itinerante: Tab entra a la pestaña activa y las flechas la cambian; la URL la conserva.
+  const tab = (name: string) => page.getByRole("tab", { name, exact: true });
+  await tab("Aprender").focus(); await page.keyboard.press("ArrowRight");
+  await expect(tab("Practicar")).toBeFocused(); await expect(tab("Practicar")).toHaveAttribute("aria-selected", "true");
+  await expect(page).toHaveURL(/pestana=practicar/);
+  await page.keyboard.press("End"); await expect(tab("Evaluar")).toHaveAttribute("aria-selected", "true");
+  await page.reload(); await expect(tab("Evaluar")).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "Prácticas y evaluaciones" })).toBeVisible();
+  await tab("Evaluar").focus(); await page.keyboard.press("Home");
+  await expect(tab("Aprender")).toHaveAttribute("aria-selected", "true"); await expect(page).not.toHaveURL(/pestana=/);
+  // Índice lateral en escritorio; el botón del tutor sigue a la lectura visible.
+  const index = page.getByRole("navigation", { name: "Lecturas de la unidad" });
+  await expect(index.getByRole("link", { name: "Primera lectura larga", exact: true })).toHaveAttribute("aria-current", "true");
+  const ask = page.getByRole("link", { name: /^Preguntar al tutor/ });
+  await expect(ask).toHaveAccessibleName("Preguntar al tutor sobre «Primera lectura larga»");
+  await index.getByRole("link", { name: "Segunda lectura corta", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Segunda lectura corta", level: 2 })).toBeFocused();
+  await expect(ask).toHaveAccessibleName("Preguntar al tutor sobre «Segunda lectura corta»");
+  await expect(ask).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[1]?.id ?? ""}$`));
+  await expect(index.getByRole("link", { name: "Segunda lectura corta", exact: true })).toHaveAttribute("aria-current", "true");
+  await expect(index.getByRole("link", { name: "Primera lectura larga", exact: true })).not.toHaveAttribute("aria-current", "true");
+  // pointerdown en el propio enlace no debe sustituir la segunda lectura por la tercera observada.
+  await ask.click();
+  await expect(page).toHaveURL(new RegExp(`/tutor\\?modo=reading&actividad=${readings[1]?.id ?? ""}$`));
+  await page.goBack();
+  await index.getByRole("link", { name: "Tercera lectura corta", exact: true }).click();
+  // Al desplazarse el alumno se suelta la elección del índice; al final de la página manda la última lectura visible.
+  await expect.poll(() => page.evaluate(() => Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight - 1)).toBe(true);
+  await page.mouse.wheel(0, 400);
+  await expect(ask).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[2]?.id ?? ""}$`));
+  await expect(index.getByRole("link", { name: "Tercera lectura corta", exact: true })).toHaveAttribute("aria-current", "true");
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  // Practicar: el contexto pasa al ejercicio visible y Atrás devuelve a la misma pestaña.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await tab("Practicar").click();
+  await expect(ask).toHaveAccessibleName("Preguntar al tutor sobre «Ejercicio 1»");
+  await ask.click();
+  await expect(page).toHaveURL(new RegExp(`/tutor\\?modo=practice&actividad=${exercises[0]?.id ?? ""}$`));
+  await expect(page.getByText("Práctica guiada", { exact: true })).toBeVisible();
+  // La miga de la unidad vuelve a Practicar, de donde salió la práctica guiada.
+  await expect(page.getByRole("link", { name: "Unidad con pestañas", exact: true })).toHaveAttribute("href", /\?pestana=practicar$/);
+  await page.goBack(); await expect(tab("Practicar")).toHaveAttribute("aria-selected", "true");
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  await tab("Aprender").click();
+  for (const width of [320, 768, 800, 900, 1024, 1152, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    const overflow = await page.evaluate(() => ({
+      pixels: document.documentElement.scrollWidth - innerWidth,
+      elements: Array.from(document.querySelectorAll("body *")).filter((element) => element.getBoundingClientRect().right > innerWidth)
+        .map((element) => `${element.tagName}.${element.getAttribute("class") ?? ""}`).slice(0, 10),
+    }));
+    expect(overflow.pixels, `ancho ${String(width)}: ${overflow.elements.join(", ")}`).toBeLessThanOrEqual(0);
+    expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+    const button = await ask.boundingBox();
+    expect(button && button.x + button.width).toBeLessThanOrEqual(width);
+    if (width <= 768) {
+      // En móvil el índice es plegable y el botón queda por encima de la barra inferior.
+      await expect(index.getByText("Lecturas (3)", { exact: true })).toBeVisible();
+      const bar = await mainNav(page, "Catálogo").boundingBox();
+      expect(button && bar && button.y + button.height).toBeLessThanOrEqual(bar?.y ?? 0);
+      // Al final de la página el botón no tapa el último contenido.
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const last = await page.getByText("Fuente: Sintético").last().boundingBox();
+      const after = await ask.boundingBox();
+      expect(last && after && last.y + last.height).toBeLessThanOrEqual(after?.y ?? 0);
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }
+  }
+  // Si falla la disponibilidad del tutor, un aviso con reintento ocupa el sitio del botón.
+  await page.route("**/api/tutor/availability", (route) => route.fulfill({ status: 503, contentType: "application/problem+json",
+    body: JSON.stringify({ title: "Servicio no disponible", status: 503 }) }));
+  await page.reload();
+  const notice = page.getByRole("alert").filter({ hasText: "No pudimos comprobar el tutor" });
+  await expect(notice).toBeVisible({ timeout: 15_000 }); await expect(ask).toHaveCount(0);
+  await page.unroute("**/api/tutor/availability");
+  await notice.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(ask).toBeVisible(); await expect(notice).toHaveCount(0);
+});
+
 test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async ({ page }) => {
   await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
   await openUnit(page, "Vectores Beta", "Unidad Beta de vectores");
-  await page.getByRole("link", { name: "Abrir conversación", exact: true }).click();
+  await page.getByRole("link", { name: /^Preguntar al tutor/ }).click();
   const creation = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/api/tutor/conversations"));
   await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
   const { id } = await (await creation).json() as { id: string };
@@ -277,13 +385,13 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   // La conversación vive en la URL: recargar la reabre sin volver a elegirla.
-  await expect(page).toHaveURL(new RegExp(`/tutor/${id}$`));
+  await expect(page).toHaveURL(new RegExp(`/tutor/${id}(\\?|$)`));
   await page.reload();
   await expect(page.getByLabel("Retomar una conversación")).toHaveValue(id);
   // Recorrer el select con flechas sólo elige; abrir otra conversación requiere confirmarlo.
   await page.getByLabel("Retomar una conversación").focus();
   await page.keyboard.press("ArrowUp"); await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(new RegExp(`/tutor/${id}$`));
+  await expect(page).toHaveURL(new RegExp(`/tutor/${id}(\\?|$)`));
   await expect(page.getByLabel("Retomar una conversación")).toBeFocused();
   await expect(page.getByRole("button", { name: "Recuperar mensaje pendiente" })).toBeVisible();
   const pending = await (await page.request.get(`/api/tutor/conversations/${id}/pending-turn`)).json() as { request: unknown; leaseUntil: string };
