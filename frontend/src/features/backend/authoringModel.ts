@@ -57,7 +57,8 @@ export function revisionDiff(before: Document | null, after: Document) {
   }
   return changes;
 }
-export interface UnitDraft { document: Document; topicId: string; version: number | null }
+/** `revisionId` es la revisión cabeza sobre la que se basa el borrador; decide si la versión actual sigue siendo válida. */
+export interface UnitDraft { document: Document; topicId: string; version: number | null; revisionId?: string | null }
 const draftKey = (owner: string, id: string) => `aiteacher.autoria.${owner}.${id}`;
 export function readUnitDraft(owner: string, id: string): UnitDraft | null {
   try {

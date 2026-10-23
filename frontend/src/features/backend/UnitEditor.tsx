@@ -25,10 +25,19 @@ export function UnitEditor({ unit, saved, topics, onDirty }: { unit?: Schema["Un
   const [errors, setErrors] = useState<Record<string, string>>({});
   const routeState: unknown = useLocation().state;
   const [notice, setNotice] = useState(() => routeState !== null && typeof routeState === "object" && "savedUnit" in routeState && routeState.savedUnit === id ? "Borrador guardado." : "");
-  const [version, setVersion] = useState(draft?.version ?? unit?.version ?? null);
+  const fromUnit = () => ({ revisionId: unit?.revision.id ?? null, version: unit?.version ?? null });
+  const [base, setBase] = useState(() => draft ? { revisionId: draft.revisionId ?? null, version: draft.version } : fromUnit());
   const [baseline, setBaseline] = useState(JSON.stringify({ document: initial, topicId: unit?.topicId ?? "" }));
-  const dirty = baseline !== JSON.stringify({ document, topicId });
+  const current = JSON.stringify({ document, topicId });
+  const latest = useRef(current);
+  useEffect(() => { latest.current = current; }, [current]);
+  const dirty = baseline !== current;
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
+  // Sin cambios locales, el editor sigue a la unidad: muestra la revisión concurrente tras recargar y la versión nueva tras publicar o retirar.
+  if (!dirty && unit && (unit.revision.id !== base.revisionId || unit.version !== base.version)) {
+    if (unit.revision.id !== base.revisionId && "assessments" in unit.revision.document) { updateDocument(structuredClone(unit.revision.document)); setBaseline(JSON.stringify({ document: unit.revision.document, topicId: unit.topicId })); }
+    setBase({ revisionId: unit.revision.id, version: unit.version });
+  }
   const url = usePersonalUrl();
   const steps = applicableSteps(document);
   const step = steps.find((item) => item === url.search.get("paso")) ?? "datos";
@@ -38,7 +47,7 @@ export function UnitEditor({ unit, saved, topics, onDirty }: { unit?: Schema["Un
   const savedNavigation = useRef(false);
   useEffect(() => { if (!dirty) return; const warn = (event: BeforeUnloadEvent) => { if (!savedNavigation.current) event.preventDefault(); }; window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn); }, [dirty]);
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && !savedNavigation.current && currentLocation.pathname !== nextLocation.pathname);
-  const persist = (next: typeof document, topic: string) => { const base = dirty ? version : unit?.version ?? null; if (!dirty) setVersion(base); writeUnitDraft(owner, id, { document: next, topicId: topic, version: base }); };
+  const persist = (next: typeof document, topic: string) => { const start = dirty ? base : fromUnit(); if (!dirty) setBase(start); writeUnitDraft(owner, id, { document: next, topicId: topic, ...start }); };
   const setDocument = (next: typeof document) => { savedNavigation.current = false; updateDocument(next); persist(next, topicId); };
   const changeKind = (kind: "reading" | "learningUnit") => setDocument(kind === "reading" ? { ...document, kind, concepts: [], objectives: [], exercises: [], assessments: [], prerequisites: [], readings: document.readings.map((r) => ({ ...r, objectiveIds: [] })) } : { ...document, kind });
   const go = (next: string) => {
@@ -46,11 +55,16 @@ export function UnitEditor({ unit, saved, topics, onDirty }: { unit?: Schema["Un
     if (target > current) { for (const item of steps.slice(0, target)) { const found = validateStep(document, item, topicId); if (Object.keys(found).length) { setErrors(found); url.set("paso", item); return; } } }
     setErrors({}); url.set("paso", next);
   };
-  const save = useMutation({ mutationFn: async () => unit
-    ? result(await backend.POST("/api/units/{unitId}/revisions", { params: { path: { unitId: unit.id } }, body: { version: dirty ? version ?? unit.version : unit.version, document } }))
-    : result(await backend.POST("/api/units", { body: { topicId, document } })),
-    onSuccess: (value) => { savedNavigation.current = true; writeUnitDraft(owner, id, null); setBaseline(JSON.stringify({ document, topicId })); setVersion(value.version); setNotice("Borrador guardado."); saved(value); void queries.invalidateQueries({ queryKey: ["author-units"] }); } });
-  const submit = () => { for (const item of steps) { const found = validateStep(document, item, topicId); if (Object.keys(found).length) { setErrors(found); url.set("paso", item); return; } } save.mutate(); };
+  // Publicar o retirar no cambian la revisión cabeza: la versión actual vale mientras la revisión base coincida. Si otro autor guardó, se envía la versión del borrador y el servidor responde 409.
+  const save = useMutation({ mutationFn: async (sent: { document: typeof document; topicId: string }) => unit
+    ? result(await backend.POST("/api/units/{unitId}/revisions", { params: { path: { unitId: unit.id } }, body: { version: unit.revision.id === base.revisionId ? unit.version : base.version ?? unit.version, document: sent.document } }))
+    : result(await backend.POST("/api/units", { body: sent })),
+    onSuccess: (value, sent) => {
+      const snapshot = JSON.stringify({ document: sent.document, topicId: sent.topicId }), next = { revisionId: value.revision.id, version: value.version };
+      // Lo escrito durante el guardado sigue pendiente y conserva su copia local sobre la revisión recién creada.
+      if (snapshot === latest.current) { savedNavigation.current = true; writeUnitDraft(owner, id, null); } else writeUnitDraft(owner, id, { ...(JSON.parse(latest.current) as { document: typeof document; topicId: string }), ...next });
+      setBaseline(snapshot); setBase(next); setNotice("Borrador guardado."); saved(value); void queries.invalidateQueries({ queryKey: ["author-units"] }); } });
+  const submit = () => { for (const item of steps) { const found = validateStep(document, item, topicId); if (Object.keys(found).length) { setErrors(found); url.set("paso", item); return; } } save.mutate({ document, topicId }); };
   const objectives = document.objectives.map((item) => ({ id: item.id, title: item.description || "Objetivo sin descripción" }));
   const concepts = document.concepts.map((item) => ({ id: item.id, title: item.name || "Concepto sin nombre" }));
   const content = <><h2 ref={heading} tabIndex={-1}>{stepLabels[step]}</h2>

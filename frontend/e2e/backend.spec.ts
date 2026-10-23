@@ -796,6 +796,8 @@ test("autoría: borrador recuperable, diff de publicación existente y conflicto
   await expect(page.getByText(/La versión de la unidad cambió/)).toBeVisible();
   await page.getByRole("button", { name: "Recargar unidad", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
+  // Sin cambios locales, recargar muestra la revisión concurrente en vez de basar el siguiente guardado en el documento viejo.
+  await expect(page.getByLabel("Título de la unidad")).toHaveValue("Cambio concurrente");
   // Guardar el borrador anterior conserva su versión y falla sin perder el texto.
   await page.getByLabel("Título de la unidad").fill("Cambio local");
   const current = await (await page.request.get(`/api/units/${unit.id}`)).json() as { version: number };

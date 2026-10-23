@@ -8,7 +8,7 @@ import { server } from "../../test/server";
 import { ProfileContext } from "./profile";
 import { AuthorSpace, AuthorUnits } from "./AuthorSpace";
 import { AuthorUnitRoute } from "./AuthorUnitRoute";
-import { emptyDocument, readUnitDraft } from "./authoringModel";
+import { emptyDocument, readUnitDraft, writeUnitDraft } from "./authoringModel";
 import type { Schema } from "./client";
 
 const origin = window.location.origin;
@@ -55,6 +55,33 @@ it("persiste cambios por unidad al desmontar y recargar con el mismo paso", asyn
   mount("/autoria/unidades/u?paso=datos");
   expect(await screen.findByLabelText("Título de la unidad")).toHaveValue("Cambio sin guardar");
   expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Datos", "Lecturas", "Revisión"]);
+});
+it.each([
+  ["publicar o retirar no invalidan el borrador de la misma revisión", "r", 2],
+  ["un guardado de otro autor envía la versión del borrador para recibir 409", "otra", 1],
+])("guarda con la versión según la revisión base: %s", async (_, revisionId, expected) => {
+  const sent: unknown[] = [];
+  server.use(http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
+    http.get(`${origin}/api/units/u`, () => HttpResponse.json({ ...unit, version: 2 })),
+    http.post(`${origin}/api/units/u/revisions`, async ({ request }) => { sent.push(await request.json()); return HttpResponse.json({ ...unit, version: 3, revision: { ...unit.revision, id: "r2", number: 2 } }); }));
+  writeUnitDraft("a", "u", { document: { ...doc, title: "Cambio local" }, topicId: "t", version: 1, revisionId });
+  mount("/autoria/unidades/u?paso=datos");
+  expect(await screen.findByLabelText("Título de la unidad")).toHaveValue("Cambio local");
+  await userEvent.setup().click(screen.getByRole("button", { name: "Guardar borrador" }));
+  await waitFor(() => expect(sent).toHaveLength(1));
+  expect(sent[0]).toMatchObject({ version: expected, document: { title: "Cambio local" } });
+});
+it("sin cambios locales muestra la revisión concurrente al recargar la unidad", async () => {
+  let current = unit;
+  server.use(http.get(`${origin}/api/units/u`, () => HttpResponse.json(current)));
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const router = createMemoryRouter([{ path: "/autoria/unidades/:unitId", Component: AuthorUnitRoute }], { initialEntries: ["/autoria/unidades/u?paso=datos"] });
+  render(<QueryClientProvider client={client}><ProfileContext value={{ studentId: "a", canAuthor: true, displayName: "Autor", email: "a@example.test" }}><RouterProvider router={router} /></ProfileContext></QueryClientProvider>);
+  expect(await screen.findByLabelText("Título de la unidad")).toHaveValue("Guardada");
+  current = { ...unit, version: 2, revision: { ...unit.revision, id: "r2", number: 2, document: { ...doc, title: "Cambio concurrente" } } };
+  await client.invalidateQueries({ queryKey: ["author-unit"] });
+  await waitFor(() => expect(screen.getByLabelText("Título de la unidad")).toHaveValue("Cambio concurrente"));
+  expect(screen.getByText("Borrador guardado.")).toBeVisible();
 });
 it("abre Revisión sin llamadas de alumno y conserva solo lectura", async () => {
   mount("/autoria/unidades/u?paso=revision");
