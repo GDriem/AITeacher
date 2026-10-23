@@ -64,4 +64,6 @@ public sealed class Topic : ICatalogEntry
     public Guid SubjectId { get; set; }
     public Guid CategoryId { get; set; }
     public Guid? LevelId { get; set; }
+    // Plain-text editorial summary shown to students; null until an author writes one.
+    public string? Description { get; set; }
 }

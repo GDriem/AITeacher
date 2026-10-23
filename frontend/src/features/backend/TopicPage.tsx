@@ -28,11 +28,15 @@ export function TopicPage() {
     { key: "complete", title: "Unidades completas", units: topic.units.filter((unit) => !unit.readingProvenance) },
   ].filter((group) => group.units.length);
   const levels = topic.levels.length;
+  const material = `Material publicado: ${materialCount(topic.units)}${levels ? ` en ${String(levels)} ${levels === 1 ? "nivel" : "niveles"}` : ""}. Los niveles describen el material; no acreditan dominio.`;
+  // La descripción editorial es opcional (la API guarda las vacías como null): sin ella, el resumen del material ocupa su lugar.
+  const description = topic.entry.description ?? null;
   return <section>
     <PageHeader title={topic.entry.name} eyebrow={`${topic.subject.name} · ${topic.category.name}`}
       breadcrumbs={[{ label: "Catálogo", to: back }, { label: topic.entry.name }]}
-      description={`Material publicado: ${materialCount(topic.units)}${levels ? ` en ${String(levels)} ${levels === 1 ? "nivel" : "niveles"}` : ""}. Los niveles describen el material; no acreditan dominio.`}
+      description={description ?? material}
       actions={<Link className={buttonClass("ghost")} to={back}>Volver al catálogo</Link>} />
+    {description ? <p className={styles.material}>{material}</p> : null}
     {topic.prerequisites.length ? <aside className={styles.prerequisites} aria-labelledby="topic-prerequisites">
       <h2 id="topic-prerequisites">Antes se recomienda</h2>
       <ul>{topic.prerequisites.map((item) => <li key={item.slug}>

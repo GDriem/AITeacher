@@ -1,3 +1,11 @@
+/* Resumen del material bajo la descripción editorial, con la misma separación interna de la cabecera. */
+.material {
+  margin: calc(var(--space-3) - var(--space-7)) 0 var(--space-7);
+  max-width: 48rem;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
 .prerequisites {
   display: grid;
   gap: var(--space-2);

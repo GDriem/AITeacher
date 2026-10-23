@@ -40,6 +40,12 @@
   resize: vertical;
 }
 
+.hint {
+  margin: 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
 .choice {
   display: flex;
   align-items: center;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Schema } from "./client";
-import { catalogTopics, filterCatalog, groupCatalog, materialCount, type CatalogData } from "./catalogQueries";
+import { catalogTopics, excerpt, filterCatalog, groupCatalog, materialCount, type CatalogData } from "./catalogQueries";
 
 const entry = (id: string, name: string, extra: Partial<Schema["EntryResponse"]> = {}): Schema["EntryResponse"] =>
   ({ id, name, slug: id, sortOrder: 0, isAvailable: true, version: 1, ...extra });
@@ -63,5 +63,20 @@ describe("catálogo del alumno", () => {
   it("cuenta el material por tipo", () => {
     expect(materialCount(data.units.slice(0, 2))).toBe("2 lecturas");
     expect(materialCount(data.units.slice(2, 4))).toBe("1 lectura · 1 unidad");
+  });
+});
+
+describe("excerpt", () => {
+  it("devuelve null sin descripción y conserva textos cortos en una sola línea", () => {
+    expect(excerpt(null)).toBeNull();
+    expect(excerpt("  \n ")).toBeNull();
+    expect(excerpt("Rutas que\n  cambian solas.")).toBe("Rutas que cambian solas.");
+  });
+  it("corta en un límite de palabra sin pasar del máximo", () => {
+    const text = "OSPF calcula rutas, comparte el estado de los enlaces y converge rápido ante cambios de la red.";
+    const short = excerpt(text, 40) ?? "";
+    expect(short).toBe("OSPF calcula rutas, comparte el estado…");
+    expect(short.length).toBeLessThanOrEqual(40);
+    expect(excerpt("x".repeat(60), 20)).toBe(`${"x".repeat(19)}…`);
   });
 });
