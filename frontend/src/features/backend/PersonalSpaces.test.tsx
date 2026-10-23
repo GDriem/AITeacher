@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { expect, it } from "vitest";
 import { server } from "../../test/server";
@@ -9,11 +9,14 @@ import { ProfileContext } from "./profile";
 import { HomeRoute } from "./HomeRoute";
 import { Notes } from "./Notes";
 import { Archive } from "./Archive";
+import { Assessments } from "./Assessments";
+import { createQueryClient } from "../../app/queryClient";
+import type { Schema } from "./client";
 
 const origin = window.location.origin;
 function Location() { return <output aria-label="URL actual">{useLocation().search}</output>; }
-function mount(children: React.ReactNode, initial = "/") {
-  return render(<MemoryRouter initialEntries={[initial]}><QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+function mount(children: React.ReactNode, initial = "/", queries = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
+  return render(<MemoryRouter initialEntries={[initial]}><QueryClientProvider client={queries}>
     <ProfileContext value={{ studentId: "a", displayName: "Ana", email: "ana@example.test", canAuthor: false }}>{children}</ProfileContext><Location />
   </QueryClientProvider></MemoryRouter>);
 }
@@ -51,6 +54,38 @@ it("retoma la conversación más reciente y permite reintentar una consulta fall
   expect(await screen.findByRole("link", { name: "Continuar con el tutor" })).toHaveAttribute("href", "/unidades/u/tutor/c");
   expect(await screen.findByRole("button", { name: "Reintentar" })).toBeEnabled();
 });
+it("actualiza Inicio e Historial al iniciar una evaluación sin recargar y con la caché de producción", async () => {
+  personalData();
+  let started = false;
+  const attempt = { id: "a", definitionRevisionId: "d", title: "Álgebra", startedAt: "2026-10-23T10:00:00Z", submittedAt: null, status: "inProgress" };
+  server.use(
+    http.get(`${origin}/api/assessments/attempts`, () => HttpResponse.json({ items: started ? [attempt] : [], total: started ? 1 : 0 })),
+    http.get(`${origin}/api/assessments/definitions`, () => HttpResponse.json({ items: [{ id: "d", unitId: "u", unitRevisionId: "r", title: "Álgebra", timeLimitMinutes: 30, maxAttempts: 5 }], total: 1 })),
+    http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
+    http.post(`${origin}/api/assessments/attempts`, () => { started = true; return HttpResponse.json(attempt); }),
+    http.get(`${origin}/api/history/conversations`, () => HttpResponse.json({ items: [], total: 0 })),
+    http.get(`${origin}/api/history/progress`, () => HttpResponse.json({ items: [], total: 0 })),
+  );
+  const unit = { id: "u", revision: { id: "r" } } as Schema["UnitResponse"];
+  mount(<><Link to="/unidad">Abrir unidad</Link><Link to="/">Ir a Inicio</Link><Link to="/historial">Ir a Historial</Link>
+    <Routes><Route path="/" element={<HomeRoute />} /><Route path="/unidad" element={<Assessments unit={unit} />} />
+      <Route path="/evaluaciones/:id" element={<h1>Intento iniciado</h1>} /><Route path="/historial" element={<Archive />} /></Routes>
+  </>, "/", createQueryClient());
+  const user = userEvent.setup();
+  await screen.findByRole("heading", { name: "Tu primer recorrido" });
+  await user.click(screen.getByRole("link", { name: "Abrir unidad" }));
+  await screen.findByText("Aún no has iniciado evaluaciones.");
+  await user.click(await screen.findByRole("button", { name: "Iniciar Álgebra" }));
+  await screen.findByRole("heading", { name: "Intento iniciado" });
+  await user.click(screen.getByRole("link", { name: "Ir a Inicio" }));
+  expect(await screen.findByRole("link", { name: "Retomar Álgebra" })).toHaveAttribute("href", "/evaluaciones/a");
+  expect(screen.queryByRole("heading", { name: "Tu primer recorrido" })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("link", { name: "Ir a Historial" }));
+  expect(await screen.findByRole("link", { name: "Retomar evaluación" })).toHaveAttribute("href", "/evaluaciones/a");
+  await user.click(screen.getByRole("link", { name: "Abrir unidad" }));
+  await user.click(screen.getByText("Mis intentos anteriores"));
+  expect(await screen.findByRole("button", { name: "Retomar" })).toBeVisible();
+});
 it("abre apuntes en la página indicada y conserva el editor y el enlace al origen en la URL", async () => {
   server.use(http.get(`${origin}/api/tutor/notes`, ({ request }) => {
     expect(new URL(request.url).searchParams.get("offset")).toBe("20");
@@ -61,6 +96,18 @@ it("abre apuntes en la página indicada y conserva el editor y el enlace al orig
   await userEvent.setup().click(screen.getByRole("button", { name: "Editar" }));
   expect(screen.getByLabelText("Editar apunte")).toHaveValue("Mi nota");
   expect(screen.getByLabelText("URL actual")).toHaveTextContent("pagina=20&editar=n");
+});
+it("conserva el acceso directo al mensaje aunque no pueda cargar la conversación", async () => {
+  server.use(
+    http.get(`${origin}/api/tutor/notes`, () => HttpResponse.json({ items: [{ id: "n", kind: "savedMessage", text: "Mi nota", version: 1, conversationId: "c", messageId: "m", updatedAt: "2026-10-23T10:00:00Z" }], total: 1 })),
+    http.get(`${origin}/api/tutor/conversations/c`, () => HttpResponse.json({}, { status: 503 })),
+  );
+  mount(<Notes />);
+  const source = await screen.findByRole("link", { name: "Consultar mensaje de origen" });
+  expect(source).toHaveAttribute("href", "/api/graphs/conversations/c/messages/m");
+  expect(source).toHaveAttribute("target", "_blank");
+  await screen.findByRole("button", { name: "Reintentar" });
+  expect(source).toBeVisible();
 });
 it("restaura la conversación importada y su página de mensajes desde la URL", async () => {
   personalData();

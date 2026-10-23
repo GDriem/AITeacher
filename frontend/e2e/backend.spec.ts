@@ -232,6 +232,23 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await mainNav(page, "Apuntes").click();
   await expect(page.getByText("Mi idea privada de la beta", { exact: true })).toBeVisible();
   await expect(page.getByText("Idea exclusiva del segundo alumno", { exact: true })).toHaveCount(0);
+  // Retirar el material bloquea la unidad, pero conserva el origen histórico del apunte.
+  await switchUser(page, "author");
+  const unitToWithdraw = await (await page.request.get(`/api/units/${studentUnitId}`)).json() as { version: number; publishedRevisionId: string };
+  const withdrawn = await apiPost(page, `/api/units/${studentUnitId}/unpublish`, { version: unitToWithdraw.version });
+  await switchUser(page, "student-a");
+  expect((await page.request.get(`/api/units/${studentUnitId}`)).status()).toBe(404);
+  await mainNav(page, "Apuntes").click();
+  const sourceLink = page.getByRole("link", { name: "Consultar mensaje de origen", exact: true });
+  const sourcePage = page.waitForEvent("popup");
+  await sourceLink.focus(); await page.keyboard.press("Enter");
+  const source = await sourcePage;
+  await expect(source.getByRole("heading", { name: "Mensaje de origen", exact: true })).toBeVisible();
+  await expect(source.locator("main")).toContainText("Respuesta de simulación: considera la idea principal.");
+  await source.close();
+  // La misma unidad se reutiliza en los escenarios seriales posteriores.
+  await switchUser(page, "author");
+  await apiPost(page, `/api/units/${studentUnitId}/revisions/${unitToWithdraw.publishedRevisionId}/publish`, { version: withdrawn.version });
   expect(errors).toEqual([]);
 });
 

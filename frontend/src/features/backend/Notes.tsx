@@ -48,6 +48,7 @@ function Note({ note }: { note: Schema["TutorNote"] }) {
     {editing ? <form onSubmit={(event) => { event.preventDefault(); edit.mutate(); }}><Field title="Editar apunte"><textarea required maxLength={12000} value={text} onChange={(event) => setText(event.target.value)} /></Field>
       <Button type="submit" variant="primary" disabled={edit.isPending}>Guardar cambios</Button><Button onClick={() => setEditing(false)}>Cancelar</Button></form> : <TutorMarkdown>{note.text}</TutorMarkdown>}
     <p>Actualizado: {new Date(note.updatedAt).toLocaleString()}</p>
+    {note.kind === "savedMessage" && note.conversationId && note.messageId ? <p><a href={`/api/graphs/conversations/${encodeURIComponent(note.conversationId)}/messages/${encodeURIComponent(note.messageId)}`} target="_blank" rel="noopener noreferrer">Consultar mensaje de origen</a></p> : null}
     {note.conversationId ? conversation.isPending ? <Busy /> : conversation.isError ? <Failure error={conversation.error} retry={() => void conversation.refetch()} /> : <p><Link to={conversationPath(conversation.data)}>Volver a la conversación de origen</Link></p> : null}
     {note.kind === "summary" ? <p>Resumen generado a partir de los mensajes incluidos de la conversación; su origen se conserva aunque edites el texto.</p> : null}
     <div className={shared.actions}><Button onClick={() => setEditing(true)}>Editar</Button><Button onClick={() => setConfirm(true)}>Eliminar</Button></div>

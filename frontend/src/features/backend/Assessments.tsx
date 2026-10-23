@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { backend, result, type Schema } from "./client";
 import { Busy, Failure, Pages } from "./Shared";
 import { attemptLabels } from "./labels";
@@ -8,6 +8,7 @@ import { usePersonalUrl } from "./usePersonalUrl";
 import { Button } from "../../ui";
 
 export function Assessments({ unit }: { unit: Schema["UnitResponse"] }) {
+  const queries = useQueryClient();
   const [offset, setOffset] = useState(0);
   const navigate = useNavigate();
   const openAttempt = (id: string) => void navigate(`/evaluaciones/${encodeURIComponent(id)}`);
@@ -17,7 +18,11 @@ export function Assessments({ unit }: { unit: Schema["UnitResponse"] }) {
     const requestId = requestIds.current.get(definitionRevisionId) ?? crypto.randomUUID();
     requestIds.current.set(definitionRevisionId, requestId);
     return result(await backend.POST("/api/assessments/attempts", { body: { definitionRevisionId, requestId } }));
-  }, onSuccess: (attempt) => { requestIds.current.delete(attempt.definitionRevisionId); openAttempt(attempt.id); } });
+  }, onSuccess: (attempt) => {
+    requestIds.current.delete(attempt.definitionRevisionId);
+    void queries.invalidateQueries({ queryKey: ["attempts"] });
+    openAttempt(attempt.id);
+  } });
   return <section><h2>Prácticas y evaluaciones</h2>
     {definitions.isPending ? <Busy /> : definitions.isError ? <Failure error={definitions.error} retry={() => void definitions.refetch()} /> : <>
       <ul>{definitions.data.items.filter((item) => item.unitId === unit.id && item.unitRevisionId === unit.revision.id).map((item) => <li key={item.id}>
