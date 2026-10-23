@@ -154,6 +154,8 @@ jobs:
         with:
           context: .
           file: backend/Dockerfile.azure
+          # Repository variable; unset keeps the feedback link hidden.
+          build-args: VITE_BETA_FEEDBACK_URL=${{ vars.BETA_FEEDBACK_URL }}
           platforms: linux/amd64
           push: true
           # Single-platform manifest like the existing az acr build images; no attestation index.

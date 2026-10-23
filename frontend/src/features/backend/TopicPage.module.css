@@ -13,7 +13,7 @@
   padding: var(--space-4) var(--space-5);
   border-inline-start: 0.25rem solid var(--status-guide);
   border-radius: var(--radius-sm);
-  background: rgba(108, 167, 255, 0.06);
+  background: color-mix(in srgb, var(--status-guide) 6%, transparent);
 }
 
 .prerequisites h2 {

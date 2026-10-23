@@ -51,14 +51,18 @@ async function switchUser(page: Page, credential: string) {
   await login(page);
 }
 
-/** Revisa contenido real y vacío con los cuatro tamaños de aceptación. */
+/** Revisa contenido real y vacío con los cuatro tamaños de aceptación, en tema claro y oscuro. */
 async function auditPersonalPage(page: Page, label: string) {
-  for (const width of [320, 768, 1024, 1440]) {
-    await page.setViewportSize({ width, height: 1000 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), label).toBeLessThanOrEqual(0);
-    expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations, `${label} a ${String(width)}px`).toEqual([]);
-    if (width === 320 || width === 1440) await page.screenshot({ path: `/tmp/aiteacher-pr6-${label.replaceAll(" ", "-")}-${String(width)}.png`, fullPage: true });
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    for (const width of [320, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), label).toBeLessThanOrEqual(0);
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations, `${label} a ${String(width)}px (${colorScheme})`).toEqual([]);
+      if (width === 320 || width === 1440) await page.screenshot({ path: `/tmp/aiteacher-pr6-${label.replaceAll(" ", "-")}-${colorScheme}-${String(width)}.png`, fullPage: true });
+    }
   }
+  await page.emulateMedia({ colorScheme: "light" });
 }
 
 test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ page, browser }) => {
@@ -66,6 +70,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Enviar comentarios de la beta (se abre en otra pestaña)" })).toHaveAttribute("href", "mailto:beta@example.org");
   await mainNav(page, "Autoría").click();
   await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Catálogo", exact: true }).click();
   await page.getByLabel("Nombre", { exact: true }).fill("Curso Beta"); await page.getByRole("button", { name: "Guardar entrada" }).click();

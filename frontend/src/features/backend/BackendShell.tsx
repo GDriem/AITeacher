@@ -4,6 +4,7 @@ import { useOnlineStatus } from "../../app/connectivity";
 import { useRouteFocus } from "../../app/useRouteFocus";
 import { Button, Toast, ToastRegion } from "../../ui";
 import type { Schema } from "./client";
+import { feedbackHref } from "./feedback";
 import styles from "./BackendShell.module.css";
 
 interface Destination { to: string; label: string; icon: ReactNode; end?: boolean; sections?: string[] }
@@ -18,6 +19,7 @@ const destinations: Destination[] = [
   { to: "/repasos", label: "Repasos", icon: icon("M19 8a7.5 7.5 0 1 0 .5 6M19 4v4h-4") },
   { to: "/historial", label: "Historial", icon: icon("M12 7v5l3 2M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9M4.5 5v4h4") },
 ];
+const feedback = feedbackHref(import.meta.env.VITE_BETA_FEEDBACK_URL);
 const authoring: Destination = { to: "/autoria", label: "Autoría", icon: icon("M5 19l1-4 9.5-9.5 3 3L9 18zM13.5 7.5l3 3") };
 
 /**
@@ -66,6 +68,9 @@ export function BackendShell({ profile, logout, pending, error, children }: {
     </header>
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
     <main id="learning-content" ref={main} className={styles.main} tabIndex={-1}>{children}</main>
+    {feedback ? <footer className={styles.footer}>
+      <p>¿Algo no funciona o se te ocurre una mejora? <a href={feedback} target="_blank" rel="noreferrer">Enviar comentarios de la beta<span className={styles.external}> (se abre en otra pestaña)</span></a></p>
+    </footer> : null}
     <ToastRegion className={styles.toasts}>
       {!online ? <Toast tone="warning">Sin conexión. Reintentaremos cuando vuelva la red.</Toast>
         : notice ? <Toast tone="success" onDismiss={() => setNotice(null)}>{notice}</Toast> : null}

@@ -213,6 +213,34 @@
   inset-block-end: var(--space-4);
 }
 
+.footer {
+  width: min(100% - var(--space-8), var(--content-max));
+  margin-inline: auto;
+  padding-block: var(--space-4) var(--space-6);
+  color: var(--content-muted);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer a {
+  color: var(--action-primary);
+  font-weight: 700;
+}
+
+/* Aviso para lectores de pantalla; visualmente basta el contexto del pie. */
+.external {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Con la navegación de autor (seis enlaces) el lema y el nombre no caben en tabletas y escritorios estrechos; marca y avatar se conservan. */
 @media (max-width: 72rem) {
   .brand small,
@@ -287,6 +315,16 @@
 
   .main {
     padding-block: var(--space-5) calc(3.5rem + var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  /* Con pie, la reserva de la barra inferior pasa del contenido al pie. */
+  .main:has(+ .footer) {
+    padding-block-end: var(--space-8);
+  }
+
+  .footer {
+    width: min(100% - var(--space-5), var(--content-max));
+    padding-block-end: calc(3.5rem + var(--space-6) + env(safe-area-inset-bottom));
   }
 
   .toasts {

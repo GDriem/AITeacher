@@ -288,3 +288,6 @@ pnpm-debug.log*
 !/docs/azure-beta-cd.md
 !/docs/azure-beta-acceptance.md
 !/docs/ui-ux-beta-plan.md
+
+# Worktrees locales de Claude Code
+.claude/worktrees/
