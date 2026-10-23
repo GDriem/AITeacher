@@ -1,6 +1,6 @@
 # Plan de UI/UX para lanzar la beta
 
-Estado: fases 1–3 implementadas. Fase 4 pendiente. La aceptación de fase 3 por el autor real en la beta sigue pendiente.
+Estado: fases 1–3 implementadas. Fase 4 en curso (PR 8): textos, tema claro y enlace de comentarios hechos; falta la medición en dispositivo real. La aceptación de fase 3 por el autor real en la beta sigue pendiente.
 Fecha: 22 de octubre de 2026
 Alcance: la interfaz React del build `.NET` (`VITE_BACKEND=dotnet`,
 `frontend/src/features/backend/`), que es la que sirve la beta de Azure. No
@@ -289,3 +289,35 @@ La sección 6 de `docs/azure-beta-acceptance.md` incluye los controles actuales,
 la receta de evaluación con rúbrica y las dos confirmaciones. **La aceptación
 de fase 3 por el autor real en la beta sigue pendiente.** La evidencia local no
 sustituye esa ejecución. Esta PR no despliega ni modifica Azure.
+
+## Avance de la fase 4 — PR 8 (23 de octubre de 2026)
+
+- **Textos.** Los errores del cliente .NET salen del estado HTTP con una
+  acción («Recarga la página…», «Espera unos minutos…»), porque los
+  `ProblemDetails` traen `title` en inglés y a veces identificadores en
+  `detail`. Las pantallas de ruta ya no muestran «404: Not Found». Se
+  quitaron jerga y anglicismos («venza su reserva», «inmutable», «Feedback al
+  alumno», «tokens»), se añadió acción a vencimiento de intento, unidad sin
+  publicar y tutor no disponible, y las fechas usan `es` sin depender del
+  idioma del navegador.
+- **Tema claro.** Paleta AA bajo `prefers-color-scheme: light`, sólo en el
+  build .NET (`data-theme="auto"`); el build Python sigue en oscuro. Los
+  colores fijos de `ui/` y `features/backend/` pasaron a tokens.
+- **Comentarios de la beta.** Pie con «Enviar comentarios de la beta» desde
+  `VITE_BETA_FEEDBACK_URL` (`https://` o `mailto:`); vacío lo oculta. El CD lo
+  recibe de la variable de repositorio `BETA_FEEDBACK_URL`.
+
+| Comprobación | Resultado |
+|---|---|
+| Typecheck y lint | Sin errores ni advertencias |
+| Vitest | 114 pruebas, 21 archivos; incluye mapeo de estados y validación del enlace |
+| `run-local-checks.py` | 104 pruebas .NET, smoke Postman y 8 escenarios `test:backend` aprobados |
+| Accesibilidad | Las auditorías axe de `backend.spec.ts` recorren tema claro y oscuro a 320/768/1024/1440 px |
+| Build .NET y `budget:check` | Todas las rutas dentro de presupuesto |
+
+Pendiente de la fase: medir LCP de Inicio y del tutor en un móvil de gama
+media contra la beta, y fijar `BETA_FEEDBACK_URL`. Quedan fuera de esta PR,
+por ser decisiones de producto: unificar el aviso repetido sobre dominio no
+calibrado, separar «evaluación editorial» de la evaluación entregable en
+autoría y reemplazar el enlace «Consultar mensaje de origen» de Apuntes, que
+abre JSON de `/api`.

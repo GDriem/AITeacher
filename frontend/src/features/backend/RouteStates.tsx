@@ -5,7 +5,7 @@ import { EmptyState, ErrorState, PageHeader, Skeleton, buttonClass } from "../..
 export function NotFound() {
   return <section>
     <PageHeader title="Esta página no existe" />
-    <EmptyState title="Revisa la dirección" description="El enlace puede estar incompleto o la unidad ya no estar publicada."
+    <EmptyState title="Revisa la dirección" description="Es posible que el enlace esté incompleto o que la unidad ya no esté publicada."
       action={<Link className={buttonClass("primary")} to="/">Volver al inicio</Link>} />
   </section>;
 }
@@ -15,7 +15,7 @@ export function RouteError() {
   const error = useRouteError();
   return <section>
     <PageHeader title="No pudimos abrir esta sección" />
-    <ErrorState message={isRouteErrorResponse(error) ? `${String(error.status)}: ${error.statusText}` : "La pantalla no pudo cargarse."}
+    <ErrorState message={isRouteErrorResponse(error) && error.status === 404 ? "Esta página no existe o ya no está disponible." : "No pudimos cargar esta pantalla. Recarga la página o vuelve al inicio."}
       action={<Link className={buttonClass("ghost", "sm")} to="/">Volver al inicio</Link>} onRetry={() => window.location.reload()} />
   </section>;
 }

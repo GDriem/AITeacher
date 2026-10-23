@@ -116,7 +116,7 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
                 save={() => save.mutate(item.id)} disabled={save.isPending || send.isPending} />)}
               {send.isPending ? <>
                 <li className={[styles.message, styles.mine].join(" ")}><article><h3 className={styles.author}>Tú</h3><p>{send.variables.text}</p></article></li>
-                <li className={styles.message}><div className={styles.typing}><span aria-hidden="true"><i /><i /><i /></span><span role="status">El tutor está preparando tu respuesta.</span></div></li>
+                <li className={styles.message}><div className={styles.typing}><span aria-hidden="true"><i /><i /><i /></span><span role="status">El tutor está preparando una respuesta…</span></div></li>
               </> : null}
             </ol>
           </>}
@@ -125,7 +125,7 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
           {pending.isError ? <Failure error={pending.error} retry={() => void pending.refetch()} /> : null}
           {pending.data?.request && !send.isPending ? <div className={styles.banner} role="status">
             <p><strong>Tienes un mensaje sin respuesta:</strong> «{pending.data.request.text}»</p>
-            <p>Si la solicitud se interrumpió, recupérala. Si sigue activa, espera a que venza su reserva y reintenta.</p>
+            <p>Si la respuesta no llegó, pulsa Recuperar para volver a enviarla. Si el tutor aún está respondiendo, espera unos segundos e inténtalo de nuevo.</p>
             <Button size="sm" variant="primary" aria-label="Recuperar mensaje pendiente" onClick={submit}>Recuperar</Button>
           </div> : null}
           {send.isError ? <Failure error={send.error} retry={submit} /> : null}
@@ -165,7 +165,7 @@ function Composer({ text, change, blocked, pending, submit, keyDown }: {
     <textarea id={field} required rows={2} maxLength={4000} value={text} disabled={blocked} aria-describedby={`${field}-hint`}
       placeholder="Pregunta, pide un ejemplo o explica con tus palabras…" onChange={(event) => change(event.target.value)} onKeyDown={keyDown} />
     <div className={styles.composerFooter}>
-      <span id={`${field}-hint`} className={styles.muted}>Ctrl/⌘ + Enter para enviar · {text.length} de 4000</span>
+      <span id={`${field}-hint`} className={styles.muted}>Ctrl/⌘ + Enter para enviar · {text.length} de 4000 caracteres</span>
       <Button type="submit" variant="primary" disabled={blocked || !text.trim()}>{pending ? "Preparando respuesta…" : "Enviar"}</Button>
     </div>
   </form>;

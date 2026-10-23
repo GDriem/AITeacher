@@ -107,7 +107,7 @@ export function AuthGate({ clientId, loginError, pending, onCredential, returnFo
         {clientId ? (
           <div ref={googleButtonRef} className={styles.googleButton} aria-live="polite" />
         ) : (
-          <p className={styles.error} role="alert">Falta la configuración pública de Google en el servidor.</p>
+          <p className={styles.error} role="alert">El inicio de sesión no está disponible en este momento. Inténtalo más tarde o avisa al responsable de la beta.</p>
         )}
 
         {pending ? <p className={styles.status} role="status">Verificando tu cuenta…</p> : null}
@@ -121,7 +121,7 @@ export function AuthGate({ clientId, loginError, pending, onCredential, returnFo
             ) : null}
           </div>
         ) : null}
-        <small>No guardamos tokens ni datos de tu perfil en este navegador.</small>
+        <small>No guardamos tus credenciales ni tus datos de perfil en este navegador.</small>
       </div>
     </div>
   );

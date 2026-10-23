@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatDateTime } from "./labels";
 import { Link } from "react-router-dom";
 import { usePersonalUrl } from "./usePersonalUrl";
 import { useTutorConversation } from "./unitQueries";
@@ -25,7 +26,7 @@ export function Notes() {
     <form className={styles.form} onSubmit={(event) => { event.preventDefault(); create.mutate(); }}><Field title="Nuevo apunte"><textarea value={text} required maxLength={12000} onChange={(event) => setText(event.target.value)} /></Field>
       <Button type="submit" variant="primary" disabled={!text.trim() || create.isPending}>Guardar apunte</Button></form>{create.isError ? <Failure error={create.error} /> : null}
     {notes.isPending ? <Busy /> : notes.isError ? <Failure error={notes.error} retry={() => void notes.refetch()} /> : <>
-      {notes.data.items.length === 0 ? <EmptyState title="Todavía no hay apuntes." description="Escribe tu primera idea arriba o guarda un mensaje desde el tutor de una unidad." action={<Link to="/catalogo">Buscar una unidad para estudiar</Link>} /> : <ul className={styles.list}>{notes.data.items.map((note) => <li key={`${note.id}-${String(note.version)}`}><Note note={note} /></li>)}</ul>}
+      {notes.data.items.length === 0 ? <EmptyState title="Todavía no hay apuntes" description="Escribe tu primera idea arriba o guarda un mensaje desde el tutor de una unidad." action={<Link to="/catalogo">Buscar una unidad para estudiar</Link>} /> : <ul className={styles.list}>{notes.data.items.map((note) => <li key={`${note.id}-${String(note.version)}`}><Note note={note} /></li>)}</ul>}
       <Pages offset={offset} total={notes.data.total} change={setOffset} /></>}
   </section>;
 }
@@ -47,7 +48,7 @@ function Note({ note }: { note: Schema["TutorNote"] }) {
   return <Card as="article" className={styles.note}><h2>{note.kind === "student" ? "Apunte personal" : note.kind === "savedMessage" ? "Mensaje guardado" : "Resumen generado"}</h2>
     {editing ? <form onSubmit={(event) => { event.preventDefault(); edit.mutate(); }}><Field title="Editar apunte"><textarea required maxLength={12000} value={text} onChange={(event) => setText(event.target.value)} /></Field>
       <Button type="submit" variant="primary" disabled={edit.isPending}>Guardar cambios</Button><Button onClick={() => setEditing(false)}>Cancelar</Button></form> : <TutorMarkdown>{note.text}</TutorMarkdown>}
-    <p>Actualizado: {new Date(note.updatedAt).toLocaleString()}</p>
+    <p>Actualizado: {formatDateTime(note.updatedAt)}</p>
     {note.kind === "savedMessage" && note.conversationId && note.messageId ? <p><a href={`/api/graphs/conversations/${encodeURIComponent(note.conversationId)}/messages/${encodeURIComponent(note.messageId)}`} target="_blank" rel="noopener noreferrer">Consultar mensaje de origen</a></p> : null}
     {note.conversationId ? conversation.isPending ? <Busy /> : conversation.isError ? <Failure error={conversation.error} retry={() => void conversation.refetch()} /> : <p><Link to={conversationPath(conversation.data)}>Volver a la conversación de origen</Link></p> : null}
     {note.kind === "summary" ? <p>Resumen generado a partir de los mensajes incluidos de la conversación; su origen se conserva aunque edites el texto.</p> : null}

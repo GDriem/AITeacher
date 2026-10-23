@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { backend, result, type Schema } from "./client";
 import { Busy, Failure, Pages } from "./Shared";
-import { attemptLabels } from "./labels";
+import { attemptLabels, formatDateTime } from "./labels";
 import { usePersonalUrl } from "./usePersonalUrl";
 import { Button } from "../../ui";
 import { EvaluationList } from "./EvaluationList";
@@ -41,7 +41,7 @@ export function OwnAttempts({ select }: { select: (id: string) => void }) {
   const attempts = useQuery({ queryKey: ["attempts", offset], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/attempts", { signal, params: { query: { offset, limit: 20 } } })) });
   return <details open={url.search.get("verIntentos") === "1"} onToggle={(event) => { const open = event.currentTarget.open; if (open !== (url.search.get("verIntentos") === "1")) url.set("verIntentos", open ? "1" : null, true); }}><summary>Mis intentos anteriores</summary>
     {attempts.isPending ? <Busy /> : attempts.isError ? <Failure error={attempts.error} retry={() => void attempts.refetch()} /> : <>
-      {attempts.data.items.length === 0 ? <p>Aún no has iniciado evaluaciones.</p> : <ul>{attempts.data.items.map((item) => <li key={item.id}><p>{item.title} · {attemptLabels[item.status]} · {new Date(item.startedAt).toLocaleString()}</p>
+      {attempts.data.items.length === 0 ? <p>Aún no has iniciado evaluaciones.</p> : <ul>{attempts.data.items.map((item) => <li key={item.id}><p>{item.title} · {attemptLabels[item.status]} · {formatDateTime(item.startedAt)}</p>
         <Button onClick={() => select(item.id)}>{item.status === "inProgress" ? "Retomar" : "Consultar"}</Button></li>)}</ul>}
       <Pages offset={offset} total={attempts.data.total} change={setOffset} /></>}
   </details>;

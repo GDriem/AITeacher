@@ -112,7 +112,7 @@ export function UnitEditor({ unit, saved, topics, onDirty }: { unit?: Schema["Un
   return <div className={styles.editor}><form className={panel} noValidate onSubmit={(event) => { event.preventDefault(); submit(); }}>
     <p>{dirty ? "Cambios sin guardar. El borrador se conserva en esta pestaña." : "Borrador guardado."}</p>
     <Tabs label="Pasos de autoría" selectedId={step} onSelect={go} items={steps.map((item) => ({ id: item, label: stepLabels[item], content }))} />
-    {save.isError ? <><Failure error={save.error} />{save.error instanceof ApiError && save.error.status === 409 ? <p>La versión cambió. Conservamos tu borrador. <Button onClick={() => { savedNavigation.current = true; writeUnitDraft(owner, id, null); window.location.reload(); }}>Descartar cambios y recargar</Button></p> : null}</> : null}
+    {save.isError ? <><Failure error={save.error} />{save.error instanceof ApiError && save.error.status === 409 ? <p>Alguien guardó cambios en esta unidad mientras editabas. Tu borrador sigue en esta pestaña: copia lo que necesites o descarta tus cambios y recarga. <Button onClick={() => { savedNavigation.current = true; writeUnitDraft(owner, id, null); window.location.reload(); }}>Descartar cambios y recargar</Button></p> : null}</> : null}
   </form><ToastRegion>{notice ? <Toast tone="success" onDismiss={() => setNotice("")}>{notice}</Toast> : null}</ToastRegion>
     <Dialog open={blocker.state === "blocked"} title="¿Salir con cambios sin guardar?" onClose={() => blocker.reset?.()} actions={<><Button onClick={() => blocker.reset?.()}>Seguir editando</Button><Button onClick={() => blocker.proceed?.()}>Salir y conservar borrador</Button></>}><p>Los cambios se conservan en esta pestaña hasta guardar o descartar.</p></Dialog>
   </div>;

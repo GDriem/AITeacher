@@ -12,7 +12,7 @@ export function ErrorState({ message, title, traceId, onRetry, action }: {
   return <div className={styles.error} role="alert">
     {title ? <p className={styles.title}>{title}</p> : null}
     <p className={styles.message}>{message}</p>
-    {traceId ? <p className={styles.trace}>Código de seguimiento: <code>{traceId}</code></p> : null}
+    {traceId ? <p className={styles.trace}>Si el problema continúa, comparte este código con el responsable de la beta: <code>{traceId}</code></p> : null}
     {onRetry || action ? <div className={styles.actions}>
       {onRetry ? <Button size="sm" onClick={onRetry}>Reintentar</Button> : null}{action}
     </div> : null}

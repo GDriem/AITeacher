@@ -47,7 +47,7 @@ describe("ui", () => {
   it("ErrorState muestra el código de seguimiento y reintenta", async () => {
     const retry = vi.fn();
     render(<ErrorState message="El servicio no respondió." traceId="00-abc-01" onRetry={retry} />);
-    expect(screen.getByRole("alert")).toHaveTextContent("Código de seguimiento: 00-abc-01");
+    expect(screen.getByRole("alert")).toHaveTextContent("Si el problema continúa, comparte este código con el responsable de la beta: 00-abc-01");
     await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(retry).toHaveBeenCalledOnce();
   });

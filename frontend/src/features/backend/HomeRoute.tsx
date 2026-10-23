@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { formatDateTime } from "./labels";
 import { Card, EmptyState, PageHeader, buttonClass } from "../../ui";
 import { useProfile } from "./profile";
 import { Busy, Failure } from "./Shared";
@@ -19,7 +20,7 @@ export function HomeRoute() {
   const active = attempts.data?.filter((item) => item.status === "inProgress") ?? [];
   const firstUse = conversations.isSuccess && attempts.isSuccess && !conversations.data.length && !attempts.data.length;
   return <section className={styles.screen}>
-    <PageHeader eyebrow="Inicio" title={`Hola, ${firstName(profile.displayName)}`} description="Retoma tu aprendizaje. Los niveles describen el material; no acreditan dominio." />
+    <PageHeader eyebrow="Inicio" title={greeting(profile.displayName)} description="Retoma tu aprendizaje. Los niveles describen el material; no acreditan dominio." />
     {firstUse ? <Card><h2>Tu primer recorrido</h2><ol className={styles.steps}>
       <li><h3>Elige una unidad</h3><p>Explora el catálogo y lee el material a tu ritmo.</p></li>
       <li><h3>Pregunta y guarda tus ideas</h3><p>Conversa con el tutor y guarda los mensajes que quieras repasar.</p></li>
@@ -32,7 +33,7 @@ export function HomeRoute() {
     </Card>}
     <div className={styles.spaces}>
       <Card className={styles.space}><h2>Repasos programados</h2>
-        {reviews.isPending ? <Busy /> : reviews.isError ? <Failure error={reviews.error} retry={() => void reviews.refetch()} /> : pending.length ? <ul>{pending.map((item) => <li key={item.id}><Link to={`/repasos?repaso=${encodeURIComponent(item.id)}`}>Repaso del {new Date(item.dueAt).toLocaleString()}</Link></li>)}</ul> : <EmptyState headingLevel={3} title="No tienes repasos pendientes" description="Después de evaluar lo aprendido, elige una evidencia para programar un repaso." action={<Link to="/repasos">Preparar un repaso</Link>} />}
+        {reviews.isPending ? <Busy /> : reviews.isError ? <Failure error={reviews.error} retry={() => void reviews.refetch()} /> : pending.length ? <ul>{pending.map((item) => <li key={item.id}><Link to={`/repasos?repaso=${encodeURIComponent(item.id)}`}>Repaso del {formatDateTime(item.dueAt)}</Link></li>)}</ul> : <EmptyState headingLevel={3} title="No tienes repasos pendientes" description="Después de evaluar lo aprendido, elige una evidencia para programar un repaso." action={<Link to="/repasos">Preparar un repaso</Link>} />}
       </Card>
       <Card className={styles.space}><h2>Evaluaciones en curso</h2>
         {attempts.isPending ? <Busy /> : attempts.isError ? <Failure error={attempts.error} retry={() => void attempts.refetch()} /> : active.length ? <ul>{active.map((item) => <li key={item.id}><Link to={attemptPath(item.id)}>Retomar {item.title}</Link></li>)}</ul> : <EmptyState headingLevel={3} title="No hay evaluaciones en curso" description="Las evaluaciones están en la pestaña Evaluar de cada unidad." action={<Link to="/catalogo">Elegir una unidad</Link>} />}
@@ -41,4 +42,4 @@ export function HomeRoute() {
     <nav aria-label="Tus espacios" className={styles.shortcuts}><Link to="/apuntes">Abrir apuntes</Link><Link to="/repasos">Ver repasos</Link><Link to="/historial">Consultar historial</Link></nav>
   </section>;
 }
-function firstName(name: string) { return name.trim() === "" ? "de nuevo" : (name.trim().split(/\s+/)[0] ?? "de nuevo"); }
+function greeting(name: string) { const first = name.trim().split(/\s+/)[0]; return first ? `Hola, ${first}` : "Hola de nuevo"; }

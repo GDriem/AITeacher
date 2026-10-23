@@ -35,7 +35,7 @@ export function Publication({ unit, dirty }: { unit: Schema["UnitResponse"]; dir
       <Button disabled={change.isPending} onClick={() => setConfirm(null)}>Cancelar</Button>
       <Button variant="primary" disabled={change.isPending || change.isError || (confirm === "publish" && (!ready || orphans.length > 0))} onClick={() => { if (confirm) change.mutate(confirm); }}>{confirm === "publish" ? "Confirmar publicación" : "Confirmar retiro"}</Button>
     </>}>
-      {confirm === "withdraw" ? <p>La unidad dejará de estar disponible: los alumnos recibirán 404 al abrirla. Las revisiones y las entregas anteriores se conservan.</p> : <>
+      {confirm === "withdraw" ? <p>La unidad dejará de estar disponible: los alumnos ya no podrán abrirla. Las revisiones y las entregas anteriores se conservan.</p> : <>
         <p>{comparing ? "Cambios frente a la revisión publicada." : "Primera publicación: todos los elementos son nuevos."}</p>
         {comparing && published.isPending ? <Busy /> : comparing && published.isError ? <Failure error={published.error} retry={() => void published.refetch()} /> : diff.length ? <ul className={styles.changes}>{diff.map((item, index) => <li key={index}><h3>{item.section} · {item.kind}</h3>
           {item.before !== undefined ? <details><summary>Antes</summary><RevisionValue value={item.before} document={published.data ? published.data.revision.document as Document : document} /></details> : null}
