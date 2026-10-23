@@ -1,6 +1,6 @@
 # Plan de UI/UX para lanzar la beta
 
-Estado: propuesto, pendiente de aprobación
+Estado: fases 1 y 2 implementadas; PR 6 pendiente de revisión. Fases 3 y 4 pendientes.
 Fecha: 22 de octubre de 2026
 Alcance: la interfaz React del build `.NET` (`VITE_BACKEND=dotnet`,
 `frontend/src/features/backend/`), que es la que sirve la beta de Azure. No
@@ -169,3 +169,47 @@ de Azure aparte).
 
 Cada PR pasa `typecheck`, `lint`, `test`, `test:backend`, `budget:check` y
 deja la beta desplegable por el CD.
+
+## Cierre técnico de la fase 2 — PR 6 (23 de octubre de 2026)
+
+Base: `main` con evaluación #26 mergeada. El último cambio incorpora Inicio,
+Apuntes, Repasos e Historial al sistema `ui/`, con CSS Modules por pantalla.
+
+- Inicio consulta conversaciones, intentos propios y repasos en paralelo,
+  recorriendo las páginas existentes. «Continuar» compara la creación de la
+  conversación con el inicio o entrega del intento más reciente. El contrato no
+  expone la última interacción de una conversación; no se presenta como tal.
+  Para volver desde un intento a su unidad se consulta la lista **pública** de
+  definiciones, incluidas las revisiones históricas.
+- Repasos conserva el intento en línea y «Completar con el intento seleccionado».
+  `intento` y `pregunta` sobreviven a recargar y Atrás. Un enlace adicional abre
+  `/evaluaciones/:id`; Atrás recupera la selección del repaso. Las páginas de
+  evidencias, definiciones e intentos y la evidencia elegida viven en la URL.
+- Apuntes conserva página y editor abierto en la URL y enlaza a la conversación
+  de origen de mensajes guardados y resúmenes. Los apuntes personales se crean
+  sin origen de tutor, conforme al contrato.
+- Historial muestra conversaciones e intentos actuales con enlaces para abrirlos,
+  además del archivo importado. La conversación importada abierta y las páginas
+  de cada lista se conservan en la URL.
+- No hay endpoints nuevos ni cambios de tipos generados. Las cuatro pantallas
+  se cargan de forma diferida (`backendPersonal`, 12,9/18 kB gzip);
+  `backendBeta` queda en 110,8/120 kB, incluidos los chunks compartidos nuevos.
+
+Aceptación local completada:
+
+| Comprobación | Resultado |
+|---|---|
+| Typecheck y lint | Sin errores ni advertencias |
+| Vitest | 84 pruebas, 17 archivos |
+| `test:backend` | 7 escenarios seriales, .NET y PostgreSQL con IA/Google simulados mediante Postman |
+| Build `VITE_BACKEND=dotnet` y `budget:check` | Correctos; todos los chunks asignados |
+| Recorrido e aislamiento | Inicio → unidad → tutor → apunte → evaluación → historial; dos alumnos con datos propios y acceso cruzado 404 a conversaciones e intentos |
+| Accesibilidad | Axe WCAG A/AA sin infracciones a 320/768/1024/1440 px en los cuatro espacios, con contenido y vacíos; sin desbordamiento horizontal |
+| Teclado y restauración | Navegación, editor de apunte, inicio de repaso, recarga de intento/archivo y Atrás; pruebas de páginas y selecciones por URL |
+
+Las secciones 1, 2, 3, 5 y 6 del checklist de Azure ahora explican las rutas y
+controles actuales. Se corrigió el destino del historial en 2.4 y se documentó
+cómo preparar la unidad y evaluación necesarias para 3 y 6. La ejecutabilidad de
+la UI queda cubierta localmente; la nueva ejecución del propietario en Azure
+sigue pendiente y no se sustituye por simulaciones. El checklist conserva el
+alcance y los límites de la evidencia real del 22 de octubre.

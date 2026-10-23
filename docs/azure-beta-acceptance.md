@@ -34,9 +34,9 @@ PostgreSQL, Vertex AI e identidades) las respeta.
 | # | Paso | Resultado esperado | Evidencia |
 |---|---|---|---|
 | 1.1 | Sin sesión, abrir la URL | Pantalla de acceso; `GET /api/auth/status` con `authenticated:false` | Captura y código 200 |
-| 1.2 | Iniciar sesión con Google como A | Vuelve a la app autenticado; `GET /api/auth/me` 200 | Captura con datos tachados |
+| 1.2 | Pulsar «Continuar con Google» e iniciar sesión como A | Vuelve a la app autenticado; `GET /api/auth/me` 200 | Captura con datos tachados |
 | 1.3 | Recargar la página | La sesión persiste | — |
-| 1.4 | Cerrar sesión | `GET /api/auth/status` vuelve a `authenticated:false`; rutas protegidas responden 401 | Códigos de estado |
+| 1.4 | Pulsar «Cerrar sesión» en la cabecera | `GET /api/auth/status` vuelve a `authenticated:false`; rutas protegidas responden 401 | Códigos de estado |
 | 1.5 | Volver a iniciar sesión como A | Correcto | — |
 
 ## 2. Tutor IA
@@ -44,17 +44,17 @@ PostgreSQL, Vertex AI e identidades) las respeta.
 | # | Paso | Resultado esperado | Evidencia |
 |---|---|---|---|
 | 2.1 | Autenticado, `GET /api/tutor/availability` (pestaña Network) | Disponible | Cuerpo sin datos personales |
-| 2.2 | Elegir un tema y abrir una conversación nueva | Se crea la conversación | ID de conversación |
+| 2.2 | Inicio → «Explorar el catálogo» (o Catálogo en la navegación) → tema → unidad → «Preguntar al tutor…» → «Nueva conversación» | Se crea la conversación | ID de conversación |
 | 2.3 | Enviar 2–3 turnos con preguntas del tema | Respuestas coherentes, sin error, latencia razonable | Hora y duración aproximada |
-| 2.4 | Abrir el historial | La conversación aparece en `/api/history/conversations` | Captura |
+| 2.4 | Navegación → Historial → «Conversaciones del tutor» → «Abrir conversación del tutor» | Se abre la conversación actual (`/api/tutor/conversations`); las importadas se consultan por separado en «Conversaciones importadas» (`/api/history/conversations`) | Captura |
 
 ## 3. Evaluación
 
 | # | Paso | Resultado esperado | Evidencia |
 |---|---|---|---|
-| 3.1 | Iniciar una evaluación de un tema | `POST /api/assessments/attempts` 201/200 | ID del intento |
-| 3.2 | Responder y enviar | `submit` correcto; resultado visible | Puntuación (sin respuestas personales) |
-| 3.3 | Abrir la revisión del intento | Retroalimentación sin exponer claves de otras preguntas | Captura |
+| 3.1 | Catálogo → tema → una **unidad con práctica y evaluación** → pestaña «Evaluar» → «Iniciar …» (no elegir un material marcado «Lectura»); si no hay evaluaciones publicadas, A prepara una con la receta de abajo | `POST /api/assessments/attempts` 201/200 | ID del intento |
+| 3.2 | Responder cada pregunta, usar «Siguiente» y pulsar «Entregar respuestas» → «Sí, entregar» | `submit` correcto; resultado visible | Puntuación (sin respuestas personales) |
+| 3.3 | Navegación → Historial → «Tus evaluaciones» → «Consultar evaluación» | Retroalimentación sin exponer claves de otras preguntas | Captura |
 
 ## 4. Voz (Gemini Live)
 
@@ -76,11 +76,11 @@ Con A autenticada en un perfil y B en otro:
 
 | # | Paso | Resultado esperado | Evidencia |
 |---|---|---|---|
-| 5.1 | B abre su historial | No ve la conversación de A | Captura |
+| 5.1 | B abre Historial y revisa «Conversaciones del tutor», «Tus evaluaciones» y «Conversaciones importadas» | No ve la conversación de A | Captura |
 | 5.2 | B abre en la barra de direcciones `/api/history/conversations/{ID de A}` | 404 (o 403), nunca el contenido | Código y `traceId` |
 | 5.3 | B abre `/api/tutor/conversations/{ID de A}` | 404/403 | Código |
 | 5.4 | B abre `/api/assessments/attempts/{ID de intento de A}` | 404/403 | Código |
-| 5.5 | B abre `/api/units` | Solo unidades publicadas; sin controles de autoría en la UI | Captura |
+| 5.5 | B abre Catálogo, entra en un tema y comprueba también `/api/units` | Solo unidades publicadas; sin controles de autoría en la UI | Captura |
 | 5.6 | A cierra sesión y B recarga | B sigue con su propia identidad; no hay mezcla | — |
 
 ## 6. Flujo editorial (opcional, escribe en la beta)
@@ -89,10 +89,55 @@ Usar un nombre inequívoco, por ejemplo `PRUEBA ACEPTACIÓN AAAA-MM-DD`, y retir
 
 | # | Paso | Resultado esperado | Evidencia |
 |---|---|---|---|
-| 6.1 | A crea un borrador en un tema | `POST /api/units` correcto | `unitId` |
+| 6.1 | A abre Autoría → Unidades → «Crear unidad», elige «Tema de la nueva unidad», completa el material según la receta de abajo y pulsa «Guardar borrador» | `POST /api/units` correcto | `unitId` |
 | 6.2 | B lista unidades | El borrador **no** aparece; `GET /api/units/{unitId}` 404 | Código |
-| 6.3 | A publica la revisión | B ya la ve | Captura |
-| 6.4 | A retira la publicación | B vuelve a recibir 404 | Código |
+| 6.3 | A pulsa «Publicar esta revisión»; B recarga el Catálogo y abre su tema | B ya la ve | Captura |
+| 6.4 | A pulsa «Retirar publicación» → «Confirmar retiro»; B recarga la unidad | B vuelve a recibir 404 | Código |
+
+Para que 6.1 se pueda ejecutar sin conocer el editor, usar esta receta mínima:
+
+1. Elegir un tema disponible y mantener «Unidad con objetivos, práctica y
+   evaluación» como tipo. Escribir el título `PRUEBA ACEPTACIÓN AAAA-MM-DD`.
+2. «Añadir concepto»: nombre `Comparación`. «Añadir objetivo»: descripción
+   `Explicar una comparación` y marcar el concepto `Comparación`.
+3. «Añadir lectura»: título, texto y fuente sintéticos; marcar el objetivo
+   `Explicar una comparación` en «Objetivos cubiertos» de la lectura.
+4. «Añadir ejercicio»: consigna sintética y marcar el mismo objetivo.
+5. «Añadir evaluación editorial»: consigna, criterios privados sintéticos y
+   marcar el mismo objetivo. No añadir prerrequisitos. «Guardar borrador».
+6. Tras comprobar 6.2, «Publicar esta revisión». El catálogo de B debe mostrar
+   la unidad dentro del tema elegido, después de recargar.
+
+Para probar la sección 3 cuando el tema solo tiene lecturas, después de 6.3 y
+antes de retirar la publicación, A crea una evaluación entregable en esa unidad:
+
+1. En Autoría → Unidades, abrir la unidad de prueba publicada. En el banco de
+   preguntas escribir un enunciado sintético, marcar el objetivo evaluado,
+   completar las dos opciones y marcar «Respuesta correcta» en una de ellas.
+   «Guardar pregunta».
+2. En la definición, escribir «Título de evaluación», marcar la pregunta y
+   «Publicar evaluación». Los valores predeterminados sirven para esta prueba.
+3. B abre la unidad en Catálogo → tema → unidad → Evaluar e inicia la evaluación.
+   Si elige preguntas abiertas con rúbrica, A debe ir a Autoría → «Corregir
+   entregas», «Consultar entrega», puntuar todos los criterios y «Confirmar
+   corrección final» antes de que B pueda ver la nota. La política «never»
+   confirma la entrega sin mostrar nota ni aciertos.
+4. Al terminar evaluación y aislamiento, completar 6.4 para retirar el material.
+
+## Revisión de ejecutabilidad de la fase 2 (PR 6)
+
+Las secciones 1, 2, 3, 5 y 6 tienen rutas y nombres de controles para ejecutarse
+sin instrucciones adicionales. Se corrigió 2.4: el historial importado no es el
+historial del tutor actual. La sección 3 requiere una evaluación publicada;
+las lecturas migradas no incluyen evaluaciones. La receta anterior permite a A
+preparar el material sin depender de datos previos.
+
+La automatización local usa .NET y PostgreSQL con Google e IA simulados. Verifica
+el recorrido con dos alumnos, aislamiento, recarga, Atrás, teclado y axe en los
+cuatro tamaños. **No sustituye la ejecución del propietario en Azure**: quedan
+sin nueva evidencia real 1.3–1.5, 2.2/2.4, la sección 3, las rutas individuales
+5.2–5.6 y la sección 6. El ensayo del 22 de octubre conserva el alcance indicado
+más abajo. Esta revisión no habilita voz ni modifica Azure.
 
 ## 7. Cierre
 

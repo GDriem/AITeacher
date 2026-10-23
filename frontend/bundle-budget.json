@@ -3,8 +3,8 @@
   "groups": {
     "backendBeta": {
       "description": "Interfaz beta .NET del alumno (shell, rutas y pantallas) más el chunk común con Autoría; se descarga solo en el build dotnet.",
-      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después. Fase 2: catálogo y tema dejaron 115,5 kB; la unidad con pestañas (Tabs, Badge, índice y botón del tutor) 119,1 kB, sin cambiar el presupuesto. El tutor de la unidad pasó a su propio chunk (backendTutor): 115,1 kB, incluido `panel` (0,7 kB), que comparten los chunks diferidos. La evaluación pasó a backendAttempt: 114,9 kB.",
-      "chunks": ["BackendApp", "Shared", "panel"],
+      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después. Fase 2: catálogo y tema dejaron 115,5 kB; la unidad con pestañas (Tabs, Badge, índice y botón del tutor) 119,1 kB, sin cambiar el presupuesto. El tutor de la unidad pasó a su propio chunk (backendTutor): 115,1 kB, incluido `panel` (0,7 kB), que comparten los chunks diferidos. La evaluación pasó a backendAttempt: 114,9 kB. PR 6 difiere los espacios personales y asigna labels/useQuery/useMutation a este grupo compartido: 110,8 kB.",
+      "chunks": ["BackendApp", "Shared", "panel", "labels", "useQuery", "useMutation"],
       "budgetKb": 120
     },
     "backendTutor": {
@@ -63,6 +63,19 @@
       "description": "Renderer Markdown compartido por tutor y vista previa de autoría.",
       "chunks": ["TutorMarkdown"],
       "budgetKb": 70
+    },
+    "backendPersonal": {
+      "description": "Inicio, apuntes, repasos e historial del alumno; pantallas diferidas con consultas compartidas.",
+      "rationale": "PR 6 de fase 2: cada espacio se descarga al abrirlo y conserva la vista en la URL. Medido: 12,9 kB para las cuatro pantallas y consultas compartidas.",
+      "chunks": [
+        "HomeRoute",
+        "Notes",
+        "LearningReviews",
+        "Archive",
+        "personalQueries",
+        "usePersonalUrl"
+      ],
+      "budgetKb": 18
     }
   }
 }

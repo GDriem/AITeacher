@@ -1,0 +1,4 @@
+.screen, .list, .form { display: grid; gap: var(--space-4); }
+.list { list-style: none; padding: 0; margin: 0; }
+.note { min-inline-size: 0; overflow-wrap: anywhere; }
+.form > button { justify-self: start; }

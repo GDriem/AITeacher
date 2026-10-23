@@ -1,11 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import { BackendRoot } from "./BackendRoot";
-import { HomeRoute } from "./HomeRoute";
 import { CurriculumExplorer } from "./CurriculumExplorer";
 import { UnitSpace } from "./UnitSpace";
-import { Notes } from "./Notes";
-import { LearningReviews } from "./LearningReviews";
-import { Archive } from "./Archive";
 import { TopicPage } from "./TopicPage";
 import { NotFound, RouteError, RouteLoading } from "./RouteStates";
 
@@ -17,7 +13,7 @@ export const router = createBrowserRouter([{
   children: [{
     ErrorBoundary: RouteError,
     children: [
-      { index: true, Component: HomeRoute },
+      { index: true, lazy: async () => ({ Component: (await import("./HomeRoute")).HomeRoute }) },
       { path: "catalogo", Component: CurriculumExplorer },
       { path: "temas/:topicId", Component: TopicPage },
       { path: "unidades/:unitId", Component: UnitSpace },
@@ -26,9 +22,9 @@ export const router = createBrowserRouter([{
       { path: "unidades/:unitId/tutor/:conversationId", lazy: async () => ({ Component: (await import("./UnitTutor")).UnitTutor }) },
       // El intento (pasos, tiempo y resultado) se descarga al abrirlo desde Evaluar o Repasos.
       { path: "evaluaciones/:attemptId", lazy: async () => ({ Component: (await import("./AttemptRoute")).AttemptRoute }) },
-      { path: "apuntes", Component: Notes },
-      { path: "repasos", Component: LearningReviews },
-      { path: "historial", Component: Archive },
+      { path: "apuntes", lazy: async () => ({ Component: (await import("./Notes")).Notes }) },
+      { path: "repasos", lazy: async () => ({ Component: (await import("./LearningReviews")).LearningReviews }) },
+      { path: "historial", lazy: async () => ({ Component: (await import("./Archive")).Archive }) },
       // Autoría se descarga aparte: la usan pocos perfiles y no debe pesar en el recorrido del alumno.
       { path: "autoria", lazy: async () => ({ Component: (await import("./AuthorSpace")).AuthorSpace }), children: [
         { index: true, lazy: async () => ({ Component: (await import("./AuthorSpace")).AuthorUnits }) },
