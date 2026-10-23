@@ -1,0 +1,5 @@
+.changes { padding-inline-start: var(--space-4); }
+.changes li { border-block-end: 1px solid var(--border-subtle); padding-block: var(--space-3); }
+.value { white-space: pre-wrap; overflow-wrap: anywhere; }
+.value dt { font-weight: 700; margin-block-start: var(--space-3); }
+.value dd { margin-inline-start: 0; }

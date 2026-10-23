@@ -3,65 +3,109 @@
   "groups": {
     "backendBeta": {
       "description": "Interfaz beta .NET del alumno (shell, rutas y pantallas) más el chunk común con Autoría; se descarga solo en el build dotnet.",
-      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después. Fase 2: catálogo y tema dejaron 115,5 kB; la unidad con pestañas (Tabs, Badge, índice y botón del tutor) 119,1 kB, sin cambiar el presupuesto. El tutor de la unidad pasó a su propio chunk (backendTutor): 115,1 kB, incluido `panel` (0,7 kB), que comparten los chunks diferidos. La evaluación pasó a backendAttempt: 114,9 kB. PR 6 difiere los espacios personales y asigna labels/useQuery/useMutation a este grupo compartido: 110,8 kB.",
-      "chunks": ["BackendApp", "Shared", "panel", "labels", "useQuery", "useMutation"],
+      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después. Fase 2: catálogo y tema dejaron 115,5 kB; la unidad con pestañas (Tabs, Badge, índice y botón del tutor) 119,1 kB, sin cambiar el presupuesto. El tutor de la unidad pasó a su propio chunk (backendTutor): 115,1 kB, incluido `panel` (0,7 kB), que comparten los chunks diferidos. La evaluación pasó a backendAttempt: 114,9 kB. PR 6 difiere los espacios personales y asigna labels/useQuery/useMutation a este grupo compartido: 110,8 kB. PR 7: 67,52 kB; extraer la presentación compartida permite diferir Markdown hasta mostrar texto (markdownShared, 44,58 kB), que antes estaba incluido en BackendApp. Se asignan unitQueries/useMedia a este grupo; no se aumenta su presupuesto.",
+      "chunks": [
+        "BackendApp",
+        "Shared",
+        "panel",
+        "labels",
+        "useQuery",
+        "useMutation",
+        "unitQueries",
+        "useMedia"
+      ],
       "budgetKb": 120
     },
     "backendTutor": {
       "description": "Tutor de la unidad del build .NET (chat, conversaciones y mapa de conceptos); se descarga solo al abrir /unidades/:id/tutor.",
       "rationale": "Fase 2 de docs/ui-ux-beta-plan.md, PR 4: chat a altura completa, lista de conversaciones, mapa plegable y la voz diferida. Medido: 12,9 kB.",
-      "chunks": ["UnitTutor"],
+      "chunks": [
+        "UnitTutor"
+      ],
       "budgetKb": 16
     },
     "backendAttempt": {
       "description": "Intento de evaluación del build .NET (una pregunta por paso, tiempo, confirmación y resultado); se descarga al abrir /evaluaciones/:id o un intento en Repasos.",
       "rationale": "Fase 2 de docs/ui-ux-beta-plan.md, PR 5: pantalla dedicada con progreso, tiempo restante, borrador en la pestaña y resultado según la política de feedback. Medido: 7,5 kB.",
-      "chunks": ["AttemptRoute"],
+      "chunks": [
+        "AttemptRoute"
+      ],
       "budgetKb": 10
     },
     "backendAuthoring": {
-      "description": "Autoría del build .NET (unidades, catálogo y corrección); se descarga solo al entrar en /autoria.",
-      "chunks": ["AuthorSpace", "CatalogEditor", "ReviewQueue"],
-      "budgetKb": 20
+      "description": "Autoría del build .NET (unidades, catálogo y corrección); se descarga solo al entrar en /autoria. Incluye la presentación compartida de Evaluar.",
+      "chunks": [
+        "AuthorSpace",
+        "CatalogEditor",
+        "ReviewQueue",
+        "AuthorUnitRoute",
+        "AuthorAssessmentRoute",
+        "authorQueries",
+        "EvaluationList"
+      ],
+      "budgetKb": 30,
+      "rationale": "Fase 3, PR 7: 27,87 kB gzip (base origin/main: 15,39 kB) para pasos, borrador de pestaña, vista previa, diff, banco y rúbrica; la revisión base del borrador y la instantánea al guardar lo llevan a 28,15 kB. El presupuesto pasa de 20 a 30 kB por el alcance editorial añadido, con margen para correcciones menores. Editor y evaluaciones se difieren por subruta: la lista solo carga AuthorSpace y authorQueries. No se aumenta backendBeta (120 kB)."
     },
     "legacyShell": {
       "description": "Shell y proveedor de sesiones del build Python existente.",
-      "chunks": ["LegacyApp", "client"],
+      "chunks": [
+        "LegacyApp",
+        "client"
+      ],
       "budgetKb": 70
     },
     "core": {
       "description": "Vendor + shell compartido por todas las rutas (siempre descargado).",
-      "chunks": ["index", "compiler-runtime", "catalogQueries", "catalogLabels", "googleIdentity"],
+      "chunks": [
+        "index",
+        "compiler-runtime",
+        "catalogQueries",
+        "catalogLabels",
+        "googleIdentity"
+      ],
       "budgetKb": 180
     },
     "catalogRoute": {
       "description": "Catálogo de temas (/), ruta por defecto.",
-      "chunks": ["CatalogRoute"],
+      "chunks": [
+        "CatalogRoute"
+      ],
       "budgetKb": 16
     },
     "projectsRoute": {
       "description": "Proyectos integradores (/proyectos).",
-      "chunks": ["ProjectsRoute"],
+      "chunks": [
+        "ProjectsRoute"
+      ],
       "budgetKb": 14
     },
     "tutorRoute": {
       "description": "Tutor, evaluación, práctica, progreso y salud (/tutor).",
-      "chunks": ["TutorRoute"],
+      "chunks": [
+        "TutorRoute"
+      ],
       "budgetKb": 30
     },
     "authoringRoute": {
       "description": "Mesa editorial y editor de lecciones (/autoria).",
-      "chunks": ["AuthoringRoute", "LessonEditor"],
+      "chunks": [
+        "AuthoringRoute",
+        "LessonEditor"
+      ],
       "budgetKb": 24
     },
     "voice": {
       "description": "Voz en tiempo real, sólo se descarga al activarla.",
-      "chunks": ["VoiceSessionDialog"],
+      "chunks": [
+        "VoiceSessionDialog"
+      ],
       "budgetKb": 14
     },
     "markdownShared": {
-      "description": "Renderer Markdown compartido por tutor y vista previa de autoría.",
-      "chunks": ["TutorMarkdown"],
+      "description": "Renderer Markdown compartido por unidades, tutor y vista previa de autoría; se descarga al mostrar texto.",
+      "chunks": [
+        "TutorMarkdown"
+      ],
       "budgetKb": 70
     },
     "backendPersonal": {

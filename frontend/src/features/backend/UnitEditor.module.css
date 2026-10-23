@@ -1,0 +1,6 @@
+.editor { min-inline-size: 0; }
+.editor fieldset { min-inline-size: 0; margin-block: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
+.editor input:not([type="checkbox"]), .editor textarea, .editor select { max-inline-size: 100%; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-block: var(--space-6); }
+.error { color: var(--status-danger); overflow-wrap: anywhere; }
+.notice { padding: var(--space-4); border-inline-start: 3px solid var(--action-primary); }

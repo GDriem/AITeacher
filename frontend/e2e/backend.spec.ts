@@ -61,7 +61,8 @@ async function auditPersonalPage(page: Page, label: string) {
   }
 }
 
-test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ page }) => {
+test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ page, browser }) => {
+  test.setTimeout(300_000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await googleForTests(page, "author"); await page.goto("/"); await login(page);
@@ -85,32 +86,87 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.getByLabel("Descripción", { exact: true })).toHaveAccessibleDescription(new RegExp(`^${String(topicDescription.length)} de 600 caracteres`));
   await page.getByRole("button", { name: "Guardar entrada" }).click(); await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("");
   await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Unidades", exact: true }).click();
+  await auditPersonalPage(page, "Autoría lista");
   await page.getByRole("button", { name: "Crear unidad", exact: true }).click(); await page.getByLabel("Tema de la nueva unidad").selectOption({ label: "Vectores Beta" });
   await page.getByLabel("Título de la unidad").fill("Unidad Beta de vectores");
+  await page.reload(); await expect(page.getByLabel("Título de la unidad")).toHaveValue("Unidad Beta de vectores");
+  await auditPersonalPage(page, "Autoría datos");
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Conceptos y objetivos", exact: true })).toBeFocused();
   await page.getByRole("button", { name: "Añadir concepto", exact: true }).click(); await page.getByLabel("Nombre del concepto").fill("Concepto Beta");
   await page.getByRole("button", { name: "Añadir objetivo", exact: true }).click(); await page.getByLabel("Descripción del objetivo").fill("Explicar Concepto Beta");
   await page.getByRole("checkbox", { name: "Concepto Beta", exact: true }).check();
+  await auditPersonalPage(page, "Autoría objetivos");
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
   await page.getByRole("button", { name: "Añadir lectura", exact: true }).click(); await page.getByLabel("Título de lectura").fill("Lectura de vectores");
   await page.getByLabel("Texto de lectura").fill("Un vector representa características. Concepto Beta conecta esas características con una comparación.");
   await page.getByLabel("Fuente de lectura").fill("Material sintético para probar el recorrido");
+  await page.getByRole("checkbox", { name: "Explicar Concepto Beta", exact: true }).check();
+  await auditPersonalPage(page, "Autoría lecturas");
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
   await page.getByRole("button", { name: "Añadir ejercicio", exact: true }).click(); await page.getByLabel("Consigna del ejercicio").fill("Explica qué características compararías.");
+  await page.getByRole("checkbox", { name: "Explicar Concepto Beta", exact: true }).check();
+  await auditPersonalPage(page, "Autoría ejercicios");
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
   await page.getByRole("button", { name: "Añadir evaluación editorial", exact: true }).click(); await page.getByLabel("Consigna de evaluación").fill("Justifica una comparación.");
   await page.getByLabel("Criterios privados de evaluación").fill("PRIVATE-EDITORIAL-BROWSER");
   for (const checkbox of await page.getByRole("checkbox", { name: "Explicar Concepto Beta", exact: true }).all()) await checkbox.check();
-  await page.getByRole("button", { name: "Guardar borrador" }).click(); await page.getByRole("button", { name: "Publicar esta revisión" }).click();
+  await auditPersonalPage(page, "Autoría evaluación editorial");
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+  await auditPersonalPage(page, "Autoría vista previa");
+  for (const name of ["Practicar", "Evaluar", "Aprender"]) { await page.getByRole("tab", { name, exact: true }).click(); await auditPersonalPage(page, `Autoría previa ${name}`); }
+  await page.getByRole("button", { name: "Guardar borrador" }).click();
+  await expect(page).toHaveURL(/\/autoria\/unidades\/[a-f0-9-]{36}\?paso=revision$/);
+  const authorUnitUrl = page.url();
+  const authorUnitId = new URL(authorUnitUrl).pathname.split("/").at(-1) ?? "";
+  const isolated = await browser.newContext(); const student = await isolated.newPage();
+  await googleForTests(student, "student-b"); await student.goto("/"); await login(student);
+  expect((await student.request.get(`/api/units/${authorUnitId}`)).status()).toBe(404);
+  await student.goto(`/autoria/unidades/${authorUnitId}`);
+  await expect(student.getByRole("heading", { name: "Autoría requiere permiso de autor" })).toBeVisible();
+  await isolated.close();
+  await page.getByRole("button", { name: "Publicar esta revisión" }).focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(await page.getByRole("dialog").evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press("Shift+Tab");
+  expect(await page.getByRole("dialog").evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
+  await auditPersonalPage(page, "Autoría diff");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Publicar esta revisión" })).toBeFocused();
+  await page.getByRole("button", { name: "Publicar esta revisión" }).click();
+  await page.getByRole("button", { name: "Confirmar publicación", exact: true }).click();
   await expect(page.getByRole("button", { name: "Publicar esta revisión" })).toBeDisabled();
+  await page.getByRole("link", { name: "Editar evaluaciones", exact: true }).click();
+  await expect(page).toHaveURL(/\/evaluaciones$/); await page.reload();
+  await page.getByRole("button", { name: "Añadir pregunta", exact: true }).click();
   await page.getByLabel("Enunciado", { exact: true }).fill("¿Qué representa un vector?");
   await page.getByRole("group", { name: "Objetivos evaluados" }).getByRole("checkbox").check();
   await page.getByLabel("Opción 1", { exact: true }).fill("Características"); await page.getByLabel("Opción 2", { exact: true }).fill("Una contraseña");
-  await page.getByRole("radio", { name: "Respuesta correcta" }).first().check(); await page.getByRole("button", { name: "Guardar pregunta", exact: true }).click();
+  await page.getByRole("radio", { name: "Respuesta correcta" }).first().check();
+  await auditPersonalPage(page, "Autoría pregunta");
+  await page.getByRole("button", { name: "Guardar pregunta", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Pregunta guardada" })).toBeVisible();
+  await page.getByRole("button", { name: "Editar pregunta", exact: true }).click();
+  await expect(page.getByLabel("Enunciado", { exact: true })).toHaveValue("¿Qué representa un vector?");
+  await page.getByLabel("Opción 2", { exact: true }).fill("Una clave");
+  await page.getByRole("button", { name: "Guardar pregunta", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page.getByText("¿Qué representa un vector? · revisión 2", { exact: true })).toBeVisible();
+  await page.getByLabel("Filtrar por tipo").selectOption("openResponse"); await page.reload();
+  await expect(page.getByLabel("Filtrar por tipo")).toHaveValue("openResponse");
+  await expect(page.getByRole("heading", { name: "No hay preguntas con estos filtros" })).toBeVisible();
+  await page.getByLabel("Filtrar por tipo").selectOption("");
   await page.getByLabel("Título de evaluación").fill("Evaluación cerrada beta"); await page.getByRole("checkbox", { name: "¿Qué representa un vector?", exact: true }).check();
   await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
+  await page.getByRole("button", { name: "Añadir pregunta", exact: true }).click();
   await page.getByLabel("Tipo de pregunta").selectOption("openResponse"); await page.getByLabel("Enunciado", { exact: true }).fill("Justifica tu comparación de vectores.");
+  await page.getByRole("group", { name: "Objetivos evaluados" }).getByRole("checkbox").check();
   await page.getByLabel("Guía privada de corrección").fill("PRIVATE-RUBRIC-BROWSER");
   await page.getByRole("group", { name: "Criterio 1", exact: true }).getByLabel("Descripción", { exact: true }).fill("Justificación coherente");
-  await page.getByRole("button", { name: "Guardar pregunta", exact: true }).click(); await expect(page.getByLabel("Enunciado", { exact: true })).toHaveValue("");
+  await auditPersonalPage(page, "Autoría pregunta con rúbrica");
+  await page.getByRole("button", { name: "Guardar pregunta", exact: true }).click(); await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.getByLabel("Título de evaluación").fill("Evaluación abierta beta"); await page.getByRole("checkbox", { name: "Justifica tu comparación de vectores.", exact: true }).check();
+  await auditPersonalPage(page, "Autoría evaluaciones");
   await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
   await page.getByLabel("Título de referencia curricular").fill("Mapa Beta"); await page.getByRole("button", { name: "Publicar referencia curricular" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Referencia curricular publicada" })).toBeVisible();
@@ -195,8 +251,10 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.getByText("Mi explicación histórica", { exact: true })).toBeVisible();
   await switchUser(page, "author"); await mainNav(page, "Autoría").click(); await page.getByRole("link", { name: "Corregir entregas", exact: true }).click();
   await page.getByRole("listitem").filter({ hasText: "Evaluación abierta beta" }).getByRole("button", { name: "Consultar entrega" }).click();
+  const reviewUrl = page.url(); await page.reload(); await expect(page).toHaveURL(reviewUrl);
+  await auditPersonalPage(page, "Autoría corrección");
   await page.getByLabel("Justificación coherente · máximo 1").fill("1"); await page.getByLabel("Feedback al alumno").fill("La comparación está justificada.");
-  await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
+  await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click(); await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
   await switchUser(page, "student-b"); await mainNav(page, "Apuntes").click(); await expect(page.getByText("Todavía no hay apuntes.", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Mi idea privada de la beta");
   await mainNav(page, "Historial").click(); await expect(page.getByText("No hay conversaciones históricas importadas para tu cuenta.", { exact: true })).toBeVisible();
@@ -235,7 +293,12 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   // Retirar el material bloquea la unidad, pero conserva el origen histórico del apunte.
   await switchUser(page, "author");
   const unitToWithdraw = await (await page.request.get(`/api/units/${studentUnitId}`)).json() as { version: number; publishedRevisionId: string };
-  const withdrawn = await apiPost(page, `/api/units/${studentUnitId}/unpublish`, { version: unitToWithdraw.version });
+  await page.goto(`/autoria/unidades/${studentUnitId}?paso=revision`);
+  await page.getByRole("button", { name: "Retirar publicación", exact: true }).click();
+  await auditPersonalPage(page, "Autoría retiro");
+  await page.getByRole("button", { name: "Confirmar retiro", exact: true }).click();
+  await expect(page.getByText("Publicación retirada.", { exact: true })).toBeVisible();
+  const withdrawn = await (await page.request.get(`/api/units/${studentUnitId}`)).json() as { version: number };
   await switchUser(page, "student-a");
   expect((await page.request.get(`/api/units/${studentUnitId}`)).status()).toBe(404);
   await mainNav(page, "Apuntes").click();
@@ -343,7 +406,7 @@ test("navegación por teclado: rutas, foco, recarga y Atrás conservan la vista"
   await page.goBack(); await expect(redes).toHaveAttribute("aria-pressed", "true");
   await page.goForward(); await expect(page.getByRole("heading", { name: topic, level: 1 })).toBeVisible();
   await page.goto("/no-existe"); await expect(page.getByRole("heading", { name: "Esta página no existe", level: 1 })).toBeVisible();
-  await page.goto("/autoria"); await expect(page).toHaveURL(/\/$/);
+  await page.goto("/autoria"); await expect(page.getByRole("heading", { name: "Autoría requiere permiso de autor" })).toBeVisible();
   await page.setViewportSize({ width: 320, height: 640 });
   const repasos = mainNav(page, "Repasos");
   const box = await repasos.boundingBox();
@@ -683,10 +746,12 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
     await mainNav(page, "Autoría").click();
     await page.getByRole("link", { name: "Corregir entregas", exact: true }).click();
     await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).filter({ hasText: "Pendiente de corrección" }).getByRole("button", { name: "Consultar entrega" }).click();
+    const reviewedUrl = page.url();
     await page.getByLabel("Justificar R1 · máximo 1").fill("1");
     await page.getByLabel("Feedback al alumno").fill("Corregido con la rúbrica de R1.");
-    await page.getByRole("button", { name: "Confirmar corrección final" }).click();
-    await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
+    await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click();
+    await expect(page).not.toHaveURL(reviewedUrl);
+    await expect(page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` })).toHaveCount(0);
     await switchUser(page, "student-a");
     await mainNav(page, "Repasos").click();
     await page.getByText("Mis intentos anteriores", { exact: true }).click();
@@ -694,4 +759,53 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
   } else await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Completar con el intento seleccionado" }).click();
   await expect(page.getByText("Completado con un intento corregido", { exact: true }).last()).toBeVisible();
+});
+
+
+test("autoría: borrador recuperable, diff de publicación existente y conflictos de versión", async ({ page }) => {
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  const units = await (await page.request.get("/api/units?limit=100")).json() as { items: { id: string; topicId: string; title: string }[] };
+  const topicId = units.items[0]?.topicId;
+  expect(topicId).toBeTruthy();
+  const document = { kind: "reading", title: "Lectura para revisar", concepts: [], objectives: [], exercises: [], assessments: [], prerequisites: [],
+    readings: [{ id: crypto.randomUUID(), title: "Lectura inicial", text: "Contenido antes de editar.", source: "Sintético", objectiveIds: [] }] };
+  const unit = await apiPost(page, "/api/units", { topicId, document }) as { id: string; version: number; revision: { id: string } };
+  await apiPost(page, `/api/units/${unit.id}/revisions/${unit.revision.id}/publish`, { version: unit.version });
+  await page.goto(`/autoria/unidades/${unit.id}`);
+  await expect(page.getByRole("tab", { name: "Conceptos y objetivos", exact: true })).toHaveCount(0);
+  await page.getByLabel("Título de la unidad").fill("Lectura revisada");
+  await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Unidades", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "¿Salir con cambios sin guardar?" })).toBeVisible();
+  await page.getByRole("button", { name: "Salir y conservar borrador", exact: true }).click();
+  await page.getByLabel("Buscar unidades", { exact: true }).fill("Lectura para revisar");
+  await page.getByRole("link", { name: "Lectura para revisar", exact: true }).click();
+  await expect(page.getByLabel("Título de la unidad")).toHaveValue("Lectura revisada");
+  await page.reload(); await expect(page.getByLabel("Título de la unidad")).toHaveValue("Lectura revisada");
+  await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Publicar esta revisión", exact: true })).toBeEnabled();
+  const comparison = page.waitForResponse((r) => r.request().method() === "GET" && r.url().endsWith(`/api/units/${unit.id}/revisions/${unit.revision.id}`));
+  await page.getByRole("button", { name: "Publicar esta revisión", exact: true }).click(); await comparison;
+  await expect(page.getByRole("dialog")).toContainText("Título · Modificado");
+  await page.getByRole("dialog").getByText("Antes", { exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Lectura para revisar");
+  await expect(page.getByRole("dialog")).toContainText("Lectura revisada");
+  await auditPersonalPage(page, "Autoría diff existente");
+  // Otro autor modifica la versión mientras el diálogo está abierto.
+  await apiPost(page, `/api/units/${unit.id}/revisions`, { version: 3, document: { ...document, title: "Cambio concurrente" } });
+  await page.getByRole("button", { name: "Confirmar publicación", exact: true }).click();
+  await expect(page.getByText(/La versión de la unidad cambió/)).toBeVisible();
+  await page.getByRole("button", { name: "Recargar unidad", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  // Sin cambios locales, recargar muestra la revisión concurrente en vez de basar el siguiente guardado en el documento viejo.
+  await expect(page.getByLabel("Título de la unidad")).toHaveValue("Cambio concurrente");
+  // Guardar el borrador anterior conserva su versión y falla sin perder el texto.
+  await page.getByLabel("Título de la unidad").fill("Cambio local");
+  const current = await (await page.request.get(`/api/units/${unit.id}`)).json() as { version: number };
+  await apiPost(page, `/api/units/${unit.id}/revisions`, { version: current.version, document: { ...document, title: "Nuevo cambio remoto" } });
+  await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
+  await expect(page.getByText(/La versión cambió. Conservamos tu borrador./)).toBeVisible();
+  await page.reload(); await expect(page.getByLabel("Título de la unidad")).toHaveValue("Cambio local");
+  await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
+  await page.getByRole("button", { name: "Descartar cambios y recargar", exact: true }).click();
+  await expect(page.getByLabel("Título de la unidad")).toHaveValue("Nuevo cambio remoto");
 });

@@ -11,3 +11,5 @@
 .tool[aria-current="page"] {
   border-color: var(--action-primary);
 }
+.units { padding-inline-start: var(--space-5); }
+.units li { padding-block: var(--space-3); overflow-wrap: anywhere; }

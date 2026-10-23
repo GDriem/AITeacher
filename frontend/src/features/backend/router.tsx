@@ -28,8 +28,11 @@ export const router = createBrowserRouter([{
       // Autoría se descarga aparte: la usan pocos perfiles y no debe pesar en el recorrido del alumno.
       { path: "autoria", lazy: async () => ({ Component: (await import("./AuthorSpace")).AuthorSpace }), children: [
         { index: true, lazy: async () => ({ Component: (await import("./AuthorSpace")).AuthorUnits }) },
+        { path: "unidades/nueva", lazy: async () => ({ Component: (await import("./AuthorUnitRoute")).AuthorUnitRoute }) },
+        { path: "unidades/:unitId", lazy: async () => ({ Component: (await import("./AuthorUnitRoute")).AuthorUnitRoute }) },
+        { path: "unidades/:unitId/evaluaciones", lazy: async () => ({ Component: (await import("./AuthorAssessmentRoute")).AuthorAssessmentRoute }) },
         { path: "catalogo", lazy: async () => ({ Component: (await import("./CatalogEditor")).CatalogEditor }) },
-        { path: "correcciones", lazy: async () => ({ Component: (await import("./ReviewQueue")).ReviewQueue }) },
+        { path: "correcciones/:attemptId?", lazy: async () => ({ Component: (await import("./ReviewQueue")).ReviewQueue }) },
       ] },
       { path: "*", Component: NotFound },
     ],
