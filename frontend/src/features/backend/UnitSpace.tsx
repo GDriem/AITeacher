@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { TutorMarkdown } from "../tutor/TutorMarkdown";
 import { Badge, PageHeader, Tabs, buttonClass, cardClass } from "../../ui";
@@ -6,6 +6,7 @@ import { required, type Schema } from "./client";
 import { Busy, Failure } from "./Shared";
 import { Assessments } from "./Assessments";
 import { topicPath, tutorPath, unitCrumbs, useCatalogLevel, useSourceLevels, useStudyUnit, useTutorAvailability, useUnitTopic, type TutorMode } from "./unitQueries";
+import { useMedia } from "./useMedia";
 import styles from "./UnitSpace.module.css";
 
 type UnitDocument = Schema["UnitResponse"]["revision"]["document"];
@@ -186,12 +187,4 @@ function useVisible(ids: string[]) {
   const current = chosen?.key === key ? chosen.id : observed;
   // Un id de otra pestaña ya no cuenta: el panel saliente se desmontó.
   return [current && ids.includes(current) ? current : null, (id: string) => setChosen({ id, key })] as const;
-}
-
-function useMedia(query: string) {
-  return useSyncExternalStore((change) => {
-    const list = window.matchMedia(query);
-    list.addEventListener("change", change);
-    return () => list.removeEventListener("change", change);
-  }, () => window.matchMedia(query).matches, () => false);
 }

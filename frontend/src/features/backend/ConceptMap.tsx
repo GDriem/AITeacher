@@ -17,14 +17,14 @@ export function ConceptMap({ topicId, conversationId, messages }: { topicId: str
   const graph = useQuery({ queryKey: ["map", conversationId, graphId], enabled: Boolean(graphId), queryFn: async ({ signal }) => result(await backend.GET("/api/graphs/conversations/{id}", { signal, params: { path: { id: conversationId }, query: { graphRevisionId: graphId } } })) });
   const extract = useMutation({ mutationFn: async () => result(await backend.POST("/api/graphs/conversations/{id}/extract", { params: { path: { id: conversationId } }, body: { graphRevisionId: graphId, messageId } })),
     onSuccess: () => { void queries.invalidateQueries({ queryKey: ["map", conversationId, graphId] }); } });
-  return <section><h3>Mapa de conceptos</h3><p>Las menciones y la comprensión declarada conservan su origen. No acreditan dominio.</p>
+  return <section aria-label="Mapa de conceptos de la conversación"><p>Las menciones y la comprensión declarada conservan su origen. No acreditan dominio.</p>
     {graphs.isPending ? <Busy /> : graphs.isError ? <Failure error={graphs.error} retry={() => void graphs.refetch()} /> : <>
       {graphs.data.items.length ? <Field title="Referencia curricular"><select value={graphId} onChange={(event) => setGraphId(event.target.value)}>
         <option value="">Selecciona una referencia</option>{graphs.data.items.map((item) => <option key={item.id} value={item.id}>{item.title} · revisión {item.number}</option>)}</select></Field> : <p>Tu docente todavía no ha publicado un mapa para este tema.</p>}
       <Pages offset={offset} total={graphs.data.total} change={setOffset} />
     </>}
     {graphId ? <><Field title="Mensaje para buscar menciones"><select value={messageId} onChange={(event) => setMessageId(event.target.value)}>
-      <option value="">Selecciona un mensaje tuyo de esta página</option>{messages.filter((item) => item.role === "user").map((item) => <option key={item.id} value={item.id}>{item.text.slice(0, 90)}</option>)}</select></Field>
+      <option value="">Selecciona un mensaje tuyo ya cargado</option>{messages.filter((item) => item.role === "user").map((item) => <option key={item.id} value={item.id}>{item.text.slice(0, 90)}</option>)}</select></Field>
       <Button disabled={!messageId || extract.isPending} onClick={() => extract.mutate()}>Buscar menciones</Button>
       {extract.isError ? <Failure error={extract.error} /> : null}
       {graph.isPending ? <Busy /> : graph.isError ? <Failure error={graph.error} retry={() => void graph.refetch()} /> : <GraphView map={graph.data} />}
@@ -39,10 +39,10 @@ function GraphView({ map }: { map: Schema["ConversationGraph"] }) {
     {map.edges.map((edge, index) => { const from = positions.get(edge.fromNodeId), to = positions.get(edge.toNodeId); return from && to ? <line key={index} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="var(--content-muted)" /> : null; })}
     {map.nodes.map((node) => { const point = required(positions.get(node.id)); return <g key={node.id}><title>{node.name}</title><circle cx={point.x} cy={point.y} r="24" fill="var(--surface-raised)" stroke="var(--action-primary)" /><text x={point.x} y={point.y + 45} textAnchor="middle" fill="var(--content-default)" fontSize="12">{node.name.slice(0, 28)}</text></g>; })}
   </svg>
-    <h4>Conceptos y relaciones</h4><ul>{map.nodes.map((node) => <li key={node.id}>{node.name}{map.comparison.acceptedNodeIds.includes(node.id) ? " · mención aceptada" : " · sin mención aceptada"}</li>)}</ul>
+    <h3>Conceptos y relaciones</h3><ul>{map.nodes.map((node) => <li key={node.id}>{node.name}{map.comparison.acceptedNodeIds.includes(node.id) ? " · mención aceptada" : " · sin mención aceptada"}</li>)}</ul>
     <ul>{map.edges.map((edge, index) => <li key={index}>{names.get(edge.fromNodeId)} {relations[edge.relation]} {names.get(edge.toNodeId)}</li>)}</ul>
     <p>Conceptos sin mención: {map.comparison.unmentionedNodeIds.length}. Prerrequisitos pendientes de explorar: {map.comparison.prerequisiteGaps.length}.</p>
-    <h4>Observaciones y correcciones</h4>{map.observations.length === 0 ? <p>Todavía no hay observaciones en esta conversación.</p> : map.observations.map((item) => <Observation key={`${item.id}-${String(item.current.version)}`} observation={item} names={names} />)}
+    <h3>Observaciones y correcciones</h3>{map.observations.length === 0 ? <p>Todavía no hay observaciones en esta conversación.</p> : map.observations.map((item) => <Observation key={`${item.id}-${String(item.current.version)}`} observation={item} names={names} />)}
   </>;
 }
 

@@ -3,7 +3,6 @@ import { BackendRoot } from "./BackendRoot";
 import { HomeRoute } from "./HomeRoute";
 import { CurriculumExplorer } from "./CurriculumExplorer";
 import { UnitSpace } from "./UnitSpace";
-import { UnitTutor } from "./UnitTutor";
 import { AttemptRoute } from "./AttemptRoute";
 import { Notes } from "./Notes";
 import { LearningReviews } from "./LearningReviews";
@@ -23,8 +22,9 @@ export const router = createBrowserRouter([{
       { path: "catalogo", Component: CurriculumExplorer },
       { path: "temas/:topicId", Component: TopicPage },
       { path: "unidades/:unitId", Component: UnitSpace },
-      { path: "unidades/:unitId/tutor", Component: UnitTutor },
-      { path: "unidades/:unitId/tutor/:conversationId", Component: UnitTutor },
+      // El tutor (chat, mapa y voz) también se descarga aparte: la unidad, el catálogo y el inicio no lo necesitan.
+      { path: "unidades/:unitId/tutor", lazy: async () => ({ Component: (await import("./UnitTutor")).UnitTutor }) },
+      { path: "unidades/:unitId/tutor/:conversationId", lazy: async () => ({ Component: (await import("./UnitTutor")).UnitTutor }) },
       { path: "evaluaciones/:attemptId", Component: AttemptRoute },
       { path: "apuntes", Component: Notes },
       { path: "repasos", Component: LearningReviews },
