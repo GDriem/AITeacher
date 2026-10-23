@@ -1,0 +1,4 @@
+.screen { display: grid; gap: var(--space-4); }
+.screen h2, .screen h3 { margin-block-start: 0; }
+.list { display: grid; gap: var(--space-3); list-style: none; padding: 0; }
+.record { padding: var(--space-4); border: 1px solid var(--border-default); border-radius: var(--radius-md); margin-block: var(--space-3); overflow-wrap: anywhere; }
