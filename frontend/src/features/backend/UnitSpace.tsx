@@ -175,7 +175,7 @@ function useVisible(ids: string[]) {
     // El salto se desplaza solo (y con suavidad): se suelta con el siguiente gesto del alumno, no con ese scroll.
     const release = () => setChosen(null);
     const onKey = (event: KeyboardEvent) => { if (scrollKeys.has(event.key)) release(); };
-    const events = ["wheel", "touchmove", "pointerdown"] as const;
+    const events = ["wheel", "touchmove"] as const;
     for (const name of events) window.addEventListener(name, release, { passive: true });
     window.addEventListener("keydown", onKey);
     return () => {

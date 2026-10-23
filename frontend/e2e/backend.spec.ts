@@ -265,8 +265,8 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   const category = await apiPost(page, "/api/catalog/categories", { subjectId: subject.id, entry });
   const topic = await apiPost(page, "/api/catalog/topics", { subjectId: subject.id, categoryId: category.id, entry });
   const concept = crypto.randomUUID(), objective = crypto.randomUUID();
-  // La segunda lectura es corta: al final de la página no puede subir hasta arriba y la primera sigue asomando.
-  const readings = ([["Primera lectura larga", 24], ["Segunda lectura corta", 2]] as const).map(([title, paragraphs]) => ({ id: crypto.randomUUID(), title,
+  // Las dos últimas son cortas: elegir la penúltima debe conservar su contexto al pulsar el tutor.
+  const readings = ([["Primera lectura larga", 24], ["Segunda lectura corta", 2], ["Tercera lectura corta", 2]] as const).map(([title, paragraphs]) => ({ id: crypto.randomUUID(), title,
     text: Array.from({ length: paragraphs }, (_, index) => `Párrafo ${String(index + 1)} de ${title}.`).join("\n\n"), source: "Sintético", objectiveIds: [objective] }));
   const exercises = ["Compara dos ejemplos.", "Explica tu criterio."].map((prompt) => ({ id: crypto.randomUUID(), prompt, objectiveIds: [objective] }));
   const unit = await apiPost(page, "/api/units", { topicId: topic.id, document: { title: "Unidad con pestañas", concepts: [{ id: concept, name: "Idea" }],
@@ -300,11 +300,16 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await expect(ask).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[1]?.id ?? ""}$`));
   await expect(index.getByRole("link", { name: "Segunda lectura corta", exact: true })).toHaveAttribute("aria-current", "true");
   await expect(index.getByRole("link", { name: "Primera lectura larga", exact: true })).not.toHaveAttribute("aria-current", "true");
+  // pointerdown en el propio enlace no debe sustituir la segunda lectura por la tercera observada.
+  await ask.click();
+  await expect(page).toHaveURL(new RegExp(`/tutor\\?modo=reading&actividad=${readings[1]?.id ?? ""}$`));
+  await page.goBack();
+  await index.getByRole("link", { name: "Tercera lectura corta", exact: true }).click();
   // Al desplazarse el alumno se suelta la elección del índice; al final de la página manda la última lectura visible.
   await expect.poll(() => page.evaluate(() => Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight - 1)).toBe(true);
   await page.mouse.wheel(0, 400);
-  await expect(ask).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[1]?.id ?? ""}$`));
-  await expect(index.getByRole("link", { name: "Segunda lectura corta", exact: true })).toHaveAttribute("aria-current", "true");
+  await expect(ask).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[2]?.id ?? ""}$`));
+  await expect(index.getByRole("link", { name: "Tercera lectura corta", exact: true })).toHaveAttribute("aria-current", "true");
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   // Practicar: el contexto pasa al ejercicio visible y Atrás devuelve a la misma pestaña.
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -318,15 +323,20 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await page.goBack(); await expect(tab("Practicar")).toHaveAttribute("aria-selected", "true");
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   await tab("Aprender").click();
-  for (const width of [320, 768, 1024, 1440]) {
+  for (const width of [320, 768, 800, 900, 1024, 1152, 1440]) {
     await page.setViewportSize({ width, height: 800 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    const overflow = await page.evaluate(() => ({
+      pixels: document.documentElement.scrollWidth - innerWidth,
+      elements: Array.from(document.querySelectorAll("body *")).filter((element) => element.getBoundingClientRect().right > innerWidth)
+        .map((element) => `${element.tagName}.${element.getAttribute("class") ?? ""}`).slice(0, 10),
+    }));
+    expect(overflow.pixels, `ancho ${String(width)}: ${overflow.elements.join(", ")}`).toBeLessThanOrEqual(0);
     expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
     const button = await ask.boundingBox();
     expect(button && button.x + button.width).toBeLessThanOrEqual(width);
     if (width <= 768) {
       // En móvil el índice es plegable y el botón queda por encima de la barra inferior.
-      await expect(index.getByText("Lecturas (2)", { exact: true })).toBeVisible();
+      await expect(index.getByText("Lecturas (3)", { exact: true })).toBeVisible();
       const bar = await mainNav(page, "Catálogo").boundingBox();
       expect(button && bar && button.y + button.height).toBeLessThanOrEqual(bar?.y ?? 0);
       // Al final de la página el botón no tapa el último contenido.
