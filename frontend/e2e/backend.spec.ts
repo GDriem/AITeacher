@@ -130,7 +130,9 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Quiero explorar Concepto Beta."); await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Guardar mensaje en apuntes", exact: true }).last().click(); await expect(page.getByText("Apunte guardado.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Guardar en apuntes", exact: true }).last().click(); await expect(page.getByText("Apunte guardado.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Guardado en apuntes", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Mapa de conceptos", exact: true }).click();
   await page.getByLabel("Referencia curricular", { exact: true }).selectOption({ label: "Mapa Beta · revisión 1" });
   await page.getByLabel("Mensaje para buscar menciones").selectOption({ label: "Quiero explorar Concepto Beta." });
   await page.getByRole("button", { name: "Buscar menciones", exact: true }).click(); await page.getByLabel("Motivo de tu corrección").fill("Esta mención corresponde a mi pregunta.");
@@ -374,7 +376,7 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await expect(ask).toBeVisible(); await expect(notice).toHaveCount(0);
 });
 
-test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async ({ page }) => {
+test("tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a altura completa", async ({ page }) => {
   await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
   await openUnit(page, "Vectores Beta", "Unidad Beta de vectores");
   await page.getByRole("link", { name: /^Preguntar al tutor/ }).click();
@@ -387,12 +389,8 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async
   // La conversación vive en la URL: recargar la reabre sin volver a elegirla.
   await expect(page).toHaveURL(new RegExp(`/tutor/${id}(\\?|$)`));
   await page.reload();
-  await expect(page.getByLabel("Retomar una conversación")).toHaveValue(id);
-  // Recorrer el select con flechas sólo elige; abrir otra conversación requiere confirmarlo.
-  await page.getByLabel("Retomar una conversación").focus();
-  await page.keyboard.press("ArrowUp"); await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(new RegExp(`/tutor/${id}(\\?|$)`));
-  await expect(page.getByLabel("Retomar una conversación")).toBeFocused();
+  // La lista de la unidad marca la conversación abierta con su título legible.
+  await expect(page.getByRole("navigation", { name: "Conversaciones de la unidad" }).locator('[aria-current="true"]')).toContainText("Lectura: Lectura de vectores");
   await expect(page.getByRole("button", { name: "Recuperar mensaje pendiente" })).toBeVisible();
   const pending = await (await page.request.get(`/api/tutor/conversations/${id}/pending-turn`)).json() as { request: unknown; leaseUntil: string };
   await advanceClock(page, new Date(new Date(pending.leaseUntil).getTime() + 1000).toISOString());
@@ -403,6 +401,59 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados", async
   await expect(page.getByRole("button", { name: "Recuperar mensaje pendiente" })).toHaveCount(0);
   const history = await (await page.request.get(`/api/tutor/conversations/${id}/messages`)).json() as { total: number };
   expect(history.total).toBe(2);
+
+  // Chat a altura completa, mensajes anteriores, mapa plegable y responsive, con la misma sesión: el host limita los logins por minuto.
+  const unitId = new URL(page.url()).pathname.split("/")[2] ?? "";
+  // Doce turnos (24 mensajes) superan la primera ventana de 20: el chat abre en los más recientes.
+  const conversation = await apiPost(page, "/api/tutor/conversations", { unitId, mode: "chat" }) as { id: string; version: number };
+  let version = conversation.version;
+  for (let turn = 1; turn <= 12; turn++)
+    ({ version } = await apiPost(page, `/api/tutor/conversations/${conversation.id}/turns`, { requestId: crypto.randomUUID(), version, text: `Pregunta número ${String(turn)}` }) as { version: number });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/unidades/${unitId}/tutor/${conversation.id}`);
+  const composer = page.getByLabel("Tu mensaje", { exact: true });
+  await expect(page.getByText("Pregunta número 12", { exact: true })).toBeInViewport();
+  await expect(composer).toBeInViewport();
+  await expect(page.getByText("Pregunta número 1", { exact: true })).toHaveCount(0);
+  // Subir hasta el principio carga la ventana anterior sin mover lo que el alumno estaba leyendo.
+  const reading = page.getByText("Pregunta número 3", { exact: true });
+  await reading.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.getByText("Pregunta número 1", { exact: true })).toBeAttached();
+  await expect(page.getByRole("button", { name: "Cargar mensajes anteriores" })).toHaveCount(0);
+  await expect(reading).toBeInViewport();
+  await expect(composer).toBeInViewport();
+  // El mapa se pliega: abrirlo mueve el foco a su título; Escape lo cierra y devuelve el foco al botón.
+  const toggle = page.getByRole("button", { name: "Mapa de conceptos", exact: true });
+  await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("heading", { name: "Mapa de conceptos", level: 2 })).toBeFocused();
+  await expect(page.getByLabel("Referencia curricular", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(toggle).toBeFocused(); await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  for (const width of [320, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const map of [false, true]) {
+      if (map) await toggle.click();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      expect(overflow, `ancho ${String(width)}${map ? " con mapa" : ""}`).toBeLessThanOrEqual(0);
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      if (map) await page.getByRole("button", { name: "Cerrar mapa", exact: true }).click();
+    }
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(composer).toBeInViewport();
+    if (width <= 768) {
+      // En móvil las conversaciones se pliegan y el compositor queda por encima de la barra inferior.
+      await expect(page.getByText(/^Conversaciones de la unidad \(\d+\)$/)).toBeVisible();
+      const send = await page.getByRole("button", { name: "Enviar", exact: true }).boundingBox();
+      const bar = await mainNav(page, "Catálogo").boundingBox();
+      expect(send && bar && send.y + send.height).toBeLessThanOrEqual(bar?.y ?? 0);
+    }
+  }
+  // Enviar sigue el final del chat: la respuesta nueva queda a la vista sobre el compositor.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await composer.fill("Pregunta número 13"); await page.keyboard.press("ControlOrMeta+Enter");
+  await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true }).last()).toBeInViewport();
+  await expect(page.getByText("Pregunta número 13", { exact: true })).toHaveCount(1);
 });
 
 for (const open of [false, true]) test(`repaso histórico R1 después de publicar R2 (${open ? "rúbrica" : "cerrada"})`, async ({ page }) => {

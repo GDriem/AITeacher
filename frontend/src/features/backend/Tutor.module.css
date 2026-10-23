@@ -1,0 +1,433 @@
+/* Espacio del tutor: conversaciones, chat y mapa. El chat se desplaza con la
+   ventana y el compositor queda fijo al final de la pantalla. */
+.workspace {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.muted {
+  margin: 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* Conversaciones de la unidad. */
+.conversations {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.panelTitle {
+  margin: var(--space-2) 0 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.conversationsFold {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+}
+
+.conversationsFold summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.conversationsFold[open] summary {
+  margin-block-end: var(--space-2);
+}
+
+.conversationList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conversationItem {
+  width: 100%;
+  min-height: 2.75rem;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  color: var(--content-default);
+  font: inherit;
+  text-align: start;
+  background: none;
+  border: 0;
+  border-inline-start: 0.1875rem solid var(--border-subtle);
+  cursor: pointer;
+}
+
+.conversationItem span {
+  overflow-wrap: anywhere;
+}
+
+.conversationItem time {
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+}
+
+.conversationItem:hover:not(:disabled) {
+  color: var(--content-strong);
+  background: var(--surface-subtle);
+}
+
+.conversationItem:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.conversationItem[aria-current] {
+  color: var(--content-strong);
+  border-inline-start-color: var(--action-primary);
+  background: var(--surface-subtle);
+  font-weight: 700;
+}
+
+/* Chat. */
+.chat {
+  min-width: 0;
+  min-height: calc(100dvh - 16rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.chatHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding-block-end: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.chatHeader h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-lg);
+  overflow-wrap: anywhere;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.notice:empty {
+  display: none;
+}
+
+.notice {
+  margin: 0;
+  color: var(--status-mastery);
+  font-size: var(--font-size-sm);
+}
+
+.banner {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: 0.25rem solid var(--status-attention);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.banner p {
+  margin: 0 0 var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.feed {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.earlier {
+  display: flex;
+  justify-content: center;
+}
+
+.messages {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.message {
+  display: flex;
+}
+
+.message > article,
+.typing {
+  min-width: 0;
+  max-width: min(46rem, 92%);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  border-end-start-radius: var(--radius-xs);
+  background: var(--surface-default);
+  overflow-wrap: anywhere;
+}
+
+.mine {
+  justify-content: flex-end;
+}
+
+.mine > article {
+  border-color: transparent;
+  border-radius: var(--radius-md);
+  border-end-end-radius: var(--radius-xs);
+  background: var(--surface-raised);
+}
+
+.message > article > p:last-child {
+  margin-block-end: 0;
+}
+
+.messageHeader {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.messageHeader time {
+  color: var(--content-muted);
+  font-size: var(--font-size-xs);
+}
+
+.author {
+  margin: 0;
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada fuente es una ficha que se despliega en su lugar. */
+.source {
+  max-width: 100%;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-subtle);
+}
+
+.source summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  padding-inline: var(--space-3);
+  color: var(--content-default);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.source[open] {
+  flex-basis: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.source p {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.messageActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: var(--space-2);
+}
+
+.typing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+.typing > span:first-child {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.typing i {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--content-muted);
+  animation: typing 1.2s infinite ease-in-out;
+}
+
+.typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-0.2rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing i {
+    animation: none;
+  }
+}
+
+/* Compositor fijo: se pega al borde inferior mientras el historial se desplaza por debajo. */
+.dock {
+  position: sticky;
+  z-index: 20;
+  inset-block-end: 0;
+  display: grid;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  background: var(--canvas-default);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.composer {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.composer label {
+  font-weight: 700;
+}
+
+.composer textarea {
+  min-width: 0;
+  width: 100%;
+  min-height: 3.25rem;
+  max-height: 40dvh;
+  padding: var(--space-3);
+  color: var(--content-strong);
+  font: inherit;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+}
+
+.composerFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.end {
+  scroll-margin-block-end: var(--space-4);
+}
+
+/* Mapa de conceptos. */
+.map {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-default);
+}
+
+.mapHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.mapHeader h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.mapHeader h2:focus {
+  outline: none;
+}
+
+@media (min-width: 64rem) {
+  .workspace {
+    grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr);
+  }
+
+  .withMap {
+    grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr) minmax(18rem, 22rem);
+  }
+
+  .conversations,
+  .map {
+    position: sticky;
+    inset-block-start: var(--space-5);
+    max-height: calc(100dvh - 2 * var(--space-5));
+    overflow-y: auto;
+  }
+}
+
+/* Debajo de escritorio el mapa es una hoja inferior sobre el chat. */
+@media (max-width: 63.99rem) {
+  .map {
+    position: fixed;
+    z-index: 35;
+    inset-inline: 0;
+    inset-block-end: 0;
+    max-height: 70dvh;
+    overflow-y: auto;
+    padding-block-end: calc(var(--space-4) + env(safe-area-inset-bottom));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* En móvil la barra de navegación ocupa 3.5rem más el área segura: el compositor y la hoja quedan por encima. */
+@media (max-width: 48rem) {
+  .chat {
+    min-height: calc(100dvh - 20rem);
+  }
+
+  .dock {
+    inset-block-end: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+
+  .end {
+    scroll-margin-block-end: calc(3.5rem + var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .map {
+    inset-block-end: calc(3.5rem + env(safe-area-inset-bottom));
+    max-height: calc(70dvh - 3.5rem);
+  }
+
+  .message > article,
+  .typing {
+    max-width: 100%;
+  }
+}

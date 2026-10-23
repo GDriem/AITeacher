@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { useState } from "react";
@@ -7,7 +7,10 @@ import { MemoryRouter } from "react-router-dom";
 import { expect, it, vi } from "vitest";
 import { server } from "../../test/server";
 import { Tutor } from "./Tutor";
-import type { Schema } from "./client";
+import { required, type Schema } from "./client";
+
+const testUnit = { id: "unit", topicId: "topic", revision: { id: "r1", document: { readings: [{ id: "reading", title: "Vectores" }], exercises: [{ id: "exercise" }] } } } as Schema["UnitResponse"];
+const page = <T,>(items: T[], total = items.length, offset = 0) => ({ items, total, offset, limit: 20 });
 
 // Igual que la ruta del tutor: la conversación abierta es estado externo y cambiarla remonta el componente.
 function RoutedTutor({ unit }: { unit: Schema["UnitResponse"] }) {
@@ -17,7 +20,7 @@ function RoutedTutor({ unit }: { unit: Schema["UnitResponse"] }) {
 
 it("recupera tras remontar la solicitud persistida, conserva el cuerpo en 409 y no crea otro turno", async () => {
   const origin = window.location.origin;
-  const unit = { id: "unit", topicId: "topic", revision: { id: "r1" } } as Schema["UnitResponse"];
+  const unit = testUnit;
   const original = { requestId: crypto.randomUUID(), version: 1, text: "Mi mensaje anterior" };
   const conversation = { id: "conversation", unitId: "unit", revisionId: "r1", mode: "chat", version: 2, activeTurnId: "turn", createdAt: new Date().toISOString() };
   let pending = true;
@@ -41,13 +44,11 @@ it("recupera tras remontar la solicitud persistida, conserva el cuerpo en 409 y 
   const mount = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}><RoutedTutor unit={unit} /></QueryClientProvider>);
   const user = userEvent.setup();
   const first = mount();
-  await user.selectOptions(await screen.findByLabelText("Retomar una conversación"), "conversation");
-  await user.click(screen.getByRole("button", { name: "Abrir conversación seleccionada" }));
+  await user.click(await screen.findByRole("button", { name: /^Conversación libre/ }));
   await screen.findByRole("button", { name: "Recuperar mensaje pendiente" });
   first.unmount(); // React loses all in-memory state, including its original request ref/cache.
   mount();
-  await user.selectOptions(await screen.findByLabelText("Retomar una conversación"), "conversation");
-  await user.click(screen.getByRole("button", { name: "Abrir conversación seleccionada" }));
+  await user.click(await screen.findByRole("button", { name: /^Conversación libre/ }));
   await user.click(await screen.findByRole("button", { name: "Recuperar mensaje pendiente" }));
   await screen.findByRole("alert");
   await user.click(screen.getByRole("button", { name: "Recuperar mensaje pendiente" }));
@@ -61,7 +62,7 @@ it("recupera tras remontar la solicitud persistida, conserva el cuerpo en 409 y 
 
 it("permite una nueva conversación después de un error de envío", async () => {
   const origin = window.location.origin;
-  const unit = { id: "unit", topicId: "topic", revision: { id: "r1" } } as Schema["UnitResponse"];
+  const unit = testUnit;
   let count = 0;
   server.use(
     http.get(`${origin}/api/tutor/voice`, () => HttpResponse.json({ enabled: false })),
@@ -86,30 +87,77 @@ it("permite una nueva conversación después de un error de envío", async () =>
   expect(screen.getByLabelText("Tu mensaje")).toBeEnabled();
 });
 
-it("elegir en el select no abre la conversación hasta confirmarla", async () => {
+it("lista las conversaciones de la unidad con títulos legibles y abre la elegida", async () => {
   const origin = window.location.origin;
-  const unit = { id: "unit", topicId: "topic", revision: { id: "r1" } } as Schema["UnitResponse"];
-  const item = (id: string) => ({ id, unitId: "unit", revisionId: "r1", mode: "chat", version: 1, activeTurnId: null, createdAt: new Date().toISOString() });
+  const item = (id: string, mode: string, activityId: string | null, unitId = "unit", revisionId = "r1") => ({ id, unitId, revisionId, mode, activityId, version: 1, activeTurnId: null, createdAt: new Date().toISOString() });
   server.use(
     http.get(`${origin}/api/tutor/voice`, () => HttpResponse.json({ enabled: false })),
-    http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json({ items: [item("a"), item("b")], total: 2 })),
+    http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json({ ...page([item("a", "reading", "reading"), item("b", "practice", "exercise"), item("c", "chat", null), item("d", "chat", null, "otra"), item("e", "chat", null, "unit", "r0")]), limit: 100 })),
   );
   const open = vi.fn();
   const user = userEvent.setup();
-  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><Tutor unit={unit} mode="chat" conversationId={null} openConversation={open} /></QueryClientProvider>);
-  const select = await screen.findByLabelText("Retomar una conversación");
-  select.focus();
-  await user.keyboard("{ArrowDown}{ArrowDown}");
-  await user.selectOptions(select, "a");
-  await user.selectOptions(select, "b");
-  expect(open).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Abrir conversación seleccionada" }));
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><Tutor unit={testUnit} mode="reading" activityId="reading" conversationId={null} openConversation={open} /></QueryClientProvider>);
+  const list = await screen.findByRole("navigation", { name: "Conversaciones de la unidad" });
+  // Solo las de esta unidad y su publicación vigente.
+  await waitFor(() => expect(within(list).getAllByRole("listitem")).toHaveLength(3));
+  expect(within(list).getByText("Lectura: Vectores")).toBeInTheDocument();
+  expect(within(list).getByText("Práctica: Ejercicio 1")).toBeInTheDocument();
+  expect(within(list).getByText("Conversación libre")).toBeInTheDocument();
+  expect(screen.getByText(/tendrá el contexto de «Lectura: Vectores»/)).toBeInTheDocument();
+  await user.click(within(list).getByRole("button", { name: /^Práctica: Ejercicio 1/ }));
   expect(open).toHaveBeenCalledExactlyOnceWith("b");
+});
+
+it("abre en la ventana más reciente, carga los mensajes anteriores y añade el turno sin volver a pedir el historial", async () => {
+  const origin = window.location.origin;
+  const conversation = { id: "larga", unitId: "unit", revisionId: "r1", mode: "chat", activityId: null, version: 25, activeTurnId: null, createdAt: new Date().toISOString() };
+  const message = (sequence: number) => ({ id: `m${String(sequence)}`, turnId: "t", sequence, role: sequence % 2 ? "assistant" : "user", text: `Mensaje ${String(sequence)}`, createdAt: new Date().toISOString(),
+    sources: sequence === 25 ? [{ id: "s", unitId: "unit", revisionId: "r1", title: "Lectura de vectores", source: "Material", excerpt: "Un vector representa características." }] : [] });
+  const all = Array.from({ length: 25 }, (_, index) => message(index));
+  const reads: string[] = [];
+  const notes: unknown[] = [];
+  server.use(
+    http.get(`${origin}/api/tutor/voice`, () => HttpResponse.json({ enabled: false })),
+    http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json(page([conversation]))),
+    http.get(`${origin}/api/tutor/conversations/larga`, () => HttpResponse.json(conversation)),
+    http.get(`${origin}/api/tutor/conversations/larga/pending-turn`, () => HttpResponse.json({ request: null, leaseUntil: null })),
+    http.get(`${origin}/api/tutor/conversations/larga/messages`, ({ request }) => {
+      const query = new URL(request.url).searchParams;
+      const offset = Number(query.get("offset")), limit = Number(query.get("limit"));
+      reads.push(`${String(offset)}+${String(limit)}`);
+      return HttpResponse.json({ ...page(all.slice(offset, offset + limit), all.length, offset), limit });
+    }),
+    http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
+    http.post(`${origin}/api/tutor/notes`, async ({ request }) => { notes.push(await request.json()); return HttpResponse.json({ id: "note" }); }),
+    http.post(`${origin}/api/tutor/conversations/larga/turns`, () => HttpResponse.json({ id: "t2", conversationId: "larga", state: "completed", version: 26,
+      messages: [{ ...message(25), text: "Mi pregunta nueva", role: "user", sources: [] }, { ...message(26), text: "Respuesta nueva", role: "assistant", sources: [] }] })),
+  );
+  const user = userEvent.setup();
+  render(<MemoryRouter><QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><Tutor unit={testUnit} mode="chat" conversationId="larga" openConversation={() => undefined} /></QueryClientProvider></MemoryRouter>);
+  await screen.findByText("Mensaje 24");
+  expect(screen.queryByText("Mensaje 4")).not.toBeInTheDocument();
+  expect(reads).toEqual(["0+20", "5+20"]);
+  await user.click(screen.getByRole("button", { name: "Cargar mensajes anteriores" }));
+  await screen.findByText("Mensaje 0");
+  expect(reads).toEqual(["0+20", "5+20", "0+5"]);
+  expect(screen.queryByRole("button", { name: "Cargar mensajes anteriores" })).not.toBeInTheDocument();
+  // Guardar es una acción del mensaje del tutor; los propios no la tienen.
+  const tutorMessage = screen.getByText("Mensaje 23").closest("li");
+  await user.click(within(required(tutorMessage)).getByRole("button", { name: "Guardar en apuntes" }));
+  await within(required(tutorMessage)).findByRole("button", { name: "Guardado en apuntes" });
+  expect(notes).toEqual([{ kind: "savedMessage", conversationId: "larga", messageId: "m23" }]);
+  expect(within(required(screen.getByText("Mensaje 22").closest("li"))).queryByRole("button")).not.toBeInTheDocument();
+  await user.type(screen.getByLabelText("Tu mensaje"), "Mi pregunta nueva");
+  await user.keyboard("{Control>}{Enter}{/Control}");
+  await screen.findByText("Respuesta nueva");
+  expect(screen.getAllByText("Mi pregunta nueva")).toHaveLength(1);
+  expect(screen.getByText("Mensaje 0")).toBeInTheDocument();
+  expect(reads).toHaveLength(3);
 });
 
 it("no muestra bajo esta unidad una conversación de otra unidad", async () => {
   const origin = window.location.origin;
-  const unit = { id: "unit", topicId: "topic", revision: { id: "r1" } } as Schema["UnitResponse"];
+  const unit = testUnit;
   server.use(
     http.get(`${origin}/api/tutor/voice`, () => HttpResponse.json({ enabled: true })),
     http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json({ items: [], total: 0 })),
@@ -127,7 +175,7 @@ it("no muestra bajo esta unidad una conversación de otra unidad", async () => {
 
 it("no muestra mensajes ni formulario mientras la conversación no confirma su unidad", async () => {
   const origin = window.location.origin;
-  const unit = { id: "unit", topicId: "topic", revision: { id: "r1" } } as Schema["UnitResponse"];
+  const unit = testUnit;
   server.use(
     http.get(`${origin}/api/tutor/voice`, () => HttpResponse.json({ enabled: false })),
     http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json({ items: [], total: 0 })),
