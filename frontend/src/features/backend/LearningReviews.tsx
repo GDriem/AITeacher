@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { backend, result, required, type Schema } from "./client";
 import { Busy, Failure, Field, Pages } from "./Shared";
-import { AttemptView, OwnAttempts } from "./Assessments";
+import { OwnAttempts } from "./Assessments";
 import { Button } from "../../ui";
 import { panel } from "./panel";
+
+// Comparte el chunk diferido de /evaluaciones/:attemptId.
+const AttemptView = lazy(async () => ({ default: (await import("./AttemptRoute")).AttemptView }));
 
 export function LearningReviews() {
   const queries = useQueryClient();
@@ -42,7 +45,7 @@ export function LearningReviews() {
       <Pages offset={offset} total={reviews.data.total} change={setOffset} /></>}
     {complete.isError ? <Failure error={complete.error} /> : null}
     <p>Para completar un repaso, selecciona un intento nuevo de su evaluación, iniciado después de la fecha prevista y completamente corregido.</p>
-    <OwnAttempts select={setAttemptId} />{attemptId ? <AttemptView key={attemptId} id={attemptId} /> : null}
+    <OwnAttempts select={setAttemptId} />{attemptId ? <Suspense fallback={<Busy />}><AttemptView key={attemptId} id={attemptId} /></Suspense> : null}
   </section>;
 }
 

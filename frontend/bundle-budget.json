@@ -3,7 +3,7 @@
   "groups": {
     "backendBeta": {
       "description": "Interfaz beta .NET del alumno (shell, rutas y pantallas) más el chunk común con Autoría; se descarga solo en el build dotnet.",
-      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después. Fase 2: catálogo y tema dejaron 115,5 kB; la unidad con pestañas (Tabs, Badge, índice y botón del tutor) 119,1 kB, sin cambiar el presupuesto. El tutor de la unidad pasó a su propio chunk (backendTutor): 115,1 kB, incluido `panel` (0,7 kB), que comparten los chunks diferidos.",
+      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después. Fase 2: catálogo y tema dejaron 115,5 kB; la unidad con pestañas (Tabs, Badge, índice y botón del tutor) 119,1 kB, sin cambiar el presupuesto. El tutor de la unidad pasó a su propio chunk (backendTutor): 115,1 kB, incluido `panel` (0,7 kB), que comparten los chunks diferidos. La evaluación pasó a backendAttempt: 114,9 kB.",
       "chunks": ["BackendApp", "Shared", "panel"],
       "budgetKb": 120
     },
@@ -12,6 +12,12 @@
       "rationale": "Fase 2 de docs/ui-ux-beta-plan.md, PR 4: chat a altura completa, lista de conversaciones, mapa plegable y la voz diferida. Medido: 12,9 kB.",
       "chunks": ["UnitTutor"],
       "budgetKb": 16
+    },
+    "backendAttempt": {
+      "description": "Intento de evaluación del build .NET (una pregunta por paso, tiempo, confirmación y resultado); se descarga al abrir /evaluaciones/:id o un intento en Repasos.",
+      "rationale": "Fase 2 de docs/ui-ux-beta-plan.md, PR 5: pantalla dedicada con progreso, tiempo restante, borrador en la pestaña y resultado según la política de feedback. Medido: 7,5 kB.",
+      "chunks": ["AttemptRoute"],
+      "budgetKb": 10
     },
     "backendAuthoring": {
       "description": "Autoría del build .NET (unidades, catálogo y corrección); se descarga solo al entrar en /autoria.",
