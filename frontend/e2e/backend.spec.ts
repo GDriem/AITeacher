@@ -210,6 +210,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Conversar por voz", exact: true }).click();
   await page.getByRole("button", { name: "Comenzar por voz", exact: true }).click();
   await expect(page.getByText("Voz de prueba de la unidad", { exact: true })).toBeVisible();
+  await auditPersonalPage(page, "Voz activa");
   await page.getByRole("button", { name: "Finalizar conversación por voz", exact: true }).click();
   for (const width of [320, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
