@@ -1,0 +1,250 @@
+{
+  "source": "Descripciones aprobadas el 22 de octubre de 2026, redactadas a partir de los títulos y lecturas de learning-content-v1. Las carga backend/scripts/load-topic-descriptions.py.",
+  "topics": [
+    {
+      "subject": "artificial-intelligence",
+      "category": "fundamentos",
+      "slug": "artificial-intelligence",
+      "name": "Inteligencia artificial",
+      "description": "Qué es la inteligencia artificial y qué tipo de tareas resuelve: percepción, lenguaje, predicción o decisión. Verás que un sistema de IA no piensa como una persona, sino que aplica reglas o patrones aprendidos para transformar una entrada en un resultado."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "fundamentos",
+      "slug": "machine-learning",
+      "name": "Machine Learning",
+      "description": "La rama de la IA en la que un modelo aprende de ejemplos. Distingue el entrenamiento, donde el modelo ajusta parámetros para reducir un error, de la inferencia, donde usa lo aprendido para predecir sobre datos nuevos."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "fundamentos",
+      "slug": "neural-networks",
+      "name": "Redes neuronales",
+      "description": "Cómo funcionan las redes neuronales artificiales: neuronas, pesos, funciones de activación y capas. Avanza hacia el entrenamiento con retropropagación y descenso de gradiente, el sobreajuste y arquitecturas profundas como las redes convolucionales y los transformers."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "fundamentos",
+      "slug": "nlp",
+      "name": "Procesamiento de lenguaje natural",
+      "description": "Cómo se representa y procesa el lenguaje humano con computadoras. Recorre tareas como clasificar texto, traducir, extraer información, resumir y conversar."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "fundamentos",
+      "slug": "language-models",
+      "name": "Modelos de lenguaje",
+      "description": "Qué hace un modelo de lenguaje: estimar qué unidades de texto son probables dado un contexto. Entenderás por qué su salida es probabilística y cómo esa capacidad permite completar, clasificar o transformar texto."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "fundamentos",
+      "slug": "llm",
+      "name": "Modelos grandes de lenguaje (LLM)",
+      "description": "Qué distingue a un modelo grande de lenguaje: muchos parámetros y entrenamiento con colecciones amplias de datos. Puede seguir instrucciones y generar texto, pero no garantiza hechos correctos ni reemplaza la validación de la aplicación."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "fundamentos",
+      "slug": "tokens",
+      "name": "Tokens",
+      "description": "Cómo un modelo divide el texto en tokens: palabras, partes de palabras o signos. Verás por qué el número de tokens influye en el costo, la latencia y en cuánto contenido cabe en la ventana de contexto."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "modelos-y-datos",
+      "slug": "embeddings",
+      "name": "Embeddings",
+      "description": "Cómo un embedding representa una frase u otro elemento como una lista de números, de modo que significados parecidos queden cerca. Incluye la similitud coseno, la búsqueda semántica y por qué un valor cercano no demuestra que una fuente responda la pregunta."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "modelos-y-datos",
+      "slug": "context-window",
+      "name": "Ventana de contexto",
+      "description": "El límite de tokens que un modelo puede considerar en una interacción: instrucciones, conversación, resultados de herramientas y respuesta. Aprenderás por qué no equivale a memoria permanente y qué debe conservar la aplicación."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "modelos-y-datos",
+      "slug": "rag",
+      "name": "Retrieval-Augmented Generation (RAG)",
+      "description": "Cómo RAG combina recuperación y generación: primero busca fragmentos en fuentes controladas y luego los entrega al modelo para responder. Recorre sus etapas, cómo evaluar si la respuesta es fiel a la evidencia y qué hacer cuando la evidencia no alcanza."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "agentes-y-herramientas",
+      "slug": "prompt-engineering",
+      "name": "Ingeniería de prompts",
+      "description": "Cómo expresar con claridad objetivo, contexto, restricciones y formato para un modelo. Avanza hacia roles de mensaje, ejemplos few-shot y salidas estructuradas, y termina tratando los prompts como componentes versionados, probados y medidos."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "agentes-y-herramientas",
+      "slug": "tool-calling",
+      "name": "Tool calling",
+      "description": "Cómo un modelo propone una herramienta con argumentos estructurados y la aplicación valida permisos y datos antes de ejecutar código determinista. Verás quién decide qué: el modelo solicita la operación; la herramienta no elige el objetivo."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "agentes-y-herramientas",
+      "slug": "agents",
+      "name": "Agentes",
+      "description": "Qué es un agente: un modelo con instrucciones, estado y herramientas dentro de un ciclo orientado a objetivos, capaz de decidir el siguiente paso y observar resultados. Aprenderás por qué un flujo fijo no se vuelve agente solo por usar un LLM."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "agentes-y-herramientas",
+      "slug": "model-context-protocol",
+      "name": "Model Context Protocol",
+      "description": "Cómo MCP estandariza el descubrimiento y uso de herramientas, recursos y prompts que ofrece un servidor. Verás por qué un servidor MCP ejecuta operaciones definidas sin actuar como agente, y cómo funciona como servicio remoto sin estado sobre Streamable HTTP."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "agentes-y-herramientas",
+      "slug": "agent-memory",
+      "name": "Memoria y estado de agentes",
+      "description": "La diferencia entre historial, ventana de contexto y memoria persistente. Recorre estrategias para resumir, recuperar y olvidar, y cómo diseñar una memoria durable con identidad, procedencia y control de acceso."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "agentes-y-herramientas",
+      "slug": "multi-agent-systems",
+      "name": "Sistemas multiagente",
+      "description": "Cómo repartir responsabilidades entre agentes especializados y cuándo esa separación aporta valor. Aprenderás a distinguir a un especialista que toma decisiones propias de una herramienta que solo consulta, valida o guarda datos."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "modelos-y-datos",
+      "slug": "advanced-rag",
+      "name": "RAG avanzado",
+      "description": "Qué hace que un RAG recupere buena evidencia: cómo se dividen los documentos, qué metadatos se conservan y qué consulta se envía. Incluye búsqueda híbrida, reranking y métricas separadas de recuperación y generación para justificar cada mejora."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "calidad-y-seguridad",
+      "slug": "hallucinations-evaluation",
+      "name": "Alucinaciones y evaluación",
+      "description": "Qué es una alucinación y cómo reducir el riesgo pidiendo fuentes, recuperando evidencia y admitiendo incertidumbre. Avanza hacia la evaluación con criterios separados de exactitud, relevancia, fidelidad y seguridad, antes y después del despliegue."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "calidad-y-seguridad",
+      "slug": "ai-security",
+      "name": "Seguridad para aplicaciones con IA",
+      "description": "Por qué el modelo no es una frontera de seguridad y la aplicación debe validar identidad, permisos y argumentos. Recorre el prompt injection, el uso seguro de herramientas y el modelado de amenazas en sistemas con agentes."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "produccion",
+      "slug": "observability-costs",
+      "name": "Observabilidad y costos",
+      "description": "Cómo entender qué hizo una aplicación de IA con registros, métricas y trazas, incluidos tokens, costo, latencia y calidad. Avanza hacia trazas de extremo a extremo y la optimización con presupuestos y objetivos de servicio."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "modelos-y-datos",
+      "slug": "fine-tuning",
+      "name": "Fine-tuning y adaptación",
+      "description": "Cuándo conviene ajustar instrucciones, recuperar conocimiento con RAG o hacer fine-tuning. Incluye cómo preparar datos de entrenamiento y de evaluación separados, y el ciclo de vida de un modelo adaptado: versionado, despliegue gradual y monitoreo."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "modelos-y-datos",
+      "slug": "multimodal-ai",
+      "name": "IA multimodal",
+      "description": "Sistemas que procesan o generan texto, imágenes y audio, y los errores propios de cada modalidad. Verás cómo construir flujos con OCR, transcripción y visión que conserven la evidencia original, y cómo evaluar cada etapa por separado."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "calidad-y-seguridad",
+      "slug": "responsible-ai",
+      "name": "IA responsable",
+      "description": "Principios de equidad, privacidad, transparencia, seguridad y supervisión humana a lo largo del ciclo de vida de un sistema de IA. Incluye evaluación de impacto y sesgos, y la gobernanza que asigna responsables, documentación y monitoreo."
+    },
+    {
+      "subject": "artificial-intelligence",
+      "category": "produccion",
+      "slug": "ai-production",
+      "name": "IA en producción",
+      "description": "Qué necesita una aplicación de IA para pasar de prototipo a servicio confiable: configuración segura, manejo de errores, persistencia y monitoreo. Recorre timeouts, reintentos, rate limiting, streaming y una arquitectura escalable con fallback entre modelos."
+    },
+    {
+      "subject": "english",
+      "category": "comunicacion",
+      "slug": "english-greetings-introductions",
+      "name": "Saludos y presentaciones en inglés",
+      "description": "Cómo saludar, presentarte y despedirte en inglés. Avanza de frases básicas como «Hi, I'm Ana» a elegir un registro formal o cercano según la situación, y a la cortesía y naturalidad de una presentación."
+    },
+    {
+      "subject": "english",
+      "category": "vocabulario",
+      "slug": "english-everyday-vocabulary",
+      "name": "Vocabulario cotidiano en inglés",
+      "description": "Vocabulario para la vida diaria aprendido en frases y situaciones, no en listas aisladas. Avanza hacia combinaciones naturales como «make a decision» y hacia elegir palabras con el matiz y el registro adecuados."
+    },
+    {
+      "subject": "english",
+      "category": "gramatica",
+      "slug": "english-grammar-in-context",
+      "name": "Gramática inglesa en contexto",
+      "description": "Gramática inglesa aplicada a situaciones reales: el verbo be y el presente simple, el pasado frente al present perfect y los modales. En el nivel avanzado, condicionales, cláusulas relativas y voz pasiva como elecciones de significado."
+    },
+    {
+      "subject": "english",
+      "category": "comunicacion",
+      "slug": "english-conversation",
+      "name": "Conversación en inglés",
+      "description": "Cómo mantener una conversación en inglés: alternar saludo, respuesta y pregunta, y pedir aclaraciones. Avanza hacia preguntas de seguimiento, parafrasear cuando falta una palabra y usar marcadores del discurso para ganar fluidez."
+    },
+    {
+      "subject": "networks",
+      "category": "enrutamiento",
+      "slug": "routing-fundamentals",
+      "name": "Fundamentos de enrutamiento",
+      "description": "Cómo un router reenvía paquetes consultando su tabla de rutas, la interfaz de salida y el siguiente salto. Incluye la selección por prefijo más largo, la ruta predeterminada y la diferencia entre plano de control y plano de datos."
+    },
+    {
+      "subject": "networks",
+      "category": "enrutamiento",
+      "slug": "ip-subnetting",
+      "name": "Direccionamiento IP y subredes",
+      "description": "Cómo se forma una dirección IPv4 y qué indica el prefijo CIDR. Aprenderás a dividir una red en subredes sin solapamientos y a usar VLSM y agregación de prefijos."
+    },
+    {
+      "subject": "networks",
+      "category": "enrutamiento",
+      "slug": "static-routing",
+      "name": "Enrutamiento estático y rutas predeterminadas",
+      "description": "Cómo configurar rutas estáticas y la ruta predeterminada 0.0.0.0/0. Incluye por qué el siguiente salto debe ser alcanzable, la necesidad de rutas de retorno y cómo funcionan las rutas de respaldo y recursivas."
+    },
+    {
+      "subject": "networks",
+      "category": "enrutamiento",
+      "slug": "floating-static-routing",
+      "name": "Rutas estáticas flotantes",
+      "description": "Cómo una ruta estática con mayor distancia administrativa actúa como respaldo de la principal. Aprenderás a elegir la distancia, probar la conmutación en laboratorio y detectar fallas remotas que el respaldo por sí solo no cubre."
+    },
+    {
+      "subject": "networks",
+      "category": "enrutamiento",
+      "slug": "ospf",
+      "name": "Enrutamiento dinámico con OSPF",
+      "description": "OSPF como protocolo de estado de enlace dentro de un sistema autónomo. Recorre vecinos, LSAs y el cálculo SPF, y el diseño de áreas, el backbone y la sumarización para una buena convergencia."
+    },
+    {
+      "subject": "networks",
+      "category": "enrutamiento",
+      "slug": "bgp",
+      "name": "Enrutamiento entre sistemas autónomos con BGP",
+      "description": "Cómo BGP intercambia prefijos entre sistemas autónomos aplicando políticas, no solo el camino más corto. Incluye atributos como AS_PATH, NEXT_HOP y LOCAL_PREF, y políticas de importación y exportación con varios proveedores."
+    },
+    {
+      "subject": "networks",
+      "category": "enrutamiento",
+      "slug": "routing-troubleshooting",
+      "name": "Diagnóstico y resolución de problemas de enrutamiento",
+      "description": "Un método por pasos para diagnosticar fallas de enrutamiento: enlace, direccionamiento, tabla de rutas, ping y traceroute. Avanza hacia comparar rutas de ida y vuelta y aislar fallas entre plano de control y plano de datos."
+    }
+  ]
+}

@@ -142,3 +142,30 @@ La migración `TopicDescription` del esquema `curriculum` añade una columna
 nullable con un `CHECK` de texto no vacío; las filas existentes quedan en `null`
 y los clientes anteriores siguen funcionando. `--curriculum` no escribe
 descripciones y, como no sobrescribe entradas conciliadas, tampoco las borra.
+
+### Cargar las descripciones aprobadas
+
+Las 35 descripciones aprobadas del catálogo original están en
+`backend/configuration/topic-descriptions.json`, identificadas por materia,
+categoría y slug. `backend/scripts/load-topic-descriptions.py` las carga mediante
+la API, como un autor más. Lee cada tema con su `version`, escribe solo los que
+no tienen descripción y omite los que ya tienen una, aunque sea distinta, para
+no pisar lo que haya escrito un autor. Un `409` se informa como `conflict` y no
+se pierde nada. Solo usa endpoints del catálogo y no toca datos de alumnos.
+
+Inicie sesión como autor en el navegador y copie el valor de la cookie
+`ait_dotnet_session`. El script no la imprime y solo acepta `https`, salvo en
+`localhost`:
+
+```sh
+export AITEACHER_SESSION='<valor de ait_dotnet_session>'
+python3 backend/scripts/load-topic-descriptions.py --base-url https://<host>            # prueba, no escribe
+python3 backend/scripts/load-topic-descriptions.py --base-url https://<host> --apply    # escribe
+```
+
+El informe JSON clasifica cada tema como `write`/`written`, `skip`, `same`,
+`missing`, `conflict` o `failed`. Un error de red o una redirección (el script no
+las sigue, para que la cookie no salga del origen) cuentan como `failed` y la carga
+sigue con los demás temas. Sale con código 1 si hay temas ausentes,
+conflictos o fallos. Repetirlo después de una carga completa no cambia nada.
+Ejecútelo después de que la migración `TopicDescription` llegue al entorno.
