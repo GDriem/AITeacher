@@ -3,7 +3,7 @@
   "groups": {
     "backendBeta": {
       "description": "Interfaz beta .NET del alumno (shell, rutas y pantallas) más el chunk común con Autoría; se descarga solo en el build dotnet.",
-      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después.",
+      "rationale": "Fase 1 de docs/ui-ux-beta-plan.md: React Router (decisión 3 del plan), shell y ui/ añadieron ~36 kB; separar Autoría en backendAuthoring devolvió ~9 kB. Medido: 85,9 kB antes, 112,8 kB después. Fase 2: catálogo y tema dejaron 115,5 kB; la unidad con pestañas (Tabs, Badge, índice y botón del tutor) 119,1 kB, sin cambiar el presupuesto.",
       "chunks": ["BackendApp", "Shared"],
       "budgetKb": 120
     },

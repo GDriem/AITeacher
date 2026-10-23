@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { CatalogData } from "./catalogQueries";
 import { backend, required, result } from "./client";
 
 /** Unidad tal como la estudia el alumno: siempre la publicación activa, nunca un borrador más nuevo. */
@@ -50,4 +51,20 @@ export function unitCrumbs(state: unknown, topicId: string, topicName: string | 
 export function catalogPath(state: unknown) {
   const search = typeof state === "object" && state !== null && "catalogSearch" in state && typeof state.catalogSearch === "string" ? state.catalogSearch : "";
   return `/catalogo${search}`;
+}
+
+/** Nombres de los niveles del currículo de origen; solo se piden cuando la unidad es una lectura con nivel. */
+export function useSourceLevels(level: string | undefined) {
+  const client = useQueryClient();
+  // Si el alumno viene del catálogo, sus niveles ya están en caché: no se repite la petición.
+  const catalog = () => client.getQueryData<CatalogData>(["curriculum-explorer"]);
+  return useQuery({ queryKey: ["source-curriculum"], enabled: Boolean(level), staleTime: Infinity,
+    initialData: () => catalog()?.source.levels, initialDataUpdatedAt: () => client.getQueryState(["curriculum-explorer"])?.dataUpdatedAt,
+    queryFn: async ({ signal }) => result(await backend.GET("/api/catalog/source-curriculum", { signal })).levels });
+}
+
+/** Nivel editorial del tema, cuando el autor le asignó uno. */
+export function useCatalogLevel(levelId: string | undefined) {
+  return useQuery({ queryKey: ["catalog-level", levelId], enabled: Boolean(levelId),
+    queryFn: async ({ signal }) => result(await backend.GET("/api/catalog/levels/{id}", { params: { path: { id: levelId ?? "" } }, signal })) });
 }

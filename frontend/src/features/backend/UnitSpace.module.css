@@ -1,0 +1,160 @@
+/* Unidad con pestañas: deja sitio al final para el botón fijo del tutor. */
+.unit {
+  padding-block-end: var(--space-12);
+}
+
+.meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+/* Índice de lecturas: plegable arriba en móvil, columna fija a la izquierda en escritorio. */
+.index {
+  margin-block-end: var(--space-5);
+}
+
+.index details {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+}
+
+.index summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.indexTitle {
+  margin: 0 0 var(--space-3);
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.indexList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.indexList a {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  color: var(--content-default);
+  border-inline-start: 0.1875rem solid var(--border-subtle);
+  text-decoration: none;
+}
+
+.indexList a:hover {
+  color: var(--content-strong);
+}
+
+.indexList a[aria-current] {
+  color: var(--content-strong);
+  border-inline-start-color: var(--action-primary);
+  font-weight: 700;
+}
+
+.content {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-5);
+  max-width: 52rem;
+}
+
+.content > section h2 {
+  margin-block-start: 0;
+}
+
+.item {
+  scroll-margin-block-start: var(--space-5);
+}
+
+.item h2 {
+  margin-block: 0 var(--space-4);
+}
+
+.item h2:focus {
+  outline: none;
+}
+
+.source {
+  color: var(--content-muted);
+  font-size: var(--font-size-sm);
+}
+
+@media (min-width: 64rem) {
+  .withIndex {
+    display: grid;
+    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-8);
+  }
+
+  .withIndex .index {
+    position: sticky;
+    inset-block-start: var(--space-5);
+    margin: 0;
+  }
+}
+
+/* Botón fijo del tutor: esquina inferior, por encima del contenido y debajo de la barra de navegación. */
+.tutor {
+  position: fixed;
+  z-index: 30;
+  inset-inline-end: var(--space-5);
+  inset-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
+  max-width: min(24rem, calc(100% - 2 * var(--space-5)));
+  flex-wrap: wrap;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45);
+}
+
+.context {
+  overflow: hidden;
+  max-width: 100%;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* En móvil la barra de navegación ocupa 3.5rem más el área segura. */
+@media (max-width: 48rem) {
+  .unit {
+    padding-block-end: calc(var(--space-12) + var(--space-4));
+  }
+
+  .tutor {
+    inset-inline-end: var(--space-3);
+    inset-block-end: calc(3.5rem + var(--space-3) + env(safe-area-inset-bottom));
+    max-width: calc(100% - 2 * var(--space-3));
+  }
+}
+
+/* Aviso que ocupa el sitio del botón del tutor cuando no se pudo comprobar su disponibilidad. */
+.tutorFailure {
+  position: fixed;
+  z-index: 30;
+  inset-inline-end: var(--space-5);
+  inset-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
+  max-width: min(24rem, calc(100% - 2 * var(--space-5)));
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 48rem) {
+  .tutorFailure {
+    inset-inline-end: var(--space-3);
+    inset-block-end: calc(3.5rem + var(--space-3) + env(safe-area-inset-bottom));
+    max-width: calc(100% - 2 * var(--space-3));
+  }
+}
