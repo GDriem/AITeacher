@@ -29,18 +29,23 @@ export function useTutorMessages(id: string | null) {
   });
 }
 
-/** Añade al historial en caché los mensajes de un turno confirmado, sin duplicar los de un reintento. */
+/**
+ * Añade al historial en caché los mensajes de un turno confirmado, sin duplicar
+ * los de un reintento. Las secuencias de una conversación son contiguas (cada
+ * turno ocupa `2 · versión` y `2 · versión + 1`): si el turno no sigue al último
+ * mensaje conocido, hubo turnos desde otra pestaña o dispositivo y el historial
+ * se vuelve a abrir en la ventana más reciente.
+ */
 export function appendTurn(queries: QueryClient, id: string, turn: Schema["TutorTurnResult"]) {
-  // Sin historial cargado (pendiente o con error) no hay ventanas que desplazar: se pide de nuevo.
-  if (!queries.getQueryData(messagesKey(id))) { void queries.invalidateQueries({ queryKey: messagesKey(id) }); return; }
-  queries.setQueryData<MessageHistory>(messagesKey(id), (history) => {
-    const last = history?.pages.at(-1);
-    if (!history || !last) return history;
-    const known = new Set(history.pages.flatMap((page) => page.items.map((item) => item.id)));
-    const added = turn.messages.filter((item) => !known.has(item.id));
-    const pages = history.pages.map((page) => ({ ...page, total: page.total + added.length }));
-    pages[pages.length - 1] = { ...required(pages.at(-1)), items: [...last.items, ...added].sort((a, b) => a.sequence - b.sequence) };
-    return { ...history, pages };
+  const history = queries.getQueryData<MessageHistory>(messagesKey(id));
+  const known = new Set(history?.pages.flatMap((page) => page.items.map((item) => item.id)));
+  const added = turn.messages.filter((item) => !known.has(item.id)).sort((a, b) => a.sequence - b.sequence);
+  const last = history?.pages.at(-1)?.items.at(-1);
+  // `reset` y no `invalidate`: un refetch partiría de la ventana más antigua cargada y no sabría avanzar hasta el final.
+  if (!history || !last || (added[0] && added[0].sequence !== last.sequence + 1)) { void queries.resetQueries({ queryKey: messagesKey(id) }); return; }
+  queries.setQueryData<MessageHistory>(messagesKey(id), {
+    ...history,
+    pages: history.pages.map((page, index, pages) => ({ ...page, total: page.total + added.length, items: index === pages.length - 1 ? [...page.items, ...added] : page.items })),
   });
 }
 

@@ -212,12 +212,18 @@ function useChatScroll(ready: boolean, last: string, first: string | undefined) 
     root.style.overflowAnchor = "none";
     const track = () => { following.current = root.scrollHeight - window.scrollY - window.innerHeight < 160; };
     window.addEventListener("scroll", track, { passive: true });
-    // Contenido que crece después del salto (avisos, la lista plegable, imágenes del texto) no debe sacar al alumno del final.
-    const resize = typeof ResizeObserver === "undefined" ? null
-      : new ResizeObserver(() => { if (opened.current && following.current) end.current?.scrollIntoView({ block: "end", behavior: "instant" }); });
-    resize?.observe(document.body);
-    return () => { root.style.overflowAnchor = previous; window.removeEventListener("scroll", track); resize?.disconnect(); };
+    return () => { root.style.overflowAnchor = previous; window.removeEventListener("scroll", track); };
   }, []);
+  useEffect(() => {
+    // `end` es hijo directo de la sección del chat, que solo existe con el chat listo.
+    const chat = end.current?.parentElement;
+    if (!ready || !chat || typeof ResizeObserver === "undefined") return;
+    // Contenido del chat que crece después del salto (avisos, fuentes desplegadas, imágenes del texto) no debe sacar al alumno del final.
+    // Se observa solo el chat: abrir la lista plegable de conversaciones, encima de él en móvil, no debe arrastrar al final.
+    const resize = new ResizeObserver(() => { if (opened.current && following.current) end.current?.scrollIntoView({ block: "end", behavior: "instant" }); });
+    resize.observe(chat);
+    return () => resize.disconnect();
+  }, [ready]);
   useLayoutEffect(() => {
     // Sin `scrollIntoView` (jsdom) tampoco hay desplazamiento que compensar.
     if (anchor.current === null || typeof end.current?.scrollIntoView !== "function") return;
