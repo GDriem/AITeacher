@@ -83,46 +83,48 @@ Con A autenticada en un perfil y B en otro:
 | 5.5 | B abre Catálogo, entra en un tema y comprueba también `/api/units` | Solo unidades publicadas; sin controles de autoría en la UI | Captura |
 | 5.6 | A cierra sesión y B recarga | B sigue con su propia identidad; no hay mezcla | — |
 
-## 6. Flujo editorial (opcional, escribe en la beta)
+## 6. Flujo editorial (escribe en la beta; aceptación de fase 3 pendiente)
+
+**Pendiente:** esta sección debe ejecutarla el autor real en la beta para aceptar la fase 3. Las pruebas locales con .NET, PostgreSQL y servicios simulados mediante Postman no sustituyen esa evidencia.
 
 Usar un nombre inequívoco, por ejemplo `PRUEBA ACEPTACIÓN AAAA-MM-DD`, y retirarla al final.
 
 | # | Paso | Resultado esperado | Evidencia |
 |---|---|---|---|
-| 6.1 | A abre Autoría → Unidades → «Crear unidad», elige «Tema de la nueva unidad», completa el material según la receta de abajo y pulsa «Guardar borrador» | `POST /api/units` correcto | `unitId` |
+| 6.1 | A abre Autoría → Unidades → «Crear unidad» (`/autoria/unidades/nueva`), elige «Tema de la nueva unidad», completa el material según la receta de abajo y pulsa «Guardar borrador» | `POST /api/units` correcto | `unitId` |
 | 6.2 | B lista unidades | El borrador **no** aparece; `GET /api/units/{unitId}` 404 | Código |
-| 6.3 | A pulsa «Publicar esta revisión»; B recarga el Catálogo y abre su tema | B ya la ve | Captura |
-| 6.4 | A pulsa «Retirar publicación» → «Confirmar retiro»; B recarga la unidad | B vuelve a recibir 404 | Código |
+| 6.3 | A abre Revisión → «Publicar esta revisión», revisa el diff y pulsa «Confirmar publicación»; B recarga el Catálogo y abre su tema | B ya la ve | Captura |
+| 6.4 | A abre «Editar evaluaciones» (`/autoria/unidades/{unitId}/evaluaciones`) y prepara la pregunta con rúbrica y la definición según la receta; B inicia y entrega | B ve «Pendiente de corrección docente» | ID de intento, sin respuestas personales |
+| 6.5 | A abre «Corregir entregas» → «Consultar entrega», puntúa todos los criterios y completa el feedback → «Confirmar corrección final» → «Sí, confirmar corrección»; B vuelve al intento desde Historial | Rúbrica al lado de la respuesta; B ve la nota y los comentarios | Estado y puntuación, sin respuestas personales |
+| 6.6 | A vuelve al editor → «Retirar publicación» → «Confirmar retiro»; B recarga la unidad | B vuelve a recibir 404; las entregas anteriores se conservan | Código |
 
 Para que 6.1 se pueda ejecutar sin conocer el editor, usar esta receta mínima:
 
 1. Elegir un tema disponible y mantener «Unidad con objetivos, práctica y
-   evaluación» como tipo. Escribir el título `PRUEBA ACEPTACIÓN AAAA-MM-DD`.
+   evaluación» como tipo. Escribir el título `PRUEBA ACEPTACIÓN AAAA-MM-DD` y pulsar «Siguiente». El tema de una unidad guardada no se puede cambiar.
 2. «Añadir concepto»: nombre `Comparación`. «Añadir objetivo»: descripción
-   `Explicar una comparación` y marcar el concepto `Comparación`.
+   `Explicar una comparación` y marcar el concepto `Comparación`. «Siguiente».
 3. «Añadir lectura»: título, texto y fuente sintéticos; marcar el objetivo
-   `Explicar una comparación` en «Objetivos cubiertos» de la lectura.
-4. «Añadir ejercicio»: consigna sintética y marcar el mismo objetivo.
+   `Explicar una comparación` en «Objetivos cubiertos» de la lectura. «Siguiente».
+4. «Añadir ejercicio»: consigna sintética y marcar el mismo objetivo. «Siguiente».
 5. «Añadir evaluación editorial»: consigna, criterios privados sintéticos y
-   marcar el mismo objetivo. No añadir prerrequisitos. «Guardar borrador».
-6. Tras comprobar 6.2, «Publicar esta revisión». El catálogo de B debe mostrar
+   marcar el mismo objetivo. No añadir prerrequisitos. «Siguiente» lleva a Revisión: comprobar Aprender, Practicar y Evaluar en la vista previa. No muestra los criterios privados ni inicia intentos. «Guardar borrador».
+6. Tras comprobar 6.2, «Publicar esta revisión» → revisar añadidos, quitados y modificados por sección → «Confirmar publicación». El catálogo de B debe mostrar
    la unidad dentro del tema elegido, después de recargar.
 
 Para probar la sección 3 cuando el tema solo tiene lecturas, después de 6.3 y
 antes de retirar la publicación, A crea una evaluación entregable en esa unidad:
 
-1. En Autoría → Unidades, abrir la unidad de prueba publicada. En el banco de
-   preguntas escribir un enunciado sintético, marcar el objetivo evaluado,
-   completar las dos opciones y marcar «Respuesta correcta» en una de ellas.
-   «Guardar pregunta».
+1. En Autoría → Unidades, abrir la unidad publicada → «Editar evaluaciones» → «Añadir pregunta». En el diálogo elegir «Respuesta abierta», escribir un enunciado sintético, marcar el objetivo, completar «Guía privada de corrección» y la descripción y puntos de «Criterio 1». «Guardar pregunta». Para una evaluación inmediata sin corrección, elegir «Opción única», completar las opciones y marcar «Respuesta correcta» en una de ellas. El banco permite filtrar por objetivo/tipo y «Editar pregunta» crea otra revisión sin cambiar las evaluaciones ya publicadas.
 2. En la definición, escribir «Título de evaluación», marcar la pregunta y
-   «Publicar evaluación». Los valores predeterminados sirven para esta prueba.
+   «Publicar evaluación». Las preguntas elegidas se muestran en orden y se pueden subir, bajar o quitar. Mantener 30 minutos y «Después de entregar y corregir» (`afterSubmission`) para probar la rúbrica: el texto explica cuándo llegará la nota.
 3. B abre la unidad en Catálogo → tema → unidad → Evaluar e inicia la evaluación.
    Si elige preguntas abiertas con rúbrica, A debe ir a Autoría → «Corregir
    entregas», «Consultar entrega», puntuar todos los criterios y «Confirmar
-   corrección final» antes de que B pueda ver la nota. La política «never»
+   corrección final» → «Sí, confirmar corrección» antes de que B pueda ver la nota. La política «never»
    confirma la entrega sin mostrar nota ni aciertos.
-4. Al terminar evaluación y aislamiento, completar 6.4 para retirar el material.
+4. El paso actual (`?paso=`), filtros del banco, página de correcciones y entrega abierta se conservan al recargar o usar Atrás. Un cambio sin guardar se conserva en esta pestaña y se avisa antes de salir; los objetivos sin cobertura se marcan en el editor y Revisión. Si aparece un conflicto de versión, recargar la unidad con la acción indicada y revisar de nuevo antes de publicar.
+5. Al terminar evaluación y aislamiento, completar 6.6 para retirar el material.
 
 ## Revisión de ejecutabilidad de la fase 2 (PR 6)
 

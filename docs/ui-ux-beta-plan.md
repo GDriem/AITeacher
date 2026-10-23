@@ -1,6 +1,6 @@
 # Plan de UI/UX para lanzar la beta
 
-Estado: fases 1 y 2 implementadas; PR 6 pendiente de revisión. Fases 3 y 4 pendientes.
+Estado: fases 1–3 implementadas. Fase 4 pendiente. La aceptación de fase 3 por el autor real en la beta sigue pendiente.
 Fecha: 22 de octubre de 2026
 Alcance: la interfaz React del build `.NET` (`VITE_BACKEND=dotnet`,
 `frontend/src/features/backend/`), que es la que sirve la beta de Azure. No
@@ -66,7 +66,12 @@ WCAG A/AA a 320/768/1024/1440 px) y presupuestos de bundle.
 /unidades/:unitId/tutor/:convId  Conversación concreta
 /evaluaciones/:attemptId       Intento a pantalla completa, una pregunta por paso
 /apuntes  /repasos  /historial Espacios personales
-/autoria/...                   Catálogo, unidades, evaluaciones, cola de corrección
+/autoria                       Lista de unidades, búsqueda y estado editorial
+/autoria/unidades/nueva        Crear unidad
+/autoria/unidades/:unitId      Editor por pasos (?paso=...)
+/autoria/unidades/:unitId/evaluaciones Banco y definición de evaluaciones
+/autoria/correcciones[/:attemptId] Cola y entrega abierta (?pagina=...)
+/autoria/catalogo              Administración del catálogo
 ```
 
 Navegación principal: Inicio · Catálogo · Apuntes · Repasos · Historial
@@ -213,3 +218,74 @@ cómo preparar la unidad y evaluación necesarias para 3 y 6. La ejecutabilidad 
 la UI queda cubierta localmente; la nueva ejecución del propietario en Azure
 sigue pendiente y no se sustituye por simulaciones. El checklist conserva el
 alcance y los límites de la evidencia real del 22 de octubre.
+
+## Cierre técnico de la fase 3 — PR 7 (23 de octubre de 2026)
+
+Autoría usa rutas propias para lista, alta, editor, evaluaciones y corrección.
+Los pasos, búsqueda, filtros, página y entrega abierta se conservan en la URL.
+El permiso `canAuthor` protege las herramientas; las rutas directas sin permiso
+explican cómo continuar en el catálogo.
+
+- El editor separa Datos → Conceptos y objetivos → Lecturas → Ejercicios →
+  Evaluaciones editoriales → Revisión. Valida antes de avanzar, asocia errores
+  a los campos y señala objetivos sin lectura, ejercicio o evaluación. Solo
+  lectura conserva Datos, Lecturas y Revisión. Los borradores se conservan en
+  `sessionStorage`, separados por autor y unidad, con la versión original; salir
+  con cambios requiere confirmación y no elimina el borrador de esta pestaña.
+- `UnitPresentation` comparte Aprender y Practicar con `UnitSpace` y
+  `EvaluationList` comparte la presentación de Evaluar con `Assessments`. La
+  vista previa no monta consultas de alumno, tutor ni intentos;
+  Evaluar explica que las evaluaciones entregables se crean para una revisión
+  publicada. No expone los criterios editoriales privados en la vista del alumno.
+- Publicar compara el último borrador guardado con la revisión publicada,
+  consultada mediante el GET existente. El diff puro muestra añadidos, quitados
+  y modificados por sección, título, tipo, procedencia y referencias con nombres
+  legibles. Publicar y retirar requieren un diálogo de confirmación; retirar
+  explica el 404 para alumnos. Los conflictos de versión permiten recargar sin
+  reintentar una escritura automáticamente.
+- Las preguntas se filtran por objetivo/tipo y se crean o editan en un diálogo.
+  Editar añade una revisión del mismo recurso: no cambia las preguntas fijadas
+  en una evaluación anterior. La definición muestra las preguntas elegidas,
+  orden, duración, intentos y política de resultados: inmediato sin rúbrica,
+  pendiente de corrección con rúbrica y sin nota/aciertos para `never`.
+- Corrección lista solo pendientes, con respuesta y rúbrica en dos columnas
+  desde 768 px y apiladas en móvil. La confirmación final conserva el `requestId`
+  para reintentos idempotentes y abre la siguiente entrega pendiente.
+- El estado Retirada se obtiene del historial existente (`publishedAt`) cuando
+  no hay publicación activa. Búsqueda, filtros y cola recorren las páginas del
+  contrato antes de filtrar en el cliente. No hay endpoints nuevos ni cambios
+  al backend, tipos generados, build Python o infraestructura.
+
+Bundles medidos con `build:backend` y `budget:check` (gzip):
+
+| Grupo | Base `origin/main` | PR 7 | Presupuesto |
+|---|---:|---:|---:|
+| `backendAuthoring` | 15,39 kB | 27,87 kB | 28 kB (antes 20) |
+| `backendBeta` | 110,79 kB | 67,52 kB | 120 kB, sin aumento |
+| `markdownShared` | Incluido en `BackendApp` | 44,58 kB | 70 kB |
+| `backendPersonal` | 13,04 kB | 13,05 kB | 18 kB |
+
+El aumento editorial se justifica en `bundle-budget.json`: añade el editor por
+pasos, persistencia, diff y los dos espacios de evaluación/corrección. Lista,
+editor, evaluaciones, catálogo y corrección se descargan por subruta. La bajada
+de `backendBeta` no se atribuye a eliminar código: Markdown se separa en un chunk
+compartido y ahora se carga al mostrar texto, con `Suspense` y `Skeleton`, en lugar
+de descargarse con Inicio/Catálogo. La presentación compartida no importa clientes
+Python ni modifica ese build.
+
+Aceptación local:
+
+| Comprobación | Resultado |
+|---|---|
+| Typecheck y lint | Sin errores ni advertencias |
+| Vitest | 104 pruebas, 19 archivos. Validación por pasos, referencias y ciclos; diff puro; persistencia por autor/unidad, ruta directa, Atrás y navegación después de crear |
+| `test:backend` | 8 escenarios seriales sobre .NET y PostgreSQL reales con la simulación Postman existente; incluye diff frente a publicación existente, persistencia y conflictos de versión |
+| Edición y publicación | Borrador oculto con 404, publicación explícita, revisiones de preguntas, evaluación con rúbrica, corrección, nota y retiro con 404 |
+| Accesibilidad | Axe WCAG A/AA a 320/768/1024/1440 px en lista, todos los pasos, tres pestañas de vista previa, diff, diálogo de pregunta, evaluaciones y corrección; sin desbordamiento horizontal |
+| Teclado y restauración | Foco al cambiar de paso, foco dentro del diálogo, Escape y devolución al control; recarga de borrador, filtros y entrega; Atrás y confirmación al salir |
+| Build .NET y `budget:check` | Subrutas diferidas del editor y evaluaciones; todos los chunks asignados a sus grupos |
+
+La sección 6 de `docs/azure-beta-acceptance.md` incluye los controles actuales,
+la receta de evaluación con rúbrica y las dos confirmaciones. **La aceptación
+de fase 3 por el autor real en la beta sigue pendiente.** La evidencia local no
+sustituye esa ejecución. Esta PR no despliega ni modifica Azure.
