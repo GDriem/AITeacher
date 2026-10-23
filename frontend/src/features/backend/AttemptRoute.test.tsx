@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { afterEach, beforeAll, expect, it } from "vitest";
+import { afterEach, beforeAll, expect, it, vi } from "vitest";
 import { server } from "../../test/server";
 import { AttemptRoute } from "./AttemptRoute";
 import type { Schema } from "./client";
@@ -29,7 +29,7 @@ beforeAll(() => {
     close: { value(this: HTMLDialogElement) { this.removeAttribute("open"); this.dispatchEvent(new Event("close")); } },
   });
 });
-afterEach(() => sessionStorage.clear());
+afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 function Location() { const location = useLocation(); return <p data-testid="ubicacion">{location.search}</p>; }
 
@@ -104,12 +104,56 @@ it("respeta las políticas never y rúbrica pendiente sin mostrar nota", async (
   expect(screen.getByText("Mi justificación")).toBeInTheDocument();
 });
 
-it("al vencer el tiempo bloquea la entrega y consulta el estado al servidor", async () => {
+it("cierra el formulario cuando el servidor confirma el vencimiento", async () => {
   let reads = 0;
-  server.use(http.get(`${origin}/api/assessments/attempts/intento`, () => { reads += 1; return HttpResponse.json(attempt({ expiresAt: new Date(Date.now() - 1000).toISOString() })); }));
+  server.use(http.get(`${origin}/api/assessments/attempts/intento`, () => {
+    reads += 1;
+    return HttpResponse.json(attempt({ expiresAt: new Date(Date.now() - 1000).toISOString(), status: reads > 1 ? "expired" : "inProgress" }));
+  }));
   mount();
-  expect(await screen.findByRole("alert")).toHaveTextContent("Se acabó el tiempo.");
-  expect(screen.getByRole("button", { name: "Entregar respuestas" })).toBeDisabled();
-  expect(screen.getByRole("radio", { name: "Características" })).toBeDisabled();
+  expect(await screen.findByText("El tiempo terminó antes de entregar. Las respuestas no se registraron.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Entregar respuestas" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   await waitFor(() => expect(reads).toBe(2));
+});
+
+it("permite responder y entregar con el reloj adelantado si el servidor mantiene el intento abierto", async () => {
+  const serverNow = Date.now();
+  vi.spyOn(Date, "now").mockReturnValue(serverNow + 40_000);
+  const value = attempt({ expiresAt: new Date(serverNow + 30_000).toISOString(), questions: questions.slice(0, 1) });
+  let reads = 0;
+  const bodies: unknown[] = [];
+  server.use(
+    http.get(`${origin}/api/assessments/attempts/intento`, () => { reads += 1; return HttpResponse.json(value); }),
+    http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
+    http.post(`${origin}/api/assessments/attempts/intento/submit`, async ({ request }) => {
+      bodies.push(await request.json());
+      return HttpResponse.json({ ...value, status: "submitted", submittedAt: new Date(serverNow).toISOString(), fraction: 1 });
+    }),
+  );
+  const user = userEvent.setup();
+  mount();
+  await waitFor(() => expect(reads).toBe(2));
+  await user.click(await screen.findByRole("radio", { name: "Características" }));
+  await user.click(screen.getByRole("button", { name: "Entregar respuestas" }));
+  await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Sí, entregar" }));
+  expect(await screen.findByText("Resultado: 100 %")).toBeInTheDocument();
+  expect(bodies).toEqual([{ answers: [{ questionRevisionId: "q1", selectedOptionIds: ["a"] }] }]);
+});
+
+it("sigue consultando tras el cero local hasta que el servidor cierra el intento y luego detiene las consultas", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  let reads = 0;
+  server.use(http.get(`${origin}/api/assessments/attempts/intento`, () => {
+    reads += 1;
+    return HttpResponse.json(attempt({ expiresAt: new Date(Date.now() - 1000).toISOString(), status: reads > 2 ? "expired" : "inProgress" }));
+  }));
+  mount();
+  await waitFor(() => expect(reads).toBe(2));
+  expect(screen.getByRole("button", { name: "Entregar respuestas" })).toBeEnabled();
+  await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+  expect(await screen.findByText("El tiempo terminó antes de entregar. Las respuestas no se registraron.")).toBeInTheDocument();
+  expect(reads).toBe(3);
+  await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+  expect(reads).toBe(3);
 });

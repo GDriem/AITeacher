@@ -92,8 +92,14 @@ function AttemptRunner({ value, answers, step, go, update, page, locked, expired
 }) {
   const remaining = useRemaining(value.expiresAt);
   const outOfTime = remaining === 0;
-  // Al vencer, el servidor confirma el estado `expired`.
-  useEffect(() => { if (outOfTime) void expired(); }, [outOfTime, expired]);
+  // El reloj local puede estar adelantado: sólo el servidor cierra el intento.
+  // Si aún sigue abierto, consultar hasta confirmar el vencimiento sin impedir la entrega.
+  useEffect(() => {
+    if (!outOfTime) return;
+    void expired();
+    const timer = window.setInterval(() => void expired(), 5000);
+    return () => window.clearInterval(timer);
+  }, [outOfTime, expired]);
   const heading = useRef<HTMLHeadingElement>(null);
   const shown = useRef(step);
   // Al cambiar de pregunta el foco va a su título para que el lector de pantalla la anuncie; no al abrir el intento.
@@ -107,7 +113,7 @@ function AttemptRunner({ value, answers, step, go, update, page, locked, expired
   const answered = value.questions.filter((question) => isAnswered(question, answers[question.revisionId])).length;
   const question = value.questions[step];
   const last = step >= total - 1;
-  const disabled = locked || outOfTime;
+  const disabled = locked;
   const Heading = page ? "h2" : "h3";
   return <>
     <div className={styles.status}>
@@ -120,9 +126,9 @@ function AttemptRunner({ value, answers, step, go, update, page, locked, expired
       <p className={[styles.clock, remaining <= 60_000 ? styles.urgent : ""].join(" ")}>
         <span className={styles.clockLabel}>Tiempo restante</span> <time dateTime={`PT${String(Math.ceil(remaining / 1000))}S`}>{clock(remaining)}</time>
       </p>
-      <p className={styles.visuallyHidden} role="status">{outOfTime ? "Se acabó el tiempo." : remaining <= 60_000 ? "Queda un minuto." : remaining <= 300_000 ? "Quedan cinco minutos." : ""}</p>
+      <p className={styles.visuallyHidden} role="status">{outOfTime ? "Comprobando el tiempo disponible." : remaining <= 60_000 ? "Queda un minuto." : remaining <= 300_000 ? "Quedan cinco minutos." : ""}</p>
     </div>
-    {outOfTime ? <p className={styles.notice} role="alert">Se acabó el tiempo. Las respuestas no entregadas no se registran.</p> : null}
+    {outOfTime ? <p className={styles.notice}>Estamos comprobando el tiempo disponible. Puedes seguir respondiendo y entregar mientras la evaluación siga abierta.</p> : null}
     {total > 1 ? <nav aria-label="Preguntas" className={styles.steps}><ol>{value.questions.map((item, index) => {
       const done = isAnswered(item, answers[item.revisionId]);
       return <li key={item.revisionId}><button type="button" className={[styles.stepButton, done ? styles.done : ""].join(" ")} aria-current={index === step ? "step" : undefined}
