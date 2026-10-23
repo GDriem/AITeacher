@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
-import { TutorMarkdown } from "../tutor/TutorMarkdown";
-import { Badge, PageHeader, Tabs, buttonClass, cardClass } from "../../ui";
+import { Learn, Practice } from "./UnitPresentation";
+import { Badge, PageHeader, Tabs, buttonClass } from "../../ui";
 import { required, type Schema } from "./client";
 import { Busy, Failure } from "./Shared";
 import { Assessments } from "./Assessments";
 import { topicPath, tutorPath, unitCrumbs, useCatalogLevel, useSourceLevels, useStudyUnit, useTutorAvailability, useUnitTopic, type TutorMode } from "./unitQueries";
-import { useMedia } from "./useMedia";
 import styles from "./UnitSpace.module.css";
 
 type UnitDocument = Schema["UnitResponse"]["revision"]["document"];
@@ -15,8 +14,6 @@ const isTab = (value: string | null): value is TabId => value === "aprender" || 
 /** Contexto que el botón del tutor lleva a la conversación: la lectura o el ejercicio que el alumno tiene a la vista. */
 interface Visible { mode: TutorMode; id: string; title: string }
 
-const readingAnchor = (id: string) => `lectura-${id}`;
-const article = cardClass(false, styles.item);
 
 export function UnitSpace() {
   const unitId = required(useParams().unitId);
@@ -74,59 +71,11 @@ export function UnitSpace() {
   </section>;
 }
 
-/**
- * Salta a una lectura sin sumar el ancla al historial: Atrás sigue volviendo a la
- * pantalla anterior. La lectura elegida pasa a ser la actual aunque el scroll no
- * pueda subirla hasta arriba (una última lectura corta).
- */
-function jump(id: string, choose: (id: string) => void) {
-  const target = document.getElementById(readingAnchor(id));
-  target?.scrollIntoView({ block: "start" });
-  target?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
-  choose(id);
-}
-
 /** Lecturas o ejercicios de la pestaña activa que pueden dar contexto al tutor; Evaluar no aporta ninguno. */
 function contextItems(document: UnitDocument | undefined, tab: TabId): Visible[] {
   if (!document || tab === "evaluar") return [];
   if (tab === "practicar") return document.exercises.map((exercise, index) => ({ mode: "practice", id: exercise.id, title: `Ejercicio ${String(index + 1)}` }));
   return document.readings.map((reading) => ({ mode: "reading", id: reading.id, title: reading.title }));
-}
-
-function Learn({ document, current, choose }: { document: UnitDocument; current: string | null; choose: (id: string) => void }) {
-  const items = document.readings;
-  const wide = useMedia("(min-width: 64rem)");
-  // El índice solo orienta cuando hay más de una lectura.
-  const index = items.length > 1 ? <ol className={styles.indexList}>{items.map((item) => <li key={item.id}>
-    <a href={`#${readingAnchor(item.id)}`} aria-current={current === item.id ? "true" : undefined} onClick={(event) => { event.preventDefault(); jump(item.id, choose); }}>{item.title}</a>
-  </li>)}</ol> : null;
-  return <div className={index ? styles.withIndex : undefined}>
-    {index ? wide
-      ? <nav className={styles.index} aria-label="Lecturas de la unidad"><h2 className={styles.indexTitle}>Lecturas</h2>{index}</nav>
-      : <nav className={styles.index} aria-label="Lecturas de la unidad"><details><summary>Lecturas ({items.length})</summary>{index}</details></nav>
-      : null}
-    <div className={styles.content}>
-      {document.objectives.length ? <section aria-labelledby="unit-objectives">
-        <h2 id="unit-objectives">Qué vas a aprender</h2>
-        <ul>{document.objectives.map((objective) => <li key={objective.id}>{objective.description}</li>)}</ul>
-      </section> : null}
-      {document.readings.map((reading) => <article key={reading.id} id={readingAnchor(reading.id)} data-visible={reading.id} className={article}>
-        <h2 tabIndex={-1}>{reading.title}</h2>
-        <TutorMarkdown>{reading.text}</TutorMarkdown>
-        <p className={styles.source}>Fuente: {reading.source}</p>
-      </article>)}
-    </div>
-  </div>;
-}
-
-function Practice({ document, unitId, state, tutorEnabled }: { document: UnitDocument; unitId: string; state: unknown; tutorEnabled: boolean }) {
-  return <div className={styles.content}>
-    {document.exercises.map((exercise, index) => <article key={exercise.id} data-visible={exercise.id} className={article} aria-labelledby={`exercise-${exercise.id}`}>
-      <h2 id={`exercise-${exercise.id}`}>Ejercicio {index + 1}</h2>
-      <TutorMarkdown>{exercise.prompt}</TutorMarkdown>
-      {tutorEnabled ? <Link className={buttonClass()} to={tutorPath(unitId, "practice", exercise.id)} state={state}>Practicar con el tutor</Link> : null}
-    </article>)}
-  </div>;
 }
 
 /** Gestos con los que el alumno desplaza la página por su cuenta. */

@@ -6,6 +6,7 @@ import { Busy, Failure, Pages } from "./Shared";
 import { attemptLabels } from "./labels";
 import { usePersonalUrl } from "./usePersonalUrl";
 import { Button } from "../../ui";
+import { EvaluationList } from "./EvaluationList";
 
 export function Assessments({ unit }: { unit: Schema["UnitResponse"] }) {
   const queries = useQueryClient();
@@ -23,11 +24,9 @@ export function Assessments({ unit }: { unit: Schema["UnitResponse"] }) {
     void queries.invalidateQueries({ queryKey: ["attempts"] });
     openAttempt(attempt.id);
   } });
-  return <section><h2>Prácticas y evaluaciones</h2>
+  return <section>
     {definitions.isPending ? <Busy /> : definitions.isError ? <Failure error={definitions.error} retry={() => void definitions.refetch()} /> : <>
-      <ul>{definitions.data.items.filter((item) => item.unitId === unit.id && item.unitRevisionId === unit.revision.id).map((item) => <li key={item.id}>
-        <p>{item.title} · {item.mode === "practice" ? "Práctica" : "Evaluación"} · {item.timeLimitMinutes} minutos · hasta {item.maxAttempts} intentos</p>
-        <Button disabled={start.isPending} onClick={() => start.mutate(item.id)}>Iniciar {item.title}</Button></li>)}</ul>
+      <EvaluationList items={definitions.data.items.filter((item) => item.unitId === unit.id && item.unitRevisionId === unit.revision.id)} start={(id) => start.mutate(id)} pending={start.isPending} />
       <Pages offset={offset} total={definitions.data.total} change={setOffset} />
     </>}
     {start.isError ? <Failure error={start.error} /> : null}

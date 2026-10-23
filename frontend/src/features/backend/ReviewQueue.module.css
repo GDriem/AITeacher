@@ -1,0 +1,5 @@
+.screen { min-inline-size: 0; }
+.screen fieldset { min-inline-size: 0; border: 1px solid var(--border-subtle); padding: var(--space-4); margin-block: var(--space-4); }
+.columns { display: grid; gap: var(--space-5); }
+.columns > div { min-inline-size: 0; overflow-wrap: anywhere; }
+@media (min-width: 48rem) { .columns { grid-template-columns: 1fr 1fr; } }

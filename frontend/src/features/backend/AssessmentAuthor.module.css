@@ -1,0 +1,3 @@
+.screen { min-inline-size: 0; }
+.screen fieldset { min-inline-size: 0; margin-block: var(--space-3); border: 1px solid var(--border-subtle); }
+.screen li { overflow-wrap: anywhere; margin-block: var(--space-3); }
