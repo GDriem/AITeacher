@@ -126,3 +126,19 @@ referencias conceptuales. No existe un único nivel correcto para todo un tema.
 La beta Azure tiene 82 lecturas publicadas y su catálogo conciliado. Las actividades
 Python no se convierten en definiciones ejecutables: su equivalencia/curación
 sigue pendiente. [Procedimiento, límites e informes](../docs/curriculum-continuity.md).
+
+## Descripción de tema
+
+Desde el 22 de octubre los temas admiten `description`: texto plano opcional de
+hasta 600 caracteres que el alumno ve en la página del tema y como extracto en el
+catálogo. Solo los autores la escriben, al crear (`POST /api/catalog/topics`) o al
+editar (`PUT /api/catalog/topics/{id}`) con la `version` leída; una versión
+obsoleta devuelve `409`. En `PUT`, omitir `description` conserva la guardada
+(así una pestaña con el bundle anterior, un script o una petición antigua no la
+borran); enviarla como `null` o en blanco la borra. El servidor recorta espacios
+y guarda las vacías como `null`. Materias, categorías, escalas y niveles no la tienen.
+
+La migración `TopicDescription` del esquema `curriculum` añade una columna
+nullable con un `CHECK` de texto no vacío; las filas existentes quedan en `null`
+y los clientes anteriores siguen funcionando. `--curriculum` no escribe
+descripciones y, como no sobrescribe entradas conciliadas, tampoco las borra.

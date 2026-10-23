@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using AITeacher.Api.Features.Catalog;
 using AITeacher.Api.Features.Identity;
@@ -203,6 +204,74 @@ public sealed class CatalogApiTests(ApiFixture fixture) : IClassFixture<ApiFixtu
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/catalog/scales", new { purpose = "mastery", entry = (object?)null })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/catalog/subjects?limit=101")).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/catalog/subjects?offset=-1")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Topic_description_is_written_by_authors_versioned_and_read_by_students()
+    {
+        using var author = await Login();
+        var subject = await Create(author, "subjects", Entry());
+        var category = await Create(author, "categories", new { subjectId = subject["id"]!.GetValue<Guid>(), entry = Entry() });
+        var parents = new { subjectId = subject["id"]!.GetValue<Guid>(), categoryId = category["id"]!.GetValue<Guid>() };
+        var topic = await Create(author, "topics", new { parents.subjectId, parents.categoryId, entry = Entry(), description = "  Qué es una ecuación lineal.  " });
+        Assert.Equal("Qué es una ecuación lineal.", topic["description"]!.GetValue<string>());
+        Assert.Null((await Create(author, "topics", new { parents.subjectId, parents.categoryId, entry = Entry(), description = "   " }))["description"]);
+        Assert.Null((await Create(author, "subjects", Entry()))["description"]);
+        var tooLong = new string('x', CatalogEndpoints.DescriptionMaxLength + 1);
+        Assert.Equal(HttpStatusCode.BadRequest, (await author.PostAsJsonAsync("/api/catalog/topics", new { parents.subjectId, parents.categoryId, entry = Entry(), description = tooLong })).StatusCode);
+
+        var url = "/api/catalog/topics/" + topic["id"]!.GetValue<Guid>();
+        var slug = topic["slug"]!.GetValue<string>();
+        Assert.Equal(HttpStatusCode.BadRequest, (await author.PutAsJsonAsync(url, new { version = 1, entry = Entry(slug), description = tooLong })).StatusCode);
+        var limit = new string('y', CatalogEndpoints.DescriptionMaxLength);
+        var saved = await (await author.PutAsJsonAsync(url, new { version = 1, entry = Entry(slug), description = limit })).Content.ReadFromJsonAsync<JsonObject>();
+        Assert.Equal(limit, saved!["description"]!.GetValue<string>());
+        Assert.Equal(2, saved["version"]!.GetValue<int>());
+        Assert.Equal(HttpStatusCode.Conflict, (await author.PutAsJsonAsync(url, new { version = 1, entry = Entry(slug), description = "Obsoleta" })).StatusCode);
+
+        using var student = await Login("student-a");
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.PutAsJsonAsync(url, new { version = 2, entry = Entry(slug), description = "Intruso" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.PostAsJsonAsync("/api/catalog/topics", new { parents.subjectId, parents.categoryId, entry = Entry(), description = "Intruso" })).StatusCode);
+        Assert.Equal(limit, (await student.GetFromJsonAsync<JsonObject>(url))!["description"]!.GetValue<string>());
+        var page = await student.GetFromJsonAsync<JsonObject>("/api/catalog/topics?limit=100");
+        Assert.Contains(page!["items"]!.AsArray(), x => x!["id"]!.GetValue<Guid>() == topic["id"]!.GetValue<Guid>() && x["description"]!.GetValue<string>() == limit);
+
+        // Un cliente que no conoce el campo (pestaña con el bundle anterior, script, Postman) no la borra.
+        var kept = await (await author.PutAsJsonAsync(url, new { version = 2, entry = new { name = "Álgebra", slug, sortOrder = 4, isAvailable = true } })).Content.ReadFromJsonAsync<JsonObject>();
+        Assert.Equal(limit, kept!["description"]!.GetValue<string>());
+        Assert.Equal(4, kept["sortOrder"]!.GetValue<int>());
+        Assert.Equal(3, kept["version"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task Topic_put_keeps_an_absent_description_and_clears_null_or_blank()
+    {
+        using var author = await Login();
+        var subject = await Create(author, "subjects", Entry());
+        var category = await Create(author, "categories", new { subjectId = subject["id"]!.GetValue<Guid>(), entry = Entry() });
+        var topic = await Create(author, "topics", new { subjectId = subject["id"]!.GetValue<Guid>(), categoryId = category["id"]!.GetValue<Guid>(), entry = Entry(), description = "Original" });
+        var url = "/api/catalog/topics/" + topic["id"]!.GetValue<Guid>();
+        var slug = topic["slug"]!.GetValue<string>();
+
+        // JsonObject conserva la diferencia entre no enviar la propiedad y enviarla con null.
+        async Task<JsonObject> Put(long version, bool send, string? description = null)
+        {
+            var body = new JsonObject { ["version"] = version, ["entry"] = JsonSerializer.SerializeToNode(Entry(slug)) };
+            if (send) body["description"] = description;
+            var response = await author.PutAsJsonAsync(url, body);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return (await response.Content.ReadFromJsonAsync<JsonObject>())!;
+        }
+
+        Assert.Equal("Original", (await Put(1, send: false))["description"]!.GetValue<string>());
+        Assert.Equal("Nueva", (await Put(2, send: true, "  Nueva  "))["description"]!.GetValue<string>());
+        Assert.Null((await Put(3, send: true, null))["description"]);
+        Assert.Null((await Put(4, send: false))["description"]);
+        Assert.Equal("Otra", (await Put(5, send: true, "Otra"))["description"]!.GetValue<string>());
+        var blank = await Put(6, send: true, "   ");
+        Assert.Null(blank["description"]);
+        Assert.Equal(7, blank["version"]!.GetValue<int>());
+        Assert.Null((await author.GetFromJsonAsync<JsonObject>(url))!["description"]);
     }
 
     [Fact]

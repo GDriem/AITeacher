@@ -18,7 +18,10 @@ export function Pages({ offset, total, size = 20, change }: { offset: number; to
   </nav>;
 }
 
-export function Field({ title, children }: { title: string; children: ReactElement<{ id?: string }> }) {
+/** Etiqueta un control; `hint` (p. ej. un contador de caracteres) queda asociado con `aria-describedby`. */
+export function Field({ title, hint, children }: { title: string; hint?: string; children: ReactElement<{ id?: string; "aria-describedby"?: string }> }) {
   const id = useId();
-  return <div className={styles.field}><label htmlFor={id}>{title}</label>{cloneElement(children, { id })}</div>;
+  const hintId = `${id}-hint`;
+  return <div className={styles.field}><label htmlFor={id}>{title}</label>{cloneElement(children, { id, ...(hint ? { "aria-describedby": hintId } : {}) })}
+    {hint ? <p id={hintId} className={styles.hint}>{hint}</p> : null}</div>;
 }

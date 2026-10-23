@@ -27,7 +27,8 @@ body:
         "sortOrder": 0,
         "isAvailable": true
       },
-      "levelId": "5a2a2019-2d56-384a-a209-ad2ba16e799b"
+      "levelId": "5a2a2019-2d56-384a-a209-ad2ba16e799b",
+      "description": "Ecuaciones, funciones y su uso para modelar problemas."
     }
 settings: {}
 order: 2000
