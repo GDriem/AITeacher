@@ -61,8 +61,10 @@ export function UnitEditor({ unit, saved, topics, onDirty }: { unit?: Schema["Un
     : result(await backend.POST("/api/units", { body: sent })),
     onSuccess: (value, sent) => {
       const snapshot = JSON.stringify({ document: sent.document, topicId: sent.topicId }), next = { revisionId: value.revision.id, version: value.version };
-      // Lo escrito durante el guardado sigue pendiente y conserva su copia local sobre la revisión recién creada.
-      if (snapshot === latest.current) { savedNavigation.current = true; writeUnitDraft(owner, id, null); } else writeUnitDraft(owner, id, { ...(JSON.parse(latest.current) as { document: typeof document; topicId: string }), ...next });
+      // Lo escrito durante el guardado sigue pendiente y conserva su copia local sobre la revisión recién creada, bajo el id devuelto: una unidad nueva no deja copia en `nueva`.
+      savedNavigation.current = snapshot === latest.current || id !== value.id;
+      writeUnitDraft(owner, id, null);
+      if (snapshot !== latest.current) writeUnitDraft(owner, value.id, { ...(JSON.parse(latest.current) as { document: typeof document; topicId: string }), ...next });
       setBaseline(snapshot); setBase(next); setNotice("Borrador guardado."); saved(value); void queries.invalidateQueries({ queryKey: ["author-units"] }); } });
   const submit = () => { for (const item of steps) { const found = validateStep(document, item, topicId); if (Object.keys(found).length) { setErrors(found); url.set("paso", item); return; } } save.mutate({ document, topicId }); };
   const objectives = document.objectives.map((item) => ({ id: item.id, title: item.description || "Objetivo sin descripción" }));

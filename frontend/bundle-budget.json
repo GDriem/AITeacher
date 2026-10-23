@@ -43,8 +43,8 @@
         "authorQueries",
         "EvaluationList"
       ],
-      "budgetKb": 28,
-      "rationale": "Fase 3, PR 7: 27,87 kB gzip (base origin/main: 15,39 kB) para pasos, borrador de pestaña, vista previa, diff, banco y rúbrica. El presupuesto pasa de 20 a 28 kB por el alcance editorial añadido. Editor y evaluaciones se difieren por subruta: la lista solo carga AuthorSpace y authorQueries. No se aumenta backendBeta (120 kB)."
+      "budgetKb": 30,
+      "rationale": "Fase 3, PR 7: 27,87 kB gzip (base origin/main: 15,39 kB) para pasos, borrador de pestaña, vista previa, diff, banco y rúbrica; la revisión base del borrador y la instantánea al guardar lo llevan a 28,15 kB. El presupuesto pasa de 20 a 30 kB por el alcance editorial añadido, con margen para correcciones menores. Editor y evaluaciones se difieren por subruta: la lista solo carga AuthorSpace y authorQueries. No se aumenta backendBeta (120 kB)."
     },
     "legacyShell": {
       "description": "Shell y proveedor de sesiones del build Python existente.",

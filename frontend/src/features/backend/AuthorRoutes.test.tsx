@@ -117,3 +117,45 @@ it("declara las rutas reales de autoría, incluida la entrega individual", async
   }
   router.dispose();
 });
+it("conserva lo escrito durante el guardado como borrador pendiente", async () => {
+  let respond: (() => void) | undefined;
+  server.use(http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
+    http.post(`${origin}/api/units/u/revisions`, () => new Promise<Response>((resolve) => { respond = () => resolve(HttpResponse.json({ ...unit, version: 2, revision: { ...unit.revision, id: "r2", number: 2, document: { ...doc, title: "Enviado" } } })); })));
+  mount("/autoria/unidades/u?paso=datos");
+  const user = userEvent.setup();
+  const title = await screen.findByLabelText("Título de la unidad");
+  await user.clear(title); await user.type(title, "Enviado");
+  await user.click(screen.getByRole("button", { name: "Guardar borrador" }));
+  await user.type(title, " y más");
+  respond?.();
+  expect(await screen.findByText("Borrador guardado.")).toBeVisible();
+  expect(readUnitDraft("a", "u")).toMatchObject({ document: { title: "Enviado y más" }, revisionId: "r2", version: 2 });
+});
+it("una unidad nueva guarda lo escrito durante la creación bajo su id y no en nueva", async () => {
+  let respond: (() => void) | undefined;
+  const created = { ...unit, id: "n", revision: { ...unit.revision, id: "rn", document: { ...doc, title: "Nueva" } } };
+  server.use(http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })), http.get(`${origin}/api/units/n`, () => HttpResponse.json(created)),
+    http.post(`${origin}/api/units`, () => new Promise<Response>((resolve) => { respond = () => resolve(HttpResponse.json(created)); })));
+  writeUnitDraft("a", "nueva", { document: { ...doc, title: "Nueva" }, topicId: "t", version: null });
+  const { router } = mount("/autoria/unidades/nueva?paso=datos");
+  const user = userEvent.setup();
+  const title = await screen.findByLabelText("Título de la unidad");
+  await user.click(screen.getByRole("button", { name: "Guardar borrador" }));
+  await user.type(title, " más");
+  respond?.();
+  await waitFor(() => expect(router.state.location.pathname).toBe("/autoria/unidades/n"));
+  expect(readUnitDraft("a", "nueva")).toBeNull();
+  expect(readUnitDraft("a", "n")).toMatchObject({ document: { title: "Nueva más" }, revisionId: "rn", version: 1 });
+});
+it("el resumen de una corrección registrada suma los puntos finales", async () => {
+  const rubric = { version: 1, privateGuidance: "Guía", criteria: [{ id: "c1", description: "Claridad", maxPoints: 2 }, { id: "c2", description: "Ejemplo", maxPoints: 3 }] };
+  const question = { unitId: "u", unitRevisionId: "r", objectiveIds: [], conceptIds: [], type: "openResponse" as const, prompt: "Explica", options: [], scoringPolicy: "rubric" as const, correctOptionIds: [], rubric };
+  const grades = [{ questionRevisionId: "q", criteria: [{ criterionId: "c1", points: 1.5 }, { criterionId: "c2", points: 2 }], feedback: "Bien" }];
+  server.use(http.get(`${origin}/api/assessments/submissions`, () => HttpResponse.json({ items: [], total: 0 })),
+    http.get(`${origin}/api/assessments/attempts/a/review`, () => HttpResponse.json({ attemptId: "a", definitionRevisionId: "d", submittedAt: "2026-10-23", questions: [{ revisionId: "q", document: question }], answers: [{ questionRevisionId: "q", selectedOptionIds: [], text: "Respuesta" }],
+      review: { id: "v", attemptId: "a", requestId: "x", reviewerId: "a", createdAt: "2026-10-23", gradesJson: JSON.stringify(grades), scoresJson: "[]" } })));
+  const { ReviewQueue } = await import("./ReviewQueue");
+  const router = createMemoryRouter([{ path: "/autoria/correcciones/:attemptId?", Component: ReviewQueue }], { initialEntries: ["/autoria/correcciones/a"] });
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><ProfileContext value={{ studentId: "a", canAuthor: true, displayName: "Autor", email: "a@example.test" }}><RouterProvider router={router} /></ProfileContext></QueryClientProvider>);
+  expect(await screen.findByText("Resumen: 3.5 puntos asignados de 5 posibles con rúbrica.")).toBeVisible();
+});

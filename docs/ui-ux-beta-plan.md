@@ -260,7 +260,7 @@ Bundles medidos con `build:backend` y `budget:check` (gzip):
 
 | Grupo | Base `origin/main` | PR 7 | Presupuesto |
 |---|---:|---:|---:|
-| `backendAuthoring` | 15,39 kB | 27,87 kB | 28 kB (antes 20) |
+| `backendAuthoring` | 15,39 kB | 28,15 kB | 30 kB (antes 20) |
 | `backendBeta` | 110,79 kB | 67,52 kB | 120 kB, sin aumento |
 | `markdownShared` | Incluido en `BackendApp` | 44,58 kB | 70 kB |
 | `backendPersonal` | 13,04 kB | 13,05 kB | 18 kB |
