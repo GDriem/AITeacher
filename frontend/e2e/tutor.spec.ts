@@ -249,12 +249,15 @@ test("evaluación, práctica y reanudación completan el ciclo después de recar
   expect(consoleMessages).toEqual([]);
 });
 
-for (const width of [320, 768, 1024, 1440]) {
-  test(`el modo de voz es accesible y no desborda a ${String(width)}px`, async ({ page }) => {
+for (const colorScheme of ["light", "dark"] as const) for (const width of [320, 768, 1024, 1440]) {
+  test(`el modo de voz es accesible y no desborda a ${String(width)}px (${colorScheme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
     await installVoiceBrowserMocks(page);
     await routeTutor(page, { voice: true });
     await page.setViewportSize({ width, height: 900 });
     await page.goto("./tutor");
+    // El diálogo es compartido: activa los mismos tokens que el build .NET.
+    await page.evaluate(() => { document.documentElement.dataset.theme = "auto"; });
     await page.getByRole("button", { name: "Conversar por voz" }).click();
     await expect(page.getByRole("dialog", { name: "Habla con tu tutor" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Finalizar conversación por voz" })).toBeFocused();

@@ -4,6 +4,8 @@ RUN npm install --global pnpm@11.16.0
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY frontend/ ./
+# Opcional: enlace «Enviar comentarios de la beta»; vacío lo oculta.
+ARG VITE_BETA_FEEDBACK_URL=
 RUN pnpm build:backend
 
 FROM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.1@sha256:d0a39ca4acefe992f26030f8fb8c60e1b14ac088822cb3fdfbe536ecf843a675 AS build

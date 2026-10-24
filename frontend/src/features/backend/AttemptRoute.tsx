@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge, Button, Dialog, PageHeader, type BadgeTone } from "../../ui";
 import { backend, required, result, type Schema } from "./client";
 import { Busy, Failure, Field } from "./Shared";
-import { attemptLabels } from "./labels";
+import { attemptLabels, formatDateTime } from "./labels";
 import { panel } from "./panel";
 import shared from "./Shared.module.css";
 import styles from "./Attempt.module.css";
@@ -81,7 +81,7 @@ export function AttemptView({ id, variant = "inline", step: controlledStep, onSt
   return <article className={page ? styles.screen : panel}>{header}
     <AttemptRunner value={value} answers={answers} step={step} go={go} update={update} page={page}
       locked={submit.isPending || submit.isError} expired={attempt.refetch} confirm={() => setConfirming(true)} />
-    {submit.isError ? <Failure title="No se pudo entregar" error={submit.error} retry={send} /> : null}
+    {submit.isError ? <Failure title="No pudimos entregar tus respuestas" error={submit.error} retry={send} /> : null}
     <SubmitDialog open={confirming} value={value} answers={answers} pending={submit.isPending} close={() => setConfirming(false)} send={send} />
   </article>;
 }
@@ -186,7 +186,7 @@ function AttemptResult({ value, page, focus }: { value: Attempt; page: boolean; 
   const Heading = page ? "h2" : "h3";
   const scores = new Map(value.scores?.map((score) => [score.questionRevisionId, score]));
   const answers = new Map(value.answers?.map((answer) => [answer.questionRevisionId, answer]));
-  const summary = value.status === "expired" ? "El tiempo terminó antes de entregar. Las respuestas no se registraron."
+  const summary = value.status === "expired" ? "El tiempo terminó antes de entregar. Las respuestas no se registraron. Si te quedan intentos, puedes empezar uno nuevo desde la pestaña Evaluar de la unidad."
     : value.status === "pendingReview" ? value.feedback === "never" ? "Tu docente revisará las respuestas con la rúbrica fijada al iniciar. Esta evaluación no muestra la nota."
       : "Tu docente revisará las respuestas con la rúbrica fijada al iniciar. La nota y los comentarios aparecerán aquí al terminar la corrección."
       : value.feedback === "never" ? "Entrega registrada. Esta evaluación no muestra la nota ni los aciertos." : null;
@@ -195,7 +195,7 @@ function AttemptResult({ value, page, focus }: { value: Attempt; page: boolean; 
     <p role="status"><Badge tone={statusTones[value.status]}>{attemptLabels[value.status]}</Badge></p>
     {value.fraction !== null ? <p className={styles.score}>Resultado: {Math.round(value.fraction * 100)} %</p> : null}
     {summary ? <p>{summary}</p> : null}
-    {value.submittedAt ? <p className={shared.hint}>Entregada el {new Date(value.submittedAt).toLocaleString()}.</p> : null}
+    {value.submittedAt ? <p className={shared.hint}>Entregada el {formatDateTime(value.submittedAt)}.</p> : null}
     {value.answers ? <ol className={styles.review}>{value.questions.map((question, index) => {
       const score = scores.get(question.revisionId);
       const answer = answers.get(question.revisionId);

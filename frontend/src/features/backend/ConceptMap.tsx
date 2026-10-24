@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatDateTime } from "./labels";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { backend, result, required, type Schema } from "./client";
 import { Busy, Failure, Field, Pages } from "./Shared";
@@ -24,7 +25,7 @@ export function ConceptMap({ topicId, conversationId, messages }: { topicId: str
       <Pages offset={offset} total={graphs.data.total} change={setOffset} />
     </>}
     {graphId ? <><Field title="Mensaje para buscar menciones"><select value={messageId} onChange={(event) => setMessageId(event.target.value)}>
-      <option value="">Selecciona un mensaje tuyo ya cargado</option>{messages.filter((item) => item.role === "user").map((item) => <option key={item.id} value={item.id}>{item.text.slice(0, 90)}</option>)}</select></Field>
+      <option value="">Selecciona uno de tus mensajes</option>{messages.filter((item) => item.role === "user").map((item) => <option key={item.id} value={item.id}>{item.text.slice(0, 90)}</option>)}</select></Field>
       <Button disabled={!messageId || extract.isPending} onClick={() => extract.mutate()}>Buscar menciones</Button>
       {extract.isError ? <Failure error={extract.error} /> : null}
       {graph.isPending ? <Busy /> : graph.isError ? <Failure error={graph.error} retry={() => void graph.refetch()} /> : <GraphView map={graph.data} />}
@@ -60,6 +61,6 @@ function Observation({ observation, names }: { observation: Schema["GraphObserva
     <div className={shared.actions}><Button disabled={!reason.trim() || correct.isPending} onClick={() => correct.mutate("accepted")}>Aceptar observación</Button>
       <Button disabled={!reason.trim() || correct.isPending} onClick={() => correct.mutate("rejected")}>Rechazar observación</Button></div>
     {correct.isError ? <Failure error={correct.error} /> : null}
-    <details><summary>Historial de cambios</summary><ol>{observation.history.map((item) => <li key={item.version}>{new Date(item.createdAt).toLocaleString()} · {item.reason || "Observación original"}</li>)}</ol></details>
+    <details><summary>Historial de cambios</summary><ol>{observation.history.map((item) => <li key={item.version}>{formatDateTime(item.createdAt)} · {item.reason || "Observación original"}</li>)}</ol></details>
   </article>;
 }

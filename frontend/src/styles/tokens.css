@@ -18,6 +18,8 @@
   --status-attention: #ffd36e;
   --status-danger: #ff8c96;
   --focus-ring: #9bc2ff;
+  --overlay-scrim: rgba(7, 17, 31, 0.72);
+  --shadow-elevated: rgba(0, 0, 0, 0.45);
 
   --font-body: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   --font-size-xs: 0.75rem;
@@ -49,5 +51,46 @@
     --content-muted: #d1dceb;
     --border-subtle: rgba(237, 245, 255, 0.38);
     --border-default: rgba(237, 245, 255, 0.58);
+  }
+}
+
+/*
+ * Tema claro según el sistema. Sólo aplica cuando la app opta con
+ * `data-theme="auto"` (build .NET); el build Python conserva el tema oscuro
+ * porque varias pantallas suyas fijan colores oscuros directamente.
+ * Texto y estados quedan en AA (≥ 4,5:1) sobre `--surface-default` y
+ * `--surface-raised`.
+ */
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    color-scheme: light;
+    --canvas-default: #f3f6fa;
+    --surface-default: #ffffff;
+    --surface-raised: #e9eff6;
+    --surface-subtle: rgba(7, 17, 31, 0.035);
+    --surface-sunken: #edf2f8;
+    --content-strong: #0a1a2e;
+    --content-default: #1f344d;
+    --content-muted: #4c6075;
+    --content-inverse: #ffffff;
+    --border-subtle: rgba(7, 17, 31, 0.12);
+    --border-default: rgba(7, 17, 31, 0.24);
+    --action-primary: #1f5fbf;
+    --action-primary-hover: #194f9f;
+    --status-guide: #1d5ec2;
+    --status-mastery: #0d7349;
+    --status-attention: #7f5300;
+    --status-danger: #b3263a;
+    --focus-ring: #1f5fbf;
+    --overlay-scrim: rgba(7, 17, 31, 0.45);
+    --shadow-elevated: rgba(7, 17, 31, 0.18);
+  }
+}
+
+@media (prefers-color-scheme: light) and (prefers-contrast: more) {
+  :root[data-theme="auto"] {
+    --content-muted: #2c3e52;
+    --border-subtle: rgba(7, 17, 31, 0.4);
+    --border-default: rgba(7, 17, 31, 0.6);
   }
 }

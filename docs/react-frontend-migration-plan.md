@@ -1052,7 +1052,8 @@ del objetivo de la fase: cambiar la variable y reiniciar el servicio revierte
 la interfaz predeterminada sin reconstruir la imagen ni desplegar una revisión
 nueva. `docker-compose.yml` expone `APP_DEFAULT_UI` con el mismo valor por
 defecto y `infra/cloudrun/agent-service.yaml` la documenta explícitamente como
-plantilla auditable (el script `deploy.sh` no necesita fijarla porque ya
+plantilla auditable (ese manifiesto se retiró después en la tarea T04 de
+`gcp-readiness`; `deploy.sh` es hoy la fuente única) (el script `deploy.sh` no necesita fijarla porque ya
 coincide con el valor por defecto de `Settings`).
 
 La cabecera `cache-control` se simplificó: en vez de enumerar cada prefijo de

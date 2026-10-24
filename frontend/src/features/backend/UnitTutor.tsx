@@ -37,6 +37,6 @@ export function UnitTutor() {
       ? <Tutor key={conversationId ?? "nueva"} unit={unit.data} mode={mode} activityId={activityId} conversationId={conversationId}
         // Desde el tutor vacío, la conversación nueva reemplaza esa entrada para que Atrás vuelva a la unidad.
         openConversation={(id) => void navigate(tutorPath(unitId, mode, activityId, id ?? undefined), { state, replace: conversationId === null })} />
-      : <EmptyState title="El tutor no está disponible" description="El tutor de IA todavía no está configurado en esta beta. Puedes leer el material completo." />}
+      : <EmptyState title="El tutor no está disponible" description="El tutor no está disponible por ahora. Mientras tanto, puedes seguir con el material de la unidad." />}
   </section>;
 }

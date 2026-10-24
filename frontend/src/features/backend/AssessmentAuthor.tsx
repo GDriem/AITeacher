@@ -100,7 +100,7 @@ function DefinitionEditor({ unit }: { unit: Schema["UnitResponse"] }) {
     <Field title="Duración en minutos"><input required type="number" min="1" max="1440" value={minutes} onChange={(event) => setMinutes(Number(event.target.value))} /></Field>
     <Field title="Máximo de intentos"><input required type="number" min="1" max="100" value={attempts} onChange={(event) => setAttempts(Number(event.target.value))} /></Field>
     <Field title="Cuándo mostrar resultados"><select value={feedback} onChange={(event) => setFeedback(event.target.value as typeof feedback)}><option value="afterSubmission">Después de entregar y corregir</option><option value="never">No mostrar resultados</option></select></Field>
-    <p>{feedback === "never" ? "El alumno verá la entrega registrada, sin nota ni aciertos." : selected.some((q) => q.document.scoringPolicy === "rubric") ? "El alumno verá Pendiente de corrección docente. La nota aparecerá después de corregir la rúbrica." : "El alumno verá la nota inmediatamente después de entregar."}</p>
+    <p>{feedback === "never" ? "El alumno verá la entrega registrada, sin nota ni aciertos." : selected.some((q) => q.document.scoringPolicy === "rubric") ? "El alumno verá «Pendiente de corrección docente». La nota aparecerá después de corregir la rúbrica." : "El alumno verá la nota inmediatamente después de entregar."}</p>
     <Button type="submit" variant="primary" disabled={publish.isPending || selected.length === 0}>Publicar evaluación</Button>
     <ToastRegion>{publish.isSuccess ? <Toast tone="success">Evaluación disponible.</Toast> : null}</ToastRegion>{publish.isError ? <Failure error={publish.error} /> : null}
   </form>;

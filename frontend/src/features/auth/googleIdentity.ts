@@ -45,13 +45,13 @@ function loadGoogleIdentity() {
       else {
         scriptPromise = null;
         script.remove();
-        reject(new Error("Google Identity no quedó disponible."));
+        reject(new Error("No pudimos cargar el acceso con Google. Revisa tu conexión o desactiva los bloqueadores de contenido y vuelve a intentarlo."));
       }
     };
     script.onerror = () => {
       scriptPromise = null;
       script.remove();
-      reject(new Error("No se pudo cargar Google Identity Services."));
+      reject(new Error("No pudimos cargar el acceso con Google. Revisa tu conexión o desactiva los bloqueadores de contenido y vuelve a intentarlo."));
     };
     document.head.append(script);
   });

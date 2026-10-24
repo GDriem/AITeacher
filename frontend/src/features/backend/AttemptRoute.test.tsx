@@ -111,7 +111,7 @@ it("cierra el formulario cuando el servidor confirma el vencimiento", async () =
     return HttpResponse.json(attempt({ expiresAt: new Date(Date.now() - 1000).toISOString(), status: reads > 1 ? "expired" : "inProgress" }));
   }));
   mount();
-  expect(await screen.findByText("El tiempo terminó antes de entregar. Las respuestas no se registraron.")).toBeInTheDocument();
+  expect(await screen.findByText(/^El tiempo terminó antes de entregar\. Las respuestas no se registraron\./)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Entregar respuestas" })).not.toBeInTheDocument();
   expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   await waitFor(() => expect(reads).toBe(2));
@@ -152,7 +152,7 @@ it("sigue consultando tras el cero local hasta que el servidor cierra el intento
   await waitFor(() => expect(reads).toBe(2));
   expect(screen.getByRole("button", { name: "Entregar respuestas" })).toBeEnabled();
   await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
-  expect(await screen.findByText("El tiempo terminó antes de entregar. Las respuestas no se registraron.")).toBeInTheDocument();
+  expect(await screen.findByText(/^El tiempo terminó antes de entregar\. Las respuestas no se registraron\./)).toBeInTheDocument();
   expect(reads).toBe(3);
   await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
   expect(reads).toBe(3);

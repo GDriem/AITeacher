@@ -57,7 +57,7 @@
 .controls button > span { width: 3.25rem; height: 3.25rem; display: grid; place-items: center; border: 1px solid var(--border-default); border-radius: 50%; color: var(--content-strong); background: var(--surface-subtle); font-size: var(--font-size-lg); }
 .controls button[aria-pressed="true"] > span { color: var(--status-attention); border-color: color-mix(in srgb, var(--status-attention) 46%, transparent); }
 .controls button:disabled { opacity: 0.42; }
-.controls .end { color: #ffd9dc; }
+.controls .end { color: var(--status-danger); }
 .controls .end > span { border-color: color-mix(in srgb, var(--status-danger) 50%, transparent); background: color-mix(in srgb, var(--status-danger) 16%, transparent); }
 .recovery button { min-height: 2.75rem; padding: 0 var(--space-4); border: 1px solid var(--border-default); border-radius: var(--radius-sm); color: var(--content-strong); background: var(--surface-raised); font: inherit; font-weight: 750; }
 .recovery button:first-child { color: var(--content-inverse); border-color: transparent; background: var(--action-primary); }

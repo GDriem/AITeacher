@@ -51,14 +51,18 @@ async function switchUser(page: Page, credential: string) {
   await login(page);
 }
 
-/** Revisa contenido real y vacío con los cuatro tamaños de aceptación. */
+/** Revisa contenido real y vacío con los cuatro tamaños de aceptación, en tema claro y oscuro. */
 async function auditPersonalPage(page: Page, label: string) {
-  for (const width of [320, 768, 1024, 1440]) {
-    await page.setViewportSize({ width, height: 1000 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), label).toBeLessThanOrEqual(0);
-    expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations, `${label} a ${String(width)}px`).toEqual([]);
-    if (width === 320 || width === 1440) await page.screenshot({ path: `/tmp/aiteacher-pr6-${label.replaceAll(" ", "-")}-${String(width)}.png`, fullPage: true });
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    for (const width of [320, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), label).toBeLessThanOrEqual(0);
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations, `${label} a ${String(width)}px (${colorScheme})`).toEqual([]);
+      if (width === 320 || width === 1440) await page.screenshot({ path: `/tmp/aiteacher-pr6-${label.replaceAll(" ", "-")}-${colorScheme}-${String(width)}.png`, fullPage: true });
+    }
   }
+  await page.emulateMedia({ colorScheme: "light" });
 }
 
 test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ page, browser }) => {
@@ -66,6 +70,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Enviar comentarios de la beta (se abre en otra pestaña)" })).toHaveAttribute("href", "mailto:beta@example.org");
   await mainNav(page, "Autoría").click();
   await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Catálogo", exact: true }).click();
   await page.getByLabel("Nombre", { exact: true }).fill("Curso Beta"); await page.getByRole("button", { name: "Guardar entrada" }).click();
@@ -205,6 +210,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Conversar por voz", exact: true }).click();
   await page.getByRole("button", { name: "Comenzar por voz", exact: true }).click();
   await expect(page.getByText("Voz de prueba de la unidad", { exact: true })).toBeVisible();
+  await auditPersonalPage(page, "Voz activa");
   await page.getByRole("button", { name: "Finalizar conversación por voz", exact: true }).click();
   for (const width of [320, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -253,11 +259,11 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("listitem").filter({ hasText: "Evaluación abierta beta" }).getByRole("button", { name: "Consultar entrega" }).click();
   const reviewUrl = page.url(); await page.reload(); await expect(page).toHaveURL(reviewUrl);
   await auditPersonalPage(page, "Autoría corrección");
-  await page.getByLabel("Justificación coherente · máximo 1").fill("1"); await page.getByLabel("Feedback al alumno").fill("La comparación está justificada.");
+  await page.getByLabel("Justificación coherente · máximo 1").fill("1"); await page.getByLabel("Comentarios para el alumno").fill("La comparación está justificada.");
   await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click(); await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
-  await switchUser(page, "student-b"); await mainNav(page, "Apuntes").click(); await expect(page.getByText("Todavía no hay apuntes.", { exact: true })).toBeVisible();
+  await switchUser(page, "student-b"); await mainNav(page, "Apuntes").click(); await expect(page.getByText("Todavía no hay apuntes", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Mi idea privada de la beta");
-  await mainNav(page, "Historial").click(); await expect(page.getByText("No hay conversaciones históricas importadas para tu cuenta.", { exact: true })).toBeVisible();
+  await mainNav(page, "Historial").click(); await expect(page.getByText("No hay conversaciones históricas importadas para tu cuenta", { exact: true })).toBeVisible();
   await auditPersonalPage(page, "Historial vacío");
   await expect(page.getByRole("heading", { name: "Aún no tienes conversaciones del tutor" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Aún no tienes evaluaciones" })).toBeVisible();
@@ -748,7 +754,7 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
     await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).filter({ hasText: "Pendiente de corrección" }).getByRole("button", { name: "Consultar entrega" }).click();
     const reviewedUrl = page.url();
     await page.getByLabel("Justificar R1 · máximo 1").fill("1");
-    await page.getByLabel("Feedback al alumno").fill("Corregido con la rúbrica de R1.");
+    await page.getByLabel("Comentarios para el alumno").fill("Corregido con la rúbrica de R1.");
     await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click();
     await expect(page).not.toHaveURL(reviewedUrl);
     await expect(page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` })).toHaveCount(0);
@@ -803,7 +809,7 @@ test("autoría: borrador recuperable, diff de publicación existente y conflicto
   const current = await (await page.request.get(`/api/units/${unit.id}`)).json() as { version: number };
   await apiPost(page, `/api/units/${unit.id}/revisions`, { version: current.version, document: { ...document, title: "Nuevo cambio remoto" } });
   await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
-  await expect(page.getByText(/La versión cambió. Conservamos tu borrador./)).toBeVisible();
+  await expect(page.getByText(/Alguien guardó cambios en esta unidad mientras editabas\. Tu borrador sigue en esta pestaña/)).toBeVisible();
   await page.reload(); await expect(page.getByLabel("Título de la unidad")).toHaveValue("Cambio local");
   await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
   await page.getByRole("button", { name: "Descartar cambios y recargar", exact: true }).click();

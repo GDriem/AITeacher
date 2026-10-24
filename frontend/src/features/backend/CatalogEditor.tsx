@@ -43,7 +43,7 @@ export function CatalogEditor() {
     <form onSubmit={(event) => { event.preventDefault(); save.mutate(); }}><h3>{editing ? "Editar entrada" : "Nueva entrada"}</h3>
       <Field title="Nombre"><input required maxLength={150} value={name} onChange={(event) => { setName(event.target.value); if (!editing) setSlug(event.target.value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")); }} /></Field>
       <Field title="Identificador legible"><input required maxLength={120} value={slug} onChange={(event) => setSlug(event.target.value)} /></Field>
-      {kind === "topics" ? <Field title="Descripción" hint={`${String(description.length)} de ${String(descriptionMax)} caracteres. Texto plano que verá el alumno en la página del tema; vacía, se muestra el resumen del material.`}>
+      {kind === "topics" ? <Field title="Descripción" hint={`${String(description.length)} de ${String(descriptionMax)} caracteres. Texto plano que verá el alumno en la página del tema; si la dejas vacía, se mostrará el resumen del material.`}>
         <textarea maxLength={descriptionMax} value={description} onChange={(event) => setDescription(event.target.value)} /></Field> : null}
       <Field title="Orden"><input type="number" value={sortOrder} onChange={(event) => setSortOrder(Number(event.target.value))} /></Field>
       <label className={shared.choice}><input type="checkbox" checked={available} onChange={(event) => setAvailable(event.target.checked)} />Disponible</label>
@@ -55,6 +55,6 @@ export function CatalogEditor() {
       <div className={shared.actions}><Button type="submit" variant="primary" disabled={save.isPending}>Guardar entrada</Button>{editing ? <Button onClick={reset}>Cancelar edición</Button> : null}</div>
       {save.isError ? <Failure error={save.error} retry={() => void current.refetch()} /> : null}
     </form>
-    {pages.some((page) => page.isError) ? <p role="alert">No se pudieron cargar todas las referencias del catálogo. Reintenta antes de crear relaciones.</p> : null}
+    {pages.some((page) => page.isError) ? <p role="alert">No pudimos cargar todas las materias, categorías y niveles. Recarga la página antes de crear una entrada nueva.</p> : null}
   </section>;
 }
