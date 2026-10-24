@@ -24,7 +24,9 @@ export function UnitTutor() {
   const topic = useUnitTopic(unit.data?.topicId);
   // El encabezado describe la conversación abierta, aunque la URL traiga otro `modo`.
   const conversation = useTutorConversation(conversationId);
-  if (unit.isPending || availability.isPending) return <Busy />;
+  // El nombre del tema forma parte de las migas: resolverlo antes de montarlas
+  // evita que el título y el chat bajen cuando una miga larga salta de línea.
+  if (unit.isPending || availability.isPending || (unit.isSuccess && topic.isPending)) return <Busy />;
   if (unit.isError) return <Failure error={unit.error} retry={() => void unit.refetch()} />;
   if (availability.isError) return <Failure error={availability.error} retry={() => void availability.refetch()} />;
   const title = unit.data.revision.document.title;

@@ -10,6 +10,11 @@ html {
   scroll-behavior: smooth;
 }
 
+#root {
+  /* Contiene los márgenes de las pantallas de arranque: no deben mover body. */
+  display: flow-root;
+}
+
 body {
   min-width: 20rem;
   min-height: 100dvh;
