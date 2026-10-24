@@ -815,3 +815,69 @@ test("autoría: borrador recuperable, diff de publicación existente y conflicto
   await page.getByRole("button", { name: "Descartar cambios y recargar", exact: true }).click();
   await expect(page.getByLabel("Título de la unidad")).toHaveValue("Nuevo cambio remoto");
 });
+
+/** Medición local de recarga completa: APIs .NET reales, respuestas demoradas para separar estados. */
+test("estabilidad de carga: Inicio y tutor sin conversación", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  const units = await (await page.request.get("/api/units?limit=100")).json() as { items: { id: string }[] };
+  const unitId = units.items[0]?.id;
+  expect(unitId).toBeTruthy();
+  await page.addInitScript(() => {
+    const metrics = { cls: 0, lcp: 0, shifts: [] as { time: number; value: number; elements: string[] }[] };
+    Object.assign(window, { loadingMetrics: metrics });
+    let start = 0, last = 0, value = 0;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        const shift = entry as PerformanceEntry & { value: number; hadRecentInput: boolean; sources: { node?: Element }[] };
+        if (shift.hadRecentInput) continue;
+        if (shift.startTime - last > 1000 || shift.startTime - start > 5000) { start = shift.startTime; value = 0; }
+        last = shift.startTime; value += shift.value; metrics.cls = Math.max(metrics.cls, value);
+        metrics.shifts.push({ time: shift.startTime, value: shift.value, elements: shift.sources.map(({ node }) => `${node?.tagName ?? ""}.${node?.className ?? ""}`) });
+      }
+    }).observe({ type: "layout-shift", buffered: true });
+    new PerformanceObserver((list) => { metrics.lcp = list.getEntries().at(-1)?.startTime ?? 0; })
+      .observe({ type: "largest-contentful-paint", buffered: true });
+  });
+  // No se inventan respuestas: conserva cookies, contratos y consultas del host real.
+  await page.route("**/api/**", async (route) => {
+    const response = await route.fetch();
+    const path = new URL(route.request().url()).pathname;
+    const delay = path.includes("/catalog/topics/") ? 650 : path.includes("/learning/reviews") ? 450 : 200;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    await route.fulfill({ response });
+  });
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
+  for (const scenario of ["Inicio", "con actividad", "tutor"]) {
+    if (scenario === "con actividad") await apiPost(page, "/api/tutor/conversations", { unitId, mode: "chat" });
+    const path = scenario === "tutor" ? `/unidades/${String(unitId)}/tutor` : "/";
+    for (const colorScheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme });
+      for (const width of [320, 768, 1024, 1440]) {
+        await page.setViewportSize({ width, height: 850 });
+        // Tres muestras móviles; los otros anchos comprueban geometría, temas y axe.
+        for (let sample = 0; sample < (width === 320 ? 3 : 1); sample++) {
+          await page.goto(path);
+          await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+          if (scenario === "tutor") {
+            await expect(page.getByRole("heading", { name: "Elige o inicia una conversación" })).toBeVisible();
+            await expect(page.getByText(/^Conversaciones de la unidad \(\d+\)$/)).toBeAttached();
+          } else await expect(page.getByRole("link", { name: "Consultar historial", exact: true })).toBeVisible();
+          await page.waitForLoadState("networkidle");
+          const metrics = await page.evaluate(() => (window as unknown as { loadingMetrics: { cls: number; lcp: number; shifts: unknown[] } }).loadingMetrics);
+          console.log(JSON.stringify({ scenario, colorScheme, width, sample, ...metrics }));
+          expect(metrics.cls, `${scenario} ${colorScheme} ${String(width)}px`).toBeLessThanOrEqual(0.1);
+          expect(metrics.lcp).toBeGreaterThan(0);
+          expect(metrics.lcp).toBeLessThanOrEqual(2500);
+          expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+        }
+        expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+        if (width === 320 || width === 1440) await page.screenshot({ path: `/tmp/aiteacher-cls-${scenario}-${colorScheme}-${String(width)}.png`, fullPage: true });
+      }
+    }
+  }
+  expect(errors).toEqual([]);
+});

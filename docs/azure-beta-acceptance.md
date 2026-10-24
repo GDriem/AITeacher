@@ -1,5 +1,10 @@
 # Aceptación manual de la beta de Azure
 
+Recorrido asistido posterior a PR #29: [evidencia y límites](beta-review-pr29.md).
+Se comprobaron creación, publicación, entrega, corrección y retiro con las dos
+sesiones reales; el resultado se conserva en Historial. La aceptación final del
+propietario sigue pendiente.
+
 El CD comprueba HTTPS, readiness, shell React, worklet, fronteras 404 y el smoke
 Postman (salud, CSRF y límites de autenticación). **No** prueba login real con
 Google, IA, voz ni aislamiento entre personas. Este checklist cubre ese hueco y

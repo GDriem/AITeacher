@@ -171,6 +171,8 @@
 /* Contenido de cada pantalla: tipografía y controles comunes de las vistas .NET.
    `:where()` mantiene la especificidad mínima y `:not([class])` deja intactos los componentes de `ui/`. */
 .main {
+  /* El pie no ocupa el hueco de una ruta pendiente para saltar al llegar los datos. */
+  min-block-size: calc(100svh - 5rem);
   padding-block: var(--space-8) var(--space-12);
 }
 
@@ -314,6 +316,7 @@
   }
 
   .main {
+    min-block-size: calc(100svh - 4rem);
     padding-block: var(--space-5) calc(3.5rem + var(--space-8) + env(safe-area-inset-bottom));
   }
 

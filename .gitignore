@@ -283,6 +283,7 @@ pnpm-debug.log*
 *.key
 # Versioned project plans and sanitized verification evidence.
 !/docs/ci-and-confidentiality.md
+!/docs/beta-review-pr29.md
 
 !/docs/pr14-readiness.md
 !/docs/azure-beta-cd.md

@@ -1,6 +1,6 @@
 # Plan de UI/UX para lanzar la beta
 
-Estado: fases 1–3 implementadas. Fase 4 en curso (PR 8): textos, tema claro y enlace de comentarios hechos; falta la medición en dispositivo real. La aceptación de fase 3 por el autor real en la beta sigue pendiente.
+Estado: fases 1–3 implementadas. Fase 4 en curso (PR 8): textos, tema claro y enlace de comentarios hechos; LCP medido en teléfono BVL-N49 (medianas: Inicio 1,59 s, tutor 1,66 s). Corrección de CLS implementada y validada en producción local; pendientes: verificarla desplegada en teléfono real y cubrir el requisito de gama media. La aceptación final por el propietario sigue pendiente; el recorrido asistido de fase 3 está registrado en `beta-review-pr29.md`.
 Fecha: 22 de octubre de 2026
 Alcance: la interfaz React del build `.NET` (`VITE_BACKEND=dotnet`,
 `frontend/src/features/backend/`), que es la que sirve la beta de Azure. No
@@ -315,9 +315,22 @@ sustituye esa ejecución. Esta PR no despliega ni modifica Azure.
 | Accesibilidad | Las auditorías axe de `backend.spec.ts` recorren tema claro y oscuro a 320/768/1024/1440 px |
 | Build .NET y `budget:check` | Todas las rutas dentro de presupuesto |
 
-Pendiente de la fase: medir LCP de Inicio y del tutor en un móvil de gama
-media contra la beta, y fijar `BETA_FEEDBACK_URL`. Quedan fuera de esta PR,
+LCP de Inicio y del tutor medido en el teléfono BVL-N49 contra la beta:
+medianas 1,59 s y 1,66 s. Los desplazamientos de carga (CLS mediano 0,21 y
+0,26) tienen corrección local: contener el margen del arranque, reservar el
+espacio del marco y montar Inicio/migas del tutor con sus datos iniciales
+resueltos. Regresión de producción local: 36 recargas, CLS 0 y LCP máximo
+1,44 s, con demoras artificiales de respuestas; no equivale al teléfono real.
+Pendientes de la fase: verificar la corrección desplegada, repetir la serie
+real y cubrir el requisito de móvil de gama media. `BETA_FEEDBACK_URL` está
+configurada y el enlace se verificó en la beta tras el despliegue de la PR #29. Quedan fuera de esta PR,
 por ser decisiones de producto: unificar el aviso repetido sobre dominio no
 calibrado, separar «evaluación editorial» de la evaluación entregable en
-autoría y reemplazar el enlace «Consultar mensaje de origen» de Apuntes, que
-abre JSON de `/api`.
+autoría y valorar la navegación del enlace «Consultar mensaje de origen» de
+Apuntes. La revisión en navegador confirmó que, aunque su URL está bajo
+`/api`, abre HTML legible mediante negociación de contenido, no JSON.
+
+Evidencia del recorrido editorial, evaluación y revisión visual posterior al
+despliegue: [revisión de la beta tras PR #29](beta-review-pr29.md). La unidad
+de prueba quedó retirada y su resultado se conserva en Historial. La evidencia
+incluye las seis cargas medidas en el teléfono real y los límites de esa serie.
