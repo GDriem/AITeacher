@@ -1,0 +1,61 @@
+$ playwright test --config playwright.backend.config.ts
+[WebServer] (node:3722) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] $ tsc -b && VITE_BACKEND=dotnet vite build
+[WebServer] (node:3768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:3788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 10 tests using 1 worker
+
+(node:3806) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/backend.spec.ts:70:1 › recorrido editorial y de alumno sobre .NET y PostgreSQL reales (57.8s)
+  ✓   2 e2e/backend.spec.ts:333:1 › catálogo migrado: materias, categorías, niveles y lecturas sin actividades ficticias (5.9s)
+  ✓   3 e2e/backend.spec.ts:396:1 › navegación por teclado: rutas, foco, recarga y Atrás conservan la vista (4.6s)
+  ✓   4 e2e/backend.spec.ts:456:1 › unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tutor (16.1s)
+  ✓   5 e2e/backend.spec.ts:612:1 › tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a altura completa (9.9s)
+  ✓   6 e2e/backend.spec.ts:693:1 › evidencia U0: carga, error y recuperación del catálogo (6.5s)
+  ✓   7 e2e/backend.spec.ts:719:35 › repaso histórico R1 después de publicar R2 (cerrada) (11.2s)
+  ✓   8 e2e/backend.spec.ts:719:35 › repaso histórico R1 después de publicar R2 (rúbrica) (11.2s)
+  ✓   9 e2e/backend.spec.ts:809:1 › autoría: borrador recuperable, diff de publicación existente y conflictos de versión (6.1s)
+{"scenario":"Inicio","colorScheme":"light","width":320,"sample":0,"cls":0,"lcp":540,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":320,"sample":1,"cls":0,"lcp":556,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":320,"sample":2,"cls":0,"lcp":560,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":768,"sample":0,"cls":0,"lcp":1012,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":1024,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":1440,"sample":0,"cls":0,"lcp":540,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":320,"sample":0,"cls":0,"lcp":544,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":320,"sample":1,"cls":0,"lcp":556,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":320,"sample":2,"cls":0,"lcp":556,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":768,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":1024,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":1440,"sample":0,"cls":0,"lcp":536,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":320,"sample":0,"cls":0,"lcp":544,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":320,"sample":1,"cls":0,"lcp":548,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":320,"sample":2,"cls":0,"lcp":560,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":768,"sample":0,"cls":0,"lcp":1012,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":1024,"sample":0,"cls":0,"lcp":1008,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":1440,"sample":0,"cls":0,"lcp":540,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":320,"sample":0,"cls":0,"lcp":536,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":320,"sample":1,"cls":0,"lcp":568,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":320,"sample":2,"cls":0,"lcp":556,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":768,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":1024,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":1440,"sample":0,"cls":0,"lcp":544,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":320,"sample":0,"cls":0,"lcp":1420,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":320,"sample":1,"cls":0,"lcp":1424,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":320,"sample":2,"cls":0,"lcp":1428,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":768,"sample":0,"cls":0,"lcp":1420,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":1024,"sample":0,"cls":0,"lcp":1412,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":1440,"sample":0,"cls":0,"lcp":1404,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":320,"sample":0,"cls":0,"lcp":1420,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":320,"sample":1,"cls":0,"lcp":1432,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":320,"sample":2,"cls":0,"lcp":1428,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":768,"sample":0,"cls":0,"lcp":1412,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":1024,"sample":0,"cls":0,"lcp":1408,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":1440,"sample":0,"cls":0,"lcp":1412,"shifts":[]}
+  ✓  10 e2e/backend.spec.ts:858:1 › estabilidad de carga: Inicio y tutor sin conversación (1.1m)
+
+  10 passed (3.4m)

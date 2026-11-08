@@ -1,6 +1,6 @@
 # Plan de mejora de UI y UX de AITeacher
 
-Fecha: 8 de noviembre de 2026. Estado: **plan preparado; implementación no iniciada**.
+Fecha: 8 de noviembre de 2026. Estado: **U0 completada; U1 delimitada; interfaz sin modificar**.
 Base revisada: `main`, commit `8235807`. Las skills están instaladas y sus
 criterios se describen en [ui-skills.md](ui-skills.md).
 
@@ -9,9 +9,10 @@ contexto y entienda qué pasó después de cada acción. Para el autor, el objet
 es preparar, publicar y corregir material distinguiendo con claridad cada etapa.
 El acabado visual debe apoyar esos recorridos y resultar cómodo en sesiones largas.
 
-Propuesta inicial, ajustable al retomar: **alumno primero y evolución de la
+Prioridad mantenida al retomar U0: **alumno primero y evolución de la
 identidad existente**. No hay una nueva paleta, composición o dirección visual
-aprobada. El usuario pidió preparar el plan y comenzar en otra sesión.
+aprobada. La auditoría y el alcance concreto de U1 están en
+[ui-ux-baseline.md](ui-ux-baseline.md).
 
 ## Alcance y punto de partida
 
@@ -27,9 +28,11 @@ No repetir las fases ya implementadas de [ui-ux-beta-plan.md](ui-ux-beta-plan.md
 El usuario indicó que el estado anterior le parecía bien y decidió continuar
 desde main; las mediciones históricas no se presentan como mediciones nuevas.
 
-Esta planificación se apoya en código y en [la revisión anterior](beta-review-pr29.md).
-No incluye una nueva inspección del navegador ni una prueba con usuarios. Por ello,
-las hipótesis visuales se confirman en U0 antes de convertirlas en cambios.
+La planificación original se apoyó en código y en [la revisión anterior](beta-review-pr29.md).
+U0 añadió capturas actuales de Chromium, auditoría independiente de diseño y
+revisión técnica sobre `80fe1d4`, con datos sintéticos locales. Las hipótesis
+no confirmadas siguen separadas de los defectos en la base; no se realizó un
+estudio con usuarios.
 
 | Evidencia actual | Mejora propuesta | Prioridad |
 | --- | --- | --- |
@@ -92,6 +95,13 @@ No es necesario rediseñar una pantalla para cerrar U0.
 ### U1 — Coherencia de controles y navegación
 
 Resultado: una base de interacción uniforme sin cambiar la identidad por accidente.
+
+Alcance confirmado por U0: contraste de límites de campos (F01), nombres de
+navegación del autor a 320 px (F03), visibilidad de la pestaña activa (F04) y
+distinción entre hover/selección/foco (F05). Un PR acotado; archivos y criterios
+de cierre en [la base, sección U1](ui-ux-baseline.md#u1-delimitada). La aplicación
+completa del patrón de feedback a Apuntes (F06) queda en U4 junto con los
+problemas de Repasos (F02/F07). No ampliar U1 a Inicio o tutor salvo sus controles.
 
 Archivos principales: `styles/tokens.css`, `styles/global.css`, `ui/`,
 `features/backend/Shared*` y `BackendShell*`, todos bajo `frontend/src/`.
@@ -266,9 +276,9 @@ comprobación y evidencia de cierre.
 | Fase | Estado | Evidencia o commit |
 | --- | --- | --- |
 | Preparación de skills | Completada | `8235807`; `ui-skills.md` y lock |
-| Plan | Preparado | Este documento; implementación pendiente |
-| U0 | Pendiente | — |
-| U1 | Pendiente | — |
+| Plan | En ejecución | Este documento y base U0 |
+| U0 | Completada | [Auditoría, capturas y validaciones](ui-ux-baseline.md), interfaz `80fe1d4`; commit de cierre U0 en la rama `docs/ui-ux-u0-baseline` |
+| U1 | Delimitada; pendiente de implementación | F01/F03/F04/F05 de la base |
 | U2 | Pendiente | — |
 | U3 | Pendiente | — |
 | U4 | Pendiente | — |

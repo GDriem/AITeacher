@@ -1,0 +1,82 @@
+{
+  "method": "CSS alpha compositing over surface-sunken, sRGB relative luminance; not pixel sampling",
+  "source": "frontend/src/styles/tokens.css; frontend/src/features/backend/Shared.module.css",
+  "results": [
+    {
+      "theme": "dark",
+      "borderRGBA": [
+        148,
+        177,
+        209,
+        0.24
+      ],
+      "fill": "#091725",
+      "adjacentToken": "canvas-default",
+      "adjacent": "#07111f",
+      "compositedBorderRGB": [
+        42.36,
+        59.959999999999994,
+        78.28
+      ],
+      "borderRatio": 1.6738470020679803,
+      "fillRatio": 1.0467887047206972
+    },
+    {
+      "theme": "dark",
+      "borderRGBA": [
+        148,
+        177,
+        209,
+        0.24
+      ],
+      "fill": "#091725",
+      "adjacentToken": "surface-default",
+      "adjacent": "#0d1b2d",
+      "compositedBorderRGB": [
+        42.36,
+        59.959999999999994,
+        78.28
+      ],
+      "borderRatio": 1.531876772605136,
+      "fillRatio": 1.043837512006955
+    },
+    {
+      "theme": "light",
+      "borderRGBA": [
+        7,
+        17,
+        31,
+        0.24
+      ],
+      "fill": "#edf2f8",
+      "adjacentToken": "canvas-default",
+      "adjacent": "#f3f6fa",
+      "compositedBorderRGB": [
+        181.8,
+        188.00000000000003,
+        195.92
+      ],
+      "borderRatio": 1.7654454863273978,
+      "fillRatio": 1.038400697181888
+    },
+    {
+      "theme": "light",
+      "borderRGBA": [
+        7,
+        17,
+        31,
+        0.24
+      ],
+      "fill": "#edf2f8",
+      "adjacentToken": "surface-default",
+      "adjacent": "#ffffff",
+      "compositedBorderRGB": [
+        181.8,
+        188.00000000000003,
+        195.92
+      ],
+      "borderRatio": 1.913646501463056,
+      "fillRatio": 1.1255696517781966
+    }
+  ]
+}

@@ -1,0 +1,382 @@
+{
+  "sourceCommit": "80fe1d4aa6cd0611f4a7bad656276c6bf675aa98",
+  "fixture": "AITeacher.BrowserHost; PostgreSQL isolated; Postman tutor.sim.yaml; simulated Google and voice",
+  "runtime": {
+    "node": "24.21.0",
+    "pnpm": "11.16.0",
+    "dotnet": "11.0.100-rc.1.26425.128",
+    "chromium": "151.0.7922.34"
+  },
+  "capturedFrom": "2026-11-08T22:24:44.868Z",
+  "capturedTo": "2026-11-08T22:26:49.226Z",
+  "captures": 186,
+  "states": 40,
+  "geometryRecords": 346,
+  "widths": [
+    320,
+    390,
+    768,
+    1024,
+    1440
+  ],
+  "maxHorizontalOverflow": 0,
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "build:backend": "passed via preview webServer",
+    "budget:check": "passed",
+    "test:backend": "10 passed (3.4m), 9 regressions plus 1 opt-in evidence case",
+    "hostCleanup": "catalogue regression 1 passed (12.8s); database inventory unchanged before/after graceful SIGTERM shutdown"
+  },
+  "loading": {
+    "samples": 36,
+    "maxCLS": 0,
+    "minLCPms": 536,
+    "maxLCPms": 1432,
+    "conditions": "preview build; cache disabled; real local API responses delayed 200/450/650ms; 3 samples per mobile scenario/theme and 1 per other width; not field percentiles"
+  },
+  "limits": [
+    "physical device and keyboard not tested",
+    "manual screen reader not tested",
+    "zoom 200% not tested",
+    "real Google and AI providers not tested",
+    "no independent human usability study",
+    "axe covers existing audited states, not every screenshot",
+    "focus capture is programmatic, not keyboard focus-visible"
+  ],
+  "loadingSamples": [
+    {
+      "scenario": "Inicio",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 540,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 1,
+      "cls": 0,
+      "lcp": 556,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 2,
+      "cls": 0,
+      "lcp": 560,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "light",
+      "width": 768,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1012,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "light",
+      "width": 1024,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1004,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "light",
+      "width": 1440,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 540,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 544,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 1,
+      "cls": 0,
+      "lcp": 556,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 2,
+      "cls": 0,
+      "lcp": 556,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "dark",
+      "width": 768,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1004,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "dark",
+      "width": 1024,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1004,
+      "shifts": []
+    },
+    {
+      "scenario": "Inicio",
+      "colorScheme": "dark",
+      "width": 1440,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 536,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 544,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 1,
+      "cls": 0,
+      "lcp": 548,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 2,
+      "cls": 0,
+      "lcp": 560,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "light",
+      "width": 768,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1012,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "light",
+      "width": 1024,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1008,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "light",
+      "width": 1440,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 540,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 536,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 1,
+      "cls": 0,
+      "lcp": 568,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 2,
+      "cls": 0,
+      "lcp": 556,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "dark",
+      "width": 768,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1004,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "dark",
+      "width": 1024,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1004,
+      "shifts": []
+    },
+    {
+      "scenario": "con actividad",
+      "colorScheme": "dark",
+      "width": 1440,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 544,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1420,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 1,
+      "cls": 0,
+      "lcp": 1424,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "light",
+      "width": 320,
+      "sample": 2,
+      "cls": 0,
+      "lcp": 1428,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "light",
+      "width": 768,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1420,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "light",
+      "width": 1024,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1412,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "light",
+      "width": 1440,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1404,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1420,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 1,
+      "cls": 0,
+      "lcp": 1432,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "dark",
+      "width": 320,
+      "sample": 2,
+      "cls": 0,
+      "lcp": 1428,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "dark",
+      "width": 768,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1412,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "dark",
+      "width": 1024,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1408,
+      "shifts": []
+    },
+    {
+      "scenario": "tutor",
+      "colorScheme": "dark",
+      "width": 1440,
+      "sample": 0,
+      "cls": 0,
+      "lcp": 1412,
+      "shifts": []
+    }
+  ],
+  "cleanup": {
+    "gracefulShutdown": {
+      "signal": "SIGTERM",
+      "timeoutMs": 20000
+    },
+    "earlierSeriesDatabases": "two dropped after matching their unit UUIDs to the corresponding capture manifests",
+    "existingDatabases": "preserved",
+    "scope": "verified on macOS; Playwright ignores these signals on Windows"
+  }
+}

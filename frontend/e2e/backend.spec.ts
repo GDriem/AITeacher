@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { baselineSurface, recordBaseline } from "./uiBaseline";
 
 test.describe.configure({ mode: "serial" });
 
@@ -60,13 +61,14 @@ async function auditPersonalPage(page: Page, label: string) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), label).toBeLessThanOrEqual(0);
       expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations, `${label} a ${String(width)}px (${colorScheme})`).toEqual([]);
       if (width === 320 || width === 1440) await page.screenshot({ path: `/tmp/aiteacher-pr6-${label.replaceAll(" ", "-")}-${colorScheme}-${String(width)}.png`, fullPage: true });
+      await recordBaseline(page, label, colorScheme);
     }
   }
   await page.emulateMedia({ colorScheme: "light" });
 }
 
 test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ page, browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(process.env.AITEACHER_UI_BASELINE_DIR ? 600_000 : 300_000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await googleForTests(page, "author"); await page.goto("/"); await login(page);
@@ -179,6 +181,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await switchUser(page, "student-a"); await expect(mainNav(page, "Autoría")).toHaveCount(0);
   await mainNav(page, "Inicio").click();
   await expect(page.getByRole("heading", { name: "Tu primer recorrido" })).toBeVisible();
+  await baselineSurface(page, "Inicio primer uso");
   await page.getByRole("link", { name: "Explorar el catálogo", exact: true }).focus();
   await page.keyboard.press("Enter"); await expect(page).toHaveURL(/\/catalogo$/);
   await openCatalog(page); await page.getByLabel("Buscar temas o lecturas").fill("Vectores Beta");
@@ -188,6 +191,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.getByText(/^Material publicado: 1 unidad\./)).toBeVisible();
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   await openUnit(page, "Vectores Beta", "Unidad Beta de vectores"); await expect(page.getByRole("heading", { name: "Lectura de vectores", exact: true })).toBeVisible();
+  await baselineSurface(page, "Unidad lectura");
   await expect(page.locator("body")).not.toContainText("PRIVATE-EDITORIAL-BROWSER"); await expect(page.locator("body")).not.toContainText("PRIVATE-RUBRIC-BROWSER");
   await page.getByRole("tab", { name: "Evaluar", exact: true }).click(); await expect(page).toHaveURL(/pestana=evaluar/);
   const studentUnitUrl = page.url();
@@ -198,6 +202,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Quiero explorar Concepto Beta."); await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
+  await baselineSurface(page, "Tutor conversacion");
   const studentConversationUrl = page.url();
   const studentConversationId = new URL(studentConversationUrl).pathname.split("/").at(-1) ?? "";
   await page.getByRole("button", { name: "Guardar en apuntes", exact: true }).last().click(); await expect(page.getByText("Apunte guardado.", { exact: true })).toBeVisible();
@@ -238,12 +243,15 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Iniciar Evaluación cerrada beta", exact: true }).click();
   await expect(page).toHaveURL(/\/evaluaciones\/[^/]+$/); await expect(page.getByRole("heading", { name: "Evaluación cerrada beta", level: 1 })).toBeFocused();
   const studentAttemptId = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+  await baselineSurface(page, "Evaluacion intento");
   await page.getByRole("radio", { name: "Características", exact: true }).check(); await submitAttempt(page);
   await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
   await page.reload(); await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
+  await baselineSurface(page, "Evaluacion resultado");
   await page.goBack(); await expect(page.getByRole("heading", { name: "Unidad Beta de vectores", level: 1 })).toBeVisible();
   await page.getByRole("button", { name: "Iniciar Evaluación abierta beta", exact: true }).click(); await page.getByLabel("Tu respuesta", { exact: true }).fill("Comparo características para justificar similitud.");
   await submitAttempt(page); await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
+  await baselineSurface(page, "Evaluacion pendiente");
   await page.goBack();
   await mainNav(page, "Inicio").click(); await expect(page.getByRole("link", { name: /^Continuar (en la unidad|con el tutor)$/ })).toBeVisible();
   await auditPersonalPage(page, "Inicio con actividad");
@@ -324,6 +332,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
 
 test("catálogo migrado: materias, categorías, niveles y lecturas sin actividades ficticias", async ({ page }) => {
   await googleForTests(page, "student-a"); await page.goto("/"); await login(page); await openCatalog(page);
+  await baselineSurface(page, "Catalogo habitual");
   const ospf = "Enrutamiento dinámico con OSPF";
   await page.getByRole("group", { name: "Materia" }).getByRole("button", { name: "Redes", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Enrutamiento", level: 3 })).toBeVisible();
@@ -344,6 +353,7 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   const beginner = page.getByRole("region", { name: /^Principiante/ });
   await beginner.getByRole("link").first().click();
   await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
+  await baselineSurface(page, "Lectura sin actividades");
   await expect(page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: ospf, exact: true })).toBeVisible();
   await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
   await expect(page.getByText(/^Fuente:/)).toBeVisible();
@@ -373,6 +383,7 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   // Estado vacío con siguiente paso.
   await page.getByLabel("Buscar temas o lecturas").fill("zzz-sin-resultados");
   await expect(page.getByRole("heading", { name: "No encontramos temas con estos filtros" })).toBeVisible();
+  await baselineSurface(page, "Catalogo sin resultados");
   await page.getByRole("button", { name: "Quitar filtros", exact: true }).click();
   await expect(page).toHaveURL(/\/catalogo$/);
   for (const width of [320, 768, 1024, 1440]) {
@@ -608,6 +619,7 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a
   await page.getByLabel("Tu mensaje", { exact: true }).fill("__PROCESS_LOSS__ Recuperar mi conversación");
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
+  await baselineSurface(page, "Tutor fallo recuperable");
   // La conversación vive en la URL: recargar la reabre sin volver a elegirla.
   await expect(page).toHaveURL(new RegExp(`/tutor/${id}(\\?|$)`));
   await page.reload();
@@ -678,6 +690,32 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a
   await expect(page.getByText("Pregunta número 13", { exact: true })).toHaveCount(1);
 });
 
+test("evidencia U0: carga, error y recuperación del catálogo", async ({ page }) => {
+  test.skip(!process.env.AITEACHER_UI_BASELINE_DIR, "Captura de evidencia opcional, fuera de la regresión habitual");
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await openUnit(page, "Vectores Beta", "Unidad Beta de vectores");
+  await page.getByRole("tab", { name: "Aprender", exact: true }).focus();
+  await baselineSurface(page, "Unidad pestana foco");
+  let release: () => void = () => undefined;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/catalog/**", async (route) => {
+    await pending;
+    await route.fulfill({ status: 503, contentType: "application/problem+json", body: JSON.stringify({
+      title: "Servicio temporalmente no disponible", status: 503,
+    }) });
+  });
+  try {
+    await page.goto("/catalogo");
+    await expect(page.getByRole("status").filter({ hasText: "Cargando" })).toBeVisible();
+    await baselineSurface(page, "Catalogo cargando");
+  } finally { release(); }
+  await expect(page.getByRole("alert")).toBeVisible();
+  await baselineSurface(page, "Catalogo error");
+  await page.unroute("**/api/catalog/**");
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Explora el catálogo" })).toBeVisible();
+});
+
 for (const open of [false, true]) test(`repaso histórico R1 después de publicar R2 (${open ? "rúbrica" : "cerrada"})`, async ({ page }) => {
   await googleForTests(page, "author"); await page.goto("/"); await login(page);
   await advanceClock(page, new Date().toISOString());
@@ -742,7 +780,7 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
   await expect(page.getByRole("heading", { name: `Evaluación R1 ${tag}`, exact: true })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`intento=${attempt.id}`));
   await page.reload(); await expect(page.getByRole("heading", { name: `Evaluación R1 ${tag}`, exact: true })).toBeVisible();
-  await auditPersonalPage(page, "Repasos con contenido");
+  await auditPersonalPage(page, `Repasos con contenido ${open ? "rubrica" : "cerrada"}`);
   if (open) await page.getByLabel("Tu respuesta", { exact: true }).fill("Justifico con el contenido histórico R1.");
   else await page.getByRole("radio", { name: "Respuesta R1", exact: true }).check();
   await submitAttempt(page);
