@@ -43,7 +43,12 @@ export function UnitEditor({ unit, saved, topics, onDirty }: { unit?: Schema["Un
   const step = steps.find((item) => item === url.search.get("paso")) ?? "datos";
   const heading = useRef<HTMLHeadingElement>(null);
   const previousStep = useRef(step);
-  useEffect(() => { const selected = heading.current?.closest("form")?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]'); if (typeof selected?.scrollIntoView === "function") selected.scrollIntoView({ block: "nearest", inline: "nearest" }); if (previousStep.current !== step) { heading.current?.focus(); previousStep.current = step; } }, [step]);
+  useEffect(() => {
+    if (previousStep.current === step) return;
+    // Tabs owns strip visibility and keyboard focus; next/previous still announce the heading.
+    if (window.document.activeElement?.getAttribute("role") !== "tab") heading.current?.focus();
+    previousStep.current = step;
+  }, [step]);
   const savedNavigation = useRef(false);
   useEffect(() => { if (!dirty) return; const warn = (event: BeforeUnloadEvent) => { if (!savedNavigation.current) event.preventDefault(); }; window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn); }, [dirty]);
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && !savedNavigation.current && currentLocation.pathname !== nextLocation.pathname);

@@ -11,6 +11,7 @@
   --content-inverse: #07111f;
   --border-subtle: rgba(148, 177, 209, 0.14);
   --border-default: rgba(148, 177, 209, 0.24);
+  --border-control: #7188a3;
   --action-primary: #7cb0ff;
   --action-primary-hover: #9bc2ff;
   --status-guide: #6ca7ff;
@@ -75,6 +76,7 @@
     --content-inverse: #ffffff;
     --border-subtle: rgba(7, 17, 31, 0.12);
     --border-default: rgba(7, 17, 31, 0.24);
+    --border-control: #75869a;
     --action-primary: #1f5fbf;
     --action-primary-hover: #194f9f;
     --status-guide: #1d5ec2;

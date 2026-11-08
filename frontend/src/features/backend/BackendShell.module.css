@@ -4,6 +4,7 @@
 }
 
 .app {
+  --mobile-nav-height: 3.5rem;
   min-height: 100dvh;
 }
 
@@ -128,11 +129,23 @@
   stroke-width: 1.8;
 }
 
-.nav a:hover,
 .nav a[aria-current] {
   color: var(--content-strong);
-  border-color: var(--border-default);
+  border-color: var(--action-primary);
   background: var(--surface-subtle);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav a:hover {
+    color: var(--content-strong);
+    background: var(--surface-subtle);
+  }
+}
+
+.nav a:focus-visible {
+  outline-offset: -0.25rem;
 }
 
 .account {
@@ -253,6 +266,10 @@
 
 /* Barra inferior en móvil; el contenido reserva su altura y la del área segura. */
 @media (max-width: 48rem) {
+  .app {
+    --toast-bottom: calc(var(--mobile-nav-height) + var(--space-3) + env(safe-area-inset-bottom));
+  }
+
   .header,
   .main,
   .error {
@@ -317,7 +334,7 @@
 
   .main {
     min-block-size: calc(100svh - 4rem);
-    padding-block: var(--space-5) calc(3.5rem + var(--space-8) + env(safe-area-inset-bottom));
+    padding-block: var(--space-5) calc(var(--mobile-nav-height) + var(--space-8) + env(safe-area-inset-bottom));
   }
 
   /* Con pie, la reserva de la barra inferior pasa del contenido al pie. */
@@ -327,11 +344,11 @@
 
   .footer {
     width: min(100% - var(--space-5), var(--content-max));
-    padding-block-end: calc(3.5rem + var(--space-6) + env(safe-area-inset-bottom));
+    padding-block-end: calc(var(--mobile-nav-height) + var(--space-6) + env(safe-area-inset-bottom));
   }
 
   .toasts {
-    inset-block-end: calc(3.5rem + var(--space-3) + env(safe-area-inset-bottom));
+    inset-block-end: calc(var(--mobile-nav-height) + var(--space-3) + env(safe-area-inset-bottom));
   }
 }
 
@@ -339,5 +356,23 @@
 @media (max-width: 23.99rem) {
   .brand > span:last-child {
     display: none;
+  }
+}
+
+/* Six full names need two rows on narrow author screens. Student navigation stays unchanged. */
+@media (max-width: 27.99rem) {
+  .author {
+    --mobile-nav-height: 7rem;
+  }
+
+  .author .nav ul {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .author .nav a span {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }

@@ -332,7 +332,7 @@
   color: var(--content-strong);
   font: inherit;
   background: var(--surface-sunken);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   resize: vertical;
 }
@@ -407,23 +407,23 @@
   }
 }
 
-/* En móvil la barra de navegación ocupa 3.5rem más el área segura: el compositor y la hoja quedan por encima. */
+/* En móvil se reserva la altura de navegación del perfil más el área segura: el compositor y la hoja quedan por encima. */
 @media (max-width: 48rem) {
   .chat {
     min-height: calc(100dvh - 20rem);
   }
 
   .dock {
-    inset-block-end: calc(3.5rem + env(safe-area-inset-bottom));
+    inset-block-end: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
   }
 
   .end {
-    scroll-margin-block-end: calc(3.5rem + var(--space-8) + env(safe-area-inset-bottom));
+    scroll-margin-block-end: calc(var(--mobile-nav-height) + var(--space-8) + env(safe-area-inset-bottom));
   }
 
   .map {
-    inset-block-end: calc(3.5rem + env(safe-area-inset-bottom));
-    max-height: calc(70dvh - 3.5rem);
+    inset-block-end: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    max-height: calc(70dvh - var(--mobile-nav-height));
   }
 
   .message > article,

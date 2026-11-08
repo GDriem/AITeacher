@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { baselineSurface, recordBaseline } from "./uiBaseline";
+import { assertControlGeometry, expectTabInStrip } from "./uiControls";
 
 test.describe.configure({ mode: "serial" });
 
@@ -58,6 +59,7 @@ async function auditPersonalPage(page: Page, label: string) {
     await page.emulateMedia({ colorScheme });
     for (const width of [320, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
+      await assertControlGeometry(page);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), label).toBeLessThanOrEqual(0);
       expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations, `${label} a ${String(width)}px (${colorScheme})`).toEqual([]);
       if (width === 320 || width === 1440) await page.screenshot({ path: `/tmp/aiteacher-pr6-${label.replaceAll(" ", "-")}-${colorScheme}-${String(width)}.png`, fullPage: true });
@@ -124,6 +126,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   for (const name of ["Practicar", "Evaluar", "Aprender"]) { await page.getByRole("tab", { name, exact: true }).click(); await auditPersonalPage(page, `Autoría previa ${name}`); }
   await page.getByRole("button", { name: "Guardar borrador" }).click();
   await expect(page).toHaveURL(/\/autoria\/unidades\/[a-f0-9-]{36}\?paso=revision$/);
+  await checkAuthorTabs(page);
   const authorUnitUrl = page.url();
   const authorUnitId = new URL(authorUnitUrl).pathname.split("/").at(-1) ?? "";
   const isolated = await browser.newContext(); const student = await isolated.newPage();
@@ -918,4 +921,105 @@ test("estabilidad de carga: Inicio y tutor sin conversación", async ({ page }) 
     }
   }
   expect(errors).toEqual([]);
+});
+
+
+/** Complete document: exercise controlled Tabs without bypassing step validation. */
+async function checkAuthorTabs(page: Page) {
+  await page.setViewportSize({ width: 320, height: 1000 });
+  const strip = page.getByRole("tablist", { name: "Pasos de autoría" });
+  for (const reducedMotion of ["no-preference", "reduce"] as const) {
+    await page.emulateMedia({ reducedMotion });
+    await page.getByRole("button", { name: "Anterior", exact: true }).click();
+    await expectTabInStrip(strip.getByRole("tab", { selected: true }));
+    await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+    await expectTabInStrip(strip.getByRole("tab", { name: "Revisión", exact: true }));
+    await page.reload();
+    const selected = strip.getByRole("tab", { selected: true });
+    await expect(selected).toHaveText("Revisión");
+    await expectTabInStrip(selected);
+    await selected.scrollIntoViewIfNeeded();
+    await selected.focus();
+    await page.keyboard.press("Home");
+    await expect(strip.getByRole("tab", { name: "Datos", exact: true })).toBeFocused();
+    const scrollY = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press("End");
+    await expect(strip.getByRole("tab", { name: "Revisión", exact: true })).toBeFocused();
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+    for (const key of ["ArrowLeft", "ArrowRight", "ArrowRight", "ArrowLeft"]) {
+      await page.keyboard.press(key);
+      await expect(strip.getByRole("tab", { selected: true })).toBeFocused();
+      await expectTabInStrip(strip.getByRole("tab", { selected: true }));
+    }
+    const focus = await selected.evaluate((tab) => ({ style: getComputedStyle(tab).outlineStyle, offset: parseFloat(getComputedStyle(tab).outlineOffset) }));
+    expect(focus.style).toBe("solid");
+    expect(focus.offset).toBeLessThan(0);
+    await recordBaseline(page, `U1 pestaña foco ${reducedMotion}`, "light");
+  }
+  // An unusually long label must wrap inside the strip, including after resizing.
+  const last = strip.getByRole("tab", { name: "Revisión", exact: true });
+  await last.evaluate((tab) => { tab.textContent = "Revisión de la unidad y de todas las evaluaciones editoriales antes de publicar"; });
+  await expectTabInStrip(strip.getByRole("tab", { selected: true }));
+  await page.setViewportSize({ width: 768, height: 1000 });
+  await expectTabInStrip(strip.getByRole("tab", { selected: true }));
+  await page.reload();
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+}
+
+test("U1: selección, hover, foco y navegación táctil conservan estados distintos", async ({ page, browser }) => {
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await openCatalog(page);
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    const selected = page.getByRole("button", { name: "Todos", exact: true });
+    const other = page.getByRole("button", { name: "Principiante", exact: true });
+    await other.hover();
+    await expect(selected).toHaveAttribute("aria-pressed", "true");
+    await expect(other).toHaveAttribute("aria-pressed", "false");
+    expect(await selected.evaluate((node) => getComputedStyle(node).textDecorationLine)).toBe("underline");
+    expect(await other.evaluate((node) => getComputedStyle(node).textDecorationLine)).toBe("none");
+    expect(await selected.evaluate((node) => getComputedStyle(node).borderColor)).not.toBe(await other.evaluate((node) => getComputedStyle(node).borderColor));
+    await other.focus(); await page.keyboard.press("ArrowRight");
+    expect(await other.evaluate((node) => getComputedStyle(node).outlineStyle)).toBe("solid");
+    await mainNav(page, "Apuntes").hover();
+    expect(await mainNav(page, "Catálogo").evaluate((node) => getComputedStyle(node).textDecorationLine)).toBe("underline");
+    expect(await mainNav(page, "Apuntes").evaluate((node) => getComputedStyle(node).textDecorationLine)).toBe("none");
+    await assertControlGeometry(page);
+    await recordBaseline(page, "U1 filtro seleccionado con hover y foco", colorScheme);
+  }
+  const touch = await browser.newContext({ viewport: { width: 320, height: 800 }, isMobile: true, hasTouch: true });
+  const phone = await touch.newPage();
+  await googleForTests(phone, "author"); await phone.goto("/"); await login(phone);
+  for (const name of ["Catálogo", "Apuntes", "Repasos", "Historial", "Inicio", "Autoría"]) {
+    await mainNav(phone, name).tap();
+    await expect(mainNav(phone, name)).toHaveAttribute("aria-current", "page");
+    await assertControlGeometry(phone);
+    await expect(phone.locator("h1")).toBeFocused();
+  }
+  await phone.getByRole("contentinfo").scrollIntoViewIfNeeded();
+  const footer = await phone.getByRole("contentinfo").getByRole("link").boundingBox();
+  const nav = await phone.getByRole("navigation", { name: "Navegación principal" }).boundingBox();
+  if (!footer || !nav) throw new Error("Faltan el pie o la navegación móvil");
+  expect(footer.y + footer.height).toBeLessThanOrEqual(nav.y);
+  await recordBaseline(phone, "U1 navegación autor táctil", "light");
+  const units = await (await phone.request.get("/api/units?limit=100")).json() as { items: { id: string }[] };
+  const unitId = units.items[0]?.id;
+  if (!unitId) throw new Error("Falta una unidad sintética para comprobar el compositor");
+  await phone.goto(`/unidades/${unitId}/tutor`);
+  await phone.getByRole("button", { name: "Nueva conversación", exact: true }).tap();
+  const composer = phone.getByLabel("Tu mensaje", { exact: true });
+  await expect(composer).toBeVisible();
+  await composer.fill("Pregunta sintética de contraste y geometría");
+  await composer.scrollIntoViewIfNeeded();
+  for (const colorScheme of ["light", "dark"] as const) {
+    await phone.emulateMedia({ colorScheme });
+    await assertControlGeometry(phone);
+    const send = await phone.getByRole("button", { name: "Enviar", exact: true }).boundingBox();
+    const navigation = await phone.getByRole("navigation", { name: "Navegación principal" }).boundingBox();
+    if (!send || !navigation) throw new Error("Faltan enviar o navegación");
+    expect(send.y + send.height).toBeLessThanOrEqual(navigation.y);
+    await recordBaseline(phone, "U1 compositor autor táctil", colorScheme);
+  }
+  await touch.close();
 });

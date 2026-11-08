@@ -1,7 +1,8 @@
 # Plan de mejora de UI y UX de AITeacher
 
-Fecha: 8 de noviembre de 2026. Estado: **U0 completada; U1 delimitada; interfaz sin modificar**.
-Base revisada: `main`, commit `8235807`. Las skills están instaladas y sus
+Fecha: 8 de noviembre de 2026. Estado: **U0 y U1 completadas localmente; siguiente fase U2**.
+Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`.
+Las skills están instaladas y sus
 criterios se describen en [ui-skills.md](ui-skills.md).
 
 El objetivo es que el alumno encuentre qué estudiar, continúe sin perder el
@@ -11,8 +12,9 @@ El acabado visual debe apoyar esos recorridos y resultar cómodo en sesiones lar
 
 Prioridad mantenida al retomar U0: **alumno primero y evolución de la
 identidad existente**. No hay una nueva paleta, composición o dirección visual
-aprobada. La auditoría y el alcance concreto de U1 están en
-[ui-ux-baseline.md](ui-ux-baseline.md).
+aprobada. La auditoría y el alcance de U1 están en
+[ui-ux-baseline.md](ui-ux-baseline.md); su implementación y verificaciones están
+en [ui-ux-u1-validation.md](ui-ux-u1-validation.md).
 
 ## Alcance y punto de partida
 
@@ -278,7 +280,7 @@ comprobación y evidencia de cierre.
 | Preparación de skills | Completada | `8235807`; `ui-skills.md` y lock |
 | Plan | En ejecución | Este documento y base U0 |
 | U0 | Completada | [Auditoría, capturas y validaciones](ui-ux-baseline.md), interfaz `80fe1d4`; commit de cierre U0 en la rama `docs/ui-ux-u0-baseline` |
-| U1 | Delimitada; pendiente de implementación | F01/F03/F04/F05 de la base |
+| U1 | Implementada y validada localmente | F01/F03/F04/F05; [cambios, pruebas y capturas](ui-ux-u1-validation.md); rama `feat/ui-ux-u1-controls`, commit de cierre de esta fase |
 | U2 | Pendiente | — |
 | U3 | Pendiente | — |
 | U4 | Pendiente | — |
@@ -293,9 +295,16 @@ solo los hallazgos afectados. Al cerrar, registrar fase, commit, verificaciones,
 decisiones, pendientes y siguiente acción. Actualizar este documento, sin crear
 un plan competidor por cada sesión.
 
+Cierre de U1: límites de campos, navegación estrecha del autor, pestañas y
+estados comunes implementados en un cambio local. La altura de navegación se
+propaga al tutor y avisos para evitar solapamientos. Se conservan identidad,
+contratos y recorridos; el patrón de feedback queda documentado para U4.
+Verificaciones físicas y humanas transversales permanecen explícitas para U6.
+No hay despliegue ni aceptación humana implícita. El commit de implementación
+incluye este registro y la evidencia; comprobar el remoto antes de abrir el PR.
+
 Solicitud sugerida para retomar:
 
-> Retomemos `docs/ui-ux-improvement-plan.md`. Empezá por U0 con Astra como
-> orquestador y delegá tareas acotadas a Terra, SOL o Luna cuando aporte valor.
-> Confirmá las prioridades con la evidencia actual y dejá U1 delimitada antes
-> de modificar la interfaz.
+> Retomemos `docs/ui-ux-improvement-plan.md` desde U2. Conservá la prioridad
+> alumno primero y la identidad actual. U1 está implementada y documentada;
+> revisá Inicio, descubrimiento y lectura con la evidencia de U0 y U1.

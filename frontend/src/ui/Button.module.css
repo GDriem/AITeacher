@@ -31,21 +31,18 @@
   background: var(--action-primary);
 }
 
-.primary:hover:not(:disabled) {
-  background: var(--action-primary-hover);
-}
-
 .secondary {
   color: var(--content-strong);
   background: var(--surface-raised);
   border-color: var(--border-default);
 }
 
-.secondary:hover:not(:disabled),
 .secondary[aria-pressed="true"],
 .secondary[aria-current="page"] {
   border-color: var(--action-primary);
   background: var(--surface-default);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .ghost {
@@ -53,12 +50,13 @@
   background: transparent;
 }
 
-.ghost:hover:not(:disabled),
 .ghost[aria-pressed="true"],
 .ghost[aria-current="page"] {
   color: var(--content-strong);
   background: var(--surface-subtle);
-  border-color: var(--border-default);
+  border-color: var(--action-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .danger {
@@ -67,7 +65,25 @@
   border-color: var(--status-danger);
 }
 
-.danger:hover:not(:disabled) {
-  color: var(--content-inverse);
-  background: var(--status-danger);
+/* Hover never supplies the persistent selected/current marker. */
+@media (hover: hover) and (pointer: fine) {
+  .primary:hover:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--action-primary-hover);
+  }
+
+  .secondary:hover:not(:disabled):not([aria-disabled="true"]),
+  .ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+    color: var(--content-strong);
+    background: var(--surface-subtle);
+  }
+
+  .danger:hover:not(:disabled):not([aria-disabled="true"]) {
+    color: var(--content-inverse);
+    background: var(--status-danger);
+  }
+}
+
+/* Immediate feedback without moving text or delaying frequent actions. */
+.button:active:not(:disabled):not([aria-disabled="true"]) {
+  box-shadow: inset 0 0 0 2px currentColor;
 }

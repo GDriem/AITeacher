@@ -1,0 +1,17 @@
+{
+  "baseCommit": "81a7aefc6af74d6791ba0fb5eb9b08b20b1fbb71",
+  "capturedWithUncommittedUI": true,
+  "files": {
+    "frontend/src/features/backend/BackendShell.module.css": "f858c7fc6e00064c5369692bec41823e19ff8e1e680a37a687d96ba0ce485f27",
+    "frontend/src/features/backend/BackendShell.tsx": "9c88e1b0340377780fd49489157bc39bca3d4312a2d8e18e1edd372dec675a08",
+    "frontend/src/features/backend/Shared.module.css": "045af2af31b3d25e4b7b28a882897093ae21e50be2dec2d8bec246f465c442a1",
+    "frontend/src/features/backend/Tutor.module.css": "d1851c497371a0d027a7346f5fe97eab32bff53f857983c360be38a4651b7419",
+    "frontend/src/features/backend/UnitEditor.tsx": "10d244714215e7bd5d7f219c4ea601a3989ce629d12132fbdc4ffb6480c78ca2",
+    "frontend/src/features/backend/UnitSpace.module.css": "f87da7d93086b22cacb2cc9c5b76c309f88130b7421465497c2b34ec569454f3",
+    "frontend/src/styles/tokens.css": "e1e24f7f7215204af094e871daaec4c39f860c61293bba0d9bfad4238c87c070",
+    "frontend/src/ui/Button.module.css": "59d8c98d6a88cc8d0378bfac1bc30c4465cb6436650613000920463dd555b3e7",
+    "frontend/src/ui/Tabs.module.css": "889d7eebe071ce0b3478bd7541b33a9189750f1bb05c3704a42282c96bb77925",
+    "frontend/src/ui/Tabs.tsx": "a0a79bc7a7e5974077712892e0ef5a491e1eefa0a310a3228080ce47846575b5",
+    "frontend/src/ui/Toast.module.css": "caa4fdc31a963a029341346aadf6cd7aec94bc93beaaedc2a06b2819c2240ef5"
+  }
+}
