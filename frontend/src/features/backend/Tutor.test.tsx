@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it, vi } from "vitest";
@@ -30,11 +30,14 @@ it("recupera tras remontar la solicitud persistida, conserva el cuerpo en 409 y 
     http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json({ items: [conversation], total: 1 })),
     http.get(`${origin}/api/tutor/conversations/conversation`, () => HttpResponse.json({ ...conversation, activeTurnId: pending ? "turn" : null })),
     http.get(`${origin}/api/tutor/conversations/conversation/pending-turn`, () => HttpResponse.json({ request: pending ? original : null, leaseUntil: pending ? new Date().toISOString() : null })),
-    http.get(`${origin}/api/tutor/conversations/conversation/messages`, () => HttpResponse.json({ items: [], total: pending ? 1 : 2 })),
+    http.get(`${origin}/api/tutor/conversations/conversation/messages`, () => HttpResponse.json(page([
+      { id: "reserved", turnId: "turn", sequence: 4, role: "user", text: original.text, sources: [], createdAt: new Date().toISOString() },
+    ]))),
     http.get(`${origin}/api/graphs/revisions`, () => HttpResponse.json({ items: [], total: 0 })),
     http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
     http.post(`${origin}/api/tutor/conversations/conversation/turns`, async ({ request }) => {
       bodies.push(await request.json());
+      await delay(100);
       if (bodies.length === 1) return HttpResponse.json({ title: "Lease activo" }, { status: 409 });
       pending = false;
       if (bodies.length === 2) return HttpResponse.json({}, { status: 503 });
@@ -50,11 +53,13 @@ it("recupera tras remontar la solicitud persistida, conserva el cuerpo en 409 y 
   mount();
   await user.click(await screen.findByRole("button", { name: /^Conversación libre/ }));
   await user.click(await screen.findByRole("button", { name: "Recuperar mensaje pendiente" }));
+  // Recuperar no añade otra burbuja mientras el mensaje reservado ya está en el historial.
+  expect(screen.getAllByText(original.text)).toHaveLength(1);
   await screen.findByRole("alert");
   await user.click(screen.getByRole("button", { name: "Recuperar mensaje pendiente" }));
   await waitFor(() => expect(screen.queryByRole("button", { name: "Recuperar mensaje pendiente" })).not.toBeInTheDocument());
   // A failed recovered request releases the server reservation; retry still uses the saved original.
-  await user.click(screen.getByRole("button", { name: "Reintentar" }));
+  await user.click(await screen.findByRole("button", { name: "Reintentar" }));
   await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
   expect(bodies).toEqual([original, original, original]);
   expect(screen.getByLabelText("Tu mensaje")).toBeEnabled();
@@ -188,4 +193,30 @@ it("no muestra mensajes ni formulario mientras la conversación no confirma su u
   await screen.findByRole("alert");
   expect(screen.queryByText("Mensaje sin unidad confirmada")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("Tu mensaje")).not.toBeInTheDocument();
+});
+
+it.each(["r1", "r0"])("solo permite consultar el material coincidente con la publicación de la conversación (%s)", async (revisionId) => {
+  const origin = window.location.origin;
+  const unit = { ...testUnit, revision: { ...testUnit.revision, document: { ...testUnit.revision.document,
+    readings: [{ id: "reading", title: "Vectores", text: "Material de la publicación vigente", source: "Referencia U3", objectiveIds: [] }],
+  } } };
+  const conversation = { id: "reading-chat", unitId: "unit", revisionId, mode: "reading", activityId: "reading", version: 1, activeTurnId: null, createdAt: new Date().toISOString() };
+  server.use(
+    http.get(`${origin}/api/tutor/voice`, () => HttpResponse.json({ enabled: false })),
+    http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json(page([conversation]))),
+    http.get(`${origin}/api/tutor/conversations/reading-chat`, () => HttpResponse.json(conversation)),
+    http.get(`${origin}/api/tutor/conversations/reading-chat/pending-turn`, () => HttpResponse.json({ request: null })),
+    http.get(`${origin}/api/tutor/conversations/reading-chat/messages`, () => HttpResponse.json(page([]))),
+  );
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <Tutor unit={unit} mode="chat" conversationId="reading-chat" openConversation={() => undefined} />
+  </QueryClientProvider>);
+  await screen.findByLabelText("Tu mensaje");
+  if (revisionId === "r1") {
+    await userEvent.click(screen.getByText("Consultar lectura"));
+    expect(screen.getByText("Material de la publicación vigente")).toBeVisible();
+  } else {
+    expect(screen.queryByText("Consultar lectura")).not.toBeInTheDocument();
+    expect(screen.getByText(/se inició con una publicación anterior/)).toBeInTheDocument();
+  }
 });

@@ -1,0 +1,23 @@
+purpose:
+  stands_in_for: Proveedores de texto Azure y Gemini y Google STS mediante mocks locales existentes.
+  unblocks: Regresiones locales del tutor sin cuentas ni llamadas a proveedores reales. U3 verifica interacción y continuidad del frontend .NET.
+assumptions:
+  - id: u3-text-response-local
+    status: supported
+    claim: En los escenarios U3 ejecutados, el cliente .NET acepta la respuesta sintética del mock Azure y el tutor muestra texto y fuentes.
+    reason: Se observan POST a chat/completions con estado 200 en el log de la simulación y la respuesta esperada en Chromium. El alcance es exclusivamente local.
+    verification: El 2026-11-08, la prueba U3 de backend.spec.ts ejercitó envío, reintento de la misma solicitud tras un 503 inyectado en el navegador y lectura durante una respuesta demorada. Huella u3-local; evidencia y límites en docs/ui-ux-u3-validation.md.
+    source: frontend/e2e/backend.spec.ts (U3); postman/mocks/ai-providers/default.js; backend/src/AITeacher.Api/Features/Tutor/TutorService.cs; docs/ui-ux-u3-validation.md
+    updated_at: "2026-11-08"
+  - id: provider-production-behavior
+    status: unknown
+    claim: Los proveedores reales aceptan las mismas solicitudes y mantienen los comportamientos de respuesta modelados por los mocks.
+    reason: U3 reutiliza los mocks del repositorio; esta sesión no consulta servicios reales ni comprueba sus garantías. Los fallos inyectados y las respuestas sintéticas no prueban comportamiento del proveedor.
+    verification: Se inspeccionó el handler local y se ejecutaron escenarios del consumidor. Para validar esta afirmación se necesitan comprobaciones independientes del proveedor y su contrato vigente. La voz de U3 usa el WebSocket de BrowserHost, fuera de esta simulación.
+    source: postman/mocks/ai-providers/default.js; backend/TUTOR.md; backend/tests/AITeacher.BrowserHost/BrowserHost.cs
+    updated_at: "2026-11-08"
+fingerprints:
+  - id: u3-local
+    date: "2026-11-08"
+    commit: "fa9843c6d7b37fbe598f72bfdc5482bd3b8c3fed + árbol de trabajo U3; consultar docs/ui-ux-u3/source.json"
+    cli: "1.75.0"

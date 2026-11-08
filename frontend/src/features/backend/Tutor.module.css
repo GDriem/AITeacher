@@ -203,6 +203,7 @@
 
 .messageHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-3);
 }
@@ -238,9 +239,7 @@
 
 .source summary {
   min-height: 2.75rem;
-  display: flex;
-  align-items: center;
-  padding-inline: var(--space-3);
+  padding: var(--space-3);
   color: var(--content-default);
   font-size: var(--font-size-sm);
   cursor: pointer;
@@ -306,7 +305,7 @@
 .dock {
   position: sticky;
   z-index: 20;
-  inset-block-end: 0;
+  inset-block-end: var(--tutor-keyboard-inset, 0px);
   display: grid;
   gap: var(--space-3);
   padding-block: var(--space-3);
@@ -327,7 +326,7 @@
   min-width: 0;
   width: 100%;
   min-height: 3.25rem;
-  max-height: 40dvh;
+  max-height: min(9rem, calc(var(--tutor-viewport-height, 100dvh) * 0.25));
   padding: var(--space-3);
   color: var(--content-strong);
   font: inherit;
@@ -338,8 +337,8 @@
 }
 
 .composerFooter {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
@@ -356,7 +355,23 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-default);
+  color: var(--content-default);
+  overflow-wrap: anywhere;
 }
+
+.map::backdrop { background: var(--overlay-scrim); }
+
+.recovery:empty { display: none; }
+.recovery { display: grid; gap: var(--space-3); }
+
+.reference summary { cursor: pointer; min-height: 2.75rem; padding-block: var(--space-2); }
+.referenceText { max-height: 50dvh; overflow-y: auto; padding: var(--space-3); background: var(--surface-subtle); }
+.referenceText > * { max-width: 75ch; }
+.referenceText, .message pre { overflow-wrap: anywhere; }
+.referenceText pre, .message pre { white-space: pre-wrap; }
+.referenceText table, .message table { display: block; max-width: 100%; overflow-x: auto; }
+.sources > li { min-width: 0; max-width: 100%; }
+.message > article > p { white-space: pre-wrap; }
 
 .mapHeader {
   display: flex;
@@ -398,7 +413,11 @@
     position: fixed;
     z-index: 35;
     inset-inline: 0;
+    inset-block-start: auto;
     inset-block-end: 0;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
     max-height: 70dvh;
     overflow-y: auto;
     padding-block-end: calc(var(--space-4) + env(safe-area-inset-bottom));
@@ -414,8 +433,10 @@
   }
 
   .dock {
-    inset-block-end: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    inset-block-end: max(var(--tutor-keyboard-inset, 0px), calc(var(--mobile-nav-height) + env(safe-area-inset-bottom)));
   }
+
+  .shortcut { display: none; }
 
   .end {
     scroll-margin-block-end: calc(var(--mobile-nav-height) + var(--space-8) + env(safe-area-inset-bottom));

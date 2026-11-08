@@ -152,6 +152,8 @@ describe("SessionDrawer", () => {
     let vectors = sessionRow("Vectores semánticos");
     await user.click(within(vectors).getByRole("button", { name: "Renombrar" }));
     const title = within(vectors).getByRole("textbox", { name: "Nuevo nombre" });
+    // beginRename selecciona en el siguiente frame; no escribir antes de esa selección.
+    await waitFor(() => expect((title as HTMLInputElement).selectionEnd).toBe("Vectores semánticos".length));
     await user.clear(title);
     await user.type(title, "Embeddings aplicados");
     await user.click(within(vectors).getByRole("button", { name: "Guardar" }));

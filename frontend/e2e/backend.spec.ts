@@ -1085,3 +1085,172 @@ test("U2: Inicio prioriza pendientes y la lectura extensa conserva contexto y re
   await expect(page.getByRole("link", { name: "Abrir repaso pendiente", exact: true })).toHaveAttribute("href", "/repasos?repaso=u2-review-1");
   await baselineSurface(page, "U2 Inicio repaso");
 });
+
+/** U3: material recuperable, foco y scroll con contenido largo y fallos controlados. */
+test("U3: tutor conserva lectura, mensaje, foco y posición", async ({ page }) => {
+  test.setTimeout(180_000);
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  const entry = { name: "Continuidad U3", slug: `u3-${crypto.randomUUID()}` };
+  const subject = await apiPost(page, "/api/catalog/subjects", entry);
+  const category = await apiPost(page, "/api/catalog/categories", { subjectId: subject.id, entry });
+  const topic = await apiPost(page, "/api/catalog/topics", { subjectId: subject.id, categoryId: category.id, entry });
+  const reading = { id: crypto.randomUUID(), title: "Lectura de referencia U3", text: `Material que puedo consultar sin salir del tutor.\n\n${"Un ejemplo con sus detalles.\n\n".repeat(25)}\n\n\`\`\`text\n${"SinEspacios".repeat(80)}\n\`\`\``, source: "Fuente sintética U3", objectiveIds: [] };
+  const unit = await apiPost(page, "/api/units", { topicId: topic.id, document: { kind: "reading", title: "Continuidad del tutor U3",
+    concepts: [], objectives: [], readings: [reading], exercises: [], assessments: [], prerequisites: [] } }) as { id: string; revision: { id: string } };
+  await apiPost(page, `/api/units/${unit.id}/revisions/${unit.revision.id}/publish`, { version: 1 });
+  await switchUser(page, "student-a");
+  const conversation = await apiPost(page, "/api/tutor/conversations", { unitId: unit.id, mode: "reading", activityId: reading.id }) as { id: string; version: number };
+  const path = `/unidades/${unit.id}/tutor/${conversation.id}?modo=reading&actividad=${reading.id}`;
+  await page.goto(path);
+  const composer = page.getByLabel("Tu mensaje", { exact: true });
+  await expect(composer).toBeEditable();
+  await expect(page.getByRole("button", { name: "Guardar resumen de la conversación" })).toBeDisabled();
+  await page.locator("summary").filter({ hasText: "Consultar lectura" }).click();
+  await expect(page.getByText("Material que puedo consultar sin salir del tutor.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Volver a la unidad", exact: true })).toHaveAttribute("href", `/unidades/${unit.id}`);
+  await page.locator("summary").filter({ hasText: "Consultar lectura" }).click();
+
+  // Fallo anterior a reservar: conserva exactamente el borrador y reutiliza la solicitud.
+  const bodies: unknown[] = [];
+  await page.route(`**/api/tutor/conversations/${conversation.id}/turns`, async (route) => {
+    bodies.push(route.request().postDataJSON());
+    if (bodies.length === 1) await route.fulfill({ status: 503, json: { title: "Fallo sintético U3" } });
+    else await route.continue();
+  });
+  const draft = "Mi pregunta U3\ncon una segunda línea";
+  await composer.fill(draft); await composer.press("ControlOrMeta+Enter");
+  await expect(page.getByRole("alert")).toContainText("No llegó la respuesta");
+  await expect(composer).toHaveValue(draft);
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(composer).toHaveValue("");
+  expect(bodies).toHaveLength(2); expect(bodies[1]).toEqual(bodies[0]);
+  await expect(page.locator("article").filter({ hasText: draft })).toHaveCount(1);
+  await page.unroute(`**/api/tutor/conversations/${conversation.id}/turns`);
+
+  // El fallo de guardado se explica junto al mensaje y se puede reintentar allí.
+  let saves = 0;
+  await page.route("**/api/tutor/notes", async (route) => {
+    if (++saves === 1) await route.fulfill({ status: 503, json: { title: "Fallo sintético al guardar" } });
+    else await route.continue();
+  });
+  const answer = page.locator("article").filter({ hasText: "Respuesta de simulación" });
+  await answer.getByRole("button", { name: "Guardar en apuntes", exact: true }).click();
+  await expect(answer.getByRole("alert")).toContainText("No se guardó el apunte");
+  await answer.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(answer.getByRole("button", { name: "Guardado en apuntes" })).toBeDisabled();
+  await page.unroute("**/api/tutor/notes");
+
+  // Fuentes desplegables, mapa y foco en ambos temas/tamaños; el texto largo no desborda.
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const reference = page.locator("summary").filter({ hasText: "Consultar lectura" });
+      await reference.click();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+      await recordBaseline(page, "U3 material", theme);
+      await reference.click();
+      const toggle = page.getByRole("button", { name: "Mapa de conceptos", exact: true });
+      await toggle.focus(); await page.keyboard.press("Enter");
+      await expect(page.getByRole("heading", { name: "Mapa de conceptos", level: 2 })).toBeFocused();
+      if (width < 1024) {
+        const dialog = page.getByRole("dialog", { name: "Mapa de conceptos" });
+        await expect(dialog).toBeVisible();
+        await page.keyboard.press("Tab");
+        await expect(dialog.getByRole("button", { name: "Cerrar mapa" })).toBeFocused();
+        await composer.evaluate((node) => node.focus());
+        expect(await dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true);
+      }
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      await page.keyboard.press("Escape"); await expect(toggle).toBeFocused();
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+      await expect(composer).toBeInViewport();
+      await recordBaseline(page, "U3 conversación", theme);
+    }
+  }
+  // Voz real del host contra proveedor simulado: foco de ida y regreso.
+  const voice = page.getByRole("button", { name: "Conversar por voz", exact: true });
+  await voice.focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Finalizar conversación por voz" })).toBeFocused();
+  await page.getByRole("button", { name: "Comenzar por voz", exact: true }).click();
+  await expect(page.getByText("Te escucho", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape"); await expect(voice).toBeFocused();
+
+  // Teclado simulado: viewport visual reducido sin modificar el viewport de layout.
+  // No equivale a una comprobación en un teléfono físico.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await composer.fill("Una línea\nOtra línea\nTercera línea\nCuarta línea");
+  await composer.focus();
+  await page.evaluate(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) throw new Error("VisualViewport no disponible en Chromium");
+    Object.defineProperties(viewport, { height: { configurable: true, value: 410 }, offsetTop: { configurable: true, value: 0 } });
+    viewport.dispatchEvent(new Event("resize"));
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+  });
+  const send = page.getByRole("button", { name: "Enviar", exact: true });
+  await expect.poll(async () => { const box = await send.boundingBox(); return box ? box.y + box.height : Infinity; }).toBeLessThanOrEqual(410);
+  await expect.poll(async () => (await composer.boundingBox())?.y ?? -1).toBeGreaterThanOrEqual(0);
+  await send.focus();
+  await expect.poll(async () => { const box = await send.boundingBox(); return box ? box.y + box.height : Infinity; }).toBeLessThanOrEqual(410);
+  await recordBaseline(page, "U3 teclado simulado", "dark");
+  if (process.env.AITEACHER_UI_BASELINE_DIR) await page.screenshot({ path: `${process.env.AITEACHER_UI_BASELINE_DIR}/u3-teclado-area-visible-dark-390.png`, clip: { x: 0, y: 0, width: 390, height: 410 } });
+  await page.evaluate(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) throw new Error("VisualViewport no disponible en Chromium");
+    Reflect.deleteProperty(viewport, "height"); Reflect.deleteProperty(viewport, "offsetTop");
+    viewport.dispatchEvent(new Event("resize"));
+  });
+
+  // Historial largo y llegada de respuesta mientras se lee arriba.
+  let version = 2;
+  for (let turn = 2; turn <= 12; turn++) {
+    ({ version } = await apiPost(page, `/api/tutor/conversations/${conversation.id}/turns`, { requestId: crypto.randomUUID(), version,
+      text: `Pregunta U3 número ${String(turn)}\n\n${"Contenido extenso del alumno. ".repeat(20)}` }) as { version: number });
+  }
+  await page.setViewportSize({ width: 1440, height: 900 }); await page.reload();
+  await expect(composer).toBeEditable();
+  let release: () => void = () => undefined;
+  const delayed = new Promise<void>((resolve) => { release = resolve; });
+  await page.route(`**/api/tutor/conversations/${conversation.id}/turns`, async (route) => { await delayed; await route.continue(); });
+  await composer.fill("Turno demorado U3"); await composer.press("ControlOrMeta+Enter");
+  await expect(page.getByText("El tutor está preparando una respuesta…", { exact: true })).toBeVisible();
+  const earlierId = await page.locator('li[id^="message-"]').first().getAttribute("id");
+  const earlier = page.locator(`[id="${earlierId ?? ""}"]`);
+  await earlier.scrollIntoViewIfNeeded();
+  await expect(page.getByRole("button", { name: "Ir al último mensaje" })).toBeVisible();
+  const before = await earlier.evaluate((node) => node.getBoundingClientRect().top);
+  release();
+  await expect(composer).toBeEditable();
+  expect(Math.abs((await earlier.evaluate((node) => node.getBoundingClientRect().top)) - before)).toBeLessThan(3);
+  await page.getByRole("button", { name: "Ir al último mensaje" }).click();
+  await expect(page.getByText("Turno demorado U3", { exact: true })).toBeInViewport();
+  await expect(page.locator('li[id^="message-"]').last()).toBeFocused();
+  // Desplegar la última fuente no salta automáticamente al final.
+  const source = page.getByLabel("Fuentes", { exact: true }).last().locator("summary");
+  await source.scrollIntoViewIfNeeded(); const sourceTop = await source.evaluate((node) => node.getBoundingClientRect().top);
+  await source.click();
+  expect(Math.abs((await source.evaluate((node) => node.getBoundingClientRect().top)) - sourceTop)).toBeLessThan(3);
+
+  // Una página anterior fallida conserva el historial y espera una recuperación explícita.
+  await page.reload(); await expect(composer).toBeEditable();
+  let previousReads = 0;
+  await page.route(`**/api/tutor/conversations/${conversation.id}/messages?*`, async (route) => {
+    const query = new URL(route.request().url()).searchParams;
+    if (query.get("offset") === "0" && Number(query.get("limit")) < 20 && ++previousReads === 1)
+      await route.fulfill({ status: 400, json: { title: "Fallo sintético de paginación" } });
+    else await route.continue();
+  });
+  await page.getByRole("button", { name: "Cargar mensajes anteriores" }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole("alert")).toContainText("Revisa los datos e inténtalo de nuevo.");
+  await page.waitForLoadState("networkidle");
+  expect(previousReads).toBe(1);
+  const anchorId = await page.locator('li[id^="message-"]').first().getAttribute("id");
+  const anchor = page.locator(`[id="${anchorId ?? ""}"]`);
+  const anchorTop = await anchor.evaluate((node) => node.getBoundingClientRect().top);
+  await page.getByRole("alert").getByRole("button", { name: "Reintentar" }).click();
+  await expect(page.getByRole("button", { name: "Cargar mensajes anteriores" })).toHaveCount(0);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(previousReads).toBe(2);
+  expect(Math.abs((await anchor.evaluate((node) => node.getBoundingClientRect().top)) - anchorTop)).toBeLessThan(3);
+});
