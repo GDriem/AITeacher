@@ -36,8 +36,8 @@ export function CurriculumExplorer() {
   const filtered = Boolean(subject || category || level || text.trim());
 
   return <section>
-    <PageHeader title="Explora el catálogo" eyebrow="Materias · temas · lecturas"
-      description="Elige un tema para ver sus lecturas por nivel. Los niveles describen el material; no acreditan dominio." />
+    <PageHeader title="Explora el catálogo"
+      description="Busca un tema y elige entre sus lecturas y unidades publicadas." />
     <div className={styles.toolbar}>
       <Field title="Buscar temas o lecturas">
         <input type="search" value={text} placeholder="Por ejemplo: OSPF, subredes, vectores" autoComplete="off"
@@ -53,6 +53,7 @@ export function CurriculumExplorer() {
       </div> : null}
       <div className={styles.chipRow}>
         <span id={levelLabel} className={styles.chipLabel}>Nivel de lectura</span>
+        <p className={styles.help}>El nivel describe el material, no tu dominio del tema. Elige el que quieras consultar.</p>
         <div className={styles.chips} role="group" aria-labelledby={levelLabel}>
           <Button size="sm" aria-pressed={!level} onClick={() => filter({ nivel: "" })}>Todos</Button>
           {data.source.levels.map((entry) => <Button key={entry.slug} size="sm" aria-pressed={level === entry.slug}

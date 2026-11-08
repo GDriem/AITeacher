@@ -20,7 +20,7 @@ function UnitText({ children }: { children: string }) {
  */
 function jump(id: string, choose: (id: string) => void) {
   const target = document.getElementById(readingAnchor(id));
-  target?.scrollIntoView({ block: "start" });
+  target?.scrollIntoView({ block: "start", behavior: "instant" });
   target?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
   choose(id);
 }

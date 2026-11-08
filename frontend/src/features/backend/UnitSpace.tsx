@@ -49,12 +49,11 @@ export function UnitSpace() {
   const learn = <Learn document={document} current={current} choose={choose} />;
   return <section className={styles.unit}>
     <PageHeader title={document.title} breadcrumbs={[...unitCrumbs(state, unit.data.topicId, topic.data?.name), { label: document.title }]}
-      eyebrow={<span className={styles.meta}>
-        {topic.data ? <span>Tema: <Link to={topicPath(unit.data.topicId)} state={state}>{topic.data.name}</Link></span> : null}
+      description={<span className={styles.meta}>
         <Badge tone="info">{reading ? "Lectura" : "Unidad"}</Badge>
         {level ? <Badge>{`Nivel: ${level}`}</Badge> : null}
+        {reading ? <span>Sin prácticas ni evaluaciones.</span> : null}
       </span>}
-      description={reading ? "Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio." : undefined}
       actions={<Link className={buttonClass("ghost")} to={topicPath(unit.data.topicId)} state={state}>Volver al tema</Link>} />
     {reading ? learn : <Tabs label="Secciones de la unidad" selectedId={tab} onSelect={select} items={[
       { id: "aprender", label: "Aprender", content: learn },
@@ -122,7 +121,7 @@ function useVisible(ids: string[]) {
   }, [key]);
   useEffect(() => {
     if (!chosen) return;
-    // El salto se desplaza solo (y con suavidad): se suelta con el siguiente gesto del alumno, no con ese scroll.
+    // El salto fija el contexto hasta el siguiente gesto del alumno, no hasta su propio evento de scroll.
     const release = () => setChosen(null);
     const onKey = (event: KeyboardEvent) => { if (scrollKeys.has(event.key)) release(); };
     const events = ["wheel", "touchmove"] as const;

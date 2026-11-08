@@ -24,8 +24,8 @@
 
 .index summary {
   min-height: 2.75rem;
-  display: flex;
-  align-items: center;
+  display: list-item;
+  align-content: center;
   font-weight: 700;
   cursor: pointer;
 }
@@ -54,23 +54,27 @@
   color: var(--content-default);
   border-inline-start: 0.1875rem solid var(--border-subtle);
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
-.indexList a:hover {
-  color: var(--content-strong);
+@media (hover: hover) and (pointer: fine) {
+  .indexList a:hover { color: var(--content-strong); background: var(--surface-subtle); }
 }
 
 .indexList a[aria-current] {
   color: var(--content-strong);
   border-inline-start-color: var(--action-primary);
   font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .content {
   min-width: 0;
   display: grid;
   gap: var(--space-5);
-  max-width: 52rem;
+  max-width: 75ch;
+  overflow-wrap: anywhere;
 }
 
 .content > section h2 {
@@ -106,6 +110,9 @@
     position: sticky;
     inset-block-start: var(--space-5);
     margin: 0;
+    max-height: calc(100dvh - 2 * var(--space-5));
+    overflow-y: auto;
+    padding: var(--space-1);
   }
 }
 
@@ -158,3 +165,7 @@
     max-width: calc(100% - 2 * var(--space-3));
   }
 }
+
+/* Markdown largo mantiene el ancho de lectura, incluido código sin espacios. */
+.item pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.item table { display: block; max-width: 100%; overflow-x: auto; }

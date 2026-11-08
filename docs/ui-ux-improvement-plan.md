@@ -1,7 +1,7 @@
 # Plan de mejora de UI y UX de AITeacher
 
-Fecha: 8 de noviembre de 2026. Estado: **U0 y U1 completadas localmente; siguiente fase U2**.
-Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`.
+Fecha: 8 de noviembre de 2026. Estado: **U0, U1 y U2 completadas localmente; siguiente fase U3**.
+Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`; U2 parte de `10cc3c2`.
 Las skills están instaladas y sus
 criterios se describen en [ui-skills.md](ui-skills.md).
 
@@ -281,7 +281,7 @@ comprobación y evidencia de cierre.
 | Plan | En ejecución | Este documento y base U0 |
 | U0 | Completada | [Auditoría, capturas y validaciones](ui-ux-baseline.md), interfaz `80fe1d4`; commit de cierre U0 en la rama `docs/ui-ux-u0-baseline` |
 | U1 | Implementada y validada localmente | F01/F03/F04/F05; [cambios, pruebas y capturas](ui-ux-u1-validation.md); rama `feat/ui-ux-u1-controls`, commit de cierre de esta fase |
-| U2 | Pendiente | — |
+| U2 | Implementada y validada localmente | Inicio, catálogo y lectura; [pruebas y capturas](ui-ux-u2-validation.md); rama `feat/ui-ux-u2-discovery`, commit de cierre de esta fase |
 | U3 | Pendiente | — |
 | U4 | Pendiente | — |
 | U5 | Pendiente | — |
@@ -303,8 +303,16 @@ Verificaciones físicas y humanas transversales permanecen explícitas para U6.
 No hay despliegue ni aceptación humana implícita. El commit de implementación
 incluye este registro y la evidencia; comprobar el remoto antes de abrir el PR.
 
+Cierre de U2: Inicio prioriza intentos abiertos y repasos pendientes antes de
+retomar conversaciones o unidades; primer uso y estados vacíos se simplifican.
+El catálogo explica niveles junto al filtro y distingue las actividades de cada
+material. La lectura conserva contexto del tutor, limita el índice al viewport
+y admite contenido extenso sin desbordar. Pasan 119 pruebas de componentes,
+12 recorridos de navegador, build, presupuesto, lint y detector. Las 36 muestras
+de carga mantienen CLS 0. Evidencia y límites en [U2](ui-ux-u2-validation.md).
+
 Solicitud sugerida para retomar:
 
-> Retomemos `docs/ui-ux-improvement-plan.md` desde U2. Conservá la prioridad
-> alumno primero y la identidad actual. U1 está implementada y documentada;
-> revisá Inicio, descubrimiento y lectura con la evidencia de U0 y U1.
+> Retomemos `docs/ui-ux-improvement-plan.md` desde U3. Conservá la prioridad
+> alumno primero y la identidad actual. U2 está implementada y documentada;
+> revisá el tutor y la continuidad de conversación con la evidencia existente.

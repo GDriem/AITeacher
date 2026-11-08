@@ -25,12 +25,11 @@ function personalData(conversations: unknown[] = [], attempts: unknown[] = [], r
     server.use(http.get(`${origin}/api/${path}`, () => HttpResponse.json({ items, total: items.length })));
   }
 }
-it("orienta el primer uso con tres pasos y acciones para los espacios vacíos", async () => {
+it("orienta el primer uso hacia el catálogo sin pendientes vacíos ni prometer prácticas", async () => {
   personalData(); mount(<HomeRoute />);
   await screen.findByRole("heading", { name: "Tu primer recorrido" });
-  expect(screen.getByRole("heading", { name: "Elige una unidad" })).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Pregunta y guarda tus ideas" })).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Practica y vuelve a repasar" })).toBeVisible();
+  expect(screen.getByText("Elige qué quieres aprender")).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "Evaluaciones en curso" })).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Explorar el catálogo" })).toHaveAttribute("href", "/catalogo");
 });
 it("compara fechas propias y conserva todas las páginas para encontrar evaluaciones y repasos pendientes", async () => {
@@ -42,7 +41,7 @@ it("compara fechas propias y conserva todas las páginas para encontrar evaluaci
       return HttpResponse.json({ items: offset === "0" ? [{ id: "old", completedAt: "2026-10-22" }] : [{ id: "pending", completedAt: null, dueAt: "2026-10-24T10:00:00Z" }], total: 101 });
     }));
   mount(<HomeRoute />);
-  expect(await screen.findByRole("link", { name: "Continuar en la unidad" })).toHaveAttribute("href", "/unidades/unidad-a?pestana=evaluar");
+  expect(await screen.findByRole("link", { name: "Continuar evaluación" })).toHaveAttribute("href", "/evaluaciones/a");
   expect(await screen.findByRole("link", { name: /^Repaso del/ })).toHaveAttribute("href", "/repasos?repaso=pending");
   expect(screen.getByRole("link", { name: "Retomar Álgebra" })).toHaveAttribute("href", "/evaluaciones/a");
   expect(offsets).toEqual(["0", "100"]);
@@ -120,4 +119,46 @@ it("restaura la conversación importada y su página de mensajes desde la URL", 
   mount(<Archive />, "/historial?conversacion=h&mensajes=20");
   expect(await screen.findByText("Recuerdo privado")).toBeVisible();
   expect(screen.getByRole("button", { name: "Historia · 21 mensajes" })).toHaveAttribute("aria-pressed", "true");
+});
+
+it("prioriza un intento abierto sobre conversaciones nuevas y repasos vencidos", async () => {
+  personalData([{ id: "c", unitId: "u", createdAt: "2026-11-08T10:00:00Z" }], [
+    { id: "old", title: "Anterior", status: "inProgress", startedAt: "2026-10-01T10:00:00Z" },
+    { id: "active", title: "Actual", status: "inProgress", startedAt: "2026-10-02T10:00:00Z" },
+  ], [{ id: "due", dueAt: "2000-01-01T10:00:00Z", completedAt: null }]);
+  mount(<HomeRoute />);
+  expect(await screen.findByRole("link", { name: "Continuar evaluación" })).toHaveAttribute("href", "/evaluaciones/active");
+  expect(screen.queryByRole("link", { name: "Continuar con el tutor" })).not.toBeInTheDocument();
+});
+it("ordena los repasos por fecha, omite completados y limita la lista con acceso al resto", async () => {
+  personalData([{ id: "c", unitId: "u", createdAt: "2026-11-08T10:00:00Z" }], [], [
+    { id: "future", dueAt: "2099-01-01T10:00:00Z" },
+    { id: "second", dueAt: "2000-02-01T10:00:00Z" },
+    { id: "done", dueAt: "1999-01-01T10:00:00Z", completedAt: "1999-01-02T10:00:00Z" },
+    { id: "first", dueAt: "2000-01-01T10:00:00Z" },
+    { id: "third", dueAt: "2000-03-01T10:00:00Z" },
+  ]);
+  mount(<HomeRoute />);
+  expect(await screen.findByRole("link", { name: "Abrir repaso pendiente" })).toHaveAttribute("href", "/repasos?repaso=first");
+  expect(screen.getAllByRole("link", { name: /^Repaso del/ }).map((link) => link.getAttribute("href")))
+    .toEqual(["/repasos?repaso=first", "/repasos?repaso=second", "/repasos?repaso=third"]);
+  expect(screen.getByRole("link", { name: "Ver los 4 repasos pendientes" })).toHaveAttribute("href", "/repasos");
+});
+it("un repaso futuro no desplaza la conversación y su fecha identifica el inicio, no la última actividad", async () => {
+  personalData([{ id: "c", unitId: "u", mode: "chat", createdAt: "2026-10-23T10:00:00Z" }], [], [{ id: "future", dueAt: "2099-01-01T10:00:00Z" }]);
+  mount(<HomeRoute />);
+  expect(await screen.findByRole("link", { name: "Continuar con el tutor" })).toHaveAttribute("href", "/unidades/u/tutor/c");
+  expect(screen.getByText(/^Conversación iniciada el/)).toBeVisible();
+});
+it("mantiene el regreso a la unidad de la entrega más nueva", async () => {
+  personalData([{ id: "c", unitId: "u", createdAt: "2026-10-01T10:00:00Z" }], [{ id: "a", definitionRevisionId: "d", title: "Álgebra", status: "submitted", startedAt: "2026-10-02T10:00:00Z", submittedAt: "2026-10-02T10:30:00Z" }]);
+  server.use(http.get(`${origin}/api/assessments/definitions`, () => HttpResponse.json({ items: [{ id: "d", unitId: "unidad-a" }], total: 1 })));
+  mount(<HomeRoute />);
+  expect(await screen.findByRole("link", { name: "Continuar en la unidad" })).toHaveAttribute("href", "/unidades/unidad-a?pestana=evaluar");
+});
+it("un fallo de conversaciones no esconde el intento en curso", async () => {
+  personalData([], [{ id: "a", title: "Álgebra", status: "inProgress", startedAt: "2026-10-02T10:00:00Z" }]);
+  server.use(http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json({}, { status: 503 })));
+  mount(<HomeRoute />);
+  expect(await screen.findByRole("link", { name: "Continuar evaluación" })).toHaveAttribute("href", "/evaluaciones/a");
 });

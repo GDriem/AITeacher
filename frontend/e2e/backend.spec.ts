@@ -346,16 +346,20 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   await expect(card).toContainText("Antes se recomienda: Enrutamiento estático");
   await expect(card).toContainText(/\d+ lecturas?/);
   await expect(page.getByRole("status").filter({ hasText: "material" })).toContainText(/^\d+ temas? · \d+ materia/);
+  await page.reload();
+  await expect(page.getByLabel("Buscar temas o lecturas")).toHaveValue("ospf");
   await card.getByRole("link", { name: ospf, exact: true }).click();
   // Tema: prerrequisitos como enlaces, unidades agrupadas por nivel y Catálogo activo en la navegación.
   await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeFocused();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Antes se recomienda" }).getByRole("link", { name: /^Enrutamiento estático/ })).toHaveAttribute("href", /\/temas\//);
   await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
   // Sin descripción editorial, el resumen del material la sustituye.
-  await expect(page.getByText(/^Material publicado: \d+ lecturas? en \d+ nivel/)).toBeVisible();
+  await expect(page.getByText(/^Material publicado: \d+ lecturas? · \d+ nivel/)).toBeVisible();
   const beginner = page.getByRole("region", { name: /^Principiante/ });
   await beginner.getByRole("link").first().click();
-  await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
+  await expect(page.getByText("Sin prácticas ni evaluaciones.", { exact: true })).toBeVisible();
   await baselineSurface(page, "Lectura sin actividades");
   await expect(page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: ospf, exact: true })).toBeVisible();
   await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
@@ -371,7 +375,7 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Explica la idea de esta lectura.");
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
-  await page.goBack(); await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
+  await page.goBack(); await expect(page.getByText("Sin prácticas ni evaluaciones.", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Volver al tema" }).click();
   await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeVisible();
   for (const width of [320, 768, 1024, 1440]) {
@@ -487,7 +491,7 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/unidades/${unit.id}`);
   await expect(page.getByRole("heading", { name: "Unidad con pestañas", level: 1 })).toBeVisible();
-  await expect(page.getByText("Tema:", { exact: false }).getByRole("link", { name: "Pestañas Beta", exact: true })).toHaveAttribute("href", /\/temas\//);
+  await expect(page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: "Pestañas Beta", exact: true })).toHaveAttribute("href", /\/temas\//);
   await expect(page.getByText("Unidad", { exact: true })).toBeVisible();
   // Tabulación itinerante: Tab entra a la pestaña activa y las flechas la cambian; la URL la conserva.
   const tab = (name: string) => page.getByRole("tab", { name, exact: true });
@@ -951,9 +955,9 @@ async function checkAuthorTabs(page: Page) {
       await expect(strip.getByRole("tab", { selected: true })).toBeFocused();
       await expectTabInStrip(strip.getByRole("tab", { selected: true }));
     }
-    const focus = await selected.evaluate((tab) => ({ style: getComputedStyle(tab).outlineStyle, offset: parseFloat(getComputedStyle(tab).outlineOffset) }));
-    expect(focus.style).toBe("solid");
-    expect(focus.offset).toBeLessThan(0);
+    await expect(selected).toHaveCSS("outline-style", "solid");
+    // :focus-visible se recalcula con la modalidad de teclado; esperar su estilo, como ya se espera el foco.
+    await expect.poll(() => selected.evaluate((tab) => parseFloat(getComputedStyle(tab).outlineOffset))).toBeLessThan(0);
     await recordBaseline(page, `U1 pestaña foco ${reducedMotion}`, "light");
   }
   // An unusually long label must wrap inside the strip, including after resizing.
@@ -1022,4 +1026,62 @@ test("U1: selección, hover, foco y navegación táctil conservan estados distin
     await recordBaseline(phone, "U1 compositor autor táctil", colorScheme);
   }
   await touch.close();
+});
+
+/** U2: navegación del índice con contenido extremo y continuación sin ambigüedad. */
+test("U2: Inicio prioriza pendientes y la lectura extensa conserva contexto y reflujo", async ({ page }) => {
+  test.setTimeout(180_000);
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  const entry = { name: "Descubrimiento U2", slug: `u2-${crypto.randomUUID()}` };
+  const subject = await apiPost(page, "/api/catalog/subjects", entry);
+  const category = await apiPost(page, "/api/catalog/categories", { subjectId: subject.id, entry });
+  const topic = await apiPost(page, "/api/catalog/topics", { subjectId: subject.id, categoryId: category.id, entry });
+  const title = "Lectura extensa sobre conexiones entre conceptos y ejemplos para explorar a tu ritmo";
+  const readings = Array.from({ length: 18 }, (_, i) => ({ id: crypto.randomUUID(),
+    title: `${String(i + 1)}. ${i === 17 ? "Concepto".repeat(18) : title}`,
+    text: i === 0 ? `${"Una lectura permite comparar ideas y volver sobre sus ejemplos.\n\n".repeat(20)}\n\n\`\`\`text\n${"codigo".repeat(100)}\n\`\`\`\n\n| Concepto | Ejemplo |\n| --- | --- |\n| ${"SinEspacios".repeat(30)} | Relación |` : "Contenido sintético para comprobar navegación y contexto.",
+    source: "Fuente sintética", objectiveIds: [] }));
+  const unit = await apiPost(page, "/api/units", { topicId: topic.id, document: { kind: "reading", title,
+    concepts: [], objectives: [], readings, exercises: [], assessments: [], prerequisites: [] } }) as { id: string; revision: { id: string } };
+  await apiPost(page, `/api/units/${unit.id}/revisions/${unit.revision.id}/publish`, { version: 1 });
+  await page.goto(`/unidades/${unit.id}`);
+  await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
+  const index = page.getByRole("navigation", { name: "Lecturas de la unidad" });
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+    for (const width of [320, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+      if (width < 1024) {
+        await index.locator("summary").click();
+        await expect(index.getByRole("link").last()).toBeVisible();
+      } else {
+        expect(await index.evaluate((node) => node.clientHeight)).toBeLessThanOrEqual(860);
+      }
+      await index.getByRole("link").last().focus(); await page.keyboard.press("Enter");
+      await expect(page.getByRole("heading", { name: readings[17]?.title, exact: true })).toBeFocused();
+      await expect(page.getByRole("link", { name: /^Preguntar al tutor/ })).toHaveAttribute("href", new RegExp(`actividad=${readings[17]?.id ?? ""}$`));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      await index.getByRole("link").first().click();
+      if (width < 1024) await index.locator("summary").click();
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+      await recordBaseline(page, "U2 lectura extensa", theme);
+    }
+  }
+  // Datos de listas simulados solo para aislar la prioridad; las URLs apuntan a los identificadores recibidos.
+  await page.route("**/api/assessments/attempts?*", (route) => route.fulfill({ json: { items: [
+    { id: "u2-attempt", title: "Evaluación pendiente de conexiones y ejemplos", startedAt: "2020-01-01T10:00:00Z", status: "inProgress" },
+  ], total: 1 } }));
+  await page.route("**/api/tutor/conversations?*", (route) => route.fulfill({ json: { items: [
+    { id: "u2-conversation", unitId: unit.id, createdAt: "2026-11-08T10:00:00Z", mode: "reading" },
+  ], total: 1 } }));
+  await page.route("**/api/learning/reviews?*", (route) => route.fulfill({ json: { items: [3, 1, 2, 4].map((i) => ({ id: `u2-review-${String(i)}`, dueAt: `2020-01-0${String(i)}T10:00:00Z`, completedAt: null })), total: 4 } }));
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Continuar evaluación", exact: true })).toHaveAttribute("href", "/evaluaciones/u2-attempt");
+  await auditPersonalPage(page, "U2 Inicio pendientes");
+  await page.route("**/api/assessments/attempts?*", (route) => route.fulfill({ json: { items: [], total: 0 } }));
+  await page.reload();
+  await expect(page.getByRole("link", { name: "Abrir repaso pendiente", exact: true })).toHaveAttribute("href", "/repasos?repaso=u2-review-1");
+  await baselineSurface(page, "U2 Inicio repaso");
 });

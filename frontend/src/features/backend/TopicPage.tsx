@@ -28,11 +28,11 @@ export function TopicPage() {
     { key: "complete", title: "Unidades completas", units: topic.units.filter((unit) => !unit.readingProvenance) },
   ].filter((group) => group.units.length);
   const levels = topic.levels.length;
-  const material = `Material publicado: ${materialCount(topic.units)}${levels ? ` en ${String(levels)} ${levels === 1 ? "nivel" : "niveles"}` : ""}. Los niveles describen el material; no acreditan dominio.`;
+  const material = `Material publicado: ${materialCount(topic.units)}${levels ? ` · ${String(levels)} ${levels === 1 ? "nivel de lectura" : "niveles de lectura"}` : ""}.`;
   // La descripción editorial es opcional (la API guarda las vacías como null): sin ella, el resumen del material ocupa su lugar.
   const description = topic.entry.description ?? null;
   return <section>
-    <PageHeader title={topic.entry.name} eyebrow={`${topic.subject.name} · ${topic.category.name}`}
+    <PageHeader title={topic.entry.name}
       breadcrumbs={[{ label: "Catálogo", to: back }, { label: topic.entry.name }]}
       description={description ?? material}
       actions={<Link className={buttonClass("ghost")} to={back}>Volver al catálogo</Link>} />
@@ -48,7 +48,7 @@ export function TopicPage() {
       <h2 id={`level-${group.key}`} className={styles.levelTitle}>{group.title} <span>{materialCount(group.units)}</span></h2>
       <ul className={styles.grid}>{group.units.map((unit) => <TopicCard key={unit.id} title={unit.title} to={`/unidades/${encodeURIComponent(unit.id)}`} state={state}
         eyebrow={unit.kind === "reading" ? "Lectura" : "Unidad"}
-        summary={unit.kind === "reading" ? "Material de lectura con consulta al tutor." : "Objetivos, práctica y evaluación."} />)}</ul>
+        summary={unit.kind === "reading" ? "Solo lectura; sin prácticas ni evaluaciones." : "Consulta sus lecturas y actividades disponibles."} />)}</ul>
     </section>)}
   </section>;
 }

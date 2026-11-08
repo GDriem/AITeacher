@@ -296,6 +296,8 @@ pnpm-debug.log*
 !/docs/ui-ux-baseline/
 !/docs/ui-ux-u1-validation.md
 !/docs/ui-ux-u1/
+!/docs/ui-ux-u2-validation.md
+!/docs/ui-ux-u2/
 
 # Worktrees locales de Claude Code
 .claude/worktrees/
