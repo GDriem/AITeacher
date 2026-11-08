@@ -319,7 +319,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await switchUser(page, "student-a");
   expect((await page.request.get(`/api/units/${studentUnitId}`)).status()).toBe(404);
   await mainNav(page, "Apuntes").click();
-  const sourceLink = page.getByRole("link", { name: "Consultar mensaje de origen", exact: true });
+  const sourceLink = page.getByRole("link", { name: "Consultar mensaje de origen (nueva pestaña)", exact: true });
   const sourcePage = page.waitForEvent("popup");
   await sourceLink.focus(); await page.keyboard.press("Enter");
   const source = await sourcePage;
@@ -787,26 +787,29 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
   await expect(page.getByRole("heading", { name: `Evaluación R1 ${tag}`, exact: true })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`intento=${attempt.id}`));
   await page.reload(); await expect(page.getByRole("heading", { name: `Evaluación R1 ${tag}`, exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Completar con el intento seleccionado" })).toBeDisabled();
   await auditPersonalPage(page, `Repasos con contenido ${open ? "rubrica" : "cerrada"}`);
   if (open) await page.getByLabel("Tu respuesta", { exact: true }).fill("Justifico con el contenido histórico R1.");
   else await page.getByRole("radio", { name: "Respuesta R1", exact: true }).check();
   await submitAttempt(page);
   if (open) {
     await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Completar con el intento seleccionado" })).toBeDisabled();
+    await baselineSurface(page, "U4 repaso pendiente de correccion");
     await switchUser(page, "author");
     await mainNav(page, "Autoría").click();
     await page.getByRole("link", { name: "Corregir entregas", exact: true }).click();
     await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).filter({ hasText: "Pendiente de corrección" }).getByRole("button", { name: "Consultar entrega" }).click();
-    const reviewedUrl = page.url();
+    const reviewSaved = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith(`/api/assessments/attempts/${attempt.id}/review`));
     await page.getByLabel("Justificar R1 · máximo 1").fill("1");
     await page.getByLabel("Comentarios para el alumno").fill("Corregido con la rúbrica de R1.");
     await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click();
-    await expect(page).not.toHaveURL(reviewedUrl);
+    expect((await reviewSaved).ok()).toBeTruthy();
     await expect(page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` })).toHaveCount(0);
     await switchUser(page, "student-a");
     await mainNav(page, "Repasos").click();
     await page.getByText("Mis intentos anteriores", { exact: true }).click();
-    await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).first().getByRole("button", { name: "Consultar", exact: true }).click();
+    await page.locator("details").getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).first().getByRole("button", { name: "Consultar", exact: true }).click();
   } else await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Completar con el intento seleccionado" }).click();
   await expect(page.getByText("Completado con un intento corregido", { exact: true }).last()).toBeVisible();
@@ -1253,4 +1256,71 @@ test("U3: tutor conserva lectura, mensaje, foco y posición", async ({ page }) =
   await expect(page.getByRole("alert")).toHaveCount(0);
   expect(previousReads).toBe(2);
   expect(Math.abs((await anchor.evaluate((node) => node.getBoundingClientRect().top)) - anchorTop)).toBeLessThan(3);
+});
+
+/** U4: apuntes con fallos recuperables y foco tras editar/eliminar. */
+test("U4: apuntes preserva texto, confirma cambios y restaura foco", async ({ page }) => {
+  await googleForTests(page, "student-a");
+  await page.goto("/apuntes"); await login(page);
+  await page.goto("/apuntes");
+  const text = `Apunte U4 ${String(Date.now())} ${"evidencia".repeat(24)}`;
+  const createPath = "**/api/tutor/notes";
+  await page.route(createPath, async (route) => {
+    if (route.request().method() === "POST") await route.fulfill({ status: 503, json: {} });
+    else await route.continue();
+  });
+  await page.getByLabel("Nuevo apunte", { exact: true }).fill(text);
+  await page.getByRole("button", { name: "Guardar apunte", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByLabel("Nuevo apunte", { exact: true })).toHaveValue(text);
+  await page.unroute(createPath);
+  await page.getByRole("button", { name: "Guardar apunte", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Apunte guardado." })).toBeVisible();
+  await expect(page.getByLabel("Nuevo apunte", { exact: true })).toBeFocused();
+  const note = page.getByRole("article").filter({ hasText: text });
+  await note.getByRole("button", { name: "Editar", exact: true }).click();
+  const edit = page.getByLabel("Editar apunte", { exact: true });
+  await expect(edit).toBeFocused();
+  const changed = `${text} · Revisado`;
+  await edit.fill(changed);
+  const notePath = "**/api/tutor/notes/*";
+  await page.route(notePath, async (route) => {
+    if (route.request().method() === "PUT") await route.fulfill({ status: 503, json: {} });
+    else await route.continue();
+  });
+  await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("No se guardaron los cambios");
+  await expect(edit).toHaveValue(changed);
+  await page.unroute(notePath);
+  await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Cambios guardados." })).toBeVisible();
+  await expect(note.getByRole("button", { name: "Editar", exact: true })).toBeFocused();
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      await recordBaseline(page, "U4 apunte editado", theme);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await note.getByRole("button", { name: "Eliminar", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "¿Eliminar este apunte?" });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(note.getByRole("button", { name: "Eliminar", exact: true })).toBeFocused();
+  await note.getByRole("button", { name: "Eliminar", exact: true }).click();
+  await page.route(notePath, async (route) => {
+    if (route.request().method() === "DELETE") await route.fulfill({ status: 503, json: {} });
+    else await route.continue();
+  });
+  await dialog.getByRole("button", { name: "Sí, eliminar", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("No se eliminó el apunte");
+  await recordBaseline(page, "U4 eliminacion fallida", "dark");
+  await page.unroute(notePath);
+  await dialog.getByRole("button", { name: "Sí, eliminar", exact: true }).click();
+  await expect(note).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "Apunte eliminado." })).toBeVisible();
+  await expect(page.getByLabel("Nuevo apunte", { exact: true })).toBeFocused();
 });

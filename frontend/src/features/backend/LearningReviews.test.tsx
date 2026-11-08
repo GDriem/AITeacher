@@ -60,7 +60,7 @@ it("restaura el intento elegido de la URL y lo usa para completar el repaso", as
     http.get(`${origin}/api/assessments/definitions`, () => HttpResponse.json({ items: [{ id: "r1", unitId: "unit" }], total: 1 })),
     http.get(`${origin}/api/learning/reviews`, () => HttpResponse.json({ items: [{ id: "review", definitionRevisionId: "r1", dueAt: new Date().toISOString(), completedAt: null }], total: 1 })),
     http.get(`${origin}/api/assessments/attempts`, () => HttpResponse.json({ items: [], total: 0 })),
-    http.get(`${origin}/api/assessments/attempts/selected`, () => HttpResponse.json({ id: "selected", title: "Intento restaurado", status: "submitted", mode: "assessment", questions: [], fraction: null, answers: null })),
+    http.get(`${origin}/api/assessments/attempts/selected`, () => HttpResponse.json({ id: "selected", definitionRevisionId: "r1", startedAt: new Date(Date.now() + 1000).toISOString(), title: "Intento restaurado", status: "submitted", mode: "assessment", questions: [], fraction: null, answers: null })),
     http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
     http.post(`${origin}/api/learning/reviews/review/complete`, async ({ request }) => { completed = await request.json(); return HttpResponse.json({}); }),
   );
@@ -70,4 +70,34 @@ it("restaura el intento elegido de la URL y lo usa para completar el repaso", as
   expect(await screen.findByRole("link", { name: "Volver a la unidad del repaso" })).toHaveAttribute("href", "/unidades/unit?pestana=evaluar");
   await userEvent.setup().click(screen.getByRole("button", { name: "Completar con el intento seleccionado" }));
   await waitFor(() => expect(completed).toEqual({ attemptId: "selected" }));
+});
+
+it.each([
+  ["inProgress", "r1", "2026-01-02T10:00:00Z", false, "Entrega el intento seleccionado"],
+  ["pendingReview", "r1", "2026-01-02T10:00:00Z", false, "está pendiente de corrección docente"],
+  ["expired", "r1", "2026-01-02T10:00:00Z", false, "Necesitas un intento entregado"],
+  ["submitted", "r2", "2026-01-02T10:00:00Z", false, "pertenece a otra evaluación"],
+  ["submitted", "r1", "2026-01-01T10:00:00Z", false, "se inició antes de la fecha"],
+  ["submitted", "r1", "2026-01-02T10:00:00Z", true, "ya se usó para completar otro repaso"],
+])("impide completar con %s, revisión %s, inicio %s, usado %s", async (status, definitionRevisionId, startedAt, used, message) => {
+  const origin = window.location.origin;
+  const complete = vi.fn();
+  server.use(
+    http.get(`${origin}/api/learning/evidence`, () => HttpResponse.json({ items: [], total: 0 })),
+    http.get(`${origin}/api/assessments/definitions`, () => HttpResponse.json({ items: [{ id: "r1", unitId: "unit", title: "Vectores" }], total: 1 })),
+    http.get(`${origin}/api/learning/reviews`, () => HttpResponse.json({ items: [
+      { id: "review", definitionRevisionId: "r1", dueAt: "2026-01-02T00:00:00Z", completedAt: null },
+      ...(used ? [{ id: "used", definitionRevisionId: "r1", dueAt: "2026-01-01T00:00:00Z", completedAt: startedAt, completedAttemptId: "selected" }] : []),
+    ], total: used ? 2 : 1 })),
+    http.get(`${origin}/api/assessments/attempts`, () => HttpResponse.json({ items: [], total: 0 })),
+    http.get(`${origin}/api/assessments/attempts/selected`, () => HttpResponse.json({ id: "selected", title: "Intento elegido", definitionRevisionId, startedAt, status, mode: "assessment", expiresAt: "2099-01-01T00:00:00Z", questions: [], fraction: null, answers: null })),
+    http.post(`${origin}/api/learning/reviews/review/complete`, complete),
+  );
+  render(<MemoryRouter initialEntries={["/repasos?intento=selected&repaso=review"]}><QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><LearningReviews /></QueryClientProvider></MemoryRouter>);
+  expect(await screen.findByText(new RegExp(message))).toBeVisible();
+  const button = screen.getByRole("button", { name: "Completar con el intento seleccionado" });
+  expect(button).toBeDisabled();
+  await userEvent.setup().click(button);
+  expect(complete).not.toHaveBeenCalled();
+  expect(screen.queryByText(/Elige una evidencia y una fecha en el formulario/)).not.toBeInTheDocument();
 });

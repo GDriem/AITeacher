@@ -32,3 +32,13 @@ export function conversationPath(item: Schema["TutorConversation"]) {
 }
 export const attemptPath = (id: string) => `/evaluaciones/${encodeURIComponent(id)}`;
 export const conversationLabel = (item: Schema["TutorConversation"]) => item.mode === "reading" ? "Consulta de lectura" : item.mode === "practice" ? "Práctica con el tutor" : "Conversación con el tutor";
+
+export function useAssessmentAttempt(id: string | null) {
+  return useQuery({ queryKey: ["attempt", id], enabled: Boolean(id), queryFn: async ({ signal }) =>
+    result(await backend.GET("/api/assessments/attempts/{id}", { signal, params: { path: { id: required(id) } } })) });
+}
+
+export function useReviewEvidence(enabled: boolean) {
+  return useQuery({ queryKey: ["evidence", "all"], enabled, queryFn: ({ signal }) => allPages((offset) =>
+    backend.GET("/api/learning/evidence", { signal, params: { query: { offset, limit: 100 } } }).then(result)) });
+}

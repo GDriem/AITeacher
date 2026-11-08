@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge, Button, Dialog, PageHeader, type BadgeTone } from "../../ui";
 import { backend, required, result, type Schema } from "./client";
 import { Busy, Failure, Field } from "./Shared";
 import { attemptLabels, formatDateTime } from "./labels";
+import { useAssessmentAttempt } from "./personalQueries";
 import { panel } from "./panel";
 import shared from "./Shared.module.css";
 import styles from "./Attempt.module.css";
@@ -39,8 +40,8 @@ function readDraft(id: string): Answers {
   try { return JSON.parse(sessionStorage.getItem(draftKey(id)) ?? "{}") as Answers; } catch { return {}; }
 }
 function writeDraft(id: string, answers: Answers | null) {
-  try { if (answers) sessionStorage.setItem(draftKey(id), JSON.stringify(answers)); else sessionStorage.removeItem(draftKey(id)); }
-  catch { /* Sin almacenamiento disponible el borrador sólo vive en memoria. */ }
+  try { if (answers) sessionStorage.setItem(draftKey(id), JSON.stringify(answers)); else sessionStorage.removeItem(draftKey(id)); return true; }
+  catch { return false; }
 }
 
 /** `page` es la pantalla dedicada (con `h1`); `inline` se incrusta en Repasos bajo un `h2`. */
@@ -50,9 +51,10 @@ export function AttemptView({ id, variant = "inline", step: controlledStep, onSt
   const queries = useQueryClient();
   const [ownStep, setOwnStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>(() => readDraft(id));
+  const [stored, setStored] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const submission = useRef<Schema["SubmitAssessmentAttempt"] | null>(null);
-  const attempt = useQuery({ queryKey: ["attempt", id], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/attempts/{id}", { signal, params: { path: { id } } })) });
+  const attempt = useAssessmentAttempt(id);
   const submit = useMutation({ mutationFn: async (body: Schema["SubmitAssessmentAttempt"]) => result(await backend.POST("/api/assessments/attempts/{id}/submit", { params: { path: { id } }, body })),
     onSuccess: (value) => { writeDraft(id, null); queries.setQueryData(["attempt", id], value); void queries.invalidateQueries({ queryKey: ["attempts"] }); },
     onSettled: () => setConfirming(false) });
@@ -64,25 +66,29 @@ export function AttemptView({ id, variant = "inline", step: controlledStep, onSt
   const header = page
     ? <PageHeader title={value.title} eyebrow={`${modeLabels[value.mode]} · ${String(total)} ${total === 1 ? "pregunta" : "preguntas"}`}
       breadcrumbs={[{ label: "Inicio", to: "/" }, { label: modeLabels[value.mode] }]}
-      description={value.status === "inProgress" ? "Sin ayudas durante el intento. Tus respuestas se guardan en esta pestaña hasta entregarlas." : undefined} />
+      description={value.status === "inProgress" ? "Sin ayudas durante el intento." : undefined} />
     : <h2>{value.title}</h2>;
   if (value.status !== "inProgress") return <article className={page ? styles.screen : panel}>{header}<AttemptResult value={value} page={page} focus={submit.isSuccess} /></article>;
   const step = Math.min(controlledStep ?? ownStep, Math.max(0, total - 1));
   const go = (next: number) => { if (onStep) onStep(next); else setOwnStep(next); };
-  const update = (question: Question, answer: Answer) => setAnswers((previous) => {
-    const next = { ...previous, [question.revisionId]: answer };
-    writeDraft(id, next);
-    return next;
-  });
+  const update = (question: Question, answer: Answer) => {
+    const next = { ...answers, [question.revisionId]: answer };
+    setStored(writeDraft(id, next));
+    setAnswers(next);
+  };
   const send = () => {
+    if (submit.isPending) return;
     submission.current ??= { answers: value.questions.map((question) => ({ questionRevisionId: question.revisionId, ...(answers[question.revisionId] ?? { selectedOptionIds: [] }) })) };
     submit.mutate(submission.current);
   };
   return <article className={page ? styles.screen : panel}>{header}
+    <p className={stored ? shared.hint : styles.notice} role="status">{stored
+      ? "Tus respuestas se conservan al recargar esta pestaña. No se sincronizan con otros dispositivos; entrégalas antes de cerrarla."
+      : "No pudimos guardar las respuestas en esta pestaña. Siguen aquí, pero se perderán si recargas o cierras. Entrega antes de salir."}</p>
     <AttemptRunner value={value} answers={answers} step={step} go={go} update={update} page={page}
       locked={submit.isPending || submit.isError} expired={attempt.refetch} confirm={() => setConfirming(true)} />
-    {submit.isError ? <Failure title="No pudimos entregar tus respuestas" error={submit.error} retry={send} /> : null}
-    <SubmitDialog open={confirming} value={value} answers={answers} pending={submit.isPending} close={() => setConfirming(false)} send={send} />
+    {submit.isError ? <><Failure title="No pudimos confirmar la entrega" error={submit.error} retry={send} /><p>Conservamos tus respuestas. Reintentar envía la misma entrega; mientras la confirmamos no puedes cambiarlas.</p></> : null}
+    <SubmitDialog open={confirming} value={value} answers={answers} pending={submit.isPending} close={() => { if (!submit.isPending) setConfirming(false); }} send={send} />
   </article>;
 }
 
@@ -193,7 +199,7 @@ function AttemptResult({ value, page, focus }: { value: Attempt; page: boolean; 
   return <section className={styles.result} aria-labelledby={`resultado-${value.id}`}>
     <Heading id={`resultado-${value.id}`} ref={heading} tabIndex={-1}>Tu entrega</Heading>
     <p role="status"><Badge tone={statusTones[value.status]}>{attemptLabels[value.status]}</Badge></p>
-    {value.fraction !== null ? <p className={styles.score}>Resultado: {Math.round(value.fraction * 100)} %</p> : null}
+    {value.status === "submitted" && value.feedback !== "never" && value.fraction !== null ? <p className={styles.score}>Resultado: {Math.round(value.fraction * 100)} %</p> : null}
     {summary ? <p>{summary}</p> : null}
     {value.submittedAt ? <p className={shared.hint}>Entregada el {formatDateTime(value.submittedAt)}.</p> : null}
     {value.answers ? <ol className={styles.review}>{value.questions.map((question, index) => {

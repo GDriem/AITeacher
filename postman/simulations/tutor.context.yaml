@@ -16,8 +16,19 @@ assumptions:
     verification: Se inspeccionó el handler local y se ejecutaron escenarios del consumidor. Para validar esta afirmación se necesitan comprobaciones independientes del proveedor y su contrato vigente. La voz de U3 usa el WebSocket de BrowserHost, fuera de esta simulación.
     source: postman/mocks/ai-providers/default.js; backend/TUTOR.md; backend/tests/AITeacher.BrowserHost/BrowserHost.cs
     updated_at: "2026-11-08"
+  - id: u4-regression-local
+    status: supported
+    claim: La batería local de U4 conserva el recorrido de texto del tutor contra el mock Azure existente.
+    reason: El log de la simulación registra POST a chat/completions con estado 200 durante los recorridos integrados; no cambió el contrato ni el proveedor.
+    verification: El 2026-11-08 se ejecutaron los recorridos .NET de backend.spec.ts con BrowserHost y PostgreSQL aislado. Los fallos de apuntes se inyectan en el navegador sobre la API local; no modelan fallos del proveedor. Huella u4-local; resultados en docs/ui-ux-u4-validation.md.
+    source: frontend/e2e/backend.spec.ts; postman/mocks/ai-providers/default.js; docs/ui-ux-u4-validation.md
+    updated_at: "2026-11-08"
 fingerprints:
   - id: u3-local
     date: "2026-11-08"
     commit: "fa9843c6d7b37fbe598f72bfdc5482bd3b8c3fed + árbol de trabajo U3; consultar docs/ui-ux-u3/source.json"
+    cli: "1.75.0"
+  - id: u4-local
+    date: "2026-11-08"
+    commit: "71bde908e26e9125ee854a9753bc0211220006f7 + árbol de trabajo U4; consultar docs/ui-ux-u4/source.json"
     cli: "1.75.0"

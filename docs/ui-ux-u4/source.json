@@ -1,0 +1,18 @@
+{
+  "base": "71bde908e26e9125ee854a9753bc0211220006f7",
+  "branch": "feat/ui-ux-u4-learning",
+  "files": {
+    "frontend/e2e/backend.spec.ts": "6d93d0e5ecfb6959cfeb1e7407e9ee6bddeefe7086632f4c752651fe9f2b80f4",
+    "frontend/src/features/backend/Archive.module.css": "8254d56ac3a5e30731a38c5579a7af502814261302b372b5c471cfa72038dead",
+    "frontend/src/features/backend/Archive.tsx": "84cc1a7c42243be67470b2f5ebfadaa1ef83206c7fc6197401370e4830546b71",
+    "frontend/src/features/backend/AttemptRoute.test.tsx": "4b0df8a0a6e9e8191911995ee825555da5958207a67babc722149ac289afa026",
+    "frontend/src/features/backend/AttemptRoute.tsx": "5d6d0d4a5b74afa6173e1732f1d5a6e03ca2d715eabb4a11f20b728d2aef3c8a",
+    "frontend/src/features/backend/LearningReviews.module.css": "14cc52f973670f338f3ed39fc008ca3579430bd1e6262b17324588584803fba3",
+    "frontend/src/features/backend/LearningReviews.test.tsx": "50c051ba9044772794781043c63cb438b488927dc4afcc7a997719ddfed6bf57",
+    "frontend/src/features/backend/LearningReviews.tsx": "1c4cafc74be4243d957d1e7355c26956213b6f14a2e14a87ce36a2398bb1faa8",
+    "frontend/src/features/backend/Notes.tsx": "826fa62ae5672944d7f7e8761b20cf2e7525aa969aef9d0cf646df7c8f6459fd",
+    "frontend/src/features/backend/PersonalSpaces.test.tsx": "659744ec6806ec39dc549b3eea071d156a60885ca724febb9e0ce9e577d666e4",
+    "frontend/src/features/backend/personalQueries.ts": "133636f3ecefbbc13c1901338ffea59ed76311a5a7fb545afacae5667f2a2c26",
+    "frontend/src/features/backend/Notes.test.tsx": "d6aabb3397da3f5d7d07d730adac8c8aac658e7f11cc0e59129c85199c64b80a"
+  }
+}

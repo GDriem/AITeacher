@@ -102,7 +102,7 @@ it("conserva el acceso directo al mensaje aunque no pueda cargar la conversació
     http.get(`${origin}/api/tutor/conversations/c`, () => HttpResponse.json({}, { status: 503 })),
   );
   mount(<Notes />);
-  const source = await screen.findByRole("link", { name: "Consultar mensaje de origen" });
+  const source = await screen.findByRole("link", { name: "Consultar mensaje de origen (nueva pestaña)" });
   expect(source).toHaveAttribute("href", "/api/graphs/conversations/c/messages/m");
   expect(source).toHaveAttribute("target", "_blank");
   await screen.findByRole("button", { name: "Reintentar" });

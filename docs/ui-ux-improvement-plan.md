@@ -1,7 +1,7 @@
 # Plan de mejora de UI y UX de AITeacher
 
-Fecha: 8 de noviembre de 2026. Estado: **U0, U1, U2 y U3 completadas localmente; siguiente fase U4**.
-Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`; U2 parte de `10cc3c2`; U3 parte de `fa9843c`.
+Fecha: 8 de noviembre de 2026. Estado: **U0, U1, U2, U3 y U4 completadas localmente; siguiente fase U5**.
+Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`; U2 parte de `10cc3c2`; U3 parte de `fa9843c`; U4 parte de `71bde90`.
 Las skills están instaladas y sus
 criterios se describen en [ui-skills.md](ui-skills.md).
 
@@ -283,7 +283,7 @@ comprobación y evidencia de cierre.
 | U1 | Implementada y validada localmente | F01/F03/F04/F05; [cambios, pruebas y capturas](ui-ux-u1-validation.md); rama `feat/ui-ux-u1-controls`, commit de cierre de esta fase |
 | U2 | Implementada y validada localmente | Inicio, catálogo y lectura; [pruebas y capturas](ui-ux-u2-validation.md); rama `feat/ui-ux-u2-discovery`, commit de cierre de esta fase |
 | U3 | Implementada y validada localmente | Tutor, material de referencia, recuperación, scroll y foco; [pruebas y capturas](ui-ux-u3-validation.md); rama `feat/ui-ux-u3-tutor`, commit de cierre de esta fase |
-| U4 | Pendiente | — |
+| U4 | Implementada y validada localmente | Evaluaciones, apuntes, repasos e historial; [pruebas y capturas](ui-ux-u4-validation.md); rama `feat/ui-ux-u4-learning`, commit de cierre de esta fase |
 | U5 | Pendiente | — |
 | U6 | Pendiente | — |
 
@@ -320,8 +320,16 @@ Las 36 muestras de carga mantienen CLS 0. Evidencia y límites en
 [U3](ui-ux-u3-validation.md). Teclado físico, lector de pantalla y proveedor de
 voz real quedan explícitos para U6. No se despliega esta fase.
 
+Cierre de U4: elegibilidad y origen del repaso visibles; pendientes priorizados;
+apuntes con feedback, protección de versiones y foco; alcance del guardado local
+y recuperación de entrega explícitos; fechas de inicio en Historial. F02, F06
+y F07 cerrados localmente. Pasan 130 pruebas de componentes, 14 recorridos .NET,
+build, presupuestos, TypeScript, lint y detector. Las 36 muestras de carga
+mantienen CLS 0. Evidencia y límites en [U4](ui-ux-u4-validation.md).
+No hay despliegue ni aceptación humana implícita.
+
 Solicitud sugerida para retomar:
 
-> Retomemos `docs/ui-ux-improvement-plan.md` desde U4. Conservá la prioridad
-> alumno primero y la identidad actual. U3 está implementada y documentada;
-> revisá evaluaciones, apuntes, repasos e historial con la evidencia existente.
+> Retomemos `docs/ui-ux-improvement-plan.md` desde U5. Conservá la prioridad
+> alumno primero y la identidad actual. U4 está implementada y documentada;
+> retomá autoría y corrección con la evidencia existente.
