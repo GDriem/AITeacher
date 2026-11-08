@@ -5,6 +5,10 @@ referencia principal de interacción y acabado, Impeccable para revisión y
 pulido por superficie, y UI UX Pro Max como consulta de patrones. Esta
 instalación prepara el trabajo futuro; no inicia un rediseño.
 
+El trabajo previsto se organiza en el
+[plan de mejora de UI y UX](ui-ux-improvement-plan.md), preparado para retomarse
+por fases en una próxima sesión.
+
 ## Selección y encaje
 
 | Fuente | Uso recomendado en AITeacher | Límite |

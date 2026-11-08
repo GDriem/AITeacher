@@ -291,6 +291,7 @@ pnpm-debug.log*
 !/docs/ui-ux-beta-plan.md
 !/docs/ui-skills.md
 !/docs/ui-skills.lock.json
+!/docs/ui-ux-improvement-plan.md
 
 # Worktrees locales de Claude Code
 .claude/worktrees/
