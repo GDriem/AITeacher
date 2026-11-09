@@ -7,8 +7,7 @@
   height: 1rem;
   border-radius: var(--radius-xs);
   background: linear-gradient(90deg, var(--surface-default), var(--surface-raised), var(--surface-default));
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  animation: pulse 1.4s ease-in-out infinite alternate;
 }
 
 .line:first-child {
@@ -30,7 +29,7 @@
   white-space: nowrap;
 }
 
-@keyframes shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
+@keyframes pulse {
+  from { opacity: 1; }
+  to { opacity: 0.5; }
 }

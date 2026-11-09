@@ -1,0 +1,17 @@
+Presupuesto de carga por ruta (gzip):
+
+  ✓  backendBeta          0.00 kB / 120 kB  (Interfaz beta .NET del alumno (shell, rutas y pantallas) más el chunk común con Autoría; se descarga solo en el build dotnet.)
+  ✓  backendTutor         0.00 kB /  16 kB  (Tutor de la unidad del build .NET (chat, conversaciones y mapa de conceptos); se descarga solo al abrir /unidades/:id/tutor.)
+  ✓  backendAttempt       0.00 kB /  10 kB  (Intento de evaluación del build .NET (una pregunta por paso, tiempo, confirmación y resultado); se descarga al abrir /evaluaciones/:id o un intento en Repasos.)
+  ✓  backendAuthoring     0.00 kB /  30 kB  (Autoría del build .NET (unidades, catálogo y corrección); se descarga solo al entrar en /autoria. Incluye la presentación compartida de Evaluar.)
+  ✓  legacyShell         57.02 kB /  70 kB  (Shell y proveedor de sesiones del build Python existente.)
+  ✓  core                62.29 kB / 180 kB  (Vendor + shell compartido por todas las rutas (siempre descargado).)
+  ✓  catalogRoute        13.92 kB /  16 kB  (Catálogo de temas (/), ruta por defecto.)
+  ✓  projectsRoute        6.38 kB /  14 kB  (Proyectos integradores (/proyectos).)
+  ✓  tutorRoute          19.01 kB /  30 kB  (Tutor, evaluación, práctica, progreso y salud (/tutor).)
+  ✓  authoringRoute      13.61 kB /  24 kB  (Mesa editorial y editor de lecciones (/autoria).)
+  ✓  voice                7.10 kB /  14 kB  (Voz en tiempo real, sólo se descarga al activarla.)
+  ✓  markdownShared      44.62 kB /  70 kB  (Renderer Markdown compartido por unidades, tutor y vista previa de autoría; se descarga al mostrar texto.)
+  ✓  backendPersonal      0.00 kB /  18 kB  (Inicio, apuntes, repasos e historial del alumno; pantallas diferidas con consultas compartidas.)
+
+Todas las rutas están dentro de su presupuesto de carga.

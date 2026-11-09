@@ -1,0 +1,25 @@
+{
+  "base": "22b7aa2b5be6c8381ee1108d57ae97129685c26d",
+  "branch": "feat/ui-ux-u6-validation",
+  "runtime": {
+    "node": "24.21.0",
+    "pnpm": "11.16.0",
+    "dotnet": "11.0.100-rc.1.26425.128",
+    "playwright": "1.62.1",
+    "chromium": "151.0.7922.34"
+  },
+  "mode": "production preview; local synthetic PostgreSQL; simulated Google, AI and microphone",
+  "files": {
+    "frontend/src/features/backend/Attempt.module.css": "fed6139271a08c6a89b8adba920f4d59a3cb4f6b4b7c36809d1945d2d1996551",
+    "frontend/src/features/backend/Notes.module.css": "35116bcc4333eef179c21c5ccf5b5fcb6c836b574345663f4dd54e9a4e051bfb",
+    "frontend/src/features/tutor/TutorMarkdown.tsx": "1ef167fb4141297dbf749b70deb262d59d012252fcfd63a22bff5556088e1926",
+    "frontend/src/ui/Skeleton.module.css": "2430269dc867ce3e04f75794255d3ff6f51dd8d463041fc25e2b97a43bea4e72",
+    "frontend/e2e/backend.spec.ts": "15037dc461831d6a00c63f375bafbd641b5c996ede641ebf75dd8bc70fe12556",
+    "frontend/e2e/uiStressNotes.ts": "49e22d9e12164dd337383ab0d5de9ff0d26a26a1537a6a529302df8cac8c9a39",
+    "frontend/e2e/uiBaseline.ts": "6c443ddaa9f69566a170bd222b18217954f06a2993a299076772391e9d404265",
+    "frontend/e2e/uiControls.ts": "c53f18ce4c03d37c1a77cff2b1d321964cee49bcb9931aab0552e7e030c121ce",
+    "frontend/playwright.backend.config.ts": "f3f3a503099b971095cca31f4c95541761c16fe559fcb35e0a2f77c4704d697f",
+    "frontend/package.json": "b420b0d3bdd5a49738a115be42d51c20078a009e39406d7f832fff50b6991beb",
+    "frontend/pnpm-lock.yaml": "4531f10fc7064109611750246e0682c6e524035afb704365692bc9c56863eb6c"
+  }
+}

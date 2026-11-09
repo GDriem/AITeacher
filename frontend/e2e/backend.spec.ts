@@ -2,8 +2,66 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { baselineSurface, recordBaseline } from "./uiBaseline";
 import { assertControlGeometry, expectTabInStrip } from "./uiControls";
+import { noteCases, stressNotes, type NoteCase } from "./uiStressNotes";
 
 test.describe.configure({ mode: "serial" });
+
+test("U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones", async ({ page }) => {
+  test.setTimeout(180_000);
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await page.route("**/api/tutor/notes?*", async (route) => {
+    const state = new URL(page.url()).searchParams.get("datos") as NoteCase | null;
+    const offset = Number(new URL(route.request().url()).searchParams.get("offset"));
+    await route.fulfill({ json: stressNotes(state && state in noteCases ? state : "demo", offset) });
+  });
+  for (const state of Object.keys(noteCases) as NoteCase[]) {
+    await page.goto(`/apuntes?datos=${state}`);
+    await expect(page.getByRole("article")).toHaveCount(Math.min(20, noteCases[state]));
+    const pagination = page.getByRole("navigation", { name: "Paginación" });
+    if (state === "empty") await expect(page.getByRole("heading", { name: "Todavía no hay apuntes" })).toBeVisible();
+    if (state === "one") await expect(pagination).toContainText("1–1 de 1");
+    if (noteCases[state] > 20) {
+      await pagination.getByRole("button", { name: "Siguiente" }).click();
+      await expect(pagination).toContainText(`21–${String(Math.min(40, noteCases[state]))} de ${String(noteCases[state])}`);
+      await expect(page.getByRole("article")).toHaveCount(Math.min(20, noteCases[state] - 20));
+      await page.reload();
+      await expect(pagination).toContainText("21–");
+      await pagination.getByRole("button", { name: "Anterior" }).click();
+      await expect(pagination).toContainText("1–20");
+    }
+    for (const theme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+      for (const width of [320, 390, 768, 1024, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${state} ${theme} ${String(width)}`).toBe(0);
+      }
+      await page.setViewportSize({ width: 320, height: 900 });
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      if (noteCases[state] > 20) {
+        const code = page.getByRole("article").nth(2).locator("pre");
+        await code.scrollIntoViewIfNeeded();
+        expect(await code.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+        await code.focus(); await page.keyboard.press("ArrowRight");
+        await expect.poll(() => code.evaluate((node) => node.scrollLeft)).toBeGreaterThan(0);
+        await expect(page.getByRole("article").nth(2).getByRole("button", { name: "Editar", exact: true })).toBeVisible();
+      }
+      // A bounded screenshot keeps 12,000-character / paginated fixtures reviewable.
+      if (process.env.AITEACHER_UI_BASELINE_DIR) await page.screenshot({ path: `${process.env.AITEACHER_UI_BASELINE_DIR}/u6-apuntes-${state}-${theme}-320.png` });
+    }
+  }
+  // Text enlargement is a separate simulation, not a claim of native browser zoom.
+  await page.setViewportSize({ width: 768, height: 1000 });
+  await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+  await page.evaluate(() => { document.documentElement.style.fontSize = ""; });
+  const draft = "Mi explicación sigue aquí aunque se interrumpa la red.";
+  await page.getByLabel("Nuevo apunte", { exact: true }).fill(draft);
+  await page.route("**/api/tutor/notes", (route) => route.abort("internetdisconnected"));
+  await page.getByRole("button", { name: "Guardar apunte", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByLabel("Nuevo apunte", { exact: true })).toHaveValue(draft);
+  await expect(page.getByRole("button", { name: "Guardar apunte", exact: true })).toBeEnabled();
+});
 
 async function googleForTests(page: Page, credential: string) {
   await page.addInitScript((initialCredential) => {

@@ -1,7 +1,7 @@
 # Plan de mejora de UI y UX de AITeacher
 
-Fecha: 8 de noviembre de 2026. Estado: **U0, U1, U2, U3, U4 y U5 completadas localmente; siguiente fase U6**.
-Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`; U2 parte de `10cc3c2`; U3 parte de `fa9843c`; U4 parte de `71bde90`; U5 parte de `af70987`.
+Fecha: 8 de noviembre de 2026. Estado: **U0–U6 completadas localmente; pendientes aceptación humana, verificaciones físicas y despliegue separado**.
+Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`; U2 parte de `10cc3c2`; U3 parte de `fa9843c`; U4 parte de `71bde90`; U5 parte de `af70987`; U6 parte de `22b7aa2`.
 Las skills están instaladas y sus
 criterios se describen en [ui-skills.md](ui-skills.md).
 
@@ -278,14 +278,14 @@ comprobación y evidencia de cierre.
 | Fase | Estado | Evidencia o commit |
 | --- | --- | --- |
 | Preparación de skills | Completada | `8235807`; `ui-skills.md` y lock |
-| Plan | En ejecución | Este documento y base U0 |
+| Plan | Validación local completada; cierre humano pendiente | Este documento y [validación integral](ui-ux-validation.md) |
 | U0 | Completada | [Auditoría, capturas y validaciones](ui-ux-baseline.md), interfaz `80fe1d4`; commit de cierre U0 en la rama `docs/ui-ux-u0-baseline` |
 | U1 | Implementada y validada localmente | F01/F03/F04/F05; [cambios, pruebas y capturas](ui-ux-u1-validation.md); rama `feat/ui-ux-u1-controls`, commit de cierre de esta fase |
 | U2 | Implementada y validada localmente | Inicio, catálogo y lectura; [pruebas y capturas](ui-ux-u2-validation.md); rama `feat/ui-ux-u2-discovery`, commit de cierre de esta fase |
 | U3 | Implementada y validada localmente | Tutor, material de referencia, recuperación, scroll y foco; [pruebas y capturas](ui-ux-u3-validation.md); rama `feat/ui-ux-u3-tutor`, commit de cierre de esta fase |
 | U4 | Implementada y validada localmente | Evaluaciones, apuntes, repasos e historial; [pruebas y capturas](ui-ux-u4-validation.md); rama `feat/ui-ux-u4-learning`, commit de cierre de esta fase |
 | U5 | Implementada y validada localmente | Autoría, publicación y corrección; [pruebas y capturas](ui-ux-u5-validation.md); rama `feat/ui-ux-u5-authoring`, commit de cierre de esta fase |
-| U6 | Pendiente | — |
+| U6 | Validada localmente; aceptación humana/física pendiente | [Validación integral, capturas, comparación U0 y pendientes](ui-ux-validation.md); rama `feat/ui-ux-u6-validation`, commit de cierre local de esta fase |
 
 Al comenzar una sesión: leer este archivo y `ui-skills.md`, comprobar rama y
 cambios del usuario, comparar la base con el HEAD vigente y continuar desde la
@@ -336,9 +336,20 @@ build y presupuestos. Autoría queda en 29,97/30 kB gzip. Las 36 muestras de
 carga mantienen CLS 0. Evidencia, aviso preexistente del detector y límites en
 [U5](ui-ux-u5-validation.md). No se despliega esta fase.
 
+Cierre local de U6: los cinco recorridos se repiten con los datos sintéticos de
+U0. Se corrigen el desbordamiento de Apuntes con código largo y el acceso por
+teclado a ese código; se simplifica el movimiento del progreso y de la carga.
+Pasan 135 pruebas de componentes, 104 .NET, 26 aserciones HTTP, 16 recorridos
+integrados y 50 del frontend Python, TypeScript, lint, ambos builds y presupuestos.
+Las 36 muestras mantienen CLS 0 y LCP 1000–1444 ms. Se conservan 254 capturas;
+453 registros de geometría tienen desbordamiento 0. No se declara mejora de
+velocidad ni comprensión humana. Tablas densas a 320 px quedan como detalle
+menor explícito. Evidencia y criterios de cierre humano en
+[ui-ux-validation.md](ui-ux-validation.md). No se despliega esta fase.
+
 Solicitud sugerida para retomar:
 
-> Retomemos `docs/ui-ux-improvement-plan.md` desde U6. Conservá la prioridad
-> alumno primero y la identidad actual. U5 está implementada y documentada;
-> repetí la validación integral, separando evidencia automatizada de las
-> verificaciones físicas y humanas pendientes.
+> Retomemos el cierre humano de `docs/ui-ux-validation.md`. La validación local
+> de U6 está completa. Conservá la prioridad alumno primero y la identidad
+> actual; registremos teléfono/teclado físico, zoom nativo, lector de pantalla,
+> voz real y aceptación de las cinco tareas. Tratemos el despliegue por separado.

@@ -46,7 +46,6 @@
   block-size: 100%;
   background: var(--action-primary);
   border-radius: inherit;
-  transition: inline-size 160ms ease-out;
 }
 
 .clock {
