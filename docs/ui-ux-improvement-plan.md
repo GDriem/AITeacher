@@ -1,7 +1,7 @@
 # Plan de mejora de UI y UX de AITeacher
 
-Fecha: 8 de noviembre de 2026. Estado: **U0, U1, U2, U3 y U4 completadas localmente; siguiente fase U5**.
-Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`; U2 parte de `10cc3c2`; U3 parte de `fa9843c`; U4 parte de `71bde90`.
+Fecha: 8 de noviembre de 2026. Estado: **U0, U1, U2, U3, U4 y U5 completadas localmente; siguiente fase U6**.
+Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`; U2 parte de `10cc3c2`; U3 parte de `fa9843c`; U4 parte de `71bde90`; U5 parte de `af70987`.
 Las skills están instaladas y sus
 criterios se describen en [ui-skills.md](ui-skills.md).
 
@@ -284,7 +284,7 @@ comprobación y evidencia de cierre.
 | U2 | Implementada y validada localmente | Inicio, catálogo y lectura; [pruebas y capturas](ui-ux-u2-validation.md); rama `feat/ui-ux-u2-discovery`, commit de cierre de esta fase |
 | U3 | Implementada y validada localmente | Tutor, material de referencia, recuperación, scroll y foco; [pruebas y capturas](ui-ux-u3-validation.md); rama `feat/ui-ux-u3-tutor`, commit de cierre de esta fase |
 | U4 | Implementada y validada localmente | Evaluaciones, apuntes, repasos e historial; [pruebas y capturas](ui-ux-u4-validation.md); rama `feat/ui-ux-u4-learning`, commit de cierre de esta fase |
-| U5 | Pendiente | — |
+| U5 | Implementada y validada localmente | Autoría, publicación y corrección; [pruebas y capturas](ui-ux-u5-validation.md); rama `feat/ui-ux-u5-authoring`, commit de cierre de esta fase |
 | U6 | Pendiente | — |
 
 Al comenzar una sesión: leer este archivo y `ui-skills.md`, comprobar rama y
@@ -328,8 +328,17 @@ build, presupuestos, TypeScript, lint y detector. Las 36 muestras de carga
 mantienen CLS 0. Evidencia y límites en [U4](ui-ux-u4-validation.md).
 No hay despliegue ni aceptación humana implícita.
 
+Cierre de U5: guardado local/remoto veraz, pasos y errores asociados, descarte
+confirmado, distinción editorial/entregable, evaluación ligada a la revisión
+publicada y corrección con recuperación explícita. Pasan 135 pruebas de
+componentes, 15 recorridos .NET y 3 regresiones finales, TypeScript, lint,
+build y presupuestos. Autoría queda en 29,97/30 kB gzip. Las 36 muestras de
+carga mantienen CLS 0. Evidencia, aviso preexistente del detector y límites en
+[U5](ui-ux-u5-validation.md). No se despliega esta fase.
+
 Solicitud sugerida para retomar:
 
-> Retomemos `docs/ui-ux-improvement-plan.md` desde U5. Conservá la prioridad
-> alumno primero y la identidad actual. U4 está implementada y documentada;
-> retomá autoría y corrección con la evidencia existente.
+> Retomemos `docs/ui-ux-improvement-plan.md` desde U6. Conservá la prioridad
+> alumno primero y la identidad actual. U5 está implementada y documentada;
+> repetí la validación integral, separando evidencia automatizada de las
+> verificaciones físicas y humanas pendientes.

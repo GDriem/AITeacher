@@ -67,5 +67,5 @@ export function readUnitDraft(owner: string, id: string): UnitDraft | null {
   } catch { return null; }
 }
 export function writeUnitDraft(owner: string, id: string, value: UnitDraft | null) {
-  try { if (value) sessionStorage.setItem(draftKey(owner, id), JSON.stringify(value)); else sessionStorage.removeItem(draftKey(owner, id)); } catch { /* El editor sigue disponible sin almacenamiento. */ }
+  try { if (value) sessionStorage.setItem(draftKey(owner, id), JSON.stringify(value)); else sessionStorage.removeItem(draftKey(owner, id)); return true; } catch { return false; }
 }

@@ -4,3 +4,5 @@
 .actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-block: var(--space-6); }
 .error { color: var(--status-danger); overflow-wrap: anywhere; }
 .notice { padding: var(--space-4); border-inline-start: 3px solid var(--action-primary); }
+
+.step { color: var(--content-muted); font-size: var(--font-size-sm); }

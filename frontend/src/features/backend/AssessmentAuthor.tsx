@@ -13,7 +13,8 @@ type QuestionType = Schema["ClosedQuestionDocument"]["type"];
 const types: [QuestionType, string][] = [["singleChoice", "Opción única"], ["multipleChoice", "Selección múltiple"], ["trueFalse", "Verdadero o falso"], ["openResponse", "Respuesta abierta"], ["caseAnalysis", "Análisis de caso"], ["practicalExercise", "Ejercicio práctico"]];
 export function AssessmentAuthor({ unitId, revisionId, topicId }: { unitId: string; revisionId: string; topicId: string }) {
   const unit = useQuery({ queryKey: ["published-author-unit", unitId, revisionId], queryFn: async ({ signal }) => result(await backend.GET("/api/units/{unitId}/revisions/{revisionId}", { signal, params: { path: { unitId, revisionId } } })) });
-  return <section className={styles.screen}><h2>Banco, evaluaciones y referencia curricular</h2>{unit.isPending ? <Busy /> : unit.isError ? <Failure error={unit.error} retry={() => void unit.refetch()} /> : <>
+  return <section className={styles.screen}><h2>Evaluaciones entregables</h2>{unit.isPending ? <Busy /> : unit.isError ? <Failure error={unit.error} retry={() => void unit.refetch()} /> : unit.data.revision.document.kind === "reading" ? <EmptyState title="Esta publicación es de solo lectura" description="Las lecturas no tienen evaluaciones entregables. Para añadirlas, prepara y publica una unidad con objetivos, práctica y evaluación desde el editor." /> : <>
+    <p><strong>{unit.data.revision.document.title}</strong> · revisión publicada {unit.data.revision.number}</p><p>Añade preguntas al banco y después elígelas para publicar una evaluación. Las revisiones y entregas anteriores conservan su contenido.</p>
     <QuestionBank key={revisionId} unit={unit.data} /><DefinitionEditor key={`definition-${revisionId}`} unit={unit.data} /><GraphEditor key={`graph-${revisionId}`} unit={unit.data} topicId={topicId} />
   </>}</section>;
 }
@@ -34,7 +35,7 @@ function QuestionBank({ unit }: { unit: Schema["UnitResponse"] }) {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const questions = bank.data?.filter((item) => (!objective || item.document.objectiveIds.includes(objective)) && (!type || item.document.type === type)) ?? [];
-  return <section className={panel}><h3>Banco de preguntas</h3><Button onClick={() => setEditing("new")}>Añadir pregunta</Button>
+  return <section className={panel}><h3>1. Banco de preguntas</h3><p>Guardar una pregunta no la publica como evaluación. Sus respuestas correctas y guías de corrección son privadas.</p><Button onClick={() => setEditing("new")}>Añadir pregunta</Button>
     <Field title="Filtrar por objetivo"><select value={objective} onChange={(e) => url.set("objetivo", e.target.value)}><option value="">Todos los objetivos</option>{unit.revision.document.objectives.map((o) => <option key={o.id} value={o.id}>{o.description}</option>)}</select></Field>
     <Field title="Filtrar por tipo"><select value={type} onChange={(e) => url.set("tipo", e.target.value)}><option value="">Todos los tipos</option>{types.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
     {bank.isPending ? <Busy /> : bank.isError ? <Failure error={bank.error} retry={() => void bank.refetch()} /> : questions.length ? <ul>{questions.map((item) => <li key={item.id}><p>{item.document.prompt} · revisión {item.number}</p><Button onClick={() => setEditing(item)}>Editar pregunta</Button></li>)}</ul> : <EmptyState headingLevel={3} title="No hay preguntas con estos filtros" description="Añade una pregunta o cambia los filtros para comenzar." />}
@@ -59,11 +60,11 @@ function QuestionEditor({ unit, editing, done, busy }: { unit: Schema["UnitRespo
       type, prompt, options: open ? [] : options, correctOptionIds: open ? [] : correctOptionIds,
       scoringPolicy: open ? "rubric" : editing?.document.type === type ? editing.document.scoringPolicy : "exactMatch", rubric: open ? { version: 1, criteria, privateGuidance: guidance } : undefined },
   } })), onSuccess: () => { void queries.invalidateQueries({ queryKey: ["author-questions"] }); done(); } });
-  return <form className={panel} onSubmit={(event) => { event.preventDefault(); create.mutate(); }}><h3>{editing ? "Editar pregunta (nueva revisión)" : "Añadir pregunta al banco"}</h3>
+  return <form className={panel} onSubmit={(event) => { event.preventDefault(); create.mutate(); }}><h3>{editing ? "Editar pregunta (nueva revisión)" : "Añadir pregunta al banco"}</h3><p>Guarda antes de cerrar: estos campos no se recuperan al recargar.</p><fieldset disabled={create.isPending} className={styles.fields}><legend className={styles.legend}>Contenido de la pregunta</legend>
     <Field title="Tipo de pregunta"><select value={type} onChange={(event) => { const value = event.target.value as QuestionType; setType(value); setCorrectOptionIds([]); if (value === "trueFalse") setOptions([{ id: crypto.randomUUID(), text: "Verdadero" }, { id: crypto.randomUUID(), text: "Falso" }]); }}>{types.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
     <Field title="Enunciado"><textarea required maxLength={20000} value={prompt} onChange={(event) => setPrompt(event.target.value)} /></Field>
     <fieldset><legend>Objetivos evaluados</legend>{unit.revision.document.objectives.map((item) => <label className={shared.choice} key={item.id}><input type="checkbox" checked={objectiveIds.includes(item.id)} onChange={(event) => setObjectiveIds(event.target.checked ? [...objectiveIds, item.id] : objectiveIds.filter((id) => id !== item.id))} />{item.description}</label>)}</fieldset>
-    {open ? <><Field title="Guía privada de corrección"><textarea required maxLength={20000} value={guidance} onChange={(event) => setGuidance(event.target.value)} /></Field>
+    {open ? <><Field title="Guía privada de corrección" hint="Solo para autores. Los comentarios para el alumno se escriben al corregir su entrega."><textarea required maxLength={20000} value={guidance} onChange={(event) => setGuidance(event.target.value)} /></Field>
       {criteria.map((item, index) => <fieldset key={item.id}><legend>Criterio {index + 1}</legend><Field title="Descripción"><input required maxLength={2000} value={item.description} onChange={(event) => setCriteria(criteria.map((value) => value.id === item.id ? { ...value, description: event.target.value } : value))} /></Field>
         <Field title="Puntos máximos"><input required type="number" min="0.01" max="1000" step="0.01" value={item.maxPoints} onChange={(event) => setCriteria(criteria.map((value) => value.id === item.id ? { ...value, maxPoints: Number(event.target.value) } : value))} /></Field></fieldset>)}
       <Button onClick={() => setCriteria([...criteria, { id: crypto.randomUUID(), description: "", maxPoints: 1 }])}>Añadir criterio</Button></> : <>
@@ -71,13 +72,14 @@ function QuestionEditor({ unit, editing, done, busy }: { unit: Schema["UnitRespo
       {options.map((item, index) => <fieldset key={item.id}><Field title={`Opción ${String(index + 1)}`}><input required maxLength={2000} readOnly={type === "trueFalse"} value={item.text} onChange={(event) => setOptions(options.map((value) => value.id === item.id ? { ...value, text: event.target.value } : value))} /></Field>
         <label className={shared.choice}><input type={type === "multipleChoice" ? "checkbox" : "radio"} name="correct-options" checked={correctOptionIds.includes(item.id)} onChange={(event) => setCorrectOptionIds(type !== "multipleChoice" ? [item.id] : event.target.checked ? [...correctOptionIds, item.id] : correctOptionIds.filter((id) => id !== item.id))} />Respuesta correcta</label></fieldset>)}
       {type !== "trueFalse" ? <Button onClick={() => setOptions([...options, { id: crypto.randomUUID(), text: "" }])}>Añadir opción</Button> : null}</>}
-    <div className={shared.actions}><Button type="submit" variant="primary" disabled={create.isPending || objectiveIds.length === 0 || (!open && correctOptionIds.length === 0)}>Guardar pregunta</Button></div>
+    <p>{objectiveIds.length === 0 ? "Selecciona al menos un objetivo para guardar." : !open && correctOptionIds.length === 0 ? "Marca la respuesta correcta para guardar." : "La pregunta quedará en el banco de esta revisión publicada."}</p><div className={shared.actions}><Button type="submit" variant="primary" disabled={create.isPending || objectiveIds.length === 0 || (!open && correctOptionIds.length === 0)}>{create.isPending ? "Guardando pregunta…" : "Guardar pregunta"}</Button></div></fieldset>
     {create.isError ? <Failure error={create.error} /> : null}
   </form>;
 }
 
 function DefinitionEditor({ unit }: { unit: Schema["UnitResponse"] }) {
   const queries = useQueryClient();
+  const [confirm, setConfirm] = useState(false);
   const [selected, setSelected] = useState<Schema["QuestionRevision"][]>([]);
   const [title, setTitle] = useState(""); const [mode, setMode] = useState<"practice" | "assessment">("assessment");
   const [minutes, setMinutes] = useState(30); const [attempts, setAttempts] = useState(3); const [feedback, setFeedback] = useState<"afterSubmission" | "never">("afterSubmission");
@@ -85,14 +87,14 @@ function DefinitionEditor({ unit }: { unit: Schema["UnitResponse"] }) {
   const publish = useMutation({ mutationFn: async () => result(await backend.POST("/api/assessments/definitions", { body: { id: crypto.randomUUID(), number: 1, document: {
     title, unitId: unit.id, unitRevisionId: unit.revision.id, objectiveIds: [...new Set(selected.flatMap((item) => item.document.objectiveIds))],
     questionRevisionIds: selected.map((item) => item.id), mode, timeLimitMinutes: minutes, maxAttempts: attempts, feedback, assistance: "none",
-  } } })), onSuccess: () => { setSelected([]); setTitle(""); void queries.invalidateQueries({ queryKey: ["definitions"] }); } });
-  return <form className={panel} onSubmit={(event) => { event.preventDefault(); publish.mutate(); }}><h3>Crear evaluación disponible para alumnos</h3>
+  } } })), onSuccess: () => { setConfirm(false); setSelected([]); setTitle(""); void queries.invalidateQueries({ queryKey: ["definitions"] }); } });
+  return <form className={panel} onSubmit={(event) => { event.preventDefault(); publish.reset(); setConfirm(true); }}><h3>2. Crear evaluación disponible para alumnos</h3><p>Al publicarla, el alumno podrá iniciar un intento. Guarda las preguntas primero; esta selección no se conserva al recargar.</p><fieldset disabled={publish.isPending} className={styles.fields}><legend className={styles.legend}>Configuración de la evaluación</legend>
     <Field title="Título de evaluación"><input required maxLength={300} value={title} onChange={(event) => setTitle(event.target.value)} /></Field>
     <Field title="Modo"><select value={mode} onChange={(event) => setMode(event.target.value as typeof mode)}><option value="assessment">Evaluación</option><option value="practice">Práctica</option></select></Field>
     {questions.isPending ? <Busy /> : questions.isError ? <Failure error={questions.error} retry={() => void questions.refetch()} /> : <>
-      <fieldset><legend>Preguntas de esta publicación</legend>{questions.data.map((item) => <label className={shared.choice} key={item.id}><input type="checkbox" checked={selected.some((value) => value.id === item.id)} onChange={(event) => setSelected(event.target.checked ? [...selected, item] : selected.filter((value) => value.id !== item.id))} />{item.document.prompt}</label>)}</fieldset>
+      <fieldset><legend>Preguntas de esta publicación</legend>{questions.data.length === 0 ? <p>Añade y guarda una pregunta en el banco para poder seleccionarla aquí.</p> : null}{questions.data.map((item) => <label className={shared.choice} key={item.id}><input type="checkbox" checked={selected.some((value) => value.id === item.id)} onChange={(event) => setSelected(event.target.checked ? [...selected, item] : selected.filter((value) => value.id !== item.id))} />{item.document.prompt}</label>)}</fieldset>
 </>}
-    <h4>Orden de las preguntas elegidas</h4><ol>{selected.map((item, index) => <li key={item.id}><p>{item.document.prompt} · revisión {item.number}</p>
+    <h4>Orden de las preguntas elegidas ({selected.length})</h4>{selected.length === 0 ? <p>Selecciona al menos una pregunta del banco.</p> : null}<ol>{selected.map((item, index) => <li key={item.id}><p>{item.document.prompt} · revisión {item.number}</p>
       <Button disabled={index === 0} onClick={() => setSelected((items) => { const next = [...items]; [next[index - 1], next[index]] = [required(next[index]), required(next[index - 1])]; return next; })}>Subir pregunta {index + 1}</Button>
       <Button disabled={index === selected.length - 1} onClick={() => setSelected((items) => { const next = [...items]; [next[index + 1], next[index]] = [required(next[index]), required(next[index + 1])]; return next; })}>Bajar pregunta {index + 1}</Button>
       <Button onClick={() => setSelected(selected.filter((q) => q.id !== item.id))}>Quitar pregunta {index + 1}</Button>
@@ -101,8 +103,9 @@ function DefinitionEditor({ unit }: { unit: Schema["UnitResponse"] }) {
     <Field title="Máximo de intentos"><input required type="number" min="1" max="100" value={attempts} onChange={(event) => setAttempts(Number(event.target.value))} /></Field>
     <Field title="Cuándo mostrar resultados"><select value={feedback} onChange={(event) => setFeedback(event.target.value as typeof feedback)}><option value="afterSubmission">Después de entregar y corregir</option><option value="never">No mostrar resultados</option></select></Field>
     <p>{feedback === "never" ? "El alumno verá la entrega registrada, sin nota ni aciertos." : selected.some((q) => q.document.scoringPolicy === "rubric") ? "El alumno verá «Pendiente de corrección docente». La nota aparecerá después de corregir la rúbrica." : "El alumno verá la nota inmediatamente después de entregar."}</p>
-    <Button type="submit" variant="primary" disabled={publish.isPending || selected.length === 0}>Publicar evaluación</Button>
-    <ToastRegion>{publish.isSuccess ? <Toast tone="success">Evaluación disponible.</Toast> : null}</ToastRegion>{publish.isError ? <Failure error={publish.error} /> : null}
+    <Button type="submit" variant="primary" disabled={publish.isPending || selected.length === 0}>Publicar evaluación</Button></fieldset>
+    <Dialog open={confirm} title="¿Publicar esta evaluación?" onClose={() => { if (!publish.isPending) setConfirm(false); }} actions={<><Button disabled={publish.isPending} onClick={() => setConfirm(false)}>Seguir preparando</Button><Button variant="primary" disabled={publish.isPending} onClick={() => publish.mutate()}>{publish.isPending ? "Publicando evaluación…" : "Confirmar publicación de evaluación"}</Button></>}><p><strong>{title}</strong> · revisión de unidad {unit.revision.number}</p><p>Preguntas: {selected.length} · Duración: {minutes} min · Intentos: {attempts}.</p><p>{feedback === "never" ? "El alumno no verá nota ni aciertos." : "El alumno verá los resultados después de entregar y, si hay rúbrica, después de la corrección docente."}</p><p>Quedará disponible para los alumnos. Las guías privadas no se incluyen en el intento.</p>{publish.isError ? <Failure error={publish.error} /> : null}</Dialog>
+    <ToastRegion>{publish.isSuccess ? <Toast tone="success">Evaluación disponible.</Toast> : null}</ToastRegion>
   </form>;
 }
 

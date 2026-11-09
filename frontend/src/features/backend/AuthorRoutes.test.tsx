@@ -81,7 +81,7 @@ it("sin cambios locales muestra la revisión concurrente al recargar la unidad",
   current = { ...unit, version: 2, revision: { ...unit.revision, id: "r2", number: 2, document: { ...doc, title: "Cambio concurrente" } } };
   await client.invalidateQueries({ queryKey: ["author-unit"] });
   await waitFor(() => expect(screen.getByLabelText("Título de la unidad")).toHaveValue("Cambio concurrente"));
-  expect(screen.getByText("Borrador guardado.")).toBeVisible();
+  expect(screen.getByText("Borrador guardado en el servidor · revisión 2.")).toBeVisible();
 });
 it("abre Revisión sin llamadas de alumno y conserva solo lectura", async () => {
   mount("/autoria/unidades/u?paso=revision");

@@ -167,7 +167,13 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.getByRole("heading", { name: "No hay preguntas con estos filtros" })).toBeVisible();
   await page.getByLabel("Filtrar por tipo").selectOption("");
   await page.getByLabel("Título de evaluación").fill("Evaluación cerrada beta"); await page.getByRole("checkbox", { name: "¿Qué representa un vector?", exact: true }).check();
-  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
+  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "¿Publicar esta evaluación?" })).toContainText("Quedará disponible para los alumnos.");
+  await auditPersonalPage(page, "U5 confirmar evaluacion");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Publicar evaluación", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar publicación de evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
   await page.getByRole("button", { name: "Añadir pregunta", exact: true }).click();
   await page.getByLabel("Tipo de pregunta").selectOption("openResponse"); await page.getByLabel("Enunciado", { exact: true }).fill("Justifica tu comparación de vectores.");
   await page.getByRole("group", { name: "Objetivos evaluados" }).getByRole("checkbox").check();
@@ -177,7 +183,13 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Guardar pregunta", exact: true }).click(); await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.getByLabel("Título de evaluación").fill("Evaluación abierta beta"); await page.getByRole("checkbox", { name: "Justifica tu comparación de vectores.", exact: true }).check();
   await auditPersonalPage(page, "Autoría evaluaciones");
-  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
+  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "¿Publicar esta evaluación?" })).toContainText("Quedará disponible para los alumnos.");
+  await auditPersonalPage(page, "U5 confirmar evaluacion");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Publicar evaluación", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar publicación de evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
   await page.getByLabel("Título de referencia curricular").fill("Mapa Beta"); await page.getByRole("button", { name: "Publicar referencia curricular" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Referencia curricular publicada" })).toBeVisible();
 
@@ -269,9 +281,28 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await switchUser(page, "author"); await mainNav(page, "Autoría").click(); await page.getByRole("link", { name: "Corregir entregas", exact: true }).click();
   await page.getByRole("listitem").filter({ hasText: "Evaluación abierta beta" }).getByRole("button", { name: "Consultar entrega" }).click();
   const reviewUrl = page.url(); await page.reload(); await expect(page).toHaveURL(reviewUrl);
+  await expect(page.getByRole("heading", { name: "Revisión de respuestas", exact: true })).toBeVisible();
   await auditPersonalPage(page, "Autoría corrección");
   await page.getByLabel("Justificación coherente · máximo 1").fill("1"); await page.getByLabel("Comentarios para el alumno").fill("La comparación está justificada.");
-  await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click(); await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
+  const reviewRequests: unknown[] = [];
+  await page.route("**/api/assessments/attempts/*/review", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    reviewRequests.push(route.request().postDataJSON());
+    if (reviewRequests.length === 1) {
+      const response = await route.fetch(); expect(response.ok()).toBeTruthy();
+      await route.fulfill({ status: 503, contentType: "application/problem+json", body: JSON.stringify({ title: "Respuesta perdida después de registrar", status: 503 }) });
+    } else await route.continue();
+  });
+  await page.getByRole("button", { name: "Confirmar corrección final" }).click();
+  await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Los campos quedan bloqueados");
+  await auditPersonalPage(page, "U5 correccion respuesta perdida");
+  await page.getByRole("dialog").getByRole("button", { name: "Cerrar", exact: true }).click();
+  await expect(page.getByLabel("Justificación coherente · máximo 1")).toBeDisabled();
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
+  expect(reviewRequests).toHaveLength(2); expect(reviewRequests[1]).toEqual(reviewRequests[0]);
+  await page.unroute("**/api/assessments/attempts/*/review");
   await switchUser(page, "student-b"); await mainNav(page, "Apuntes").click(); await expect(page.getByText("Todavía no hay apuntes", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Mi idea privada de la beta");
   await mainNav(page, "Historial").click(); await expect(page.getByText("No hay conversaciones históricas importadas para tu cuenta", { exact: true })).toBeVisible();
@@ -857,10 +888,15 @@ test("autoría: borrador recuperable, diff de publicación existente y conflicto
   const current = await (await page.request.get(`/api/units/${unit.id}`)).json() as { version: number };
   await apiPost(page, `/api/units/${unit.id}/revisions`, { version: current.version, document: { ...document, title: "Nuevo cambio remoto" } });
   await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
-  await expect(page.getByText(/Alguien guardó cambios en esta unidad mientras editabas\. Tu borrador sigue en esta pestaña/)).toBeVisible();
+  await expect(page.getByText(/Alguien guardó cambios en esta unidad mientras editabas\. Tus cambios siguen en el editor/)).toBeVisible();
   await page.reload(); await expect(page.getByLabel("Título de la unidad")).toHaveValue("Cambio local");
   await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
   await page.getByRole("button", { name: "Descartar cambios y recargar", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "¿Descartar tus cambios locales?" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByLabel("Título de la unidad")).toHaveValue("Cambio local");
+  await page.getByRole("button", { name: "Descartar cambios y recargar", exact: true }).click();
+  await page.getByRole("button", { name: "Descartar y cargar versión del servidor", exact: true }).click();
   await expect(page.getByLabel("Título de la unidad")).toHaveValue("Nuevo cambio remoto");
 });
 
@@ -1323,4 +1359,42 @@ test("U4: apuntes preserva texto, confirma cambios y restaura foco", async ({ pa
   await expect(note).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "Apunte eliminado." })).toBeVisible();
   await expect(page.getByLabel("Nuevo apunte", { exact: true })).toBeFocused();
+});
+
+
+test("U5: errores asociados, copia local fallida y recuperación sin perder el texto", async ({ page }) => {
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  await page.goto("/autoria/unidades/nueva");
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+  await expect(page.getByLabel("Tema de la nueva unidad")).toBeFocused();
+  await expect(page.getByLabel("Tema de la nueva unidad")).toHaveAccessibleDescription("Selecciona un tema.");
+  await expect(page.getByRole("alert")).toContainText("Revisa los campos indicados");
+  await page.getByLabel("Tema de la nueva unidad").selectOption({ label: "Vectores Beta" });
+  await page.getByLabel("Tipo de material").selectOption("reading");
+  // Solo se bloquea la copia del editor; autenticación y los demás espacios siguen disponibles.
+  await page.evaluate(() => {
+    // Se invoca con original.call(this, ...), conservando el receptor de Storage.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) { if (key.startsWith("aiteacher.autoria.")) throw new DOMException("Quota", "QuotaExceededError"); original.call(this, key, value); };
+    (window as typeof window & { restoreStorage: () => void }).restoreStorage = () => { Storage.prototype.setItem = original; };
+  });
+  await page.getByLabel("Título de la unidad").fill("Lectura U5 con copia local fallida");
+  await expect(page.getByRole("alert").filter({ hasText: "No se pudo conservar" })).toBeVisible();
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+  await page.getByRole("button", { name: "Añadir lectura", exact: true }).click();
+  await page.getByLabel("Título de lectura").fill("Lectura de prueba");
+  await page.getByLabel("Texto de lectura").fill("Contenido sintético para verificar la conservación.");
+  await page.getByLabel("Fuente de lectura").fill("Material local");
+  await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Unidades", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Salir sin conservar cambios", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByLabel("Texto de lectura")).toHaveValue("Contenido sintético para verificar la conservación.");
+  await auditPersonalPage(page, "U5 copia local fallida");
+  await page.evaluate(() => (window as typeof window & { restoreStorage: () => void }).restoreStorage());
+  await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
+  await expect(page).toHaveURL(/\/autoria\/unidades\/[a-f0-9-]{36}\?paso=revision$/);
+  await expect(page.getByText("Borrador guardado en el servidor · revisión 1.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Lectura U5 con copia local fallida", exact: true })).toBeVisible();
 });

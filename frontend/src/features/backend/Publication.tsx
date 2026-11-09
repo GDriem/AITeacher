@@ -27,9 +27,10 @@ export function Publication({ unit, dirty }: { unit: Schema["UnitResponse"]; dir
   const ready = !comparing || published.isSuccess;
   const diff = ready ? revisionDiff(comparing ? published.data?.revision.document as Document : null, document) : [];
   const orphans = document.kind === "learningUnit" && !document.objectives.length ? ["Añade al menos un objetivo antes de publicar."] : orphanObjectives(document);
-  return <section className={panel}><h2>Publicación</h2><p>Se publica el último borrador guardado: revisión {unit.revision.number}. Guarda tus cambios antes de publicar.</p>
+  return <section className={panel}><h2>Publicación</h2><p>{unit.publishedRevisionId === unit.revision.id ? `Los alumnos ven la revisión ${String(unit.revision.number)}, que coincide con el último borrador guardado.` : unit.publishedRevisionId ? `Hay una revisión anterior publicada. El borrador guardado es la revisión ${String(unit.revision.number)}.` : `Esta unidad no está publicada. El borrador guardado es la revisión ${String(unit.revision.number)}.`}</p>
+    {dirty ? <p>Guarda los cambios pendientes antes de publicar. La copia local no cambia lo que ve el alumno.</p> : <p>Revisa la vista previa y compara los cambios antes de publicar.</p>}
     <Button disabled={dirty || unit.publishedRevisionId === unit.revision.id || change.isPending} onClick={() => { change.reset(); setConfirm("publish"); }}>Publicar esta revisión</Button>
-    {unit.publishedRevisionId ? <Button onClick={() => { change.reset(); setConfirm("withdraw"); }}>Retirar publicación</Button> : null}
+    {unit.publishedRevisionId ? <Button disabled={change.isPending} onClick={() => { change.reset(); setConfirm("withdraw"); }}>Retirar publicación</Button> : null}
     <ToastRegion>{notice ? <Toast tone="success" onDismiss={() => setNotice("")}>{notice}</Toast> : null}</ToastRegion>
     <Dialog open={confirm !== null} title={confirm === "publish" ? "Revisar cambios antes de publicar" : "¿Retirar la publicación?"} onClose={() => { if (!change.isPending) setConfirm(null); }} actions={<>
       <Button disabled={change.isPending} onClick={() => setConfirm(null)}>Cancelar</Button>
@@ -37,6 +38,7 @@ export function Publication({ unit, dirty }: { unit: Schema["UnitResponse"]; dir
     </>}>
       {confirm === "withdraw" ? <p>La unidad dejará de estar disponible: los alumnos ya no podrán abrirla. Las revisiones y las entregas anteriores se conservan.</p> : <>
         <p>{comparing ? "Cambios frente a la revisión publicada." : "Primera publicación: todos los elementos son nuevos."}</p>
+        <p>Esta comparación es para autores e incluye criterios privados. Publicar la unidad no crea evaluaciones entregables ni modifica las entregas anteriores.</p>
         {comparing && published.isPending ? <Busy /> : comparing && published.isError ? <Failure error={published.error} retry={() => void published.refetch()} /> : diff.length ? <ul className={styles.changes}>{diff.map((item, index) => <li key={index}><h3>{item.section} · {item.kind}</h3>
           {item.before !== undefined ? <details><summary>Antes</summary><RevisionValue value={item.before} document={published.data ? published.data.revision.document as Document : document} /></details> : null}
           {item.after !== undefined ? <details open><summary>Después</summary><RevisionValue value={item.after} document={document} /></details> : null}
