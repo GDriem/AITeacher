@@ -4,7 +4,8 @@ import { expect, type Locator, type Page } from "@playwright/test";
 export async function assertControlGeometry(page: Page) {
   const navigation = page.getByRole("navigation", { name: "Navegación principal" });
   for (const label of await navigation.locator("a span").all()) {
-    expect(await label.evaluate((node) => node.scrollWidth <= node.clientWidth), await label.textContent() ?? "navigation").toBe(true);
+    const geometry = await label.evaluate((node) => ({ label: node.textContent, visible: node.clientWidth, content: node.scrollWidth, viewport: innerWidth, font: getComputedStyle(node).font }));
+    expect(geometry.content, JSON.stringify(geometry)).toBeLessThanOrEqual(geometry.visible);
   }
   for (const tab of await page.getByRole("tab", { selected: true }).all()) await expectTabInStrip(tab);
 

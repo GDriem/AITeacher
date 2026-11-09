@@ -258,6 +258,18 @@ La consulta acredita el estado de GitHub, no la revisión servida actualmente po
 Azure. Verificarla antes del recorrido. La siguiente acción es la integración
 por PR y CI/CD; probar la beta anterior no valida U0–U6.
 
+Integración preparada en [PR #31](https://github.com/GDriem/AITeacher/pull/31).
+El primer CI descubrió dos hashes de integridad interpretados como claves; se
+verificaron contra Git y se exceptuaron solo sus fingerprints históricos en
+`.gitleaksignore`. El siguiente CI confirmó un recorte de navegación del alumno
+con la fuente de Linux: los destinos ahora reparten ancho desde el nombre, en
+lugar de recibir cinco anchos iguales. La regresión U1 añade una fuente más
+ancha a 320 px y conserva la aserción de etiquetas completas. Pasan TypeScript,
+lint y los dos recorridos locales afectados (editorial/alumno y U1); se revisó
+la captura actual de Apuntes a 320 px. Pendiente confirmar el CI completo de esa
+corrección. El propietario realizará el bypass de revisión al ser el único
+contribuidor; no se cambian las reglas del repositorio.
+
 ## Validación transversal
 
 - Tamaños: 320, 768, 1024 y 1440 px; ambos temas. Añadir una anchura de teléfono

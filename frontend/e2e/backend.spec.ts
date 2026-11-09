@@ -1089,6 +1089,12 @@ test("U1: selección, hover, foco y navegación táctil conservan estados distin
     await assertControlGeometry(page);
     await recordBaseline(page, "U1 filtro seleccionado con hover y foco", colorScheme);
   }
+  // Una fuente más ancha reproduce el recorte observado con system-ui en Linux.
+  await page.setViewportSize({ width: 320, height: 800 });
+  const widerNavigation = await page.addStyleTag({ content: 'nav[aria-label="Navegación principal"] { font-family: monospace; }' });
+  await assertControlGeometry(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  await widerNavigation.evaluate((node) => node.parentNode?.removeChild(node));
   const touch = await browser.newContext({ viewport: { width: 320, height: 800 }, isMobile: true, hasTouch: true });
   const phone = await touch.newPage();
   await googleForTests(phone, "author"); await phone.goto("/"); await login(phone);

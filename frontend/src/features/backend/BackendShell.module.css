@@ -304,7 +304,8 @@
 
   .nav li {
     min-width: 0;
-    flex: 1 1 0;
+    /* Repartir el espacio desde el ancho del nombre: las fuentes del sistema varían. */
+    flex: 1 1 auto;
   }
 
   .nav a {
