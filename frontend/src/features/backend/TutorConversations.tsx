@@ -33,7 +33,7 @@ export function TutorConversations({ unit, current, busy, starting, start, open 
     </>;
   const label = `Conversaciones de la unidad${conversations.data ? ` (${String(items.length)})` : ""}`;
   return <nav className={styles.conversations} aria-label="Conversaciones de la unidad">
-    <Button variant="primary" disabled={starting || busy} onClick={start}>{starting ? "Creando conversación…" : "Nueva conversación"}</Button>
+    <Button variant={current ? "secondary" : "primary"} disabled={starting || busy} onClick={start}>{starting ? "Creando conversación…" : "Nueva conversación"}</Button>
     {wide ? <><h2 className={styles.panelTitle}>{label}</h2>{list}</>
       : <details className={styles.conversationsFold}><summary>{label}</summary>{list}</details>}
   </nav>;

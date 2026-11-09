@@ -1,0 +1,18 @@
+{
+  "baseCommit": "fa9843c6d7b37fbe598f72bfdc5482bd3b8c3fed",
+  "capturedWithUncommittedUI": true,
+  "series": "Capturas finales: recorrido editorial, tutor con recuperación y U3; performance.json procede de la serie integral anterior a los dos ajustes menores de guardado del foco y estado vacío.",
+  "files": {
+    "frontend/e2e/backend.spec.ts": "40e4da2fd7f3ea609074c33146ff1a516db5912e761922b72650f08a52fa1fb5",
+    "frontend/src/features/backend/Tutor.module.css": "d6c117ee67e48eff35b481076aeb655997503e22e8f77462c9ab1fbb6ced6d1f",
+    "frontend/src/features/backend/Tutor.test.tsx": "ae28a07506d935266a7b19fb0740a9be1410886e239692d548be281bb481b5fd",
+    "frontend/src/features/backend/Tutor.tsx": "a92ca1ac2b9232a98cb6f699dfdd55f862d5b2ede15be97a4abef76ddaed9e38",
+    "frontend/src/features/backend/TutorConversations.tsx": "883bcf3544a8b5b3418dacd3ecbb9eb25fe76226fd16c5fddb153827937b396b",
+    "frontend/src/features/backend/TutorMapPanel.tsx": "66d7072bdf9cd90142e8edf0fd2c9645251f8bfba76aa981071c5ca350ac40e4",
+    "frontend/src/features/backend/UnitTutor.tsx": "8c9bae39d4c4db6d534fbfe7e66489be677eace1a8fd40011cf92354a95fcb9c",
+    "frontend/src/features/backend/useChatScroll.ts": "4722f1620017d9e89b4a551b16b5b0f4e188f8ccd78f71cb10415fe8be20c27d",
+    "frontend/src/features/backend/useTutorViewport.ts": "32a0bf0f884da96208340ea9906682cdffc58036549660034b5959cfffa8a599",
+    "frontend/src/features/sessions/SessionDrawer.test.tsx": "9123308a1cc6c215cf1a8f06620ae30466cb93fb15515d4610d7f13f282b2a96",
+    "frontend/src/features/voice/VoiceSessionDialog.tsx": "12423053ab727911c073841fb5762b7559a02717f135c73cbfbc2f21d8a3fc67"
+  }
+}

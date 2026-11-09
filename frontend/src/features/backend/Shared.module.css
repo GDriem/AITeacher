@@ -30,7 +30,7 @@
   min-height: 2.75rem;
   color: var(--content-strong);
   background: var(--surface-sunken);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   padding: var(--space-3);
 }

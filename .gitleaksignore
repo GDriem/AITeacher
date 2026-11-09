@@ -1,3 +1,7 @@
 # Historical README placeholder (Spanish instruction to generate a session secret).
 # Only this exact finding is ignored; current files and other revisions remain scanned.
 947d8015a0d24b69f567afbaf205c6b578ca9ae4:README.md:generic-api-key:88
+# Verified SHA-256 of frontend/src/styles/tokens.css at the U1 commit.
+10cc3c27ae618298f8b160741e8a7ede8c8af728:docs/ui-ux-u1/source.json:generic-api-key:11
+# Verified SHA-256 of the vendored google-api.json fixture at skill installation.
+82358075c7f4abb31668657d5cafbdf391b1f3fc:docs/ui-skills.lock.json:generic-api-key:238

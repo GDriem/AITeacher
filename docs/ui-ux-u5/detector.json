@@ -1,0 +1,12 @@
+[
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "category": "slop",
+    "file": "/Users/gadiorellana/Source/AITeacher/frontend/src/features/backend/UnitEditor.module.css",
+    "line": 6,
+    "snippet": "border-inline-start: 3px solid"
+  }
+]

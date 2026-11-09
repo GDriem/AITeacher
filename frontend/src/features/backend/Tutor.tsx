@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { TutorMarkdown } from "../tutor/TutorMarkdown";
@@ -9,6 +9,9 @@ import { Button, EmptyState, buttonClass } from "../../ui";
 import { TutorConversations } from "./TutorConversations";
 import { tutorPath, useTutorConversation } from "./unitQueries";
 import { appendTurn, conversationTitle, useTutorMessages } from "./tutorQueries";
+import { TutorMapPanel } from "./TutorMapPanel";
+import { useChatScroll } from "./useChatScroll";
+import { useTutorViewport } from "./useTutorViewport";
 import styles from "./Tutor.module.css";
 const VoiceSessionDialog = lazy(() => import("../voice/VoiceSessionDialog").then((module) => ({ default: module.VoiceSessionDialog })));
 
@@ -25,6 +28,7 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
   conversationId: string | null; openConversation: (id: string | null) => void;
 }) {
   const queries = useQueryClient();
+  const workspace = useTutorViewport();
   const id = conversationId;
   const [text, setText] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -54,32 +58,33 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
   const items = messages.data?.pages.flatMap((page) => page.items) ?? [];
   const confirmed = id && conversation.data?.unitId === unit.id ? conversation.data : null;
   // El historial puede llegar antes que la conversación: el salto al final espera a que el chat esté montado.
-  const { end, ready, keep, follow } = useChatScroll(messages.isSuccess && Boolean(confirmed), `${items.at(-1)?.id ?? ""}:${String(send.isPending)}`, items[0]?.id);
+  const { end, ready, keep, follow, away, latest } = useChatScroll(messages.isSuccess && Boolean(confirmed), `${items.at(-1)?.id ?? ""}:${String(send.isPending)}`, items[0]?.id);
   const top = useRef<HTMLDivElement>(null);
   const { hasPreviousPage, isFetchingPreviousPage, fetchPreviousPage } = messages;
   const earlier = () => { keep(); void fetchPreviousPage(); };
   // Subir hasta el principio del historial carga la ventana anterior, sin botones de paginación.
   useEffect(() => {
     const node = top.current;
-    if (!node || !ready || !hasPreviousPage || isFetchingPreviousPage || typeof IntersectionObserver === "undefined") return;
+    if (!node || !ready || !hasPreviousPage || isFetchingPreviousPage || messages.isFetchPreviousPageError || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { keep(); void fetchPreviousPage(); } });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [ready, keep, hasPreviousPage, isFetchingPreviousPage, fetchPreviousPage]);
+  }, [ready, keep, hasPreviousPage, isFetchingPreviousPage, messages.isFetchPreviousPageError, fetchPreviousPage]);
 
   const blocked = !conversation.data || send.isPending || send.isError || pending.isPending || pending.isError || Boolean(pending.data.request) || Boolean(conversation.data.activeTurnId);
   const submit = () => {
     const original = request.current ?? pending.data?.request;
-    follow();
-    if (original) { request.current = original; send.mutate(original); return; }
+    if (send.isPending) return;
+    if (original) { follow(); request.current = original; send.mutate(original); return; }
     if (!conversation.data || !text.trim() || blocked) return;
+    follow();
     request.current ??= { requestId: crypto.randomUUID(), version: conversation.data.version, text };
     send.mutate(request.current);
   };
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); event.currentTarget.form?.requestSubmit(); }
+    if (!event.nativeEvent.isComposing && (event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); event.currentTarget.form?.requestSubmit(); }
   };
-  return <div className={[styles.workspace, mapOpen && confirmed ? styles.withMap : null].filter(Boolean).join(" ")}>
+  return <div ref={workspace} className={[styles.workspace, mapOpen && confirmed ? styles.withMap : null].filter(Boolean).join(" ")}>
     <TutorConversations unit={unit} current={id} busy={send.isPending} starting={start.isPending} start={() => start.mutate()} open={(next) => { if (next !== id) openConversation(next); }} />
     <section className={styles.chat} aria-label="Conversación educativa">
       {start.isError ? <Failure error={start.error} /> : null}
@@ -94,14 +99,14 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
           <h2>{conversationTitle(unit, confirmed)}</h2>
           <div className={styles.toolbar}>
             {voice.data?.enabled ? <Button size="sm" disabled={send.isPending} onClick={() => setVoiceOpen(true)}>Conversar por voz</Button> : null}
-            <Button size="sm" variant="ghost" disabled={save.isPending || send.isPending} onClick={() => save.mutate(null)}>Guardar resumen de la conversación</Button>
             <Button size="sm" variant="ghost" aria-expanded={mapOpen} aria-controls="tutor-map" onClick={() => setMapOpen((value) => !value)}>Mapa de conceptos</Button>
+            <Button size="sm" variant="ghost" aria-label="Guardar resumen de la conversación" disabled={save.isPending || send.isPending || !items.some((item) => item.role === "assistant")} onClick={() => save.mutate(null)}>{save.isPending && save.variables === null ? "Guardando resumen…" : "Guardar resumen"}</Button>
           </div>
         </header>
-        {voice.data?.enabled ? <p className={styles.muted}>La voz no guarda mensajes ni acredita progreso. Al reconectar se retoma el contexto de la actividad.</p> : null}
+        <Reference unit={unit} conversation={confirmed} />
         {confirmed.revisionId !== unit.revision.id ? <p className={styles.banner} role="status">Esta conversación se inició con una publicación anterior de la unidad; el material puede haber cambiado.</p> : null}
         <p className={styles.notice} role="status">{save.isSuccess ? save.variables ? "Apunte guardado." : "Resumen guardado en apuntes." : ""}</p>
-        {save.isError ? <Failure error={save.error} /> : null}
+        {save.isError && save.variables === null ? <Failure title="No se guardó el resumen" error={save.error} retry={() => save.mutate(null)} /> : null}
         {voiceOpen ? <Suspense fallback={<Busy />}><VoiceSessionDialog activeSessionId={id} studentId="" endpoint={`/api/tutor/conversations/${encodeURIComponent(id)}/voice`}
           onClose={() => setVoiceOpen(false)} onFallback={() => setVoiceOpen(false)} /></Suspense> : null}
         <div className={styles.feed} aria-busy={send.isPending || isFetchingPreviousPage}>
@@ -110,39 +115,43 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
               <Button size="sm" variant="ghost" disabled={isFetchingPreviousPage} onClick={earlier}>{isFetchingPreviousPage ? "Cargando mensajes anteriores…" : "Cargar mensajes anteriores"}</Button>
             </div> : null}
             {messages.isFetchPreviousPageError ? <Failure error={messages.error} retry={earlier} /> : null}
-            {!items.length && !send.isPending ? <p className={styles.muted}>Pregunta lo que quieras sobre esta actividad: el tutor responde con el material de la unidad.</p> : null}
+            {!items.length && !send.isPending && !send.isError && !pending.data?.request ? <p className={styles.muted}>Pregunta lo que quieras sobre esta actividad: el tutor responde con el material de la unidad.</p> : null}
             <ol className={styles.messages}>
               {items.map((item) => <Message key={item.id} item={item} saved={saved.includes(item.id)} saving={save.isPending && save.variables === item.id}
-                save={() => save.mutate(item.id)} disabled={save.isPending || send.isPending} />)}
+                error={save.isError && save.variables === item.id ? save.error : null} save={() => save.mutate(item.id)} disabled={save.isPending || send.isPending} />)}
               {send.isPending ? <>
-                <li className={[styles.message, styles.mine].join(" ")}><article><h3 className={styles.author}>Tú</h3><p>{send.variables.text}</p></article></li>
+                {items.some((item) => item.role === "user" && item.sequence === 2 * (send.variables.version + 1)) ? null
+                  : <li className={[styles.message, styles.mine].join(" ")}><article><h3 className={styles.author}>Tú</h3><p>{send.variables.text}</p></article></li>}
                 <li className={styles.message}><div className={styles.typing}><span aria-hidden="true"><i /><i /><i /></span><span role="status">El tutor está preparando una respuesta…</span></div></li>
               </> : null}
             </ol>
           </>}
         </div>
-        <div className={styles.dock}>
+        <div className={styles.recovery}>
           {pending.isError ? <Failure error={pending.error} retry={() => void pending.refetch()} /> : null}
           {pending.data?.request && !send.isPending ? <div className={styles.banner} role="status">
             <p><strong>Tienes un mensaje sin respuesta:</strong> «{pending.data.request.text}»</p>
-            <p>Si la respuesta no llegó, pulsa Recuperar para volver a enviarla. Si el tutor aún está respondiendo, espera unos segundos e inténtalo de nuevo.</p>
+            <p>Recuperar vuelve a consultar el mismo turno. Si el tutor sigue respondiendo, espera unos segundos y vuelve a intentarlo.</p>
             <Button size="sm" variant="primary" aria-label="Recuperar mensaje pendiente" onClick={submit}>Recuperar</Button>
           </div> : null}
-          {send.isError ? <Failure error={send.error} retry={submit} /> : null}
+          {send.isError ? <><Failure title="No llegó la respuesta" error={send.error} retry={pending.data?.request ? undefined : submit} /><p className={styles.muted}>Tu mensaje se conserva. {pending.data?.request ? "Usa Recuperar para consultar el mismo turno." : "Reintentar usa el mismo mensaje, sin crear otro turno."}</p></> : null}
+        </div>
+        <div className={styles.dock}>
+          {away ? <Button size="sm" variant="ghost" onClick={latest}>Ir al último mensaje</Button> : null}
           <Composer text={text} change={setText} blocked={blocked} pending={send.isPending} submit={submit} keyDown={keyDown} />
         </div>
         <div ref={end} className={styles.end} />
       </>}
     </section>
-    {mapOpen && confirmed ? <MapPanel close={() => setMapOpen(false)}>
+    {mapOpen && confirmed ? <TutorMapPanel close={() => setMapOpen(false)}>
       <ConceptMap topicId={unit.topicId} conversationId={confirmed.id} messages={items} />
-    </MapPanel> : null}
+    </TutorMapPanel> : null}
   </div>;
 }
 
-function Message({ item, saved, saving, save, disabled }: { item: Schema["TutorMessage"]; saved: boolean; saving: boolean; save: () => void; disabled: boolean }) {
+function Message({ item, saved, saving, save, disabled, error }: { item: Schema["TutorMessage"]; saved: boolean; saving: boolean; save: () => void; disabled: boolean; error: Error | null }) {
   const mine = item.role === "user";
-  return <li className={[styles.message, mine ? styles.mine : null].filter(Boolean).join(" ")} id={`message-${item.id}`}>
+  return <li className={[styles.message, mine ? styles.mine : null].filter(Boolean).join(" ")} id={`message-${item.id}`} tabIndex={-1}>
     <article>
       <header className={styles.messageHeader}><h3 className={styles.author}>{mine ? "Tú" : "Tutor"}</h3><time dateTime={item.createdAt}>{time.format(new Date(item.createdAt))}</time></header>
       <TutorMarkdown>{item.text}</TutorMarkdown>
@@ -152,6 +161,7 @@ function Message({ item, saved, saving, save, disabled }: { item: Schema["TutorM
       {mine ? null : <div className={styles.messageActions}>
         <Button size="sm" variant="ghost" disabled={disabled || saved} onClick={save}>{saved ? "Guardado en apuntes" : saving ? "Guardando…" : "Guardar en apuntes"}</Button>
       </div>}
+      {error ? <Failure title="No se guardó el apunte" error={error} retry={save} /> : null}
     </article>
   </li>;
 }
@@ -162,81 +172,27 @@ function Composer({ text, change, blocked, pending, submit, keyDown }: {
   const field = useId();
   return <form className={styles.composer} aria-busy={pending} onSubmit={(event) => { event.preventDefault(); submit(); }}>
     <label htmlFor={field}>Tu mensaje</label>
-    <textarea id={field} required rows={2} maxLength={4000} value={text} disabled={blocked} aria-describedby={`${field}-hint`}
+    <textarea id={field} required rows={2} maxLength={4000} value={text} readOnly={blocked} aria-disabled={blocked} aria-describedby={`${field}-hint`}
       placeholder="Pregunta, pide un ejemplo o explica con tus palabras…" onChange={(event) => change(event.target.value)} onKeyDown={keyDown} />
     <div className={styles.composerFooter}>
-      <span id={`${field}-hint`} className={styles.muted}>Ctrl/⌘ + Enter para enviar · {text.length} de 4000 caracteres</span>
-      <Button type="submit" variant="primary" disabled={blocked || !text.trim()}>{pending ? "Preparando respuesta…" : "Enviar"}</Button>
+      <span id={`${field}-hint`} className={styles.muted}><span className={styles.shortcut}>Ctrl/⌘ + Enter para enviar<br /></span>{text.length} de 4000 caracteres</span>
+      <Button type="submit" variant="primary" disabled={blocked || !text.trim()}>{pending ? "Esperando…" : "Enviar"}</Button>
     </div>
   </form>;
 }
 
-/** Mapa de conceptos plegable: columna lateral en escritorio y hoja inferior en móvil. Escape lo cierra. */
-function MapPanel({ close, children }: { close: () => void; children: ReactNode }) {
-  const panel = useRef<HTMLElement>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
-  // El foco entra al abrir y vuelve al cerrar: el efecto no debe repetirse en cada render.
-  const onEscape = useEffectEvent(close);
-  useEffect(() => {
-    heading.current?.focus();
-    const toggle = document.querySelector<HTMLElement>('[aria-controls="tutor-map"]');
-    const node = panel.current;
-    const escape = (event: globalThis.KeyboardEvent) => { if (event.key === "Escape") onEscape(); };
-    node?.addEventListener("keydown", escape);
-    // Al cerrar, el foco vuelve al botón que lo abrió.
-    return () => { node?.removeEventListener("keydown", escape); toggle?.focus(); };
-  }, []);
-  return <aside ref={panel} id="tutor-map" className={styles.map} aria-labelledby="tutor-map-title">
-    <header className={styles.mapHeader}>
-      <h2 id="tutor-map-title" ref={heading} tabIndex={-1}>Mapa de conceptos</h2>
-      <Button size="sm" variant="ghost" onClick={close}>Cerrar mapa</Button>
-    </header>
-    {children}
-  </aside>;
-}
-
-/**
- * Desplazamiento del chat sobre la ventana: abre en el mensaje más reciente, lo
- * sigue mientras el alumno está al final y conserva la posición al cargar
- * mensajes anteriores. El anclaje nativo del navegador se desactiva para no
- * compensar dos veces.
- */
-function useChatScroll(ready: boolean, last: string, first: string | undefined) {
-  const end = useRef<HTMLDivElement>(null);
-  const following = useRef(true);
-  const anchor = useRef<number | null>(null);
-  const opened = useRef(false);
-  useEffect(() => {
-    const root = document.documentElement;
-    const previous = root.style.overflowAnchor;
-    root.style.overflowAnchor = "none";
-    const track = () => { following.current = root.scrollHeight - window.scrollY - window.innerHeight < 160; };
-    window.addEventListener("scroll", track, { passive: true });
-    return () => { root.style.overflowAnchor = previous; window.removeEventListener("scroll", track); };
-  }, []);
-  useEffect(() => {
-    // `end` es hijo directo de la sección del chat, que solo existe con el chat listo.
-    const chat = end.current?.parentElement;
-    if (!ready || !chat || typeof ResizeObserver === "undefined") return;
-    // Contenido del chat que crece después del salto (avisos, fuentes desplegadas, imágenes del texto) no debe sacar al alumno del final.
-    // Se observa solo el chat: abrir la lista plegable de conversaciones, encima de él en móvil, no debe arrastrar al final.
-    const resize = new ResizeObserver(() => { if (opened.current && following.current) end.current?.scrollIntoView({ block: "end", behavior: "instant" }); });
-    resize.observe(chat);
-    return () => resize.disconnect();
-  }, [ready]);
-  useLayoutEffect(() => {
-    // Sin `scrollIntoView` (jsdom) tampoco hay desplazamiento que compensar.
-    if (anchor.current === null || typeof end.current?.scrollIntoView !== "function") return;
-    window.scrollBy({ top: document.documentElement.scrollHeight - anchor.current, behavior: "instant" });
-    anchor.current = null;
-  }, [first]);
-  useLayoutEffect(() => {
-    if (!ready || !following.current || typeof end.current?.scrollIntoView !== "function") return;
-    // Al abrir se salta al final sin animación ("auto" heredaría el scroll suave global); los mensajes nuevos se siguen con suavidad.
-    const smooth = opened.current && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    end.current.scrollIntoView({ block: "end", behavior: smooth ? "smooth" : "instant" });
-    opened.current = true;
-  }, [ready, last]);
-  // Los efectos corren después de este salto: la carga automática de mensajes anteriores no se dispara al abrir.
-  return { end, ready, keep: () => { anchor.current = document.documentElement.scrollHeight; }, follow: () => { following.current = true; } };
+/** Solo muestra el material vigente cuando coincide con la publicación de la conversación. */
+function Reference({ unit, conversation }: { unit: Schema["UnitResponse"]; conversation: Schema["TutorConversation"] }) {
+  if (conversation.revisionId !== unit.revision.id) return null;
+  const document = unit.revision.document;
+  const reading = conversation.mode === "reading" ? document.readings.find((item) => item.id === conversation.activityId) : undefined;
+  const exercise = conversation.mode === "practice" ? document.exercises.find((item) => item.id === conversation.activityId) : undefined;
+  const text = reading?.text ?? exercise?.prompt;
+  if (!text) return null;
+  return <details className={styles.reference}>
+    <summary>{reading ? "Consultar lectura" : "Consultar ejercicio"}</summary>
+    <div className={styles.referenceText}><TutorMarkdown>{text}</TutorMarkdown>
+      {reading ? <p className={styles.muted}>Fuente: {reading.source}</p> : null}
+    </div>
+  </details>;
 }

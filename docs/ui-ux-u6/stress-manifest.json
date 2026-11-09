@@ -1,0 +1,132 @@
+[
+  {
+    "screenshot": "u6-apuntes-boundary-dark-320.png",
+    "fixtureState": "boundary",
+    "theme": "dark",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:35.904359+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-boundary-light-320.png",
+    "fixtureState": "boundary",
+    "theme": "light",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:35.129637+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-demo-dark-320.png",
+    "fixtureState": "demo",
+    "theme": "dark",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:30.091999+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-demo-light-320.png",
+    "fixtureState": "demo",
+    "theme": "light",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:29.909976+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-empty-dark-320.png",
+    "fixtureState": "empty",
+    "theme": "dark",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:31.277807+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-empty-light-320.png",
+    "fixtureState": "empty",
+    "theme": "light",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:31.100585+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-many-dark-320.png",
+    "fixtureState": "many",
+    "theme": "dark",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:39.371711+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-many-light-320.png",
+    "fixtureState": "many",
+    "theme": "light",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:38.571774+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-one-dark-320.png",
+    "fixtureState": "one",
+    "theme": "dark",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:32.534267+00:00"
+  },
+  {
+    "screenshot": "u6-apuntes-one-light-320.png",
+    "fixtureState": "one",
+    "theme": "light",
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "fullPage": false,
+    "routePath": "/apuntes",
+    "test": "U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones",
+    "writtenAt": "2026-11-09T00:41:32.351516+00:00"
+  }
+]

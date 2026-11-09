@@ -9,6 +9,8 @@
 .tab {
   min-height: 2.75rem;
   flex: none;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
   padding: var(--space-2) var(--space-4);
   color: var(--content-muted);
   background: transparent;
@@ -18,8 +20,16 @@
   font-weight: 700;
 }
 
-.tab:hover {
-  color: var(--content-strong);
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: var(--content-strong);
+    background: var(--surface-subtle);
+  }
+}
+
+/* Keep the complete keyboard ring inside the scrolling strip. */
+.tab:focus-visible {
+  outline-offset: -0.25rem;
 }
 
 .tab[aria-selected="true"] {

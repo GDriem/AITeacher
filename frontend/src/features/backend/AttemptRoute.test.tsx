@@ -157,3 +157,36 @@ it("sigue consultando tras el cero local hasta que el servidor cierra el intento
   await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
   expect(reads).toBe(3);
 });
+
+it("avisa si falla el guardado local y conserva las respuestas en memoria", async () => {
+  server.use(http.get(`${origin}/api/assessments/attempts/intento`, () => HttpResponse.json(attempt())));
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("Full", "QuotaExceededError"); });
+  mount();
+  await userEvent.setup().click(await screen.findByRole("radio", { name: "Características" }));
+  expect(screen.getByText(/No pudimos guardar las respuestas en esta pestaña/)).toBeVisible();
+  expect(screen.getByRole("radio", { name: "Características" })).toBeChecked();
+});
+
+it("reintenta la misma entrega tras un fallo sin habilitar cambios ni envíos paralelos", async () => {
+  const bodies: unknown[] = [];
+  server.use(
+    http.get(`${origin}/api/assessments/attempts/intento`, () => HttpResponse.json(attempt({ questions: questions.slice(0, 1) }))),
+    http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
+    http.post(`${origin}/api/assessments/attempts/intento/submit`, async ({ request }) => {
+      bodies.push(await request.json());
+      return bodies.length === 1 ? HttpResponse.json({}, { status: 503 }) : HttpResponse.json(attempt({ status: "submitted", fraction: 1 }));
+    }),
+  );
+  const user = userEvent.setup();
+  mount();
+  await user.click(await screen.findByRole("radio", { name: "Características" }));
+  await user.click(screen.getByRole("button", { name: "Entregar respuestas" }));
+  await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Sí, entregar" }));
+  await screen.findByText("No pudimos confirmar la entrega");
+  expect(screen.getByRole("radio", { name: "Características" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Entregar respuestas" })).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Reintentar" }));
+  await screen.findByText("Resultado: 100 %");
+  expect(bodies).toHaveLength(2);
+  expect(bodies[0]).toEqual(bodies[1]);
+});

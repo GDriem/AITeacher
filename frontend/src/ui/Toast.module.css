@@ -2,7 +2,7 @@
   position: fixed;
   z-index: 50;
   inset-inline: var(--space-4);
-  inset-block-end: var(--space-4);
+  inset-block-end: var(--toast-bottom, var(--space-4));
   display: grid;
   justify-items: center;
   gap: var(--space-2);

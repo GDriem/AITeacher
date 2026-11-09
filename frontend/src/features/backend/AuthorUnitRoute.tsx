@@ -21,6 +21,6 @@ export function AuthorUnitRoute() {
     queries.setQueryData(["author-unit", value.id], value);
     if (!unitId) void navigate(`${authorPath(value.id)}?paso=revision`, { replace: true, state: { savedUnit: value.id } });
   }} />{unit.data ? <Publication unit={unit.data} dirty={dirty} /> : null}
-    {unit.data?.publishedRevisionId && unit.data.revision.document.kind !== "reading" ? <Link className={buttonClass()} to={`${authorPath(unit.data.id)}/evaluaciones`}>Editar evaluaciones</Link> : null}
+    {unit.data?.publishedRevisionId ? <section><h2>Evaluaciones entregables</h2><p>Las consignas editoriales no se convierten automáticamente en preguntas. Prepara el banco y publica una evaluación para la revisión que ven los alumnos.</p><Link className={buttonClass()} to={`${authorPath(unit.data.id)}/evaluaciones`}>Editar evaluaciones</Link></section> : null}
   </>;
 }

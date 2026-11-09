@@ -3,3 +3,9 @@
 .review { display: grid; justify-items: start; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border-default); border-radius: var(--radius-md); margin-block: var(--space-3); overflow-wrap: anywhere; }
 .review h3, .review p { margin: 0; }
 .list { list-style: none; padding: 0; margin: 0; }
+
+.fields, .completion { display: grid; gap: var(--space-3); min-inline-size: 0; }
+.fields { border: 0; padding: 0; margin: 0; }
+.fields legend { margin-block-end: var(--space-3); font-weight: 600; }
+.form button, .completion button { justify-self: start; }
+.screen, .review, .screen > * { min-inline-size: 0; }

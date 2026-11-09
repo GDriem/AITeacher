@@ -1,7 +1,67 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { baselineSurface, recordBaseline } from "./uiBaseline";
+import { assertControlGeometry, expectTabInStrip } from "./uiControls";
+import { noteCases, stressNotes, type NoteCase } from "./uiStressNotes";
 
 test.describe.configure({ mode: "serial" });
+
+test("U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones", async ({ page }) => {
+  test.setTimeout(180_000);
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await page.route("**/api/tutor/notes?*", async (route) => {
+    const state = new URL(page.url()).searchParams.get("datos") as NoteCase | null;
+    const offset = Number(new URL(route.request().url()).searchParams.get("offset"));
+    await route.fulfill({ json: stressNotes(state && state in noteCases ? state : "demo", offset) });
+  });
+  for (const state of Object.keys(noteCases) as NoteCase[]) {
+    await page.goto(`/apuntes?datos=${state}`);
+    await expect(page.getByRole("article")).toHaveCount(Math.min(20, noteCases[state]));
+    const pagination = page.getByRole("navigation", { name: "Paginación" });
+    if (state === "empty") await expect(page.getByRole("heading", { name: "Todavía no hay apuntes" })).toBeVisible();
+    if (state === "one") await expect(pagination).toContainText("1–1 de 1");
+    if (noteCases[state] > 20) {
+      await pagination.getByRole("button", { name: "Siguiente" }).click();
+      await expect(pagination).toContainText(`21–${String(Math.min(40, noteCases[state]))} de ${String(noteCases[state])}`);
+      await expect(page.getByRole("article")).toHaveCount(Math.min(20, noteCases[state] - 20));
+      await page.reload();
+      await expect(pagination).toContainText("21–");
+      await pagination.getByRole("button", { name: "Anterior" }).click();
+      await expect(pagination).toContainText("1–20");
+    }
+    for (const theme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+      for (const width of [320, 390, 768, 1024, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${state} ${theme} ${String(width)}`).toBe(0);
+      }
+      await page.setViewportSize({ width: 320, height: 900 });
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      if (noteCases[state] > 20) {
+        const code = page.getByRole("article").nth(2).locator("pre");
+        await code.scrollIntoViewIfNeeded();
+        expect(await code.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+        await code.focus(); await page.keyboard.press("ArrowRight");
+        await expect.poll(() => code.evaluate((node) => node.scrollLeft)).toBeGreaterThan(0);
+        await expect(page.getByRole("article").nth(2).getByRole("button", { name: "Editar", exact: true })).toBeVisible();
+      }
+      // A bounded screenshot keeps 12,000-character / paginated fixtures reviewable.
+      if (process.env.AITEACHER_UI_BASELINE_DIR) await page.screenshot({ path: `${process.env.AITEACHER_UI_BASELINE_DIR}/u6-apuntes-${state}-${theme}-320.png` });
+    }
+  }
+  // Text enlargement is a separate simulation, not a claim of native browser zoom.
+  await page.setViewportSize({ width: 768, height: 1000 });
+  await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+  await page.evaluate(() => { document.documentElement.style.fontSize = ""; });
+  const draft = "Mi explicación sigue aquí aunque se interrumpa la red.";
+  await page.getByLabel("Nuevo apunte", { exact: true }).fill(draft);
+  await page.route("**/api/tutor/notes", (route) => route.abort("internetdisconnected"));
+  await page.getByRole("button", { name: "Guardar apunte", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByLabel("Nuevo apunte", { exact: true })).toHaveValue(draft);
+  await expect(page.getByRole("button", { name: "Guardar apunte", exact: true })).toBeEnabled();
+});
 
 async function googleForTests(page: Page, credential: string) {
   await page.addInitScript((initialCredential) => {
@@ -57,16 +117,18 @@ async function auditPersonalPage(page: Page, label: string) {
     await page.emulateMedia({ colorScheme });
     for (const width of [320, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
+      await assertControlGeometry(page);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), label).toBeLessThanOrEqual(0);
       expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations, `${label} a ${String(width)}px (${colorScheme})`).toEqual([]);
       if (width === 320 || width === 1440) await page.screenshot({ path: `/tmp/aiteacher-pr6-${label.replaceAll(" ", "-")}-${colorScheme}-${String(width)}.png`, fullPage: true });
+      await recordBaseline(page, label, colorScheme);
     }
   }
   await page.emulateMedia({ colorScheme: "light" });
 }
 
 test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ page, browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(process.env.AITEACHER_UI_BASELINE_DIR ? 600_000 : 300_000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await googleForTests(page, "author"); await page.goto("/"); await login(page);
@@ -122,6 +184,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   for (const name of ["Practicar", "Evaluar", "Aprender"]) { await page.getByRole("tab", { name, exact: true }).click(); await auditPersonalPage(page, `Autoría previa ${name}`); }
   await page.getByRole("button", { name: "Guardar borrador" }).click();
   await expect(page).toHaveURL(/\/autoria\/unidades\/[a-f0-9-]{36}\?paso=revision$/);
+  await checkAuthorTabs(page);
   const authorUnitUrl = page.url();
   const authorUnitId = new URL(authorUnitUrl).pathname.split("/").at(-1) ?? "";
   const isolated = await browser.newContext(); const student = await isolated.newPage();
@@ -162,7 +225,13 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.getByRole("heading", { name: "No hay preguntas con estos filtros" })).toBeVisible();
   await page.getByLabel("Filtrar por tipo").selectOption("");
   await page.getByLabel("Título de evaluación").fill("Evaluación cerrada beta"); await page.getByRole("checkbox", { name: "¿Qué representa un vector?", exact: true }).check();
-  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
+  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "¿Publicar esta evaluación?" })).toContainText("Quedará disponible para los alumnos.");
+  await auditPersonalPage(page, "U5 confirmar evaluacion");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Publicar evaluación", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar publicación de evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
   await page.getByRole("button", { name: "Añadir pregunta", exact: true }).click();
   await page.getByLabel("Tipo de pregunta").selectOption("openResponse"); await page.getByLabel("Enunciado", { exact: true }).fill("Justifica tu comparación de vectores.");
   await page.getByRole("group", { name: "Objetivos evaluados" }).getByRole("checkbox").check();
@@ -172,13 +241,20 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Guardar pregunta", exact: true }).click(); await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.getByLabel("Título de evaluación").fill("Evaluación abierta beta"); await page.getByRole("checkbox", { name: "Justifica tu comparación de vectores.", exact: true }).check();
   await auditPersonalPage(page, "Autoría evaluaciones");
-  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
+  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "¿Publicar esta evaluación?" })).toContainText("Quedará disponible para los alumnos.");
+  await auditPersonalPage(page, "U5 confirmar evaluacion");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Publicar evaluación", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Publicar evaluación", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar publicación de evaluación", exact: true }).click(); await expect(page.getByLabel("Título de evaluación")).toHaveValue("");
   await page.getByLabel("Título de referencia curricular").fill("Mapa Beta"); await page.getByRole("button", { name: "Publicar referencia curricular" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Referencia curricular publicada" })).toBeVisible();
 
   await switchUser(page, "student-a"); await expect(mainNav(page, "Autoría")).toHaveCount(0);
   await mainNav(page, "Inicio").click();
   await expect(page.getByRole("heading", { name: "Tu primer recorrido" })).toBeVisible();
+  await baselineSurface(page, "Inicio primer uso");
   await page.getByRole("link", { name: "Explorar el catálogo", exact: true }).focus();
   await page.keyboard.press("Enter"); await expect(page).toHaveURL(/\/catalogo$/);
   await openCatalog(page); await page.getByLabel("Buscar temas o lecturas").fill("Vectores Beta");
@@ -188,6 +264,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await expect(page.getByText(/^Material publicado: 1 unidad\./)).toBeVisible();
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   await openUnit(page, "Vectores Beta", "Unidad Beta de vectores"); await expect(page.getByRole("heading", { name: "Lectura de vectores", exact: true })).toBeVisible();
+  await baselineSurface(page, "Unidad lectura");
   await expect(page.locator("body")).not.toContainText("PRIVATE-EDITORIAL-BROWSER"); await expect(page.locator("body")).not.toContainText("PRIVATE-RUBRIC-BROWSER");
   await page.getByRole("tab", { name: "Evaluar", exact: true }).click(); await expect(page).toHaveURL(/pestana=evaluar/);
   const studentUnitUrl = page.url();
@@ -198,6 +275,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Quiero explorar Concepto Beta."); await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
+  await baselineSurface(page, "Tutor conversacion");
   const studentConversationUrl = page.url();
   const studentConversationId = new URL(studentConversationUrl).pathname.split("/").at(-1) ?? "";
   await page.getByRole("button", { name: "Guardar en apuntes", exact: true }).last().click(); await expect(page.getByText("Apunte guardado.", { exact: true })).toBeVisible();
@@ -238,12 +316,15 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await page.getByRole("button", { name: "Iniciar Evaluación cerrada beta", exact: true }).click();
   await expect(page).toHaveURL(/\/evaluaciones\/[^/]+$/); await expect(page.getByRole("heading", { name: "Evaluación cerrada beta", level: 1 })).toBeFocused();
   const studentAttemptId = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+  await baselineSurface(page, "Evaluacion intento");
   await page.getByRole("radio", { name: "Características", exact: true }).check(); await submitAttempt(page);
   await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
   await page.reload(); await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
+  await baselineSurface(page, "Evaluacion resultado");
   await page.goBack(); await expect(page.getByRole("heading", { name: "Unidad Beta de vectores", level: 1 })).toBeVisible();
   await page.getByRole("button", { name: "Iniciar Evaluación abierta beta", exact: true }).click(); await page.getByLabel("Tu respuesta", { exact: true }).fill("Comparo características para justificar similitud.");
   await submitAttempt(page); await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
+  await baselineSurface(page, "Evaluacion pendiente");
   await page.goBack();
   await mainNav(page, "Inicio").click(); await expect(page.getByRole("link", { name: /^Continuar (en la unidad|con el tutor)$/ })).toBeVisible();
   await auditPersonalPage(page, "Inicio con actividad");
@@ -258,9 +339,28 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await switchUser(page, "author"); await mainNav(page, "Autoría").click(); await page.getByRole("link", { name: "Corregir entregas", exact: true }).click();
   await page.getByRole("listitem").filter({ hasText: "Evaluación abierta beta" }).getByRole("button", { name: "Consultar entrega" }).click();
   const reviewUrl = page.url(); await page.reload(); await expect(page).toHaveURL(reviewUrl);
+  await expect(page.getByRole("heading", { name: "Revisión de respuestas", exact: true })).toBeVisible();
   await auditPersonalPage(page, "Autoría corrección");
   await page.getByLabel("Justificación coherente · máximo 1").fill("1"); await page.getByLabel("Comentarios para el alumno").fill("La comparación está justificada.");
-  await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click(); await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
+  const reviewRequests: unknown[] = [];
+  await page.route("**/api/assessments/attempts/*/review", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    reviewRequests.push(route.request().postDataJSON());
+    if (reviewRequests.length === 1) {
+      const response = await route.fetch(); expect(response.ok()).toBeTruthy();
+      await route.fulfill({ status: 503, contentType: "application/problem+json", body: JSON.stringify({ title: "Respuesta perdida después de registrar", status: 503 }) });
+    } else await route.continue();
+  });
+  await page.getByRole("button", { name: "Confirmar corrección final" }).click();
+  await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Los campos quedan bloqueados");
+  await auditPersonalPage(page, "U5 correccion respuesta perdida");
+  await page.getByRole("dialog").getByRole("button", { name: "Cerrar", exact: true }).click();
+  await expect(page.getByLabel("Justificación coherente · máximo 1")).toBeDisabled();
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(page.getByText(/Corrección final registrada/)).toBeVisible();
+  expect(reviewRequests).toHaveLength(2); expect(reviewRequests[1]).toEqual(reviewRequests[0]);
+  await page.unroute("**/api/assessments/attempts/*/review");
   await switchUser(page, "student-b"); await mainNav(page, "Apuntes").click(); await expect(page.getByText("Todavía no hay apuntes", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Mi idea privada de la beta");
   await mainNav(page, "Historial").click(); await expect(page.getByText("No hay conversaciones históricas importadas para tu cuenta", { exact: true })).toBeVisible();
@@ -308,7 +408,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
   await switchUser(page, "student-a");
   expect((await page.request.get(`/api/units/${studentUnitId}`)).status()).toBe(404);
   await mainNav(page, "Apuntes").click();
-  const sourceLink = page.getByRole("link", { name: "Consultar mensaje de origen", exact: true });
+  const sourceLink = page.getByRole("link", { name: "Consultar mensaje de origen (nueva pestaña)", exact: true });
   const sourcePage = page.waitForEvent("popup");
   await sourceLink.focus(); await page.keyboard.press("Enter");
   const source = await sourcePage;
@@ -324,6 +424,7 @@ test("recorrido editorial y de alumno sobre .NET y PostgreSQL reales", async ({ 
 
 test("catálogo migrado: materias, categorías, niveles y lecturas sin actividades ficticias", async ({ page }) => {
   await googleForTests(page, "student-a"); await page.goto("/"); await login(page); await openCatalog(page);
+  await baselineSurface(page, "Catalogo habitual");
   const ospf = "Enrutamiento dinámico con OSPF";
   await page.getByRole("group", { name: "Materia" }).getByRole("button", { name: "Redes", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Enrutamiento", level: 3 })).toBeVisible();
@@ -334,16 +435,21 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   await expect(card).toContainText("Antes se recomienda: Enrutamiento estático");
   await expect(card).toContainText(/\d+ lecturas?/);
   await expect(page.getByRole("status").filter({ hasText: "material" })).toContainText(/^\d+ temas? · \d+ materia/);
+  await page.reload();
+  await expect(page.getByLabel("Buscar temas o lecturas")).toHaveValue("ospf");
   await card.getByRole("link", { name: ospf, exact: true }).click();
   // Tema: prerrequisitos como enlaces, unidades agrupadas por nivel y Catálogo activo en la navegación.
   await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeFocused();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Antes se recomienda" }).getByRole("link", { name: /^Enrutamiento estático/ })).toHaveAttribute("href", /\/temas\//);
   await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
   // Sin descripción editorial, el resumen del material la sustituye.
-  await expect(page.getByText(/^Material publicado: \d+ lecturas? en \d+ nivel/)).toBeVisible();
+  await expect(page.getByText(/^Material publicado: \d+ lecturas? · \d+ nivel/)).toBeVisible();
   const beginner = page.getByRole("region", { name: /^Principiante/ });
   await beginner.getByRole("link").first().click();
-  await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
+  await expect(page.getByText("Sin prácticas ni evaluaciones.", { exact: true })).toBeVisible();
+  await baselineSurface(page, "Lectura sin actividades");
   await expect(page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: ospf, exact: true })).toBeVisible();
   await expect(mainNav(page, "Catálogo")).toHaveAttribute("aria-current", "location");
   await expect(page.getByText(/^Fuente:/)).toBeVisible();
@@ -358,7 +464,7 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   await page.getByLabel("Tu mensaje", { exact: true }).fill("Explica la idea de esta lectura.");
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByText("Respuesta de simulación: considera la idea principal.", { exact: true })).toBeVisible();
-  await page.goBack(); await expect(page.getByText("Material de lectura. No incluye prácticas ni evaluaciones y no acredita dominio.")).toBeVisible();
+  await page.goBack(); await expect(page.getByText("Sin prácticas ni evaluaciones.", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Volver al tema" }).click();
   await expect(page.getByRole("heading", { name: ospf, level: 1 })).toBeVisible();
   for (const width of [320, 768, 1024, 1440]) {
@@ -373,6 +479,7 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   // Estado vacío con siguiente paso.
   await page.getByLabel("Buscar temas o lecturas").fill("zzz-sin-resultados");
   await expect(page.getByRole("heading", { name: "No encontramos temas con estos filtros" })).toBeVisible();
+  await baselineSurface(page, "Catalogo sin resultados");
   await page.getByRole("button", { name: "Quitar filtros", exact: true }).click();
   await expect(page).toHaveURL(/\/catalogo$/);
   for (const width of [320, 768, 1024, 1440]) {
@@ -473,7 +580,7 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/unidades/${unit.id}`);
   await expect(page.getByRole("heading", { name: "Unidad con pestañas", level: 1 })).toBeVisible();
-  await expect(page.getByText("Tema:", { exact: false }).getByRole("link", { name: "Pestañas Beta", exact: true })).toHaveAttribute("href", /\/temas\//);
+  await expect(page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: "Pestañas Beta", exact: true })).toHaveAttribute("href", /\/temas\//);
   await expect(page.getByText("Unidad", { exact: true })).toBeVisible();
   // Tabulación itinerante: Tab entra a la pestaña activa y las flechas la cambian; la URL la conserva.
   const tab = (name: string) => page.getByRole("tab", { name, exact: true });
@@ -608,6 +715,7 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a
   await page.getByLabel("Tu mensaje", { exact: true }).fill("__PROCESS_LOSS__ Recuperar mi conversación");
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
+  await baselineSurface(page, "Tutor fallo recuperable");
   // La conversación vive en la URL: recargar la reabre sin volver a elegirla.
   await expect(page).toHaveURL(new RegExp(`/tutor/${id}(\\?|$)`));
   await page.reload();
@@ -678,6 +786,32 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a
   await expect(page.getByText("Pregunta número 13", { exact: true })).toHaveCount(1);
 });
 
+test("evidencia U0: carga, error y recuperación del catálogo", async ({ page }) => {
+  test.skip(!process.env.AITEACHER_UI_BASELINE_DIR, "Captura de evidencia opcional, fuera de la regresión habitual");
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await openUnit(page, "Vectores Beta", "Unidad Beta de vectores");
+  await page.getByRole("tab", { name: "Aprender", exact: true }).focus();
+  await baselineSurface(page, "Unidad pestana foco");
+  let release: () => void = () => undefined;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/catalog/**", async (route) => {
+    await pending;
+    await route.fulfill({ status: 503, contentType: "application/problem+json", body: JSON.stringify({
+      title: "Servicio temporalmente no disponible", status: 503,
+    }) });
+  });
+  try {
+    await page.goto("/catalogo");
+    await expect(page.getByRole("status").filter({ hasText: "Cargando" })).toBeVisible();
+    await baselineSurface(page, "Catalogo cargando");
+  } finally { release(); }
+  await expect(page.getByRole("alert")).toBeVisible();
+  await baselineSurface(page, "Catalogo error");
+  await page.unroute("**/api/catalog/**");
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Explora el catálogo" })).toBeVisible();
+});
+
 for (const open of [false, true]) test(`repaso histórico R1 después de publicar R2 (${open ? "rúbrica" : "cerrada"})`, async ({ page }) => {
   await googleForTests(page, "author"); await page.goto("/"); await login(page);
   await advanceClock(page, new Date().toISOString());
@@ -742,26 +876,29 @@ for (const open of [false, true]) test(`repaso histórico R1 después de publica
   await expect(page.getByRole("heading", { name: `Evaluación R1 ${tag}`, exact: true })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`intento=${attempt.id}`));
   await page.reload(); await expect(page.getByRole("heading", { name: `Evaluación R1 ${tag}`, exact: true })).toBeVisible();
-  await auditPersonalPage(page, "Repasos con contenido");
+  await expect(page.getByRole("button", { name: "Completar con el intento seleccionado" })).toBeDisabled();
+  await auditPersonalPage(page, `Repasos con contenido ${open ? "rubrica" : "cerrada"}`);
   if (open) await page.getByLabel("Tu respuesta", { exact: true }).fill("Justifico con el contenido histórico R1.");
   else await page.getByRole("radio", { name: "Respuesta R1", exact: true }).check();
   await submitAttempt(page);
   if (open) {
     await expect(page.getByText("Pendiente de corrección docente", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Completar con el intento seleccionado" })).toBeDisabled();
+    await baselineSurface(page, "U4 repaso pendiente de correccion");
     await switchUser(page, "author");
     await mainNav(page, "Autoría").click();
     await page.getByRole("link", { name: "Corregir entregas", exact: true }).click();
     await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).filter({ hasText: "Pendiente de corrección" }).getByRole("button", { name: "Consultar entrega" }).click();
-    const reviewedUrl = page.url();
+    const reviewSaved = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith(`/api/assessments/attempts/${attempt.id}/review`));
     await page.getByLabel("Justificar R1 · máximo 1").fill("1");
     await page.getByLabel("Comentarios para el alumno").fill("Corregido con la rúbrica de R1.");
     await page.getByRole("button", { name: "Confirmar corrección final" }).click(); await page.getByRole("button", { name: "Sí, confirmar corrección", exact: true }).click();
-    await expect(page).not.toHaveURL(reviewedUrl);
+    expect((await reviewSaved).ok()).toBeTruthy();
     await expect(page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` })).toHaveCount(0);
     await switchUser(page, "student-a");
     await mainNav(page, "Repasos").click();
     await page.getByText("Mis intentos anteriores", { exact: true }).click();
-    await page.getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).first().getByRole("button", { name: "Consultar", exact: true }).click();
+    await page.locator("details").getByRole("listitem").filter({ hasText: `Evaluación R1 ${tag}` }).first().getByRole("button", { name: "Consultar", exact: true }).click();
   } else await expect(page.getByText("Resultado: 100 %", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Completar con el intento seleccionado" }).click();
   await expect(page.getByText("Completado con un intento corregido", { exact: true }).last()).toBeVisible();
@@ -809,10 +946,15 @@ test("autoría: borrador recuperable, diff de publicación existente y conflicto
   const current = await (await page.request.get(`/api/units/${unit.id}`)).json() as { version: number };
   await apiPost(page, `/api/units/${unit.id}/revisions`, { version: current.version, document: { ...document, title: "Nuevo cambio remoto" } });
   await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
-  await expect(page.getByText(/Alguien guardó cambios en esta unidad mientras editabas\. Tu borrador sigue en esta pestaña/)).toBeVisible();
+  await expect(page.getByText(/Alguien guardó cambios en esta unidad mientras editabas\. Tus cambios siguen en el editor/)).toBeVisible();
   await page.reload(); await expect(page.getByLabel("Título de la unidad")).toHaveValue("Cambio local");
   await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
   await page.getByRole("button", { name: "Descartar cambios y recargar", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "¿Descartar tus cambios locales?" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByLabel("Título de la unidad")).toHaveValue("Cambio local");
+  await page.getByRole("button", { name: "Descartar cambios y recargar", exact: true }).click();
+  await page.getByRole("button", { name: "Descartar y cargar versión del servidor", exact: true }).click();
   await expect(page.getByLabel("Título de la unidad")).toHaveValue("Nuevo cambio remoto");
 });
 
@@ -880,4 +1022,443 @@ test("estabilidad de carga: Inicio y tutor sin conversación", async ({ page }) 
     }
   }
   expect(errors).toEqual([]);
+});
+
+
+/** Complete document: exercise controlled Tabs without bypassing step validation. */
+async function checkAuthorTabs(page: Page) {
+  await page.setViewportSize({ width: 320, height: 1000 });
+  const strip = page.getByRole("tablist", { name: "Pasos de autoría" });
+  for (const reducedMotion of ["no-preference", "reduce"] as const) {
+    await page.emulateMedia({ reducedMotion });
+    await page.getByRole("button", { name: "Anterior", exact: true }).click();
+    await expectTabInStrip(strip.getByRole("tab", { selected: true }));
+    await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+    await expectTabInStrip(strip.getByRole("tab", { name: "Revisión", exact: true }));
+    await page.reload();
+    const selected = strip.getByRole("tab", { selected: true });
+    await expect(selected).toHaveText("Revisión");
+    await expectTabInStrip(selected);
+    await selected.scrollIntoViewIfNeeded();
+    await selected.focus();
+    await page.keyboard.press("Home");
+    await expect(strip.getByRole("tab", { name: "Datos", exact: true })).toBeFocused();
+    const scrollY = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press("End");
+    await expect(strip.getByRole("tab", { name: "Revisión", exact: true })).toBeFocused();
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+    for (const key of ["ArrowLeft", "ArrowRight", "ArrowRight", "ArrowLeft"]) {
+      await page.keyboard.press(key);
+      await expect(strip.getByRole("tab", { selected: true })).toBeFocused();
+      await expectTabInStrip(strip.getByRole("tab", { selected: true }));
+    }
+    await expect(selected).toHaveCSS("outline-style", "solid");
+    // :focus-visible se recalcula con la modalidad de teclado; esperar su estilo, como ya se espera el foco.
+    await expect.poll(() => selected.evaluate((tab) => parseFloat(getComputedStyle(tab).outlineOffset))).toBeLessThan(0);
+    await recordBaseline(page, `U1 pestaña foco ${reducedMotion}`, "light");
+  }
+  // An unusually long label must wrap inside the strip, including after resizing.
+  const last = strip.getByRole("tab", { name: "Revisión", exact: true });
+  await last.evaluate((tab) => { tab.textContent = "Revisión de la unidad y de todas las evaluaciones editoriales antes de publicar"; });
+  await expectTabInStrip(strip.getByRole("tab", { selected: true }));
+  await page.setViewportSize({ width: 768, height: 1000 });
+  await expectTabInStrip(strip.getByRole("tab", { selected: true }));
+  await page.reload();
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+}
+
+test("U1: selección, hover, foco y navegación táctil conservan estados distintos", async ({ page, browser }) => {
+  await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
+  await openCatalog(page);
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    const selected = page.getByRole("button", { name: "Todos", exact: true });
+    const other = page.getByRole("button", { name: "Principiante", exact: true });
+    await other.hover();
+    await expect(selected).toHaveAttribute("aria-pressed", "true");
+    await expect(other).toHaveAttribute("aria-pressed", "false");
+    expect(await selected.evaluate((node) => getComputedStyle(node).textDecorationLine)).toBe("underline");
+    expect(await other.evaluate((node) => getComputedStyle(node).textDecorationLine)).toBe("none");
+    expect(await selected.evaluate((node) => getComputedStyle(node).borderColor)).not.toBe(await other.evaluate((node) => getComputedStyle(node).borderColor));
+    await other.focus(); await page.keyboard.press("ArrowRight");
+    expect(await other.evaluate((node) => getComputedStyle(node).outlineStyle)).toBe("solid");
+    await mainNav(page, "Apuntes").hover();
+    expect(await mainNav(page, "Catálogo").evaluate((node) => getComputedStyle(node).textDecorationLine)).toBe("underline");
+    expect(await mainNav(page, "Apuntes").evaluate((node) => getComputedStyle(node).textDecorationLine)).toBe("none");
+    await assertControlGeometry(page);
+    await recordBaseline(page, "U1 filtro seleccionado con hover y foco", colorScheme);
+  }
+  // Una fuente más ancha reproduce el recorte observado con system-ui en Linux.
+  await page.setViewportSize({ width: 320, height: 800 });
+  const widerNavigation = await page.addStyleTag({ content: 'nav[aria-label="Navegación principal"] { font-family: monospace; }' });
+  await assertControlGeometry(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  await widerNavigation.evaluate((node) => node.parentNode?.removeChild(node));
+  const touch = await browser.newContext({ viewport: { width: 320, height: 800 }, isMobile: true, hasTouch: true });
+  const phone = await touch.newPage();
+  await googleForTests(phone, "author"); await phone.goto("/"); await login(phone);
+  for (const name of ["Catálogo", "Apuntes", "Repasos", "Historial", "Inicio", "Autoría"]) {
+    await mainNav(phone, name).tap();
+    await expect(mainNav(phone, name)).toHaveAttribute("aria-current", "page");
+    await assertControlGeometry(phone);
+    await expect(phone.locator("h1")).toBeFocused();
+  }
+  await phone.getByRole("contentinfo").scrollIntoViewIfNeeded();
+  const footer = await phone.getByRole("contentinfo").getByRole("link").boundingBox();
+  const nav = await phone.getByRole("navigation", { name: "Navegación principal" }).boundingBox();
+  if (!footer || !nav) throw new Error("Faltan el pie o la navegación móvil");
+  expect(footer.y + footer.height).toBeLessThanOrEqual(nav.y);
+  await recordBaseline(phone, "U1 navegación autor táctil", "light");
+  const units = await (await phone.request.get("/api/units?limit=100")).json() as { items: { id: string }[] };
+  const unitId = units.items[0]?.id;
+  if (!unitId) throw new Error("Falta una unidad sintética para comprobar el compositor");
+  await phone.goto(`/unidades/${unitId}/tutor`);
+  await phone.getByRole("button", { name: "Nueva conversación", exact: true }).tap();
+  const composer = phone.getByLabel("Tu mensaje", { exact: true });
+  await expect(composer).toBeVisible();
+  await composer.fill("Pregunta sintética de contraste y geometría");
+  await composer.scrollIntoViewIfNeeded();
+  for (const colorScheme of ["light", "dark"] as const) {
+    await phone.emulateMedia({ colorScheme });
+    await assertControlGeometry(phone);
+    const send = await phone.getByRole("button", { name: "Enviar", exact: true }).boundingBox();
+    const navigation = await phone.getByRole("navigation", { name: "Navegación principal" }).boundingBox();
+    if (!send || !navigation) throw new Error("Faltan enviar o navegación");
+    expect(send.y + send.height).toBeLessThanOrEqual(navigation.y);
+    await recordBaseline(phone, "U1 compositor autor táctil", colorScheme);
+  }
+  await touch.close();
+});
+
+/** U2: navegación del índice con contenido extremo y continuación sin ambigüedad. */
+test("U2: Inicio prioriza pendientes y la lectura extensa conserva contexto y reflujo", async ({ page }) => {
+  test.setTimeout(180_000);
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  const entry = { name: "Descubrimiento U2", slug: `u2-${crypto.randomUUID()}` };
+  const subject = await apiPost(page, "/api/catalog/subjects", entry);
+  const category = await apiPost(page, "/api/catalog/categories", { subjectId: subject.id, entry });
+  const topic = await apiPost(page, "/api/catalog/topics", { subjectId: subject.id, categoryId: category.id, entry });
+  const title = "Lectura extensa sobre conexiones entre conceptos y ejemplos para explorar a tu ritmo";
+  const readings = Array.from({ length: 18 }, (_, i) => ({ id: crypto.randomUUID(),
+    title: `${String(i + 1)}. ${i === 17 ? "Concepto".repeat(18) : title}`,
+    text: i === 0 ? `${"Una lectura permite comparar ideas y volver sobre sus ejemplos.\n\n".repeat(20)}\n\n\`\`\`text\n${"codigo".repeat(100)}\n\`\`\`\n\n| Concepto | Ejemplo |\n| --- | --- |\n| ${"SinEspacios".repeat(30)} | Relación |` : "Contenido sintético para comprobar navegación y contexto.",
+    source: "Fuente sintética", objectiveIds: [] }));
+  const unit = await apiPost(page, "/api/units", { topicId: topic.id, document: { kind: "reading", title,
+    concepts: [], objectives: [], readings, exercises: [], assessments: [], prerequisites: [] } }) as { id: string; revision: { id: string } };
+  await apiPost(page, `/api/units/${unit.id}/revisions/${unit.revision.id}/publish`, { version: 1 });
+  await page.goto(`/unidades/${unit.id}`);
+  await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
+  const index = page.getByRole("navigation", { name: "Lecturas de la unidad" });
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+    for (const width of [320, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+      if (width < 1024) {
+        await index.locator("summary").click();
+        await expect(index.getByRole("link").last()).toBeVisible();
+      } else {
+        expect(await index.evaluate((node) => node.clientHeight)).toBeLessThanOrEqual(860);
+      }
+      await index.getByRole("link").last().focus(); await page.keyboard.press("Enter");
+      await expect(page.getByRole("heading", { name: readings[17]?.title, exact: true })).toBeFocused();
+      await expect(page.getByRole("link", { name: /^Preguntar al tutor/ })).toHaveAttribute("href", new RegExp(`actividad=${readings[17]?.id ?? ""}$`));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      await index.getByRole("link").first().click();
+      if (width < 1024) await index.locator("summary").click();
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+      await recordBaseline(page, "U2 lectura extensa", theme);
+    }
+  }
+  // Datos de listas simulados solo para aislar la prioridad; las URLs apuntan a los identificadores recibidos.
+  await page.route("**/api/assessments/attempts?*", (route) => route.fulfill({ json: { items: [
+    { id: "u2-attempt", title: "Evaluación pendiente de conexiones y ejemplos", startedAt: "2020-01-01T10:00:00Z", status: "inProgress" },
+  ], total: 1 } }));
+  await page.route("**/api/tutor/conversations?*", (route) => route.fulfill({ json: { items: [
+    { id: "u2-conversation", unitId: unit.id, createdAt: "2026-11-08T10:00:00Z", mode: "reading" },
+  ], total: 1 } }));
+  await page.route("**/api/learning/reviews?*", (route) => route.fulfill({ json: { items: [3, 1, 2, 4].map((i) => ({ id: `u2-review-${String(i)}`, dueAt: `2020-01-0${String(i)}T10:00:00Z`, completedAt: null })), total: 4 } }));
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Continuar evaluación", exact: true })).toHaveAttribute("href", "/evaluaciones/u2-attempt");
+  await auditPersonalPage(page, "U2 Inicio pendientes");
+  await page.route("**/api/assessments/attempts?*", (route) => route.fulfill({ json: { items: [], total: 0 } }));
+  await page.reload();
+  await expect(page.getByRole("link", { name: "Abrir repaso pendiente", exact: true })).toHaveAttribute("href", "/repasos?repaso=u2-review-1");
+  await baselineSurface(page, "U2 Inicio repaso");
+});
+
+/** U3: material recuperable, foco y scroll con contenido largo y fallos controlados. */
+test("U3: tutor conserva lectura, mensaje, foco y posición", async ({ page }) => {
+  test.setTimeout(180_000);
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  const entry = { name: "Continuidad U3", slug: `u3-${crypto.randomUUID()}` };
+  const subject = await apiPost(page, "/api/catalog/subjects", entry);
+  const category = await apiPost(page, "/api/catalog/categories", { subjectId: subject.id, entry });
+  const topic = await apiPost(page, "/api/catalog/topics", { subjectId: subject.id, categoryId: category.id, entry });
+  const reading = { id: crypto.randomUUID(), title: "Lectura de referencia U3", text: `Material que puedo consultar sin salir del tutor.\n\n${"Un ejemplo con sus detalles.\n\n".repeat(25)}\n\n\`\`\`text\n${"SinEspacios".repeat(80)}\n\`\`\``, source: "Fuente sintética U3", objectiveIds: [] };
+  const unit = await apiPost(page, "/api/units", { topicId: topic.id, document: { kind: "reading", title: "Continuidad del tutor U3",
+    concepts: [], objectives: [], readings: [reading], exercises: [], assessments: [], prerequisites: [] } }) as { id: string; revision: { id: string } };
+  await apiPost(page, `/api/units/${unit.id}/revisions/${unit.revision.id}/publish`, { version: 1 });
+  await switchUser(page, "student-a");
+  const conversation = await apiPost(page, "/api/tutor/conversations", { unitId: unit.id, mode: "reading", activityId: reading.id }) as { id: string; version: number };
+  const path = `/unidades/${unit.id}/tutor/${conversation.id}?modo=reading&actividad=${reading.id}`;
+  await page.goto(path);
+  const composer = page.getByLabel("Tu mensaje", { exact: true });
+  await expect(composer).toBeEditable();
+  await expect(page.getByRole("button", { name: "Guardar resumen de la conversación" })).toBeDisabled();
+  await page.locator("summary").filter({ hasText: "Consultar lectura" }).click();
+  await expect(page.getByText("Material que puedo consultar sin salir del tutor.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Volver a la unidad", exact: true })).toHaveAttribute("href", `/unidades/${unit.id}`);
+  await page.locator("summary").filter({ hasText: "Consultar lectura" }).click();
+
+  // Fallo anterior a reservar: conserva exactamente el borrador y reutiliza la solicitud.
+  const bodies: unknown[] = [];
+  await page.route(`**/api/tutor/conversations/${conversation.id}/turns`, async (route) => {
+    bodies.push(route.request().postDataJSON());
+    if (bodies.length === 1) await route.fulfill({ status: 503, json: { title: "Fallo sintético U3" } });
+    else await route.continue();
+  });
+  const draft = "Mi pregunta U3\ncon una segunda línea";
+  await composer.fill(draft); await composer.press("ControlOrMeta+Enter");
+  await expect(page.getByRole("alert")).toContainText("No llegó la respuesta");
+  await expect(composer).toHaveValue(draft);
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(composer).toHaveValue("");
+  expect(bodies).toHaveLength(2); expect(bodies[1]).toEqual(bodies[0]);
+  await expect(page.locator("article").filter({ hasText: draft })).toHaveCount(1);
+  await page.unroute(`**/api/tutor/conversations/${conversation.id}/turns`);
+
+  // El fallo de guardado se explica junto al mensaje y se puede reintentar allí.
+  let saves = 0;
+  await page.route("**/api/tutor/notes", async (route) => {
+    if (++saves === 1) await route.fulfill({ status: 503, json: { title: "Fallo sintético al guardar" } });
+    else await route.continue();
+  });
+  const answer = page.locator("article").filter({ hasText: "Respuesta de simulación" });
+  await answer.getByRole("button", { name: "Guardar en apuntes", exact: true }).click();
+  await expect(answer.getByRole("alert")).toContainText("No se guardó el apunte");
+  await answer.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(answer.getByRole("button", { name: "Guardado en apuntes" })).toBeDisabled();
+  await page.unroute("**/api/tutor/notes");
+
+  // Fuentes desplegables, mapa y foco en ambos temas/tamaños; el texto largo no desborda.
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const reference = page.locator("summary").filter({ hasText: "Consultar lectura" });
+      await reference.click();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+      await recordBaseline(page, "U3 material", theme);
+      await reference.click();
+      const toggle = page.getByRole("button", { name: "Mapa de conceptos", exact: true });
+      await toggle.focus(); await page.keyboard.press("Enter");
+      await expect(page.getByRole("heading", { name: "Mapa de conceptos", level: 2 })).toBeFocused();
+      if (width < 1024) {
+        const dialog = page.getByRole("dialog", { name: "Mapa de conceptos" });
+        await expect(dialog).toBeVisible();
+        await page.keyboard.press("Tab");
+        await expect(dialog.getByRole("button", { name: "Cerrar mapa" })).toBeFocused();
+        await composer.evaluate((node) => node.focus());
+        expect(await dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true);
+      }
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      await page.keyboard.press("Escape"); await expect(toggle).toBeFocused();
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+      await expect(composer).toBeInViewport();
+      await recordBaseline(page, "U3 conversación", theme);
+    }
+  }
+  // Voz real del host contra proveedor simulado: foco de ida y regreso.
+  const voice = page.getByRole("button", { name: "Conversar por voz", exact: true });
+  await voice.focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Finalizar conversación por voz" })).toBeFocused();
+  await page.getByRole("button", { name: "Comenzar por voz", exact: true }).click();
+  await expect(page.getByText("Te escucho", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape"); await expect(voice).toBeFocused();
+
+  // Teclado simulado: viewport visual reducido sin modificar el viewport de layout.
+  // No equivale a una comprobación en un teléfono físico.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await composer.fill("Una línea\nOtra línea\nTercera línea\nCuarta línea");
+  await composer.focus();
+  await page.evaluate(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) throw new Error("VisualViewport no disponible en Chromium");
+    Object.defineProperties(viewport, { height: { configurable: true, value: 410 }, offsetTop: { configurable: true, value: 0 } });
+    viewport.dispatchEvent(new Event("resize"));
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+  });
+  const send = page.getByRole("button", { name: "Enviar", exact: true });
+  await expect.poll(async () => { const box = await send.boundingBox(); return box ? box.y + box.height : Infinity; }).toBeLessThanOrEqual(410);
+  await expect.poll(async () => (await composer.boundingBox())?.y ?? -1).toBeGreaterThanOrEqual(0);
+  await send.focus();
+  await expect.poll(async () => { const box = await send.boundingBox(); return box ? box.y + box.height : Infinity; }).toBeLessThanOrEqual(410);
+  await recordBaseline(page, "U3 teclado simulado", "dark");
+  if (process.env.AITEACHER_UI_BASELINE_DIR) await page.screenshot({ path: `${process.env.AITEACHER_UI_BASELINE_DIR}/u3-teclado-area-visible-dark-390.png`, clip: { x: 0, y: 0, width: 390, height: 410 } });
+  await page.evaluate(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) throw new Error("VisualViewport no disponible en Chromium");
+    Reflect.deleteProperty(viewport, "height"); Reflect.deleteProperty(viewport, "offsetTop");
+    viewport.dispatchEvent(new Event("resize"));
+  });
+
+  // Historial largo y llegada de respuesta mientras se lee arriba.
+  let version = 2;
+  for (let turn = 2; turn <= 12; turn++) {
+    ({ version } = await apiPost(page, `/api/tutor/conversations/${conversation.id}/turns`, { requestId: crypto.randomUUID(), version,
+      text: `Pregunta U3 número ${String(turn)}\n\n${"Contenido extenso del alumno. ".repeat(20)}` }) as { version: number });
+  }
+  await page.setViewportSize({ width: 1440, height: 900 }); await page.reload();
+  await expect(composer).toBeEditable();
+  let release: () => void = () => undefined;
+  const delayed = new Promise<void>((resolve) => { release = resolve; });
+  await page.route(`**/api/tutor/conversations/${conversation.id}/turns`, async (route) => { await delayed; await route.continue(); });
+  await composer.fill("Turno demorado U3"); await composer.press("ControlOrMeta+Enter");
+  await expect(page.getByText("El tutor está preparando una respuesta…", { exact: true })).toBeVisible();
+  const earlierId = await page.locator('li[id^="message-"]').first().getAttribute("id");
+  const earlier = page.locator(`[id="${earlierId ?? ""}"]`);
+  await earlier.scrollIntoViewIfNeeded();
+  await expect(page.getByRole("button", { name: "Ir al último mensaje" })).toBeVisible();
+  const before = await earlier.evaluate((node) => node.getBoundingClientRect().top);
+  release();
+  await expect(composer).toBeEditable();
+  expect(Math.abs((await earlier.evaluate((node) => node.getBoundingClientRect().top)) - before)).toBeLessThan(3);
+  await page.getByRole("button", { name: "Ir al último mensaje" }).click();
+  await expect(page.getByText("Turno demorado U3", { exact: true })).toBeInViewport();
+  await expect(page.locator('li[id^="message-"]').last()).toBeFocused();
+  // Desplegar la última fuente no salta automáticamente al final.
+  const source = page.getByLabel("Fuentes", { exact: true }).last().locator("summary");
+  await source.scrollIntoViewIfNeeded(); const sourceTop = await source.evaluate((node) => node.getBoundingClientRect().top);
+  await source.click();
+  expect(Math.abs((await source.evaluate((node) => node.getBoundingClientRect().top)) - sourceTop)).toBeLessThan(3);
+
+  // Una página anterior fallida conserva el historial y espera una recuperación explícita.
+  await page.reload(); await expect(composer).toBeEditable();
+  let previousReads = 0;
+  await page.route(`**/api/tutor/conversations/${conversation.id}/messages?*`, async (route) => {
+    const query = new URL(route.request().url()).searchParams;
+    if (query.get("offset") === "0" && Number(query.get("limit")) < 20 && ++previousReads === 1)
+      await route.fulfill({ status: 400, json: { title: "Fallo sintético de paginación" } });
+    else await route.continue();
+  });
+  await page.getByRole("button", { name: "Cargar mensajes anteriores" }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole("alert")).toContainText("Revisa los datos e inténtalo de nuevo.");
+  await page.waitForLoadState("networkidle");
+  expect(previousReads).toBe(1);
+  const anchorId = await page.locator('li[id^="message-"]').first().getAttribute("id");
+  const anchor = page.locator(`[id="${anchorId ?? ""}"]`);
+  const anchorTop = await anchor.evaluate((node) => node.getBoundingClientRect().top);
+  await page.getByRole("alert").getByRole("button", { name: "Reintentar" }).click();
+  await expect(page.getByRole("button", { name: "Cargar mensajes anteriores" })).toHaveCount(0);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(previousReads).toBe(2);
+  expect(Math.abs((await anchor.evaluate((node) => node.getBoundingClientRect().top)) - anchorTop)).toBeLessThan(3);
+});
+
+/** U4: apuntes con fallos recuperables y foco tras editar/eliminar. */
+test("U4: apuntes preserva texto, confirma cambios y restaura foco", async ({ page }) => {
+  await googleForTests(page, "student-a");
+  await page.goto("/apuntes"); await login(page);
+  await page.goto("/apuntes");
+  const text = `Apunte U4 ${String(Date.now())} ${"evidencia".repeat(24)}`;
+  const createPath = "**/api/tutor/notes";
+  await page.route(createPath, async (route) => {
+    if (route.request().method() === "POST") await route.fulfill({ status: 503, json: {} });
+    else await route.continue();
+  });
+  await page.getByLabel("Nuevo apunte", { exact: true }).fill(text);
+  await page.getByRole("button", { name: "Guardar apunte", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByLabel("Nuevo apunte", { exact: true })).toHaveValue(text);
+  await page.unroute(createPath);
+  await page.getByRole("button", { name: "Guardar apunte", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Apunte guardado." })).toBeVisible();
+  await expect(page.getByLabel("Nuevo apunte", { exact: true })).toBeFocused();
+  const note = page.getByRole("article").filter({ hasText: text });
+  await note.getByRole("button", { name: "Editar", exact: true }).click();
+  const edit = page.getByLabel("Editar apunte", { exact: true });
+  await expect(edit).toBeFocused();
+  const changed = `${text} · Revisado`;
+  await edit.fill(changed);
+  const notePath = "**/api/tutor/notes/*";
+  await page.route(notePath, async (route) => {
+    if (route.request().method() === "PUT") await route.fulfill({ status: 503, json: {} });
+    else await route.continue();
+  });
+  await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("No se guardaron los cambios");
+  await expect(edit).toHaveValue(changed);
+  await page.unroute(notePath);
+  await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Cambios guardados." })).toBeVisible();
+  await expect(note.getByRole("button", { name: "Editar", exact: true })).toBeFocused();
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+      await recordBaseline(page, "U4 apunte editado", theme);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await note.getByRole("button", { name: "Eliminar", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "¿Eliminar este apunte?" });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(note.getByRole("button", { name: "Eliminar", exact: true })).toBeFocused();
+  await note.getByRole("button", { name: "Eliminar", exact: true }).click();
+  await page.route(notePath, async (route) => {
+    if (route.request().method() === "DELETE") await route.fulfill({ status: 503, json: {} });
+    else await route.continue();
+  });
+  await dialog.getByRole("button", { name: "Sí, eliminar", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("No se eliminó el apunte");
+  await recordBaseline(page, "U4 eliminacion fallida", "dark");
+  await page.unroute(notePath);
+  await dialog.getByRole("button", { name: "Sí, eliminar", exact: true }).click();
+  await expect(note).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "Apunte eliminado." })).toBeVisible();
+  await expect(page.getByLabel("Nuevo apunte", { exact: true })).toBeFocused();
+});
+
+
+test("U5: errores asociados, copia local fallida y recuperación sin perder el texto", async ({ page }) => {
+  await googleForTests(page, "author"); await page.goto("/"); await login(page);
+  await page.goto("/autoria/unidades/nueva");
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+  await expect(page.getByLabel("Tema de la nueva unidad")).toBeFocused();
+  await expect(page.getByLabel("Tema de la nueva unidad")).toHaveAccessibleDescription("Selecciona un tema.");
+  await expect(page.getByRole("alert")).toContainText("Revisa los campos indicados");
+  await page.getByLabel("Tema de la nueva unidad").selectOption({ label: "Vectores Beta" });
+  await page.getByLabel("Tipo de material").selectOption("reading");
+  // Solo se bloquea la copia del editor; autenticación y los demás espacios siguen disponibles.
+  await page.evaluate(() => {
+    // Se invoca con original.call(this, ...), conservando el receptor de Storage.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) { if (key.startsWith("aiteacher.autoria.")) throw new DOMException("Quota", "QuotaExceededError"); original.call(this, key, value); };
+    (window as typeof window & { restoreStorage: () => void }).restoreStorage = () => { Storage.prototype.setItem = original; };
+  });
+  await page.getByLabel("Título de la unidad").fill("Lectura U5 con copia local fallida");
+  await expect(page.getByRole("alert").filter({ hasText: "No se pudo conservar" })).toBeVisible();
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+  await page.getByRole("button", { name: "Añadir lectura", exact: true }).click();
+  await page.getByLabel("Título de lectura").fill("Lectura de prueba");
+  await page.getByLabel("Texto de lectura").fill("Contenido sintético para verificar la conservación.");
+  await page.getByLabel("Fuente de lectura").fill("Material local");
+  await page.getByRole("navigation", { name: "Herramientas de autoría" }).getByRole("link", { name: "Unidades", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Salir sin conservar cambios", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByLabel("Texto de lectura")).toHaveValue("Contenido sintético para verificar la conservación.");
+  await auditPersonalPage(page, "U5 copia local fallida");
+  await page.evaluate(() => (window as typeof window & { restoreStorage: () => void }).restoreStorage());
+  await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
+  await expect(page).toHaveURL(/\/autoria\/unidades\/[a-f0-9-]{36}\?paso=revision$/);
+  await expect(page.getByText("Borrador guardado en el servidor · revisión 1.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Lectura U5 con copia local fallida", exact: true })).toBeVisible();
 });

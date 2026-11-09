@@ -1,0 +1,326 @@
+[
+  {
+    "scenario": "Inicio",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1016,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 1,
+    "cls": 0,
+    "lcp": 1028,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 2,
+    "cls": 0,
+    "lcp": 1036,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "light",
+    "width": 768,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "light",
+    "width": 1024,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "light",
+    "width": 1440,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 1,
+    "cls": 0,
+    "lcp": 1020,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 2,
+    "cls": 0,
+    "lcp": 1028,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "dark",
+    "width": 768,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "dark",
+    "width": 1024,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1008,
+    "shifts": []
+  },
+  {
+    "scenario": "Inicio",
+    "colorScheme": "dark",
+    "width": 1440,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1000,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 1,
+    "cls": 0,
+    "lcp": 1012,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 2,
+    "cls": 0,
+    "lcp": 1024,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "light",
+    "width": 768,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1000,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "light",
+    "width": 1024,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "light",
+    "width": 1440,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1008,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 1,
+    "cls": 0,
+    "lcp": 1024,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 2,
+    "cls": 0,
+    "lcp": 1016,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "dark",
+    "width": 768,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1000,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "dark",
+    "width": 1024,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1000,
+    "shifts": []
+  },
+  {
+    "scenario": "con actividad",
+    "colorScheme": "dark",
+    "width": 1440,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1004,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1420,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 1,
+    "cls": 0,
+    "lcp": 1440,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "light",
+    "width": 320,
+    "sample": 2,
+    "cls": 0,
+    "lcp": 1440,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "light",
+    "width": 768,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1412,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "light",
+    "width": 1024,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1408,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "light",
+    "width": 1440,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1408,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1420,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 1,
+    "cls": 0,
+    "lcp": 1432,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "dark",
+    "width": 320,
+    "sample": 2,
+    "cls": 0,
+    "lcp": 1444,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "dark",
+    "width": 768,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1412,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "dark",
+    "width": 1024,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1412,
+    "shifts": []
+  },
+  {
+    "scenario": "tutor",
+    "colorScheme": "dark",
+    "width": 1440,
+    "sample": 0,
+    "cls": 0,
+    "lcp": 1408,
+    "shifts": []
+  }
+]

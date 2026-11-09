@@ -1,0 +1,20 @@
+{
+  "base": "af709872ec49165499bff0348249046d9f31e9cb",
+  "branch": "feat/ui-ux-u5-authoring",
+  "files": {
+    "frontend/e2e/backend.spec.ts": "8218c66e06db6381c0ed48418038b9ee1696d9f15950e197c3b6313838cd00de",
+    "frontend/src/features/backend/AssessmentAuthor.module.css": "6654f04a6eefab728d7b0236258d9fd15837c1d9f20f16f209a1f3d4497a70cd",
+    "frontend/src/features/backend/AssessmentAuthor.tsx": "e31e82907186426b0f684de616aa852fe1eb3716fcff92f8a061c16f93a2f52f",
+    "frontend/src/features/backend/AuthorAssessmentRoute.tsx": "042340d968c0b0b7e80ec45f329507c31f7345f1097441fbeba9278c98424a8a",
+    "frontend/src/features/backend/AuthorRoutes.test.tsx": "61bbb54ea18151f248ae2807ea424664397194707edb7b6193d716cbe40f2496",
+    "frontend/src/features/backend/AuthorUnitRoute.tsx": "011f4c43dc8b4e39971594366c4b545bc1c7d49b1acfcd0be1fc60b7fa89de16",
+    "frontend/src/features/backend/Publication.tsx": "c366f28079d26093a8b86f3f9530da44cc6b9375b1a9803dcc34442cb596b7b9",
+    "frontend/src/features/backend/ReviewQueue.module.css": "adf8a39da9de0c8c2f9a823822618dea0db5c864055b3d6ea84ec1b2c2546aad",
+    "frontend/src/features/backend/ReviewQueue.tsx": "be21b5107a4beb6635990c1c4b409e67e88831c9501e46b50efac9ad17a6babf",
+    "frontend/src/features/backend/UnitEditor.module.css": "448148f35a9e5ffbdad6378a156be093050b8dec7dc37a6c7eaae9d1ca296624",
+    "frontend/src/features/backend/UnitEditor.tsx": "a437625201cb1d7515506d914cb2c5e8d7b33f8d476d11323028e1304537ffe7",
+    "frontend/src/features/backend/UnitPreview.tsx": "1a2150279a63c55b5d5a8a22eb77e902589f760b607f78aa30e9615fae3d2050",
+    "frontend/src/features/backend/authoringModel.ts": "b131bcd1d8d0d1a590b1503273f85d0fae1506361d07a6426ac679495aea9aef",
+    "frontend/src/features/backend/AuthorU5.test.tsx": "9b9aab63136598e4f0e62262d9492fb732e634c05e14ed109eff6ad713a8a61b"
+  }
+}

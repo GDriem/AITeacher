@@ -1,0 +1,27 @@
+{
+  "base": "22b7aa2",
+  "fixture": "frontend/e2e/uiStressNotes.ts; boundary (21 records, first page of 20)",
+  "before": {
+    "horizontalOverflowPx": 819,
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "theme": "light",
+    "source": "U6 Playwright run before Notes.module.css fix"
+  },
+  "afterGridFix": {
+    "horizontalOverflowPx": 0,
+    "axeViolation": "scrollable-region-focusable",
+    "affectedElements": "pre in note cards"
+  },
+  "afterKeyboardFix": {
+    "result": "U6 targeted test: 1 passed (19.9s)",
+    "assertions": [
+      "No document overflow at 320/390/768/1024/1440, both themes, all five fixtures",
+      "No axe violations in the five fixtures at 320px, both themes",
+      "ArrowRight scrolls the code region",
+      "Pagination, reload and network failure preserve state"
+    ]
+  }
+}

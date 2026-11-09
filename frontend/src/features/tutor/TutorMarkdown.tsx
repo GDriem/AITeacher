@@ -22,6 +22,8 @@ export function TutorMarkdown({ children }: { children: string }) {
         h4: ({ children: heading }) => <h4>{heading}</h4>,
         h5: ({ children: heading }) => <h4>{heading}</h4>,
         h6: ({ children: heading }) => <h4>{heading}</h4>,
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Overflowing code must be focusable to scroll with the keyboard, including Safari.
+        pre: ({ children: code }) => <pre tabIndex={0} role="region" aria-label="Bloque de código">{code}</pre>,
         img: () => null,
       }}
     >

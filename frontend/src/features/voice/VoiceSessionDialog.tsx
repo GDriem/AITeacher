@@ -34,6 +34,7 @@ export function VoiceSessionDialog({ activeSessionId, studentId, endpoint, onClo
   });
 
   useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const root = document.querySelector<HTMLElement>("#root");
     const voiceOpenClass = styles.voiceOpen;
     root?.setAttribute("inert", "");
@@ -67,6 +68,7 @@ export function VoiceSessionDialog({ activeSessionId, studentId, endpoint, onClo
       root?.removeAttribute("aria-hidden");
       if (voiceOpenClass) document.body.classList.remove(voiceOpenClass);
       document.removeEventListener("keydown", handleKeyDown);
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
   }, []);
 
@@ -143,7 +145,9 @@ export function VoiceSessionDialog({ activeSessionId, studentId, endpoint, onClo
             </button>
           </div>
         )}
-        <p id="voice-privacy" className={styles.privacy}>El audio se procesa durante esta conversación y no reemplaza la evaluación del chat.</p>
+        <p id="voice-privacy" className={styles.privacy}>{endpoint
+          ? "La voz no guarda mensajes ni acredita progreso. Al reconectar se retoma el contexto de la actividad."
+          : "El audio se procesa durante esta conversación y no reemplaza la evaluación del chat."}</p>
       </div>
     </div>,
     document.body,

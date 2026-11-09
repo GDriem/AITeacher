@@ -45,7 +45,7 @@ export function BackendShell({ profile, logout, pending, error, children }: {
 
   const { pathname } = useLocation();
   const items = profile.canAuthor ? [...destinations, authoring] : destinations;
-  return <div className={styles.app}>
+  return <div className={[styles.app, profile.canAuthor ? styles.author : ""].filter(Boolean).join(" ")}>
     <a className={styles.skipLink} href="#learning-content">Saltar al contenido</a>
     <header className={styles.header}>
       <NavLink className={styles.brand} to="/" aria-label="AITeacher, inicio">

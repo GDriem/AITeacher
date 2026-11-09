@@ -32,6 +32,13 @@ una alerta sobre una instrucción de sustitución en español de `APP_SESSION_SE
 en un ejemplo antiguo del README. `.gitleaksignore` exceptúa únicamente el
 fingerprint de esa línea de ese commit; no exceptúa el archivo ni la regla.
 
+La integración UI/UX (PR #31) detectó además dos falsos positivos de
+`generic-api-key`: el SHA-256 de `frontend/src/styles/tokens.css` en el manifest
+de U1 y el de la fixture `google-api.json` en el lock de skills. Se recalcularon
+contra el contenido Git de sus respectivos commits y coinciden. Las dos
+excepciones adicionales se limitan a esos fingerprints históricos; se mantienen
+el escaneo del historial completo y las comprobaciones del contenido nuevo.
+
 Se revisaron además patrones de claves privadas, tokens y correos en los archivos
 de la entrega. Los correos de las pruebas son ficticios (`example.test`). Los IDs
 de recursos, tenant, aplicaciones y proyectos que documentan la beta son metadatos

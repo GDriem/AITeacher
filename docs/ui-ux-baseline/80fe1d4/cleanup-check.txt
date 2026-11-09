@@ -1,0 +1,16 @@
+$ playwright test --config playwright.backend.config.ts --grep 'catálogo migrado'
+[WebServer] (node:7812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] $ tsc -b && VITE_BACKEND=dotnet vite build
+[WebServer] (node:7864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:7885) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:7896) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/backend.spec.ts:333:1 › catálogo migrado: materias, categorías, niveles y lecturas sin actividades ficticias (4.5s)
+
+  1 passed (12.8s)

@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import styles from "./Tabs.module.css";
 
 export interface TabItem { id: string; label: string; content: ReactNode }
@@ -14,7 +14,26 @@ export function Tabs({ label, items, selectedId, onSelect }: {
   const base = useId();
   const [internal, setInternal] = useState(items[0]?.id ?? "");
   const current = items.some((item) => item.id === (selectedId ?? internal)) ? (selectedId ?? internal) : (items[0]?.id ?? "");
+  const list = useRef<HTMLDivElement>(null);
   const tabs = useRef(new Map<string, HTMLButtonElement>());
+  useLayoutEffect(() => {
+    const container = list.current;
+    const selected = current ? tabs.current.get(current) : undefined;
+    if (!container || !selected) return;
+    // Only scroll the strip: scrollIntoView can also move the page and its ancestors.
+    const reveal = () => {
+      const strip = container.getBoundingClientRect();
+      const tab = selected.getBoundingClientRect();
+      if (tab.left < strip.left) container.scrollLeft += tab.left - strip.left;
+      else if (tab.right > strip.right) container.scrollLeft += tab.right - strip.right;
+    };
+    reveal();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(reveal);
+    observer.observe(container);
+    observer.observe(selected);
+    return () => observer.disconnect();
+  }, [current]);
   const select = (id: string) => { setInternal(id); onSelect?.(id); };
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const last = items.length - 1;
@@ -24,10 +43,10 @@ export function Tabs({ label, items, selectedId, onSelect }: {
     const target = items[next];
     if (!target) return;
     select(target.id);
-    tabs.current.get(target.id)?.focus();
+    tabs.current.get(target.id)?.focus({ preventScroll: true });
   };
   return <div>
-    <div role="tablist" aria-label={label} className={styles.list}>
+    <div ref={list} role="tablist" aria-label={label} className={styles.list}>
       {items.map((item, index) => <button key={item.id} type="button" role="tab" id={`${base}-tab-${item.id}`}
         ref={(node) => { if (node) tabs.current.set(item.id, node); else tabs.current.delete(item.id); }}
         aria-selected={item.id === current} aria-controls={`${base}-panel-${item.id}`} tabIndex={item.id === current ? 0 : -1}

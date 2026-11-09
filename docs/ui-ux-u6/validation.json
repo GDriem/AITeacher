@@ -1,0 +1,43 @@
+{
+  "base": "22b7aa2",
+  "browserResult": "16 passed (4.4m)",
+  "dotnet": {
+    "domain": 9,
+    "api": 95
+  },
+  "postmanSmokeAssertions": 26,
+  "geometryRecords": 453,
+  "states": 57,
+  "manifestScreenshots": 243,
+  "stressScreenshots": 10,
+  "widths": [
+    320,
+    390,
+    768,
+    1024,
+    1280,
+    1440
+  ],
+  "maxHorizontalOverflow": 0,
+  "capturedFrom": "2026-11-09T00:41:43.277Z",
+  "capturedTo": "2026-11-09T00:45:44.925Z",
+  "loading": {
+    "samples": 36,
+    "maxCLS": 0,
+    "minLCPms": 1000,
+    "maxLCPms": 1444
+  },
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "vitest": "135 passed / 23 files",
+    "integratedRunner": "passed",
+    "build:backend": "passed",
+    "build:python": "passed",
+    "budgets": "both passed",
+    "pythonFrontendE2E": "50 passed (15.7s)",
+    "cleanup": "no listeners on 4910/5088/4183/4173; owned PostgreSQL stopped; volume retained"
+  },
+  "clippedScreenshots": 1,
+  "totalScreenshots": 254
+}

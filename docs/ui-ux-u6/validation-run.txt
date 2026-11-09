@@ -1,0 +1,274 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.Api.Tests/AITeacher.Api.Tests.csproj]
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.Domain.Tests/AITeacher.Domain.Tests.csproj]
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Assessments/AITeacher.Modules.Assessments.csproj]
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Learning/AITeacher.Modules.Learning.csproj]
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Curriculum/AITeacher.Modules.Curriculum.csproj]
+  AITeacher.Modules.Assessments -> /Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Assessments/bin/Debug/net11.0/AITeacher.Modules.Assessments.dll
+  AITeacher.Modules.Learning -> /Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Learning/bin/Debug/net11.0/AITeacher.Modules.Learning.dll
+  AITeacher.Modules.Curriculum -> /Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Curriculum/bin/Debug/net11.0/AITeacher.Modules.Curriculum.dll
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Api/AITeacher.Api.csproj]
+  AITeacher.Domain.Tests -> /Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.Domain.Tests/bin/Debug/net11.0/AITeacher.Domain.Tests.dll
+Test run for /Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.Domain.Tests/bin/Debug/net11.0/AITeacher.Domain.Tests.dll (.NETCoreApp,Version=v11.0)
+  AITeacher.Api -> /Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Api/bin/Debug/net11.0/AITeacher.Api.dll
+A total of 1 test files matched the specified pattern.
+  AITeacher.Api.Tests -> /Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.Api.Tests/bin/Debug/net11.0/AITeacher.Api.Tests.dll
+Test run for /Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.Api.Tests/bin/Debug/net11.0/AITeacher.Api.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     9, Skipped:     0, Total:     9, Duration: 12 ms - AITeacher.Domain.Tests.dll (net11.0)
+
+Passed!  - Failed:     0, Passed:    95, Skipped:     0, Total:    95, Duration: 43 s - AITeacher.Api.Tests.dll (net11.0)
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.BrowserHost/AITeacher.BrowserHost.csproj]
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Api/AITeacher.Api.csproj]
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Assessments/AITeacher.Modules.Assessments.csproj]
+/usr/local/share/dotnet/sdk/11.0.100-rc.1.26425.128/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Curriculum/AITeacher.Modules.Curriculum.csproj]
+  AITeacher.Modules.Assessments -> /Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Assessments/bin/Debug/net11.0/AITeacher.Modules.Assessments.dll
+  AITeacher.Modules.Curriculum -> /Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Modules.Curriculum/bin/Debug/net11.0/AITeacher.Modules.Curriculum.dll
+  AITeacher.Api -> /Users/gadiorellana/Source/AITeacher/backend/src/AITeacher.Api/bin/Debug/net11.0/AITeacher.Api.dll
+  AITeacher.Api.Tests -> /Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.Api.Tests/bin/Debug/net11.0/AITeacher.Api.Tests.dll
+  AITeacher.BrowserHost -> /Users/gadiorellana/Source/AITeacher/backend/tests/AITeacher.BrowserHost/bin/Debug/net11.0/AITeacher.BrowserHost.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.18
+
+SPECIFICATION DETAILS
+Name: AITeacher backend
+PATH: backend/openapi.yaml
+Type: OpenAPI 3.0
+
+No issues found.
+No issues found.
+Scanned: 84 | Errors: 0 | Warnings: 0 | 26ms
+No issues found.
+Scanned: 26 | Errors: 0 | Warnings: 0 | 9ms
+No authorization data found. Please use the `postman login` command.
+Refer:https://learning.postman.com/docs/postman-cli/postman-cli-options/#postman-login
+
+Running your collection...
+postman
+
+AITeacher Backend Smoke
+
+Root Liveness
+
+  GET http://127.0.0.1:5088/health [200 OK, 227 B, 6 ms]
+  Pass  Liveness
+
+Root Readiness
+
+  GET http://127.0.0.1:5088/health/ready [200 OK, 227 B, 17 ms]
+  Pass  Readiness
+
+Root Catalog requires login
+
+  GET http://127.0.0.1:5088/api/catalog/subjects [401 Unauthorized, 316 B, 7 ms]
+  Pass  Catalog requires login
+
+Root Profile requires login
+
+  GET http://127.0.0.1:5088/api/auth/me [401 Unauthorized, 316 B, 1 ms]
+  Pass  Profile requires login
+
+Root Authentication bootstrap
+
+  GET http://127.0.0.1:5088/api/auth/status [200 OK, 257 B, 2 ms]
+  Pass  Public authentication bootstrap requires login and excludes private configuration
+
+Root CSRF token
+
+  GET http://127.0.0.1:5088/api/auth/csrf [200 OK, 624 B, 11 ms]
+  Pass  CSRF token
+
+Root Unknown route
+
+  GET http://127.0.0.1:5088/api/does-not-exist [404 Not Found, 310 B, 1 ms]
+  Pass  Unknown API route
+
+Root Units require login
+
+  GET http://127.0.0.1:5088/api/units [401 Unauthorized, 316 B, 1 ms]
+  Pass  Editorial content requires login
+
+Root Revision history requires login
+
+  GET http://127.0.0.1:5088/api/units/00000000-0000-0000-0000-000000000001/revisions [401 Unauthorized, 316 B, 718 us]
+  Pass  Editorial content requires login
+
+Root Assessment definitions require login
+
+  GET http://127.0.0.1:5088/api/assessments/definitions [401 Unauthorized, 316 B, 605 us]
+  Pass  Assessment requires login without keys
+
+Root Assessment questions require login
+
+  GET http://127.0.0.1:5088/api/assessments/questions [401 Unauthorized, 316 B, 855 us]
+  Pass  Assessment requires login without keys
+
+Root Assessment attempts require login
+
+  GET http://127.0.0.1:5088/api/assessments/attempts/10000000-0000-0000-0000-000000000001 [401 Unauthorized, 316 B, 487 us]
+  Pass  Assessment requires login without keys
+
+Root Tutor conversations require session
+
+  GET http://127.0.0.1:5088/api/tutor/conversations [401 Unauthorized, 316 B, 515 us]
+  Pass  Private endpoint requires session
+
+Root Tutor notes require session
+
+  GET http://127.0.0.1:5088/api/tutor/notes [401 Unauthorized, 316 B, 775 us]
+  Pass  Private endpoint requires session
+
+Root Graph revisions require session
+
+  GET http://127.0.0.1:5088/api/graphs/revisions [401 Unauthorized, 316 B, 735 us]
+  Pass  Graphs require session
+
+Root Conversation graph requires session
+
+  GET http://127.0.0.1:5088/api/graphs/conversations/00000000-0000-0000-0000-000000000001?graphRevisionId=00000000-0000-0000-0000-000000000002 [401 Unauthorized, 316 B, 822 us]
+  Pass  Graphs require session
+
+Root Accessible graph requires session
+
+  GET http://127.0.0.1:5088/api/graphs/conversations/00000000-0000-0000-0000-000000000001/list?graphRevisionId=00000000-0000-0000-0000-000000000002 [401 Unauthorized, 316 B, 532 us]
+  Pass  Graphs require session
+
+Root Learning evidence requires session
+
+  GET http://127.0.0.1:5088/api/learning/evidence [401 Unauthorized, 316 B, 453 us]
+  Pass  Session required
+
+Root Learning reviews require session
+
+  GET http://127.0.0.1:5088/api/learning/reviews [401 Unauthorized, 316 B, 712 us]
+  Pass  Session required
+
+Root Rubric review requires session
+
+  GET http://127.0.0.1:5088/api/assessments/attempts/00000000-0000-0000-0000-000000000001/review [401 Unauthorized, 316 B, 450 us]
+  Pass  Session required
+
+Root Historical conversations require session
+
+  GET http://127.0.0.1:5088/api/history/conversations [401 Unauthorized, 316 B, 416 us]
+  Pass  Session required
+
+Root Historical progress requires session
+
+  GET http://127.0.0.1:5088/api/history/progress [401 Unauthorized, 316 B, 769 us]
+  Pass  Session required
+
+Root Historical messages require session
+
+  GET http://127.0.0.1:5088/api/history/conversations/00000000-0000-0000-0000-000000000001/messages [401 Unauthorized, 316 B, 484 us]
+  Pass  Session required
+
+Root List attempts requires session
+
+  GET http://127.0.0.1:5088/api/assessments/attempts [401 Unauthorized, 316 B, 465 us]
+  Pass  Own attempts require a session
+
+Root List submissions requires session
+
+  GET http://127.0.0.1:5088/api/assessments/submissions [401 Unauthorized, 316 B, 493 us]
+  Pass  Review submissions require a session
+
+Root Pending tutor turn requires session
+
+  GET http://127.0.0.1:5088/api/tutor/conversations/00000000-0000-0000-0000-000000000001/pending-turn [401 Unauthorized, 316 B, 436 us]
+  Pass  Pending input requires a session
+
+---------------------------------------------------------------------
+|                         |           executed |             failed |
+--------------------------+--------------------+---------------------
+|              iterations |                  1 |                  0 |
+--------------------------+--------------------+---------------------
+|                requests |                 26 |                  0 |
+--------------------------+--------------------+---------------------
+|            test-scripts |                 26 |                  0 |
+--------------------------+--------------------+---------------------
+|      prerequest-scripts |                  0 |                  0 |
+--------------------------+--------------------+---------------------
+|              assertions |                 26 |                  0 |
+---------------------------------------------------------------------
+| total run duration: 248 ms                                        |
+---------------------------------------------------------------------
+| total data received: 3.81 KB (approx)                             |
+---------------------------------------------------------------------
+| average response time: 2 ms [min: 416 us, max: 17 ms, s.d.: 4 ms] |
+---------------------------------------------------------------------
+[WebServer] (node:96086) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] $ tsc -b && VITE_BACKEND=dotnet vite build
+[WebServer] (node:96139) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:96140) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 16 tests using 1 worker
+
+(node:96168) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/backend.spec.ts:9:1 › U6: apuntes extremos, paginación y pérdida de red conservan contenido y acciones (11.8s)
+  ✓   2 e2e/backend.spec.ts:130:1 › recorrido editorial y de alumno sobre .NET y PostgreSQL reales (1.2m)
+  ✓   3 e2e/backend.spec.ts:425:1 › catálogo migrado: materias, categorías, niveles y lecturas sin actividades ficticias (7.2s)
+  ✓   4 e2e/backend.spec.ts:492:1 › navegación por teclado: rutas, foco, recarga y Atrás conservan la vista (4.6s)
+  ✓   5 e2e/backend.spec.ts:552:1 › unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tutor (14.4s)
+  ✓   6 e2e/backend.spec.ts:708:1 › tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a altura completa (9.8s)
+  ✓   7 e2e/backend.spec.ts:789:1 › evidencia U0: carga, error y recuperación del catálogo (6.6s)
+  ✓   8 e2e/backend.spec.ts:815:35 › repaso histórico R1 después de publicar R2 (cerrada) (11.7s)
+  ✓   9 e2e/backend.spec.ts:815:35 › repaso histórico R1 después de publicar R2 (rúbrica) (14.0s)
+  ✓  10 e2e/backend.spec.ts:908:1 › autoría: borrador recuperable, diff de publicación existente y conflictos de versión (6.4s)
+{"scenario":"Inicio","colorScheme":"light","width":320,"sample":0,"cls":0,"lcp":1016,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":320,"sample":1,"cls":0,"lcp":1028,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":320,"sample":2,"cls":0,"lcp":1036,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":768,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":1024,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"light","width":1440,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":320,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":320,"sample":1,"cls":0,"lcp":1020,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":320,"sample":2,"cls":0,"lcp":1028,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":768,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":1024,"sample":0,"cls":0,"lcp":1008,"shifts":[]}
+{"scenario":"Inicio","colorScheme":"dark","width":1440,"sample":0,"cls":0,"lcp":1000,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":320,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":320,"sample":1,"cls":0,"lcp":1012,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":320,"sample":2,"cls":0,"lcp":1024,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":768,"sample":0,"cls":0,"lcp":1000,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":1024,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"light","width":1440,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":320,"sample":0,"cls":0,"lcp":1008,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":320,"sample":1,"cls":0,"lcp":1024,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":320,"sample":2,"cls":0,"lcp":1016,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":768,"sample":0,"cls":0,"lcp":1000,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":1024,"sample":0,"cls":0,"lcp":1000,"shifts":[]}
+{"scenario":"con actividad","colorScheme":"dark","width":1440,"sample":0,"cls":0,"lcp":1004,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":320,"sample":0,"cls":0,"lcp":1420,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":320,"sample":1,"cls":0,"lcp":1440,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":320,"sample":2,"cls":0,"lcp":1440,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":768,"sample":0,"cls":0,"lcp":1412,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":1024,"sample":0,"cls":0,"lcp":1408,"shifts":[]}
+{"scenario":"tutor","colorScheme":"light","width":1440,"sample":0,"cls":0,"lcp":1408,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":320,"sample":0,"cls":0,"lcp":1420,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":320,"sample":1,"cls":0,"lcp":1432,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":320,"sample":2,"cls":0,"lcp":1444,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":768,"sample":0,"cls":0,"lcp":1412,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":1024,"sample":0,"cls":0,"lcp":1412,"shifts":[]}
+{"scenario":"tutor","colorScheme":"dark","width":1440,"sample":0,"cls":0,"lcp":1408,"shifts":[]}
+  ✓  11 e2e/backend.spec.ts:962:1 › estabilidad de carga: Inicio y tutor sin conversación (1.1m)
+  ✓  12 e2e/backend.spec.ts:1071:1 › U1: selección, hover, foco y navegación táctil conservan estados distintos (3.7s)
+  ✓  13 e2e/backend.spec.ts:1129:1 › U2: Inicio prioriza pendientes y la lectura extensa conserva contexto y reflujo (7.7s)
+  ✓  14 e2e/backend.spec.ts:1187:1 › U3: tutor conserva lectura, mensaje, foco y posición (9.7s)
+  ✓  15 e2e/backend.spec.ts:1356:1 › U4: apuntes preserva texto, confirma cambios y restaura foco (4.0s)
+  ✓  16 e2e/backend.spec.ts:1423:1 › U5: errores asociados, copia local fallida y recuperación sin perder el texto (4.7s)
+
+  16 passed (4.4m)
+Local backend, smoke and browser checks passed; HTTP simulation requests observed.

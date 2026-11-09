@@ -3,3 +3,8 @@
 .columns { display: grid; gap: var(--space-5); }
 .columns > div { min-inline-size: 0; overflow-wrap: anywhere; }
 @media (min-width: 48rem) { .columns { grid-template-columns: 1fr 1fr; } }
+
+.queue { list-style: none; margin: 0; padding: 0; }
+.queue li { padding-block: var(--space-4); border-block-end: 1px solid var(--border-subtle); overflow-wrap: anywhere; }
+.queue button[aria-current="true"] { border-color: var(--action-primary); }
+.answer { white-space: pre-wrap; }

@@ -1,0 +1,16 @@
+{
+  "baseCommit": "10cc3c27ae618298f8b160741e8a7ede8c8af728",
+  "capturedWithUncommittedUI": true,
+  "files": {
+    "frontend/e2e/backend.spec.ts": "6c8b26105902b017b18f96e8cba5a7608a3f53d98575ca051a75b477e38e94db",
+    "frontend/src/features/backend/CurriculumExplorer.module.css": "5d86e2aafc23054a6ca8e9aa951cf5c00d236d55c0f225075ef664dcee98d725",
+    "frontend/src/features/backend/CurriculumExplorer.tsx": "24a7b61462dca576b15dc27283bd58b0af1a1c74e5851104dcc6589998793875",
+    "frontend/src/features/backend/HomeRoute.module.css": "d3cc9b882291b9f7b6ebc77c7d95d0c610a3af5248d63c07061d27f89552dab0",
+    "frontend/src/features/backend/HomeRoute.tsx": "f7facaa744365c00c5f0b8e6e17e2c4c3eb5ef5141a06140a38ac9031ef0021f",
+    "frontend/src/features/backend/PersonalSpaces.test.tsx": "649c467d20ef4483ad7e74e93c37fb040c81eab6efac6b06ccc74732d47e27e1",
+    "frontend/src/features/backend/TopicPage.tsx": "c4ae5ecb2567d9e0744b990440a4fe4f77c67e2c9f29f7bfb35d45c7f9155106",
+    "frontend/src/features/backend/UnitPresentation.tsx": "245cda5da9ef3298bf1a2347c579bbe6ad0c8b9e9b1cd42c0f78410fde0783af",
+    "frontend/src/features/backend/UnitSpace.module.css": "8dd1e855c2ddacfb82317932cc7f8eed8b90429f774731eca02f721acf42117a",
+    "frontend/src/features/backend/UnitSpace.tsx": "386460eeec3491eb49b7da69678cadd212dfdc5c71c609cd9ee5beebb71d1f65"
+  }
+}
