@@ -62,6 +62,11 @@ NOTICE, acompañan las copias. Se adaptaron los ejemplos de Pro Max para
 resolver el directorio de la skill en Codex. El buscador usa Python y datos
 locales, sin añadir dependencias al frontend.
 
+Al preparar la integración de U7 se eliminaron espacios finales y una línea
+vacía final en cuatro archivos importados, registrados con sus hashes nuevos
+en el lock. `.gitattributes` reconoce CRLF en el launcher Windows de Impeccable
+sin modificarlo ni desactivar las demás comprobaciones de whitespace.
+
 Impeccable conserva su launcher y manifiesto de checksums. Su motor fijado es
 `0.1.19`; la primera ejecución lo descarga a la caché de usuario y verifica
 SHA-256. El launcher local establece `IMPECCABLE_LIVE_COPY_AGENT=chat` por

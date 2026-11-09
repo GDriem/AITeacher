@@ -107,7 +107,10 @@
       "destination": ".agents/skills/impeccable",
       "license": "Apache-2.0",
       "modified_upstream_files": [
-        "scripts/impeccable"
+        "scripts/impeccable",
+        "reference/extract.md",
+        "reference/harden.md",
+        "reference/optimize.md"
       ],
       "sha256": {
         "LICENSE": "02bb8c3b4e70190e3986c0404ad2fd8d639b4f534252d82379cc1b502b6d1812",
@@ -139,9 +142,9 @@
         "reference/distill.md": "8b9283510e38f0d190652f300ea0793acfb5a514b38b991fdc0a289bade83391",
         "reference/doctor.md": "33aff200de6f76a74b333d7ae4f7d2f4fc2a0da4c1a57264567d88eb8f33b52b",
         "reference/document.md": "7e7e97388cac7b5af7afa5b6fec19a6576c89ce6a998c973cb007b8e5494a8c9",
-        "reference/extract.md": "5477ae97189e5c1236cee71a25a5ae50014429a5a2e6da28355c8021a6cdeddd",
+        "reference/extract.md": "84cfdffc22d3c6f30c21ae1d4aee2cc776849de6bf6635a20635354e5f72d598",
         "reference/generate.md": "11385badfb532196cec249e73bac2b7f58ada033ed8c4b02b9f0d64ddb46f0dc",
-        "reference/harden.md": "4167eb7fc456cdfe09ff0ac2dbcb5e59cee57e590137aab6cc8ec08aafb6d775",
+        "reference/harden.md": "fba36a52b49572f2b474c0c64b94d704e89d224af195ba914086e20a97bf6c25",
         "reference/hooks.md": "22f99dc8f891dcc620fb6dc670eab09b84585c1810bf7a3c2063a6e6f7f42152",
         "reference/init.md": "c2826a6369f86a325e84edb324021753fa8331b86f22a23c884b0b36b7a15488",
         "reference/ios.md": "40c87038b5f75147a5952a96237acf312a327bf70c1bcd8e0a5f064625ae9668",
@@ -154,7 +157,7 @@
         "reference/new-work.md": "4d9410bf9dfdb0890769a2f45e634be809392ac293abd91ee9553e8eabb18fe5",
         "reference/onboard.md": "a2b8fd01ea12139b39b3285393f805bb8c326e11b2234dbff4c26c17b4e9c280",
         "reference/operate.md": "a9d2203acd45ca33a13d5c68b02b23ed512425ac15f0e8438318ed124b43729d",
-        "reference/optimize.md": "092c85e5a644e6e528aaff0f341ee1ed57e012c195162fef0a5fc97605f9bb73",
+        "reference/optimize.md": "ac672c7384108edc5391e77235ec6de9cd3e873e2f8cda272a640c6b0bebbfa3",
         "reference/overdrive.md": "0a0d4ae6eea720c6d6e1c073fc77192d7c2100f78a44d9a8d262ddf22270cf4d",
         "reference/polish.md": "81666fc7f783b4e3514db6554e713dc0479bd9cdedb06e93d15f8b579aae869a",
         "reference/quieter.md": "9e03b55c6bbdd4acba28cfa9c3b74ba1a4448cdbd35a7200990ab460c6eecaa0",
@@ -185,7 +188,8 @@
       "destination": ".agents/skills/ui-ux-pro-max",
       "license": "MIT",
       "modified_upstream_files": [
-        "SKILL.md"
+        "SKILL.md",
+        "scripts/design_system.py"
       ],
       "sha256": {
         "LICENSE": "738f69dfa83db5c347c678fb9d90e560877059f0de93a327c39001bff92dc014",
@@ -232,7 +236,7 @@
         "references/pro-rules.md": "d28442d61c310b49c054a4ea736f89fb3008beebdbbc38c4b3a540b8f7fadf23",
         "references/quick-reference.md": "fc53ccfafaa08d40d7326e34e88e9387df60b4256cd649d34dcae0284f247949",
         "scripts/core.py": "caf92bdcf2579c9a7d6af4f53c54ee9d3c8f05472cfab77aaec38bef120ec63e",
-        "scripts/design_system.py": "e7d1c94c4b2eada17c5551157668362659ccf9626d34dbd58e68142410f90103",
+        "scripts/design_system.py": "8a38d68b1499ab539c6bf336f859922896a51e98f19d6c125e982574c4767188",
         "scripts/reasoning_contract.py": "b8bac1af82aa280d3e06f00aabaeac4337e632996b07fed874e2b6ee6e9c5913",
         "scripts/search.py": "9fd5acc991142fd43c3afe7be0f6720911b668f3988b34e74b5cbc41d58e7947",
         "scripts/tests/fixtures/catalogs/google-api.json": "22d8dc81a7d6827b7e8b64b53e7d184210fb9759e8e294e0d5133c81cc460176",
