@@ -55,6 +55,16 @@ it("avisa del fallo de copia local y no promete conservarla al salir", async () 
   expect(title).toHaveValue("Unidad publicada cambio");
 });
 
+it("lleva el foco al campo inválido cuando la validación vuelve a un paso anterior", async () => {
+  const reading = { id: "l", title: "Lectura", text: "Texto", source: "Fuente", objectiveIds: [] };
+  server.use(http.get(`${origin}/api/units/u`, () => HttpResponse.json({ ...unit, revision: { ...unit.revision, document: { ...emptyDocument(), kind: "reading", readings: [reading] } } })));
+  mount("/autoria/unidades/u?paso=revision");
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Guardar borrador" }));
+  expect(await screen.findByRole("heading", { name: "Datos", level: 2 })).toBeVisible();
+  await waitFor(() => expect(screen.getByLabelText("Título de la unidad")).toHaveFocus());
+});
+
 it.each([true, false])("usa el tipo de la publicación, aunque el borrador tenga otro tipo: lectura=%s", async (publishedReading) => {
   server.use(http.get(`${origin}/api/units/u`, () => HttpResponse.json({ ...unit, revision: { ...unit.revision, id: "head", document: { ...document, kind: publishedReading ? "learningUnit" : "reading" } } })),
     http.get(`${origin}/api/units/u/revisions/r`, () => HttpResponse.json({ ...unit, revision: { ...unit.revision, document: { ...document, kind: publishedReading ? "reading" : "learningUnit" } } })));

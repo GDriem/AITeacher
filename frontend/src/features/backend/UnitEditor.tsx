@@ -53,7 +53,9 @@ export function UnitEditor({ unit, saved, topics, onDirty }: { unit?: Schema["Un
   useEffect(() => {
     if (previousStep.current === step) return;
     // Tabs owns strip visibility and keyboard focus; next/previous still announce the heading.
-    if (window.document.activeElement?.getAttribute("role") !== "tab") heading.current?.focus();
+    // A validation that returns to an earlier step focuses its first invalid field instead.
+    const invalid = form.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    if (invalid) invalid.focus(); else if (window.document.activeElement?.getAttribute("role") !== "tab") heading.current?.focus();
     previousStep.current = step;
   }, [step]);
   const savedNavigation = useRef(false);
