@@ -17,10 +17,15 @@ function UnitText({ children }: { children: string }) {
  * Salta a una lectura sin sumar el ancla al historial: Atrás sigue volviendo a la
  * pantalla anterior. La lectura elegida pasa a ser la actual aunque el scroll no
  * pueda subirla hasta arriba (una última lectura corta).
+ *
+ * Un desplazamiento suave en curso (el foco del `h1` al volver con Atrás) puede
+ * aplicar un fotograma más tras el salto inmediato y dejarlo unos píxeles antes;
+ * repetirlo en el siguiente fotograma lo fija.
  */
 function jump(id: string, choose: (id: string) => void) {
   const target = document.getElementById(readingAnchor(id));
   target?.scrollIntoView({ block: "start", behavior: "instant" });
+  requestAnimationFrame(() => target?.scrollIntoView({ block: "start", behavior: "instant" }));
   target?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
   choose(id);
 }
