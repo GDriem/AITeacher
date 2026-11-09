@@ -211,5 +211,8 @@ Estas comprobaciones siguen **pendientes**, con criterio concreto para retomarla
 | Después de desplegar | Verificar versión servida, rutas directas/recarga/Atrás, sesión real, assets, permisos de alumno/autor y recorridos principales; comparar rendimiento en ese entorno. |
 
 No se despliega ni se presume aceptación por terminar la batería local. La
-siguiente sesión debe usar esta tabla para registrar evidencia física/humana;
-el despliegue sigue siendo un paso separado.
+continuación es [U7 del plan vigente](ui-ux-improvement-plan.md#u7--aceptación-humana-y-verificación-del-despliegue).
+Usar esta tabla para registrar evidencia física/humana después de comprobar la
+versión integrada mediante el CI/CD existente. Cierre local y despliegue son
+hitos distintos; no se requiere un despliegue manual adicional. Al preparar U7,
+`main` remoto sigue en `513fe73` y U0–U6 aún no están integradas allí.

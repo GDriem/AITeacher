@@ -1,6 +1,6 @@
 # Plan de mejora de UI y UX de AITeacher
 
-Fecha: 8 de noviembre de 2026. Estado: **U0–U6 completadas localmente; pendientes aceptación humana, verificaciones físicas y despliegue separado**.
+Fecha: 8 de noviembre de 2026. Estado: **U0–U6 completadas localmente; U7 preparada, pendientes integración por CI/CD, aceptación humana y verificaciones físicas**.
 Base original del plan: `main`, commit `8235807`; U1 parte de `81a7aef`; U2 parte de `10cc3c2`; U3 parte de `fa9843c`; U4 parte de `71bde90`; U5 parte de `af70987`; U6 parte de `22b7aa2`.
 Las skills están instaladas y sus
 criterios se describen en [ui-skills.md](ui-skills.md).
@@ -64,7 +64,7 @@ inventar una mejora porcentual ni presentar pruebas asistidas como estudios inde
 
 ## Fases y entregables
 
-Orden recomendado: **U0 → U1 → U2 → U3 → U4 → U5 → U6**.
+Orden recomendado: **U0 → U1 → U2 → U3 → U4 → U5 → U6 → U7**.
 Cada fase produce un cambio revisable y un commit separado. Una fase puede ocupar
 más de una sesión; no avanzar dejando fallos conocidos en el recorrido afectado.
 Los números indican secuencia, no días estimados. U0 fija el tamaño de los PR
@@ -216,6 +216,48 @@ Aceptación: ningún bloqueo de tareas o regresión conocida sin resolver;
 pendientes menores explícitos; pruebas exigidas aprobadas; resultados locales,
 reales y asistidos claramente diferenciados. No declarar aceptación humana por simulación.
 
+### U7 — Aceptación humana y verificación del despliegue
+
+Resultado: verificar la versión desplegada y registrar las pruebas humanas y
+físicas pendientes de U6. El usuario confirmó este alcance al retomar y recordó
+que la aplicación tiene CI/CD. Separar evidencia local y desplegada no requiere
+un despliegue manual adicional.
+
+1. Preparar la integración de U0–U6 por PR, revisar el diff y comprobar su CI.
+   Al integrar en `main`, otro CI aprobado dispara `CD Azure beta`, que valida
+   el SHA y despliega los cambios de aplicación con `BETA_CD_ENABLED=true`,
+   sujeto a las reglas del environment `beta`. Reutilizar ese flujo.
+2. Comprobar CD, SHA, imagen y revisión servida antes del recorrido en beta.
+   CI de PR aprobado no acredita despliegue; cambios solo documentales pueden
+   omitir publicación y ejecutar únicamente el smoke de la versión existente.
+3. Ejecutar las cinco tareas y la tabla de
+   [aceptación humana de U6](ui-ux-validation.md#aceptación-humana-y-posterior-al-despliegue).
+   Registrar versión, entorno, perfil, dispositivo, SO, navegador, finalización,
+   ayuda, errores, retrocesos y tiempos observados. Cubrir teléfono/teclado
+   físicos, zoom nativo al 200 % y VoiceOver/TalkBack. La voz real depende de su
+   disponibilidad; no activarla como parte de U7 ni sustituirla por simulación.
+4. Corregir defectos confirmados con validación dirigida y repetir el caso sobre
+   la versión publicada por CI/CD. Registrar los casos no ejecutados como
+   pendientes y la aceptación explícita del propietario.
+
+Aceptación: versión servida identificada, recorridos y verificaciones físicas
+registrados, aceptación del propietario y pendientes con decisión documentada.
+La preparación de esta fase no equivale a su cierre.
+
+Estado de GitHub consultado el 8 de noviembre de 2026:
+
+| Comprobación | Evidencia |
+| --- | --- |
+| Interruptor de CD | `BETA_CD_ENABLED=true` |
+| `main` remoto | `513fe730f60fad757941f0bc69a1fe565e415b58` (PR #30) |
+| CI de ese SHA | [40059493319](https://github.com/GDriem/AITeacher/actions/runs/40059493319), aprobado |
+| CD de ese SHA | [40060041818](https://github.com/GDriem/AITeacher/actions/runs/40060041818), aprobado |
+| Trabajo local | U0–U6 culminan en `313b830`; aún no integradas en ese `main` remoto |
+
+La consulta acredita el estado de GitHub, no la revisión servida actualmente por
+Azure. Verificarla antes del recorrido. La siguiente acción es la integración
+por PR y CI/CD; probar la beta anterior no valida U0–U6.
+
 ## Validación transversal
 
 - Tamaños: 320, 768, 1024 y 1440 px; ambos temas. Añadir una anchura de teléfono
@@ -286,6 +328,7 @@ comprobación y evidencia de cierre.
 | U4 | Implementada y validada localmente | Evaluaciones, apuntes, repasos e historial; [pruebas y capturas](ui-ux-u4-validation.md); rama `feat/ui-ux-u4-learning`, commit de cierre de esta fase |
 | U5 | Implementada y validada localmente | Autoría, publicación y corrección; [pruebas y capturas](ui-ux-u5-validation.md); rama `feat/ui-ux-u5-authoring`, commit de cierre de esta fase |
 | U6 | Validada localmente; aceptación humana/física pendiente | [Validación integral, capturas, comparación U0 y pendientes](ui-ux-validation.md); rama `feat/ui-ux-u6-validation`, commit de cierre local de esta fase |
+| U7 | Preparada; integración y aceptación pendientes | Alcance y estado remoto en esta fase; pruebas humanas pendientes en [validación integral](ui-ux-validation.md) |
 
 Al comenzar una sesión: leer este archivo y `ui-skills.md`, comprobar rama y
 cambios del usuario, comparar la base con el HEAD vigente y continuar desde la
@@ -349,7 +392,8 @@ menor explícito. Evidencia y criterios de cierre humano en
 
 Solicitud sugerida para retomar:
 
-> Retomemos el cierre humano de `docs/ui-ux-validation.md`. La validación local
-> de U6 está completa. Conservá la prioridad alumno primero y la identidad
-> actual; registremos teléfono/teclado físico, zoom nativo, lector de pantalla,
-> voz real y aceptación de las cinco tareas. Tratemos el despliegue por separado.
+> Retomemos U7. U6 está validada localmente en `313b830`; preparemos la integración
+> por PR y comprobemos CI/CD y la versión servida antes de las pruebas en beta.
+> Conservá alumno primero e identidad actual; registremos teléfono/teclado físico,
+> zoom nativo, lector de pantalla, disponibilidad de voz real y aceptación de las
+> cinco tareas, manteniendo separados resultados locales y humanos.
