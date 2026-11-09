@@ -44,8 +44,13 @@ function Note({ note, announce, removed }: { note: Schema["TutorNote"]; announce
   const [version, setVersion] = useState(note.version);
   const editor = useRef<HTMLTextAreaElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
-  useEffect(() => { if (editing) editor.current?.focus(); }, [editing]);
-  const finishEditing = () => { setEditing(false); requestAnimationFrame(() => editButton.current?.focus()); };
+  // Salir de la edición cambia la URL y el router puede confirmarla después del siguiente fotograma: el foco vuelve a Editar cuando ya está montado.
+  const restoreEdit = useRef(false);
+  useEffect(() => {
+    if (editing) editor.current?.focus();
+    else if (restoreEdit.current) { restoreEdit.current = false; editButton.current?.focus(); }
+  }, [editing]);
+  const finishEditing = () => { restoreEdit.current = true; setEditing(false); };
   const edit = useMutation({ mutationFn: async () => result(await backend.PUT("/api/tutor/notes/{id}", { params: { path: { id: note.id } }, body: { version, text } })),
     onSuccess: async () => { await queries.invalidateQueries({ queryKey: ["notes"] }); announce("Cambios guardados."); finishEditing(); } });
   const remove = useMutation({ mutationFn: async () => {
