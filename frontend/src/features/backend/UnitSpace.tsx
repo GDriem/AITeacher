@@ -86,7 +86,7 @@ export function UnitSpace() {
         {availability.isPending ? <Busy /> : availability.isError
           ? <Failure error={availability.error} retry={() => void availability.refetch()} />
           : availability.data.enabled ? <Suspense fallback={<Busy />}>
-            <Tutor key={activeChat.conversationId ?? "nueva"} embedded unit={unit.data} mode={activeChat.activityId ? "reading" : "chat"}
+            <Tutor key={`${activeChat.activityId ?? "chat"}:${activeChat.conversationId ?? "nueva"}`} embedded unit={unit.data} mode={activeChat.activityId ? "reading" : "chat"}
               activityId={activeChat.activityId} conversationId={activeChat.conversationId}
               openConversation={(conversationId) => setChat((current) => current && { ...current, conversationId })} />
           </Suspense> : <p>El tutor no está disponible por ahora.</p>}

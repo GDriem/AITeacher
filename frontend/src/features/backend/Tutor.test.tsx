@@ -92,6 +92,41 @@ it("permite una nueva conversación después de un error de envío", async () =>
   expect(screen.getByLabelText("Tu mensaje")).toBeEnabled();
 });
 
+it("guarda una conversación creada tras cerrar el chat sin abrirla en el chat nuevo", async () => {
+  const origin = window.location.origin;
+  let requested = false;
+  let finish: () => void = () => undefined;
+  const response = new Promise<void>((resolve) => { finish = resolve; });
+  const conversation = { id: "lecture", unitId: "unit", revisionId: "r1", mode: "reading", activityId: "reading", version: 1, activeTurnId: null, createdAt: new Date().toISOString() };
+  let created = false;
+  server.use(
+    http.get(`${origin}/api/tutor/voice`, () => HttpResponse.json({ enabled: false })),
+    http.get(`${origin}/api/tutor/conversations`, () => HttpResponse.json(page(created ? [conversation] : []))),
+    http.get(`${origin}/api/auth/csrf`, () => HttpResponse.json({ requestToken: "test" })),
+    http.post(`${origin}/api/tutor/conversations`, async () => {
+      requested = true;
+      await response;
+      created = true;
+      return HttpResponse.json(conversation, { status: 201 });
+    }),
+  );
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const open = vi.fn();
+  const chat = (mode: "reading" | "chat" | null) => <QueryClientProvider client={client}>
+    {mode && <Tutor embedded unit={testUnit} mode={mode} activityId={mode === "reading" ? "reading" : undefined} conversationId={null} openConversation={open} />}
+  </QueryClientProvider>;
+  const user = userEvent.setup();
+  const { rerender } = render(chat("reading"));
+  await user.click(screen.getByRole("button", { name: "Nueva conversación" }));
+  await waitFor(() => expect(requested).toBe(true));
+  rerender(chat(null));
+  rerender(chat("chat"));
+  finish();
+
+  await screen.findByRole("button", { name: /^Lectura: Vectores/ });
+  expect(open).not.toHaveBeenCalled();
+});
+
 it("lista las conversaciones de la unidad con títulos legibles y abre la elegida", async () => {
   const origin = window.location.origin;
   const item = (id: string, mode: string, activityId: string | null, unitId = "unit", revisionId = "r1") => ({ id, unitId, revisionId, mode, activityId, version: 1, activeTurnId: null, createdAt: new Date().toISOString() });
