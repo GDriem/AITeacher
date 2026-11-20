@@ -5,6 +5,8 @@ import { Busy, Failure } from "./Shared";
 import { Tutor } from "./Tutor";
 import { tutorPath, unitCrumbs, useStudyUnit, useTutorAvailability, useTutorConversation, useUnitTopic, type TutorMode } from "./unitQueries";
 
+export { Tutor } from "./Tutor";
+
 const modes: Record<TutorMode, string> = { chat: "Conversación libre sobre la unidad", reading: "Consulta sobre una lectura", practice: "Práctica guiada" };
 const isMode = (value: string | null): value is TutorMode => value === "chat" || value === "reading" || value === "practice";
 

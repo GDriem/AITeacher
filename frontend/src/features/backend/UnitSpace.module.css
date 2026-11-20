@@ -168,4 +168,63 @@
 
 /* Markdown largo mantiene el ancho de lectura, incluido código sin espacios. */
 .item pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-.item table { display: block; max-width: 100%; overflow-x: auto; }
+/* Las tablas GFM de las lecturas necesitan bordes y encabezado para leerse como tablas, no como texto suelto. */
+.item table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin-block: var(--space-4); }
+.item th, .item td { padding: var(--space-2) var(--space-3); border: 1px solid var(--border-default); text-align: start; vertical-align: top; }
+.item th { background: var(--surface-subtle); font-weight: 600; }
+.item tbody tr:nth-child(even) { background: var(--surface-subtle); }
+
+/* Desde Practicar se llega a los quizzes calificados de Evaluar. */
+.quizCallout { display: grid; justify-items: start; gap: var(--space-2); }
+.quizCallout h2 { margin: 0; font-size: var(--font-size-md); }
+.quizCallout p { margin: 0; max-width: 65ch; color: var(--content-muted); }
+
+.practice {
+  inline-size: min(100%, 48rem);
+  max-width: none;
+  margin-inline: auto;
+}
+
+.exerciseCard.exerciseCard {
+  display: grid;
+  padding: 0;
+}
+
+.exercisePhoto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 12 / 5;
+  max-block-size: 15rem;
+  object-fit: cover;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.exerciseBody {
+  min-width: 0;
+  padding: var(--space-4);
+}
+
+.exerciseBody h2 { margin-block: 0 var(--space-2); }
+.exerciseBody pre { white-space: pre-wrap; }
+.exerciseBody table { display: block; overflow-x: auto; max-width: 100%; }
+
+@media (min-width: 42rem) {
+  .exerciseBody { padding: var(--space-5); }
+}
+
+.unit .tutorDialog {
+  width: min(100% - var(--space-4), 72rem);
+  max-height: calc(100dvh - var(--space-4));
+  overscroll-behavior: contain;
+}
+
+.tutorDialogActions {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 25;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  background: var(--surface-default);
+}

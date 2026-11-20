@@ -72,6 +72,7 @@ por sí solo. Cada módulo conserva su esquema e historial de migraciones.
 - `GET /health`: vida del host, independiente de PostgreSQL.
 - `GET /health/ready`: conectividad PostgreSQL y migraciones aplicadas.
 - [Contrato OpenAPI](openapi.yaml): interfaz implementada, permisos y errores.
+- [Cursos, avance y diplomas](COURSES.md): inscripción por curso, regla de avance y verificación pública.
 
 ## Google, sesiones y autorización
 

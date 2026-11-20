@@ -1,6 +1,7 @@
 /* Intento de evaluación: una pregunta por paso con progreso y tiempo fijos arriba. */
 .screen {
-  max-inline-size: 48rem;
+  inline-size: min(100%, 48rem);
+  margin-inline: auto;
   padding-block-end: var(--space-8);
 }
 

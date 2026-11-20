@@ -6,7 +6,7 @@ namespace AITeacher.Api.Features.Assessments;
 
 public sealed partial class AssessmentService
 {
-    private static bool IsRubric(QuestionDocument d) => d.Type is "openResponse" or "caseAnalysis" or "practicalExercise";
+    internal static bool IsRubric(QuestionDocument d) => d.Type is "openResponse" or "caseAnalysis" or "practicalExercise";
     private static void ValidateQuestion(QuestionRequest request)
     {
         var d = request.Document;

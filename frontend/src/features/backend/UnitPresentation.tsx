@@ -4,6 +4,7 @@ import { buttonClass, cardClass, Skeleton } from "../../ui";
 import type { Schema } from "./client";
 import { tutorPath } from "./unitQueries";
 import { useMedia } from "./useMedia";
+import exercisePhoto from "./exercise-photo.jpg";
 import styles from "./UnitSpace.module.css";
 type UnitDocument = Schema["UnitResponse"]["revision"]["document"];
 const readingAnchor = (id: string) => `lectura-${id}`;
@@ -57,11 +58,24 @@ export function Learn({ document, current, choose }: { document: UnitDocument; c
 }
 
 export function Practice({ document, unitId, state, tutorEnabled }: { document: UnitDocument; unitId: string; state: unknown; tutorEnabled: boolean }) {
-  return <div className={styles.content}>
-    {document.exercises.map((exercise, index) => <article key={exercise.id} data-visible={exercise.id} className={article} aria-labelledby={`exercise-${exercise.id}`}>
-      <h2 id={`exercise-${exercise.id}`}>Ejercicio {index + 1}</h2>
-      <UnitText>{exercise.prompt}</UnitText>
-      {tutorEnabled ? <Link className={buttonClass()} to={tutorPath(unitId, "practice", exercise.id)} state={state}>Practicar con el tutor</Link> : null}
-    </article>)}
+  return <div className={[styles.content, styles.practice].join(" ")}>
+    {document.exercises.map((exercise, index) => {
+      const photo = <img className={styles.exercisePhoto} src={exercisePhoto} alt="" loading={index === 0 ? "eager" : "lazy"} />;
+      const path = tutorPath(unitId, "practice", exercise.id);
+      const number = String(index + 1);
+      return <article key={exercise.id} data-visible={exercise.id} className={cardClass(false, styles.exerciseCard)} aria-labelledby={`exercise-${exercise.id}`}>
+        {tutorEnabled ? <Link to={path} state={state} tabIndex={-1} aria-label={`Abrir ejercicio ${number} con el tutor`}>{photo}</Link> : photo}
+        <div className={styles.exerciseBody}>
+          <h2 id={`exercise-${exercise.id}`}>Ejercicio {number}</h2>
+          <UnitText>{exercise.prompt}</UnitText>
+          {tutorEnabled ? <Link className={buttonClass()} to={path} state={state} aria-label={`Practicar con el tutor: ejercicio ${number}`}>Practicar con el tutor</Link> : null}
+        </div>
+      </article>;
+    })}
+    <aside className={cardClass(true, styles.quizCallout)} aria-labelledby="quiz-callout">
+      <h2 id="quiz-callout">¿Quieres una calificación?</h2>
+      <p>Estos ejercicios se conversan con el tutor. Los quizzes de selección múltiple, con nota y tiempo, están en Evaluar y cuentan para tu avance del curso.</p>
+      <Link className={buttonClass("secondary", "sm")} to={{ search: "?pestana=evaluar" }}>Ir a los quizzes</Link>
+    </aside>
   </div>;
 }

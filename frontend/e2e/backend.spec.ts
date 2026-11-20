@@ -458,6 +458,7 @@ test("catálogo migrado: materias, categorías, niveles y lecturas sin actividad
   await expect(page.getByRole("tablist")).toHaveCount(0);
   await expect(page.getByText("Lectura", { exact: true })).toBeVisible(); await expect(page.getByText("Nivel: Principiante", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: /^Preguntar al tutor sobre «/ }).click();
+  await page.getByRole("link", { name: "Abrir en pantalla completa" }).click();
   await expect(page).toHaveURL(/\/tutor\?modo=reading&actividad=/);
   await expect(page.getByText("Consulta sobre una lectura", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Nueva conversación" }).click();
@@ -603,8 +604,17 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   await expect(ask).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[1]?.id ?? ""}$`));
   await expect(index.getByRole("link", { name: "Segunda lectura corta", exact: true })).toHaveAttribute("aria-current", "true");
   await expect(index.getByRole("link", { name: "Primera lectura larga", exact: true })).not.toHaveAttribute("aria-current", "true");
+  await ask.click();
+  const chat = page.getByRole("dialog", { name: "Tutor de la unidad" });
+  await expect(chat.getByRole("button", { name: "Nueva conversación" })).toBeVisible();
+  await expect(chat.getByRole("link", { name: "Abrir en pantalla completa" })).toHaveAttribute("href", new RegExp(`modo=reading&actividad=${readings[1]?.id ?? ""}$`));
+  await expect(page).toHaveURL(new RegExp(`/unidades/${unit.id}$`));
+  await page.keyboard.press("Escape");
+  await expect(chat).not.toBeVisible();
+  await expect(ask).toBeFocused();
   // pointerdown en el propio enlace no debe sustituir la segunda lectura por la tercera observada.
   await ask.click();
+  await chat.getByRole("link", { name: "Abrir en pantalla completa" }).click();
   await expect(page).toHaveURL(new RegExp(`/tutor\\?modo=reading&actividad=${readings[1]?.id ?? ""}$`));
   await page.goBack();
   await index.getByRole("link", { name: "Tercera lectura corta", exact: true }).click();
@@ -617,6 +627,11 @@ test("unidad con pestañas: teclado, recarga, Atrás, índice y contexto del tut
   // Practicar: el contexto pasa al ejercicio visible y Atrás devuelve a la misma pestaña.
   await page.evaluate(() => window.scrollTo(0, 0));
   await tab("Practicar").click();
+  const exercise = page.getByRole("article", { name: "Ejercicio 1" });
+  const bounds = await exercise.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(Math.abs((bounds?.x ?? 0) + (bounds?.width ?? 0) / 2 - 720)).toBeLessThanOrEqual(1);
+  await expect(exercise.locator("img")).toBeVisible();
   await expect(ask).toHaveAccessibleName("Preguntar al tutor sobre «Ejercicio 1»");
   await ask.click();
   await expect(page).toHaveURL(new RegExp(`/tutor\\?modo=practice&actividad=${exercises[0]?.id ?? ""}$`));
@@ -709,6 +724,7 @@ test("tutor: caída tras reserva, recarga y recuperación sin duplicados; chat a
   await googleForTests(page, "student-a"); await page.goto("/"); await login(page);
   await openUnit(page, "Vectores Beta", "Unidad Beta de vectores");
   await page.getByRole("link", { name: /^Preguntar al tutor/ }).click();
+  await page.getByRole("link", { name: "Abrir en pantalla completa" }).click();
   const creation = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/api/tutor/conversations"));
   await page.getByRole("button", { name: "Nueva conversación", exact: true }).click();
   const { id } = await (await creation).json() as { id: string };

@@ -7,6 +7,10 @@ import { NotFound, RouteError, RouteLoading } from "./RouteStates";
 
 /** Rutas del build .NET (docs/ui-ux-beta-plan.md, «Arquitectura de información»). */
 export const router = createBrowserRouter([{
+  // La verificación de diplomas es pública: vive fuera de la raíz que exige sesión.
+  path: "/verificar/:code",
+  lazy: async () => ({ Component: (await import("./DiplomaRoute")).VerifyRoute }),
+}, {
   path: "/",
   Component: BackendRoot,
   HydrateFallback: RouteLoading,
@@ -16,6 +20,8 @@ export const router = createBrowserRouter([{
       { index: true, lazy: async () => ({ Component: (await import("./HomeRoute")).HomeRoute }) },
       { path: "catalogo", Component: CurriculumExplorer },
       { path: "temas/:topicId", Component: TopicPage },
+      { path: "cursos/:subjectId", lazy: async () => ({ Component: (await import("./CourseRoute")).CourseRoute }) },
+      { path: "diplomas/:code", lazy: async () => ({ Component: (await import("./DiplomaRoute")).DiplomaRoute }) },
       { path: "unidades/:unitId", Component: UnitSpace },
       // El tutor (chat, mapa y voz) también se descarga aparte: la unidad, el catálogo y el inicio no lo necesitan.
       { path: "unidades/:unitId/tutor", lazy: async () => ({ Component: (await import("./UnitTutor")).UnitTutor }) },

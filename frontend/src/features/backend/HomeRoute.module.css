@@ -16,3 +16,7 @@
 .space li a { display: inline-flex; align-items: center; min-height: 2.75rem; padding-block: var(--space-2); }
 .shortcuts { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
 .shortcuts a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+.courses { display: grid; gap: var(--space-3); }
+.courses h2 { margin: 0; font-size: var(--font-size-lg); }
+.courses > p { margin: 0; max-width: 65ch; color: var(--content-muted); }
+.coursesHead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); }

@@ -32,6 +32,16 @@
       ],
       "budgetKb": 10
     },
+    "backendCourses": {
+      "description": "Cursos del build .NET: avance por curso, diploma imprimible y verificación pública; se descarga al abrir /cursos/:id, /diplomas/:code o /verificar/:code. Incluye las consultas de cursos que comparten Inicio y Catálogo.",
+      "rationale": "Inscripción por curso, avance y diplomas. Medido: 6,33 kB (CourseRoute 2,43, DiplomaRoute 2,97, courseQueries 0,93). La tarjeta de curso queda en backendBeta porque la usa el catálogo; no se aumenta su presupuesto.",
+      "chunks": [
+        "CourseRoute",
+        "DiplomaRoute",
+        "courseQueries"
+      ],
+      "budgetKb": 8
+    },
     "backendAuthoring": {
       "description": "Autoría del build .NET (unidades, catálogo y corrección); se descarga solo al entrar en /autoria. Incluye la presentación compartida de Evaluar.",
       "chunks": [

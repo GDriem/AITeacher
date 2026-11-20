@@ -56,7 +56,7 @@ export function AttemptView({ id, variant = "inline", step: controlledStep, onSt
   const submission = useRef<Schema["SubmitAssessmentAttempt"] | null>(null);
   const attempt = useAssessmentAttempt(id);
   const submit = useMutation({ mutationFn: async (body: Schema["SubmitAssessmentAttempt"]) => result(await backend.POST("/api/assessments/attempts/{id}/submit", { params: { path: { id } }, body })),
-    onSuccess: (value) => { writeDraft(id, null); queries.setQueryData(["attempt", id], value); void queries.invalidateQueries({ queryKey: ["attempts"] }); },
+    onSuccess: (value) => { writeDraft(id, null); queries.setQueryData(["attempt", id], value); void queries.invalidateQueries({ queryKey: ["attempts"] }); void queries.invalidateQueries({ queryKey: ["courses"] }); },
     onSettled: () => setConfirming(false) });
   const page = variant === "page";
   if (attempt.isPending) return <Busy />;

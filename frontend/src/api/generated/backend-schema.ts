@@ -1209,6 +1209,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Courses with the student's enrollment, progress and certificate
+         * @description A course is an available subject. Only published units with an assessment-mode test that shows its score count; a unit is completed by one graded attempt at or above 70 %. Practice and hidden-score tests never reveal or block progress.
+         */
+        get: operations["listLearningCourses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/courses/{subjectId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Course progress by section and unit */
+        get: operations["getLearningCourse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/courses/{subjectId}/enrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Enroll in a course
+         * @description Idempotent; a repeated enrollment keeps the original date.
+         */
+        put: operations["enrollLearningCourse"];
+        post?: never;
+        /**
+         * Leave a course
+         * @description Keeps attempts and certificates; idempotent.
+         */
+        delete: operations["leaveLearningCourse"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/courses/{subjectId}/certificate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue the course certificate
+         * @description Requires every graded unit to be completed. Returns the existing certificate (200) on retries; names are snapshots taken at issue time.
+         */
+        post: operations["issueLearningCertificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own certificates, newest first */
+        get: operations["listLearningCertificates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/certificates/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public certificate verification
+         * @description Anonymous and rate limited per IP. Case-insensitive code; returns only what is printed on the diploma, never scores.
+         */
+        get: operations["verifyCertificate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/history/conversations": {
         parameters: {
             query?: never;
@@ -2263,6 +2381,76 @@ export interface components {
             completedAttemptId: string | null;
             /** Format: date-time */
             completedAt: string | null;
+        };
+        CourseSummary: {
+            /** Format: uuid */
+            subjectId: string;
+            slug: string;
+            name: string;
+            /** Format: date-time */
+            enrolledAt: string | null;
+            unitCount: number;
+            completedCount: number;
+            startedCount: number;
+            percent: number;
+            /** Format: date-time */
+            lastActivityAt: string | null;
+            certificate: components["schemas"]["Certificate"] | null;
+        };
+        CourseSummaryList: {
+            items: components["schemas"]["CourseSummary"][];
+        };
+        CourseUnitProgress: {
+            /** Format: uuid */
+            unitId: string;
+            title: string;
+            /** Format: uuid */
+            topicId: string;
+            topicName: string;
+            /** @enum {string} */
+            status: "notStarted" | "inProgress" | "completed";
+            bestPercent: number | null;
+            /** Format: date-time */
+            completedAt: string | null;
+        };
+        CourseSectionProgress: {
+            /** Format: uuid */
+            categoryId: string;
+            name: string;
+            units: components["schemas"]["CourseUnitProgress"][];
+        };
+        CourseDetail: {
+            course: components["schemas"]["CourseSummary"];
+            sections: components["schemas"]["CourseSectionProgress"][];
+            /** Format: uuid */
+            nextUnitId: string | null;
+            passingPercent: number;
+        };
+        CourseEnrollment: {
+            /** Format: uuid */
+            subjectId: string;
+            /** Format: date-time */
+            enrolledAt: string;
+        };
+        Certificate: {
+            code: string;
+            studentName: string;
+            courseName: string;
+            unitCount: number;
+            averagePercent: number;
+            /** Format: date-time */
+            issuedAt: string;
+        };
+        CertificateList: {
+            items: components["schemas"]["Certificate"][];
+        };
+        CertificateVerification: {
+            code: string;
+            studentName: string;
+            courseName: string;
+            unitCount: number;
+            /** Format: date-time */
+            issuedAt: string;
         };
         LearningEvidencePage: {
             items: components["schemas"]["LearningEvidence"][];
@@ -7536,6 +7724,274 @@ export interface operations {
             };
             /** @description Conflicting state or retry */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listLearningCourses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseSummaryList"];
+                };
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getLearningCourse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseDetail"];
+                };
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Course not found or without graded units */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    enrollLearningCourse: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-TOKEN": string;
+            };
+            path: {
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseEnrollment"];
+                };
+            };
+            /** @description Invalid CSRF token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Course not found or without graded units */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    leaveLearningCourse: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-TOKEN": string;
+            };
+            path: {
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Left the course */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid CSRF token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    issueLearningCertificate: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-TOKEN": string;
+            };
+            path: {
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Certificate already issued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Certificate"];
+                };
+            };
+            /** @description Certificate issued */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Certificate"];
+                };
+            };
+            /** @description Invalid CSRF token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Course not found or without graded units */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Course not completed yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listLearningCertificates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateList"];
+                };
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    verifyCertificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateVerification"];
+                };
+            };
+            /** @description Unknown code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many verification requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

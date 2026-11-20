@@ -6,6 +6,15 @@
   align-items: start;
 }
 
+.embedded .chat { min-height: 0; }
+
+.embedded .dock {
+  inset-block-end: var(--tutor-keyboard-inset, 0px);
+  background: var(--surface-default);
+}
+
+.embedded .end { scroll-margin-block-end: 0; }
+
 .muted {
   margin: 0;
   color: var(--content-muted);

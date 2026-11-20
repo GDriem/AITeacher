@@ -24,6 +24,7 @@ function personalData(conversations: unknown[] = [], attempts: unknown[] = [], r
   for (const [path, items] of [["tutor/conversations", conversations], ["assessments/attempts", attempts], ["learning/reviews", reviews]] as const) {
     server.use(http.get(`${origin}/api/${path}`, () => HttpResponse.json({ items, total: items.length })));
   }
+  server.use(http.get(`${origin}/api/learning/courses`, () => HttpResponse.json({ items: [] })));
 }
 it("orienta el primer uso hacia el catálogo sin pendientes vacíos ni prometer prácticas", async () => {
   personalData(); mount(<HomeRoute />);

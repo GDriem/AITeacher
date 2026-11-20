@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 /** Sigue turnos nuevos solo desde el final; cargar historia conserva el mensaje visible. */
-export function useChatScroll(ready: boolean, last: string, first: string | undefined) {
+export function useChatScroll(ready: boolean, last: string, first: string | undefined, workspace: RefObject<HTMLDivElement | null>) {
   const end = useRef<HTMLDivElement>(null);
   const following = useRef(true);
   const anchor = useRef<{ node: HTMLElement; top: number } | null>(null);
@@ -16,28 +16,32 @@ export function useChatScroll(ready: boolean, last: string, first: string | unde
   };
   const keep = useCallback(() => {
     const messages = end.current?.parentElement?.querySelectorAll<HTMLElement>('[id^="message-"]');
-    const node = Array.from(messages ?? []).find((item) => item.getBoundingClientRect().bottom > 0);
+    const top = end.current?.closest("dialog")?.getBoundingClientRect().top ?? 0;
+    const node = Array.from(messages ?? []).find((item) => item.getBoundingClientRect().bottom > top);
     anchor.current = node ? { node, top: node.getBoundingClientRect().top } : null;
   }, []);
   useEffect(() => {
-    const root = document.documentElement;
+    const dialog = workspace.current?.closest("dialog");
+    const root = dialog ?? document.documentElement;
+    const scrollTarget = dialog ?? window;
     const previous = root.style.overflowAnchor;
     root.style.overflowAnchor = "none";
     const track = () => {
       const bottom = end.current?.getBoundingClientRect().bottom;
       if (bottom === undefined) return;
-      following.current = bottom - window.innerHeight < 160;
+      following.current = bottom - (dialog?.getBoundingClientRect().bottom ?? window.innerHeight) < 160;
       setAway(!following.current);
     };
-    window.addEventListener("scroll", track, { passive: true });
-    return () => { root.style.overflowAnchor = previous; window.removeEventListener("scroll", track); };
-  }, []);
+    scrollTarget.addEventListener("scroll", track, { passive: true });
+    return () => { root.style.overflowAnchor = previous; scrollTarget.removeEventListener("scroll", track); };
+  }, [workspace]);
   useLayoutEffect(() => {
     const saved = anchor.current;
     if (!saved || typeof end.current?.scrollIntoView !== "function") return;
-    window.scrollBy({ top: saved.node.getBoundingClientRect().top - saved.top, behavior: "instant" });
+    const scrollTarget = workspace.current?.closest("dialog") ?? window;
+    scrollTarget.scrollBy({ top: saved.node.getBoundingClientRect().top - saved.top, behavior: "instant" });
     anchor.current = null;
-  }, [first]);
+  }, [first, workspace]);
   useLayoutEffect(() => {
     if (ready && following.current && typeof end.current?.scrollIntoView === "function")
       end.current.scrollIntoView({ block: "end", behavior: "instant" });
