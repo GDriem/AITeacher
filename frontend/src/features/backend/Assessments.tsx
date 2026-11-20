@@ -20,7 +20,7 @@ export function Assessments({ unit }: { unit: Schema["UnitResponse"] }) {
   const openAttempt = (id: string) => void navigate(`/evaluaciones/${encodeURIComponent(id)}`);
   const requestIds = useRef(new Map<string, string>());
   // Filtradas en el servidor: con muchas unidades publicadas, las de esta no quedan en otras páginas.
-  const definitions = useQuery({ queryKey: ["definitions", unit.id, offset], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/definitions", { signal, params: { query: { unitId: unit.id, offset, limit: 20 } } })) });
+  const definitions = useQuery({ queryKey: ["definitions", unit.revision.id, offset], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/definitions", { signal, params: { query: { unitRevisionId: unit.revision.id, offset, limit: 20 } } })) });
   const start = useMutation({ mutationFn: async (definitionRevisionId: string) => {
     const requestId = requestIds.current.get(definitionRevisionId) ?? crypto.randomUUID();
     requestIds.current.set(definitionRevisionId, requestId);
