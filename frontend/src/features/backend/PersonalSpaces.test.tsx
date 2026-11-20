@@ -85,6 +85,23 @@ it("actualiza Inicio e Historial al iniciar una evaluación sin recargar y con l
   await user.click(screen.getByText("Mis intentos anteriores"));
   expect(await screen.findByRole("button", { name: "Retomar" })).toBeVisible();
 });
+it("pide al servidor sólo las pruebas de la unidad y muestra la práctica antes que las evaluaciones", async () => {
+  personalData();
+  const units: (string | null)[] = [];
+  const policy = { timeLimitMinutes: 10, maxAttempts: 3 };
+  server.use(http.get(`${origin}/api/assessments/definitions`, ({ request }) => {
+    units.push(new URL(request.url).searchParams.get("unitId"));
+    return HttpResponse.json({ items: [
+      { id: "quiz", unitId: "u", unitRevisionId: "r", title: "Quiz cronometrado", mode: "assessment", ...policy },
+      { id: "vieja", unitId: "u", unitRevisionId: "r0", title: "Práctica de la revisión anterior", mode: "practice", ...policy },
+      { id: "libre", unitId: "u", unitRevisionId: "r", title: "Práctica libre", mode: "practice", ...policy },
+    ], total: 3 });
+  }));
+  mount(<Assessments unit={{ id: "u", revision: { id: "r" } } as Schema["UnitResponse"]} />);
+  const starts = await screen.findAllByRole("button", { name: /^Iniciar / });
+  expect(starts.map((button) => button.textContent)).toEqual(["Iniciar Práctica libre", "Iniciar Quiz cronometrado"]);
+  expect(units).toEqual(["u"]);
+});
 it("abre apuntes en la página indicada y conserva el editor y el enlace al origen en la URL", async () => {
   server.use(http.get(`${origin}/api/tutor/notes`, ({ request }) => {
     expect(new URL(request.url).searchParams.get("offset")).toBe("20");

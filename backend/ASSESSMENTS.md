@@ -69,3 +69,12 @@ exacta, iniciado desde `dueAt`, entregado, completamente corregido si usa rúbri
 y no utilizado por otro repaso. Un intento previo a la fecha no lo completa.
 Actualizar la publicación no altera preguntas ni rúbricas fijadas en R1. No se
 modifican contratos de inicio, permisos, máximo de intentos ni migraciones.
+
+## Listado de definiciones por unidad
+
+`GET /api/assessments/definitions` admite `unitId` y `unitRevisionId` opcionales,
+con los mismos `offset`/`limit`. Filtran en PostgreSQL por contención `jsonb` del
+documento, sin migración. `total` y las páginas cuentan sólo las revisiones de esa
+unidad o revisión de unidad. React los usa en **Evaluar** y al elegir la
+evaluación de un repaso, para que las pruebas de una unidad no queden en otras
+páginas cuando el catálogo crece, como ocurre con el curso AZ-900.

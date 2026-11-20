@@ -35,7 +35,11 @@ export function LearningReviews() {
   const step = Math.max(0, Number.parseInt(url.search.get("pregunta") ?? "1", 10) - 1 || 0);
   const request = useRef<{ requestId: string; evidenceId: string; definitionRevisionId: string; dueAt: string } | null>(null);
   const evidence = useQuery({ queryKey: ["evidence", evidenceOffset], queryFn: async ({ signal }) => result(await backend.GET("/api/learning/evidence", { signal, params: { query: { offset: evidenceOffset, limit: 20 } } })) });
-  const definitions = useQuery({ queryKey: ["definitions", definitionOffset], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/definitions", { signal, params: { query: { offset: definitionOffset, limit: 20 } } })) });
+  // Con una evidencia elegida, el servidor sólo devuelve las evaluaciones de su revisión de unidad.
+  const evidenceRevision = evidence.data?.items.find((item) => item.id === evidenceId)?.unitRevisionId;
+  const definitions = useQuery({ queryKey: ["definitions", evidenceRevision ?? "all", definitionOffset], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/definitions", { signal, params: { query: { unitRevisionId: evidenceRevision, offset: definitionOffset, limit: 20 } } })),
+    // Mantiene el formulario (y el foco del selector) mientras llega la lista filtrada.
+    placeholderData: (previous) => previous });
   const reviews = usePersonalReviews();
   const reviewEvidence = useReviewEvidence(Boolean(reviews.data?.length));
   const selectedReview = url.search.get("repaso");
@@ -69,10 +73,10 @@ export function LearningReviews() {
     <h2>Programar un repaso</h2>
     {evidence.isPending || definitions.isPending ? <Busy /> : evidence.isError || definitions.isError ? <Failure error={evidence.error ?? definitions.error} retry={() => { void evidence.refetch(); void definitions.refetch(); }} /> : evidence.data.total === 0 ? <EmptyState title="Todavía no tienes evidencias" description="Completa una evaluación y espera su corrección. Después podrás programar un repaso." action={<Link to="/catalogo">Buscar una evaluación en una unidad</Link>} /> : <form className={styles.form} onSubmit={(event) => { event.preventDefault(); schedule.mutate(); }}>
       <fieldset className={styles.fields} disabled={schedule.isPending}><legend>Datos del repaso</legend>
-      <Field title="Evidencia para repasar"><select required value={evidenceId} onChange={(event) => { const value = event.target.value; url.setSearch((previous) => { const next = new URLSearchParams(previous); next.set("evidencia", value); next.delete("definicion"); return next; }); request.current = null; }}><option value="">Selecciona una evidencia</option>{evidence.data.items.map((item, index) => <option key={item.id} value={item.id}>Evidencia {evidenceOffset + index + 1} · {formatDateTime(item.observedAt)}</option>)}</select></Field>
+      <Field title="Evidencia para repasar"><select required value={evidenceId} onChange={(event) => { const value = event.target.value; url.setSearch((previous) => { const next = new URLSearchParams(previous); next.set("evidencia", value); next.delete("definicion"); next.delete("evaluaciones"); return next; }); request.current = null; }}><option value="">Selecciona una evidencia</option>{evidence.data.items.map((item, index) => <option key={item.id} value={item.id}>Evidencia {evidenceOffset + index + 1} · {formatDateTime(item.observedAt)}</option>)}</select></Field>
       {selectedEvidence ? <Link to={attemptPath(selectedEvidence.attemptId)}>Consultar evaluación de origen de la evidencia</Link> : null}
       <Pages offset={evidenceOffset} total={evidence.data.total} change={setEvidenceOffset} />
-      {selectedEvidence && !definitions.data.items.some((item) => item.unitRevisionId === selectedEvidence.unitRevisionId) ? <p>No hay evaluaciones de esta evidencia en esta página. Revisa las siguientes páginas o elige otra evidencia.</p> : null}
+      {selectedEvidence && !definitions.isPlaceholderData && !definitions.data.items.some((item) => item.unitRevisionId === selectedEvidence.unitRevisionId) ? <p>Esta evidencia no tiene evaluaciones disponibles para repasar. Elige otra evidencia.</p> : null}
       <Field title="Evaluación para el repaso"><select required disabled={!selectedEvidence} value={definitionId} onChange={(event) => { setDefinitionId(event.target.value); request.current = null; }}><option value="">Selecciona una evaluación</option>{definitions.data.items.filter((item) => item.unitRevisionId === selectedEvidence?.unitRevisionId).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></Field>
       <Pages offset={definitionOffset} total={definitions.data.total} change={setDefinitionOffset} />
       <Field title="Fecha y hora del repaso"><input required type="datetime-local" value={dueAt} onChange={(event) => { setDueAt(event.target.value); request.current = null; }} /></Field>

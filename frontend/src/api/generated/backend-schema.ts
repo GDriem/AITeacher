@@ -642,7 +642,7 @@ export interface paths {
         };
         /**
          * listDefinitionRevisions
-         * @description Authenticated. Paged snapshots ordered by resourceId then descending number. Public policy metadata only, for all revisions; no question IDs or private keys.
+         * @description Authenticated. Paged snapshots ordered by resourceId then descending number. Public policy metadata only, for all revisions; no question IDs or private keys. Optional unitId and unitRevisionId keep only the revisions pinned to that unit or unit revision, so totals and pages refer to them.
          */
         get: operations["listDefinitionRevisions"];
         put?: never;
@@ -4926,6 +4926,8 @@ export interface operations {
             query?: {
                 offset?: number;
                 limit?: number;
+                unitId?: string;
+                unitRevisionId?: string;
             };
             header?: never;
             path?: never;

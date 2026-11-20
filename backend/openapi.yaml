@@ -2063,7 +2063,8 @@ paths:
       - Assessments
       description: Authenticated. Paged snapshots ordered by resourceId then descending
         number. Public policy metadata only, for all revisions; no question IDs or
-        private keys.
+        private keys. Optional unitId and unitRevisionId keep only the revisions
+        pinned to that unit or unit revision, so totals and pages refer to them.
       responses:
         '200':
           description: Success
@@ -2121,6 +2122,16 @@ paths:
           minimum: 1
           maximum: 100
           default: 50
+      - name: unitId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: unitRevisionId
+        in: query
+        schema:
+          type: string
+          format: uuid
   /api/assessments/definitions/{id}:
     get:
       operationId: getDefinitionRevision

@@ -8,13 +8,19 @@ import { usePersonalUrl } from "./usePersonalUrl";
 import { Button } from "../../ui";
 import { EvaluationList } from "./EvaluationList";
 
+/** Primero la práctica libre, luego las evaluaciones; dentro de cada modo, por título. */
+function practiceFirst(a: { mode: string; title: string }, b: { mode: string; title: string }) {
+  return Number(a.mode !== "practice") - Number(b.mode !== "practice") || a.title.localeCompare(b.title, "es");
+}
+
 export function Assessments({ unit }: { unit: Schema["UnitResponse"] }) {
   const queries = useQueryClient();
   const [offset, setOffset] = useState(0);
   const navigate = useNavigate();
   const openAttempt = (id: string) => void navigate(`/evaluaciones/${encodeURIComponent(id)}`);
   const requestIds = useRef(new Map<string, string>());
-  const definitions = useQuery({ queryKey: ["definitions", offset], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/definitions", { signal, params: { query: { offset, limit: 20 } } })) });
+  // Filtradas en el servidor: con muchas unidades publicadas, las de esta no quedan en otras páginas.
+  const definitions = useQuery({ queryKey: ["definitions", unit.id, offset], queryFn: async ({ signal }) => result(await backend.GET("/api/assessments/definitions", { signal, params: { query: { unitId: unit.id, offset, limit: 20 } } })) });
   const start = useMutation({ mutationFn: async (definitionRevisionId: string) => {
     const requestId = requestIds.current.get(definitionRevisionId) ?? crypto.randomUUID();
     requestIds.current.set(definitionRevisionId, requestId);
@@ -26,7 +32,7 @@ export function Assessments({ unit }: { unit: Schema["UnitResponse"] }) {
   } });
   return <section>
     {definitions.isPending ? <Busy /> : definitions.isError ? <Failure error={definitions.error} retry={() => void definitions.refetch()} /> : <>
-      <EvaluationList items={definitions.data.items.filter((item) => item.unitId === unit.id && item.unitRevisionId === unit.revision.id)} start={(id) => start.mutate(id)} pending={start.isPending} />
+      <EvaluationList items={definitions.data.items.filter((item) => item.unitId === unit.id && item.unitRevisionId === unit.revision.id).sort(practiceFirst)} start={(id) => start.mutate(id)} pending={start.isPending} />
       <Pages offset={offset} total={definitions.data.total} change={setOffset} />
     </>}
     {start.isError ? <Failure error={start.error} /> : null}
