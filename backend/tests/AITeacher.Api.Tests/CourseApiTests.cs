@@ -100,6 +100,26 @@ public sealed class CourseApiTests(ApiFixture fixture) : IClassFixture<ApiFixtur
     }
 
     [Fact]
+    public async Task Concurrent_enrollment_changes_return_success()
+    {
+        using var author = await Login(); using var student = await Login("student-a");
+        var course = await Course(author, "Curso con inscripción simultánea");
+        await Unit(author, course, "Unidad de prueba");
+        var path = $"/api/learning/courses/{course.Subject}/enrollment";
+
+        await Success(await student.PutAsync(path, null));
+        for (var i = 0; i < 10; i++)
+        {
+            var enroll = student.PutAsync(path, null);
+            var leave = student.DeleteAsync(path);
+            await Task.WhenAll(enroll, leave);
+            var enrollment = await Success(await enroll);
+            Assert.Equal(course.Subject, enrollment["subjectId"]!.GetValue<Guid>());
+            Assert.Equal(HttpStatusCode.NoContent, (await leave).StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task Progress_counts_units_passed_with_graded_quizzes_and_unlocks_a_verifiable_certificate()
     {
         using var author = await Login(); using var student = await Login("student-a"); using var other = await Login("student-b");

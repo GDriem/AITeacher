@@ -61,21 +61,31 @@ public sealed class CourseService(LearningDbContext db, ICourseCurriculum curric
     {
         if (!(await curriculum.Courses(ct)).Any(c => c.SubjectId == subjectId)) return Results.NotFound();
         var student = Actor(user);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await LockEnrollment(student, subjectId, ct);
         var now = PostgresTimestamp.Normalize(clock.GetUtcNow());
         // Idempotent: a repeated enrollment keeps the original date.
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"INSERT INTO learning.enrollments (\"StudentId\", \"SubjectId\", \"EnrolledAt\") VALUES ({student}, {subjectId}, {now}) ON CONFLICT DO NOTHING", ct);
         var row = await db.Enrollments.AsNoTracking().SingleAsync(x => x.StudentId == student && x.SubjectId == subjectId, ct);
+        await tx.CommitAsync(ct);
         return Results.Ok(new { row.SubjectId, row.EnrolledAt });
     }
 
     public async Task<IResult> Unenroll(Guid subjectId, ClaimsPrincipal user, CancellationToken ct)
     {
         var student = Actor(user);
-        // Leaving a course keeps attempts and diplomas: only the shortcut on Home disappears.
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await LockEnrollment(student, subjectId, ct);
+        // Leaving a course keeps attempts and diplomas.
         await db.Enrollments.Where(x => x.StudentId == student && x.SubjectId == subjectId).ExecuteDeleteAsync(ct);
+        await tx.CommitAsync(ct);
         return Results.NoContent();
     }
+
+    // Order enrollment changes for the same student and course across API instances.
+    private Task LockEnrollment(string student, Guid subjectId, CancellationToken ct) =>
+        db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"{subjectId}:{student}"}, 8))", ct);
 
     public async Task<IResult> Certificates(ClaimsPrincipal user, CancellationToken ct)
     {
