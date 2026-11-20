@@ -14,7 +14,7 @@ const icon = (path: string) => <svg viewBox="0 0 24 24" aria-hidden="true" focus
 const destinations: Destination[] = [
   { to: "/", label: "Inicio", end: true, icon: icon("M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z") },
   // Tema y unidad cuelgan del catálogo: su enlace sigue activo dentro de ellos.
-  { to: "/catalogo", label: "Catálogo", sections: ["/temas", "/unidades"], icon: icon("M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z") },
+  { to: "/catalogo", label: "Catálogo", sections: ["/temas", "/unidades", "/cursos", "/diplomas"], icon: icon("M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z") },
   { to: "/apuntes", label: "Apuntes", icon: icon("M7 4h7l4 4v12H7zM14 4v4h4M10 12h5M10 16h5") },
   { to: "/repasos", label: "Repasos", icon: icon("M19 8a7.5 7.5 0 1 0 .5 6M19 4v4h-4") },
   { to: "/historial", label: "Historial", icon: icon("M12 7v5l3 2M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9M4.5 5v4h4") },

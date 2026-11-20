@@ -4111,6 +4111,163 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CompleteLearningReview'
+  /api/learning/courses:
+    get:
+      operationId: listLearningCourses
+      tags:
+      - Learning
+      summary: Courses with the student's enrollment, progress and certificate
+      description: A course is an available subject. Only published units with an
+        assessment-mode test that shows its score count; a unit is completed by one
+        graded attempt at or above 70 %. Practice and hidden-score tests never reveal
+        or block progress.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseSummaryList'
+        '401':
+          description: Session required
+  /api/learning/courses/{subjectId}:
+    get:
+      operationId: getLearningCourse
+      tags:
+      - Learning
+      summary: Course progress by section and unit
+      parameters:
+      - &courseSubject
+        name: subjectId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseDetail'
+        '401':
+          description: Session required
+        '404':
+          description: Course not found or without graded units
+  /api/learning/courses/{subjectId}/enrollment:
+    put:
+      operationId: enrollLearningCourse
+      tags:
+      - Learning
+      summary: Enroll in a course
+      description: Idempotent; a repeated enrollment keeps the original date.
+      parameters:
+      - *courseSubject
+      - *id010
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseEnrollment'
+        '400':
+          description: Invalid CSRF token
+        '401':
+          description: Session required
+        '404':
+          description: Course not found or without graded units
+    delete:
+      operationId: leaveLearningCourse
+      tags:
+      - Learning
+      summary: Leave a course
+      description: Keeps attempts and certificates; idempotent.
+      parameters:
+      - *courseSubject
+      - *id010
+      responses:
+        '204':
+          description: Left the course
+        '400':
+          description: Invalid CSRF token
+        '401':
+          description: Session required
+  /api/learning/courses/{subjectId}/certificate:
+    post:
+      operationId: issueLearningCertificate
+      tags:
+      - Learning
+      summary: Issue the course certificate
+      description: Requires every graded unit to be completed. Returns the existing
+        certificate (200) on retries; names are snapshots taken at issue time.
+      parameters:
+      - *courseSubject
+      - *id010
+      responses:
+        '200':
+          description: Certificate already issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+        '201':
+          description: Certificate issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+        '400':
+          description: Invalid CSRF token
+        '401':
+          description: Session required
+        '404':
+          description: Course not found or without graded units
+        '409':
+          description: Course not completed yet
+  /api/learning/certificates:
+    get:
+      operationId: listLearningCertificates
+      tags:
+      - Learning
+      summary: Own certificates, newest first
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateList'
+        '401':
+          description: Session required
+  /api/certificates/{code}:
+    get:
+      operationId: verifyCertificate
+      tags:
+      - Learning
+      summary: Public certificate verification
+      description: Anonymous and rate limited per IP. Case-insensitive code; returns
+        only what is printed on the diploma, never scores.
+      security: []
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 20
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateVerification'
+        '404':
+          description: Unknown code
+        '429':
+          description: Too many verification requests
   /api/history/conversations:
     get:
       operationId: listHistoryConversations
@@ -6763,6 +6920,159 @@ components:
           type: string
           format: date-time
           nullable: true
+      additionalProperties: false
+    CourseSummary:
+      type: object
+      required: [subjectId, slug, name, enrolledAt, unitCount, completedCount, startedCount, percent, lastActivityAt, certificate]
+      properties:
+        subjectId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        enrolledAt:
+          type: string
+          format: date-time
+          nullable: true
+        unitCount:
+          type: integer
+        completedCount:
+          type: integer
+        startedCount:
+          type: integer
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lastActivityAt:
+          type: string
+          format: date-time
+          nullable: true
+        certificate:
+          allOf:
+          - $ref: '#/components/schemas/Certificate'
+          nullable: true
+      additionalProperties: false
+    CourseSummaryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseSummary'
+      additionalProperties: false
+    CourseUnitProgress:
+      type: object
+      required: [unitId, title, topicId, topicName, status, bestPercent, completedAt]
+      properties:
+        unitId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        topicId:
+          type: string
+          format: uuid
+        topicName:
+          type: string
+        status:
+          type: string
+          enum: [notStarted, inProgress, completed]
+        bestPercent:
+          type: integer
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    CourseSectionProgress:
+      type: object
+      required: [categoryId, name, units]
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        units:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseUnitProgress'
+      additionalProperties: false
+    CourseDetail:
+      type: object
+      required: [course, sections, nextUnitId, passingPercent]
+      properties:
+        course:
+          $ref: '#/components/schemas/CourseSummary'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseSectionProgress'
+        nextUnitId:
+          type: string
+          format: uuid
+          nullable: true
+        passingPercent:
+          type: integer
+      additionalProperties: false
+    CourseEnrollment:
+      type: object
+      required: [subjectId, enrolledAt]
+      properties:
+        subjectId:
+          type: string
+          format: uuid
+        enrolledAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    Certificate:
+      type: object
+      required: [code, studentName, courseName, unitCount, averagePercent, issuedAt]
+      properties:
+        code:
+          type: string
+        studentName:
+          type: string
+        courseName:
+          type: string
+        unitCount:
+          type: integer
+        averagePercent:
+          type: integer
+        issuedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    CertificateList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Certificate'
+      additionalProperties: false
+    CertificateVerification:
+      type: object
+      required: [code, studentName, courseName, unitCount, issuedAt]
+      properties:
+        code:
+          type: string
+        studentName:
+          type: string
+        courseName:
+          type: string
+        unitCount:
+          type: integer
+        issuedAt:
+          type: string
+          format: date-time
       additionalProperties: false
     LearningEvidencePage:
       type: object

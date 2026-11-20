@@ -5,7 +5,10 @@ import { Card, PageHeader, buttonClass } from "../../ui";
 import { useProfile } from "./profile";
 import { Busy, Failure } from "./Shared";
 import { attemptPath, conversationLabel, conversationPath, useAttemptUnit, usePersonalAttempts, usePersonalConversations, usePersonalReviews } from "./personalQueries";
+import { CourseCard } from "./CourseCard";
+import { coursePath, startedCourses, useCourses } from "./courseQueries";
 import styles from "./HomeRoute.module.css";
+import courseStyles from "./CourseCard.module.css";
 
 export function HomeRoute() {
   const profile = useProfile();
@@ -14,10 +17,11 @@ export function HomeRoute() {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
-  // Las tres consultas siguen siendo independientes y se inician en paralelo.
+  // Las cuatro consultas siguen siendo independientes y se inician en paralelo.
   const conversations = usePersonalConversations();
   const attempts = usePersonalAttempts();
   const reviews = usePersonalReviews();
+  const courses = useCourses();
   const active = attempts.data?.filter((item) => item.status === "inProgress")
     .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt)) ?? [];
   const pending = reviews.data?.filter((item) => !item.completedAt)
@@ -29,7 +33,7 @@ export function HomeRoute() {
   const resumeUnit = conversations.isSuccess && attempts.isSuccess && !active.length && !due && !useConversation ? latestAttempt : undefined;
   const definition = useAttemptUnit(resumeUnit?.definitionRevisionId);
   // Resolver la forma completa antes de pintar: conserva la estabilidad de carga de Inicio.
-  const loading = conversations.isPending || attempts.isPending || reviews.isPending
+  const loading = conversations.isPending || attempts.isPending || reviews.isPending || courses.isPending
     || Boolean(resumeUnit && definition.isPending && definition.fetchStatus !== "idle");
   const firstUse = conversations.isSuccess && attempts.isSuccess && reviews.isSuccess
     && !conversations.data.length && !attempts.data.length && !reviews.data.length;
@@ -65,6 +69,7 @@ export function HomeRoute() {
           <Link className={buttonClass("primary")} to="/catalogo">Explorar el catálogo</Link>
         </>}
       </Card>
+      <MyCourses courses={courses} />
       {!firstUse ? <div className={styles.spaces}>
         <section className={styles.space} aria-labelledby="home-attempts"><h2 id="home-attempts">Evaluaciones en curso</h2>
           {attempts.isError ? <Failure error={attempts.error} retry={() => void attempts.refetch()} /> : active.length ? <>
@@ -81,6 +86,18 @@ export function HomeRoute() {
       </div> : null}
       <nav aria-label="Tus espacios" className={styles.shortcuts}><Link to="/apuntes">Abrir apuntes</Link><Link to="/repasos">Ver repasos</Link><Link to="/historial">Consultar historial</Link></nav>
     </>}
+  </section>;
+}
+/** Cursos inscritos o empezados, con su avance; el catálogo completo queda a un enlace. */
+function MyCourses({ courses }: { courses: ReturnType<typeof useCourses> }) {
+  const mine = courses.data ? startedCourses(courses.data) : [];
+  return <section className={styles.courses} aria-labelledby="home-courses">
+    <div className={styles.coursesHead}><h2 id="home-courses">Mis cursos</h2><Link to="/catalogo">Ver todos los cursos</Link></div>
+    {courses.isError ? <Failure error={courses.error} retry={() => void courses.refetch()} />
+      : mine.length ? <ul className={courseStyles.list}>{mine.map((course) => <CourseCard key={course.subjectId} course={course}
+        actions={<Link className={buttonClass(course.percent === 100 ? "secondary" : "primary", "sm")} to={coursePath(course.subjectId)}>
+          {course.certificate ? "Ver diploma y avance" : course.percent === 100 ? "Obtener diploma" : "Continuar curso"}</Link>} />)}</ul>
+      : <p>Aún no te inscribes en ningún curso. Elige uno en el catálogo para seguir tu avance y obtener tu diploma.</p>}
   </section>;
 }
 function greeting(name: string) { const first = name.trim().split(/\s+/)[0]; return first ? `Hola, ${first}` : "Hola de nuevo"; }

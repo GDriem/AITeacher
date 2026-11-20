@@ -23,6 +23,75 @@ namespace AITeacher.Api.Features.Learning.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AITeacher.Api.Features.Learning.CertificateRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("AverageFraction")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("CourseName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTimeOffset>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("StudentName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("UnitCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("StudentId", "SubjectId")
+                        .IsUnique();
+
+                    b.ToTable("certificates", "learning", t =>
+                        {
+                            t.HasCheckConstraint("ck_learning_certificate", "\"UnitCount\" > 0 AND \"AverageFraction\" >= 0 AND \"AverageFraction\" <= 1");
+                        });
+                });
+
+            modelBuilder.Entity("AITeacher.Api.Features.Learning.EnrollmentRow", b =>
+                {
+                    b.Property<string>("StudentId")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("EnrolledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("StudentId", "SubjectId");
+
+                    b.ToTable("enrollments", "learning");
+                });
+
             modelBuilder.Entity("AITeacher.Api.Features.Learning.EvidenceRow", b =>
                 {
                     b.Property<Guid>("Id")

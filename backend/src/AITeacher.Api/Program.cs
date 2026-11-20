@@ -40,6 +40,8 @@ builder.Services.AddDbContext<LearningDbContext>((services, options) => options.
     postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", "learning")));
 builder.Services.AddScoped<IAssessmentEvidenceFeed, AssessmentEvidenceFeed>();
 builder.Services.AddScoped<LearningService>();
+builder.Services.AddScoped<ICourseCurriculum, CourseCurriculum>();
+builder.Services.AddScoped<CourseService>();
 builder.Services.AddHostedService<EvidenceWorker>();
 builder.Services.AddScoped<IGraphCurriculum, GraphCurriculum>();
 builder.Services.AddScoped<IGraphMessages, GraphMessages>();
@@ -76,6 +78,10 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // Public diploma verification: enough for people checking a code, too slow to enumerate codes.
+    options.AddPolicy("certificate", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 
 var app = builder.Build();
@@ -192,6 +198,7 @@ app.MapAssessments();
 app.MapTutor();
 app.MapGraphs();
 app.MapLearning();
+app.MapCourses();
 app.MapHistory();
 app.MapGet("/static/pcm-capture-worklet.js", () => Results.File(
     Path.Combine(AppContext.BaseDirectory, "voice-assets", "pcm-capture-worklet.js"), "text/javascript; charset=utf-8"));

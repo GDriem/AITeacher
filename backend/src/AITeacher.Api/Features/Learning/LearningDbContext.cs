@@ -29,10 +29,31 @@ public sealed class ReviewRow
     public Guid? CompletedAttemptId { get; set; }
     public DateTimeOffset? CompletedAt { get; set; }
 }
+public sealed class EnrollmentRow
+{
+    public string StudentId { get; set; } = "";
+    public Guid SubjectId { get; set; }
+    public DateTimeOffset EnrolledAt { get; set; }
+}
+public sealed class CertificateRow
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string StudentId { get; set; } = "";
+    public Guid SubjectId { get; set; }
+    public string Code { get; set; } = "";
+    // Snapshots: a diploma keeps the names it was issued with, even if the profile or catalog changes later.
+    public string StudentName { get; set; } = "";
+    public string CourseName { get; set; } = "";
+    public int UnitCount { get; set; }
+    public decimal AverageFraction { get; set; }
+    public DateTimeOffset IssuedAt { get; set; }
+}
 public sealed class LearningDbContext(DbContextOptions<LearningDbContext> options) : DbContext(options)
 {
     public DbSet<EvidenceRow> Evidence => Set<EvidenceRow>();
     public DbSet<ReviewRow> Reviews => Set<ReviewRow>();
+    public DbSet<EnrollmentRow> Enrollments => Set<EnrollmentRow>();
+    public DbSet<CertificateRow> Certificates => Set<CertificateRow>();
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.HasDefaultSchema("learning");
@@ -52,6 +73,23 @@ public sealed class LearningDbContext(DbContextOptions<LearningDbContext> option
             b.HasIndex(x => new { x.StudentId, x.RequestId }).IsUnique();
             b.HasIndex(x => new { x.StudentId, x.CompletedAttemptId }).IsUnique();
             b.HasOne<EvidenceRow>().WithMany().HasForeignKey(x => x.EvidenceId).OnDelete(DeleteBehavior.Restrict);
+        });
+        model.Entity<EnrollmentRow>(b =>
+        {
+            b.ToTable("enrollments");
+            b.HasKey(x => new { x.StudentId, x.SubjectId });
+            b.Property(x => x.StudentId).HasMaxLength(80);
+        });
+        model.Entity<CertificateRow>(b =>
+        {
+            b.ToTable("certificates", t => t.HasCheckConstraint("ck_learning_certificate", "\"UnitCount\" > 0 AND \"AverageFraction\" >= 0 AND \"AverageFraction\" <= 1"));
+            b.HasKey(x => x.Id);
+            b.Property(x => x.StudentId).HasMaxLength(80);
+            b.Property(x => x.Code).HasMaxLength(20);
+            b.Property(x => x.StudentName).HasMaxLength(100);
+            b.Property(x => x.CourseName).HasMaxLength(150);
+            b.HasIndex(x => x.Code).IsUnique();
+            b.HasIndex(x => new { x.StudentId, x.SubjectId }).IsUnique();
         });
     }
 }

@@ -1,9 +1,12 @@
 import { useId } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Button, EmptyState, PageHeader, TopicCard, buttonClass } from "../../ui";
+import { Button, Card, EmptyState, PageHeader, TopicCard, buttonClass, cardClass } from "../../ui";
 import { Busy, Failure, Field } from "./Shared";
 import { catalogTopics, excerpt, filterCatalog, groupCatalog, materialCount, useCatalog } from "./catalogQueries";
+import { CourseCard, CourseProgress, CourseStatus, EnrollButton } from "./CourseCard";
+import { coursePath, useCourses } from "./courseQueries";
 import styles from "./CurriculumExplorer.module.css";
+import courseStyles from "./CourseCard.module.css";
 
 export function CurriculumExplorer() {
   // Búsqueda y filtros viven en la URL: recargar o volver desde un tema o una unidad conserva la selección.
@@ -22,7 +25,10 @@ export function CurriculumExplorer() {
   const clear = () => setSearch(new URLSearchParams(), { replace: true });
   const subjectLabel = useId();
   const levelLabel = useId();
+  const categoryLabel = useId();
   const query = useCatalog();
+  // El avance no bloquea el catálogo: si falla o tarda, las materias se muestran sin él.
+  const courses = useCourses();
   if (query.isPending) return <Busy />;
   if (query.isError) return <Failure error={query.error} retry={() => void query.refetch()} />;
   const data = query.data;
@@ -34,10 +40,14 @@ export function CurriculumExplorer() {
   const groups = groupCatalog(shown);
   const count = shown.reduce((total, topic) => total + topic.units.length, 0);
   const filtered = Boolean(subject || category || level || text.trim());
+  const courseOf = (id: string) => courses.data?.find((course) => course.subjectId === id);
+  const selectedCourse = subject ? courseOf(subject) : undefined;
+  const subjectCategories = [...new Map(all.filter((topic) => topic.subject.id === subject).map((topic) => [topic.category.id, topic.category])).values()]
+    .sort((left, right) => left.sortOrder - right.sortOrder);
 
   return <section>
     <PageHeader title="Explora el catálogo"
-      description="Busca un tema y elige entre sus lecturas y unidades publicadas." />
+      description="Elige un curso para ver sus temas y seguir tu avance, o busca directamente un tema o lectura." />
     <div className={styles.toolbar}>
       <Field title="Buscar temas o lecturas">
         <input type="search" value={text} placeholder="Por ejemplo: OSPF, subredes, vectores" autoComplete="off"
@@ -60,18 +70,49 @@ export function CurriculumExplorer() {
             onClick={() => filter({ nivel: level === entry.slug ? "" : entry.slug })}>{entry.name}</Button>)}
         </div>
       </div>
-      {selectedCategory ? <div className={styles.chips}>
+      {subjectCategories.length > 1 ? <div className={styles.chipRow}>
+        <span id={categoryLabel} className={styles.chipLabel}>Categoría</span>
+        <div className={styles.chips} role="group" aria-labelledby={categoryLabel}>
+          <Button size="sm" aria-pressed={!category} onClick={() => filter({ categoria: "" })}>Todas</Button>
+          {subjectCategories.map((entry) => <Button key={entry.id} size="sm" aria-pressed={category === entry.id}
+            onClick={() => filter({ categoria: category === entry.id ? "" : entry.id })}>{entry.name}</Button>)}
+        </div>
+      </div> : selectedCategory ? <div className={styles.chips}>
         <Button size="sm" variant="ghost" onClick={() => filter({ categoria: "" })}>Categoría: {selectedCategory.name} <span aria-hidden="true">×</span><span className={styles.visuallyHidden}>(quitar)</span></Button>
       </div> : null}
     </div>
-    <div className={styles.summary}>
+    {selectedCourse ? <Card className={styles.course}>
+      <div className={styles.courseHead}><h2>{selectedCourse.name}</h2><CourseStatus course={selectedCourse} /></div>
+      <CourseProgress course={selectedCourse} />
+      <div className={styles.courseActions}>
+        <Link className={buttonClass(selectedCourse.enrolledAt ? "primary" : "secondary", "sm")} to={coursePath(selectedCourse.subjectId)}>Ver mi avance</Link>
+        {selectedCourse.enrolledAt ? null : <EnrollButton course={selectedCourse} size="sm" />}
+      </div>
+    </Card> : null}
+    {!filtered && all.length > 0 ? <section aria-labelledby="catalog-courses" className={styles.courses}>
+      <h2 id="catalog-courses" className={styles.subjectTitle}>Cursos y materias</h2>
+      <ul className={courseStyles.list}>{subjects.map((entry) => {
+        const course = courseOf(entry.id);
+        const topics = all.filter((topic) => topic.subject.id === entry.id).length;
+        const explore = <Button size="sm" onClick={() => filter({ materia: entry.id, categoria: "" })}>Ver temas ({topics})</Button>;
+        return course ? <CourseCard key={entry.id} course={course} actions={<>{explore}
+          {course.enrolledAt ? <Link className={buttonClass("primary", "sm")} to={coursePath(course.subjectId)}>Mi avance</Link> : <EnrollButton course={course} size="sm" />}</>} />
+          : <li key={entry.id} className={cardClass(false, courseStyles.card)}>
+            <h3 className={courseStyles.title}>{entry.name}</h3>
+            <p className={courseStyles.count}>{topics} {topics === 1 ? "tema" : "temas"} con material publicado</p>
+            <div className={courseStyles.actions}>{explore}</div>
+          </li>;
+      })}</ul>
+      <p className={styles.help}>Inscríbete en un curso para verlo en Inicio con tu avance. Para buscar un tema concreto usa el buscador.</p>
+    </section> : null}
+    {filtered ? <div className={styles.summary}>
       <p role="status">{shown.length} {shown.length === 1 ? "tema" : "temas"} · {count} {count === 1 ? "material publicado" : "materiales publicados"}</p>
-      {filtered && groups.length > 0 ? <Button size="sm" variant="ghost" onClick={clear}>Quitar filtros</Button> : null}
-    </div>
+      {groups.length > 0 ? <Button size="sm" variant="ghost" onClick={clear}>Quitar filtros</Button> : null}
+    </div> : null}
     {all.length === 0 ? <EmptyState title="Todavía no hay material publicado"
       description="Cuando tu docente publique lecturas o unidades aparecerán aquí. Mientras tanto, revisa tus apuntes o repasos."
       action={<Link className={buttonClass("primary")} to="/">Volver al inicio</Link>} />
-      : groups.length === 0 ? <EmptyState title="No encontramos temas con estos filtros"
+      : !filtered ? null : groups.length === 0 ? <EmptyState title="No encontramos temas con estos filtros"
         description={text.trim() ? `Nada coincide con «${text.trim()}». Revisa la ortografía, prueba con otra palabra o quita los filtros.` : "Ningún tema tiene material publicado con esta combinación. Prueba con otro nivel o quita los filtros."}
         action={<Button variant="primary" onClick={clear}>Quitar filtros</Button>} />
         : groups.map((group) => <section key={group.subject.id} className={styles.subject} aria-labelledby={`subject-${group.subject.id}`}>
