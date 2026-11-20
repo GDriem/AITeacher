@@ -47,7 +47,8 @@ public sealed class CourseApiTests(ApiFixture fixture) : IClassFixture<ApiFixtur
         var category = await Success(await author.PostAsJsonAsync("/api/catalog/categories", new { subjectId = Id(subject), entry }), HttpStatusCode.Created);
         return (Id(subject), Id(category));
     }
-    private static async Task<Quiz> Unit(HttpClient author, (Guid Subject, Guid Category) course, string title, string mode = "assessment", string feedback = "afterSubmission")
+    private static async Task<Quiz> Unit(HttpClient author, (Guid Subject, Guid Category) course, string title, string mode = "assessment",
+        string feedback = "afterSubmission", int questionCount = 2)
     {
         var entry = new { name = title, slug = "topic-" + Guid.NewGuid().ToString("N") };
         var topic = await Success(await author.PostAsJsonAsync("/api/catalog/topics", new { subjectId = course.Subject, categoryId = course.Category, entry }), HttpStatusCode.Created);
@@ -57,7 +58,7 @@ public sealed class CourseApiTests(ApiFixture fixture) : IClassFixture<ApiFixtur
         var ur = unit["revision"]!["id"]!.GetValue<Guid>();
         await Success(await author.PostAsJsonAsync($"/api/units/{Id(unit)}/revisions/{ur}/publish", new { version = 1 }));
         var questions = new List<Guid>(); var correct = new List<Guid[]>(); var wrong = new List<Guid[]>();
-        for (var i = 0; i < 2; i++)
+        for (var i = 0; i < questionCount; i++)
         {
             var options = Enumerable.Range(0, 2).Select(n => new OptionDocument(Guid.NewGuid(), "Opción " + n)).ToArray();
             var q = new QuestionRequest(Guid.NewGuid(), 1, new(Id(unit), ur, [o], [c], "singleChoice", "Pregunta " + i, options, [options[0].Id], "exactMatch"));
@@ -117,6 +118,20 @@ public sealed class CourseApiTests(ApiFixture fixture) : IClassFixture<ApiFixtur
             Assert.Equal(course.Subject, enrollment["subjectId"]!.GetValue<Guid>());
             Assert.Equal(HttpStatusCode.NoContent, (await leave).StatusCode);
         }
+    }
+
+    [Fact]
+    public async Task Certificate_rounds_only_after_averaging_unit_scores()
+    {
+        using var author = await Login(); using var student = await Login("student-a");
+        var course = await Course(author, "Curso con notas fraccionarias");
+        var first = await Unit(author, course, "Unidad 1", questionCount: 4);
+        var second = await Unit(author, course, "Unidad 2", questionCount: 9);
+        await Answer(student, first, 3);
+        await Answer(student, second, 7);
+
+        var certificate = await Success(await student.PostAsync($"/api/learning/courses/{course.Subject}/certificate", null), HttpStatusCode.Created);
+        Assert.Equal(76, certificate["averagePercent"]!.GetValue<int>());
     }
 
     [Fact]

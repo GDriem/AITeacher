@@ -21,7 +21,8 @@ public sealed class CourseService(LearningDbContext db, ICourseCurriculum curric
     private static int Percent(decimal fraction) => (int)Math.Round(fraction * 100, MidpointRounding.AwayFromZero);
     private static CertificateSummary Summary(CertificateRow x) => new(x.Code, x.StudentName, x.CourseName, x.UnitCount, Percent(x.AverageFraction), x.IssuedAt);
 
-    private async Task<(CourseOutline Outline, CourseUnitProgress[] Units, CourseSummary Summary)[]> Load(string student, Guid? subjectId, CancellationToken ct)
+    private async Task<(CourseOutline Outline, CourseUnitProgress[] Units, CourseSummary Summary, decimal? AverageFraction)[]> Load(
+        string student, Guid? subjectId, CancellationToken ct)
     {
         var courses = (await curriculum.Courses(ct)).Where(c => subjectId is null || c.SubjectId == subjectId).ToArray();
         if (courses.Length == 0) return [];
@@ -39,7 +40,8 @@ public sealed class CourseService(LearningDbContext db, ICourseCurriculum curric
             var summary = new CourseSummary(course.SubjectId, course.Slug, course.Name, enrollments.GetValueOrDefault(course.SubjectId)?.EnrolledAt,
                 units.Length, completed, units.Count(u => u.Status != "notStarted"), completed * 100 / units.Length, last,
                 certificates.GetValueOrDefault(course.SubjectId) is { } certificate ? Summary(certificate) : null);
-            return (course, units, summary);
+            var average = completed == units.Length ? course.Units.Average(u => activity[u.UnitId].BestFraction) : null;
+            return (course, units, summary, average);
         }).ToArray();
     }
 
@@ -103,7 +105,7 @@ public sealed class CourseService(LearningDbContext db, ICourseCurriculum curric
         if (existing is not null) return Results.Ok(Summary(existing));
         var found = (await Load(student, subjectId, ct)).SingleOrDefault();
         if (found.Outline is null) return Results.NotFound();
-        if (found.Summary.CompletedCount < found.Summary.UnitCount)
+        if (found.AverageFraction is not { } average)
             return Results.Problem(statusCode: 409, title: "Every graded unit must be passed before issuing a certificate");
         var row = new CertificateRow
         {
@@ -111,7 +113,7 @@ public sealed class CourseService(LearningDbContext db, ICourseCurriculum curric
             // DisplayName is already limited to 100 characters by Identity.
             StudentName = user.FindFirstValue(ClaimTypes.Name) is { Length: > 0 } name ? name : "Estudiante",
             CourseName = found.Outline.Name, UnitCount = found.Summary.UnitCount,
-            AverageFraction = found.Units.Average(u => (decimal)(u.BestPercent ?? 0)) / 100,
+            AverageFraction = average,
             IssuedAt = PostgresTimestamp.Normalize(clock.GetUtcNow()),
         };
         db.Certificates.Add(row);
