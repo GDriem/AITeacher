@@ -5,8 +5,8 @@ Fundamentals (AZ-900)»). Sus categorías son las secciones del curso.
 
 ## Qué cuenta para el avance
 
-- Cuenta cada unidad publicada (no lectura suelta) con al menos una prueba en
-  modo `assessment` y feedback `afterSubmission`.
+- Cuenta cada unidad con al menos una prueba de su revisión publicada en modo
+  `assessment` y feedback `afterSubmission`. Las lecturas sueltas quedan fuera.
 - Las unidades sólo con práctica, o cuyas pruebas ocultan la nota (`never`),
   quedan fuera: no podrían completarse y bloquearían el diploma.
 - Una unidad está **completada** con un intento entregado y corregido con nota

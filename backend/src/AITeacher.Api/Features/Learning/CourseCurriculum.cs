@@ -27,12 +27,13 @@ public sealed class CourseCurriculum(CatalogDbContext catalog, EditorialDbContex
         var topics = await catalog.Topics.AsNoTracking().Where(x => x.IsAvailable).ToDictionaryAsync(x => x.Id, ct);
         var units = await (from unit in editorial.Units.AsNoTracking()
                            join revision in editorial.Revisions.AsNoTracking() on unit.PublishedRevisionId equals (Guid?)revision.Id
-                           select new { unit.Id, unit.TopicId, revision.DocumentJson }).ToArrayAsync(ct);
+                           select new { unit.Id, unit.TopicId, RevisionId = revision.Id, revision.DocumentJson }).ToArrayAsync(ct);
         // A unit counts towards a course only when a graded test can complete it; readings, practice-only units and
         // tests that hide their score (feedback=never) stay optional, otherwise they would block the diploma forever.
         var graded = (await assessments.Revisions.AsNoTracking().Where(x => x.Kind == "definition").Select(x => x.DocumentJson).ToArrayAsync(ct))
-            .Select(Read<DefinitionDocument>).Where(d => d.Mode == "assessment" && d.Feedback == "afterSubmission").Select(d => d.UnitId).ToHashSet();
-        var placed = units.Where(u => graded.Contains(u.Id) && topics.ContainsKey(u.TopicId) && categories.ContainsKey(topics[u.TopicId].CategoryId))
+            .Select(Read<DefinitionDocument>).Where(d => d.Mode == "assessment" && d.Feedback == "afterSubmission")
+            .Select(d => (d.UnitId, d.UnitRevisionId)).ToHashSet();
+        var placed = units.Where(u => graded.Contains((u.Id, u.RevisionId)) && topics.ContainsKey(u.TopicId) && categories.ContainsKey(topics[u.TopicId].CategoryId))
             .Select(u => (unit: u, topic: topics[u.TopicId], category: categories[topics[u.TopicId].CategoryId],
                 document: JsonSerializer.Deserialize<UnitDocument>(u.DocumentJson, EditorialService.Json)!))
             .Where(x => x.document.Kind != "reading").ToArray();

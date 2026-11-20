@@ -32,6 +32,14 @@ public sealed class CourseApiTests(ApiFixture fixture) : IClassFixture<ApiFixtur
     private static Guid Id(JsonObject row) => row["id"]!.GetValue<Guid>();
     private sealed record Quiz(Guid UnitId, Guid DefinitionRevision, Guid[] Questions, Guid[][] Correct, Guid[][] Wrong);
 
+    private static UnitDocument UnitContent(string title)
+    {
+        var concept = Guid.NewGuid(); var objective = Guid.NewGuid();
+        return new UnitDocument(title, [new(concept, "Concepto")], [new(objective, "Aplicar", [concept])],
+            [new(Guid.NewGuid(), "Lectura", "Contenido", "Propia", [objective])], [new(Guid.NewGuid(), "Ejercicio", [objective])],
+            [new(Guid.NewGuid(), "Evaluación", "PRIVADO", [objective])], []);
+    }
+
     private static async Task<(Guid Subject, Guid Category)> Course(HttpClient author, string name)
     {
         var entry = new { name, slug = "course-" + Guid.NewGuid().ToString("N") };
@@ -43,10 +51,8 @@ public sealed class CourseApiTests(ApiFixture fixture) : IClassFixture<ApiFixtur
     {
         var entry = new { name = title, slug = "topic-" + Guid.NewGuid().ToString("N") };
         var topic = await Success(await author.PostAsJsonAsync("/api/catalog/topics", new { subjectId = course.Subject, categoryId = course.Category, entry }), HttpStatusCode.Created);
-        var c = Guid.NewGuid(); var o = Guid.NewGuid();
-        var document = new UnitDocument(title, [new(c, "Concepto")], [new(o, "Aplicar", [c])],
-            [new(Guid.NewGuid(), "Lectura", "Contenido", "Propia", [o])], [new(Guid.NewGuid(), "Ejercicio", [o])],
-            [new(Guid.NewGuid(), "Evaluación", "PRIVADO", [o])], []);
+        var document = UnitContent(title);
+        var c = document.Concepts[0].Id; var o = document.Objectives[0].Id;
         var unit = await Success(await author.PostAsJsonAsync("/api/units", new { topicId = Id(topic), document }), HttpStatusCode.Created);
         var ur = unit["revision"]!["id"]!.GetValue<Guid>();
         await Success(await author.PostAsJsonAsync($"/api/units/{Id(unit)}/revisions/{ur}/publish", new { version = 1 }));
@@ -70,6 +76,28 @@ public sealed class CourseApiTests(ApiFixture fixture) : IClassFixture<ApiFixtur
     }
     private static async Task<JsonObject> Summary(HttpClient client, Guid subject) =>
         (await Success(await client.GetAsync("/api/learning/courses")))["items"]!.AsArray().Single(x => x!["subjectId"]!.GetValue<Guid>() == subject)!.AsObject();
+
+    [Fact]
+    public async Task A_quiz_from_a_previous_publication_does_not_make_a_unit_required()
+    {
+        using var author = await Login(); using var student = await Login("student-a");
+        var course = await Course(author, "Curso con revisión publicada");
+        var current = await Unit(author, course, "Unidad con quiz vigente");
+        var revised = await Unit(author, course, "Unidad que cambia de revisión");
+        Assert.Equal(2, (await Summary(student, course.Subject))["unitCount"]!.GetValue<int>());
+
+        var unitPath = $"/api/units/{revised.UnitId}";
+        var revision = await Success(await author.PostAsJsonAsync($"{unitPath}/revisions", new { version = 2, document = UnitContent("Revisión sin quiz") }), HttpStatusCode.Created);
+        var revisionId = Id(revision["revision"]!.AsObject());
+        await Success(await author.PostAsJsonAsync($"{unitPath}/revisions/{revisionId}/publish", new { version = 3 }));
+
+        await Answer(student, current, 2);
+        var detail = await Success(await student.GetAsync($"/api/learning/courses/{course.Subject}"));
+        var included = Assert.Single(detail["sections"]![0]!["units"]!.AsArray());
+        Assert.Equal(current.UnitId, included!["unitId"]!.GetValue<Guid>());
+        var certificate = await Success(await student.PostAsync($"/api/learning/courses/{course.Subject}/certificate", null), HttpStatusCode.Created);
+        Assert.Equal(1, certificate["unitCount"]!.GetValue<int>());
+    }
 
     [Fact]
     public async Task Progress_counts_units_passed_with_graded_quizzes_and_unlocks_a_verifiable_certificate()
