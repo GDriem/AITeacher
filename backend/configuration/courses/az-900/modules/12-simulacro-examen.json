@@ -1,0 +1,2289 @@
+{
+  "slug": "simulacro-examen-az-900",
+  "name": "Simulacro del examen AZ-900",
+  "category": "preparacion-examen",
+  "sortOrder": 12,
+  "profile": "exam",
+  "description": "Unidad integradora para preparar el examen AZ-900. Explica el formato y la puntuación del examen, propone un plan de estudio de 2 a 4 semanas con los recursos de la plataforma y ofrece hojas de repaso de los tres dominios. Incluye un diagnóstico inicial, prácticas por dominio y dos simulacros cronometrados con preguntas originales de estilo examen que cubren todo el temario vigente desde el 20 de julio de 2026.",
+  "outline": [
+    "Describe cloud computing",
+    "Describe the benefits of using cloud services",
+    "Describe cloud service types",
+    "Describe the core architectural components of Azure",
+    "Describe Azure compute and networking services",
+    "Describe Azure storage services",
+    "Describe Azure identity, access, and security",
+    "Describe cost management in Azure",
+    "Describe features and tools in Azure for governance and compliance",
+    "Describe features and tools for managing and deploying Azure resources",
+    "Describe monitoring tools in Azure"
+  ],
+  "unit": {
+    "title": "Simulacro y estrategia para el examen AZ-900",
+    "concepts": [
+      {
+        "key": "area-computacion-nube",
+        "name": "Computación en la nube"
+      },
+      {
+        "key": "area-beneficios-nube",
+        "name": "Beneficios de los servicios en la nube"
+      },
+      {
+        "key": "area-tipos-servicio",
+        "name": "Tipos de servicio en la nube"
+      },
+      {
+        "key": "area-arquitectura",
+        "name": "Componentes arquitectónicos de Azure"
+      },
+      {
+        "key": "area-computo-redes",
+        "name": "Servicios de cómputo y redes de Azure"
+      },
+      {
+        "key": "area-almacenamiento",
+        "name": "Servicios de almacenamiento de Azure"
+      },
+      {
+        "key": "area-identidad-seguridad",
+        "name": "Identidad, acceso y seguridad en Azure"
+      },
+      {
+        "key": "area-costos",
+        "name": "Administración de costos en Azure"
+      },
+      {
+        "key": "area-gobernanza",
+        "name": "Gobernanza y cumplimiento en Azure"
+      },
+      {
+        "key": "area-administracion-implementacion",
+        "name": "Herramientas para administrar e implementar recursos de Azure"
+      },
+      {
+        "key": "area-supervision",
+        "name": "Herramientas de supervisión en Azure"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "dominio-conceptos-nube",
+        "description": "Describir los conceptos de nube evaluados en el dominio 1 del examen AZ-900 (25–30 %): computación en la nube, beneficios de la nube y tipos de servicio IaaS, PaaS y SaaS, y aplicarlos a escenarios.",
+        "concepts": [
+          "area-computacion-nube",
+          "area-beneficios-nube",
+          "area-tipos-servicio"
+        ]
+      },
+      {
+        "key": "dominio-arquitectura-servicios",
+        "description": "Describir la arquitectura y los servicios de Azure evaluados en el dominio 2 del examen AZ-900 (35–40 %): componentes arquitectónicos, cómputo y redes, almacenamiento, e identidad, acceso y seguridad, y elegir el servicio adecuado en un escenario.",
+        "concepts": [
+          "area-arquitectura",
+          "area-computo-redes",
+          "area-almacenamiento",
+          "area-identidad-seguridad"
+        ]
+      },
+      {
+        "key": "dominio-administracion-gobernanza",
+        "description": "Describir la administración y la gobernanza de Azure evaluadas en el dominio 3 del examen AZ-900 (30–35 %): costos, gobernanza y cumplimiento, herramientas de administración e implementación, y supervisión, y distinguir herramientas que suelen confundirse.",
+        "concepts": [
+          "area-costos",
+          "area-gobernanza",
+          "area-administracion-implementacion",
+          "area-supervision"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "lectura-formato-examen-plan-estudio",
+        "title": "Cómo es el examen AZ-900 y cómo estudiarlo con esta plataforma",
+        "text": "El examen AZ-900 (Microsoft Azure Fundamentals) mide conocimientos básicos de nube y de Azure. No exige experiencia como administrador, pero sí distinguir conceptos y servicios con precisión. Esta unidad integra los once módulos del curso y te entrena con el formato del examen.\n\n## Formato y puntuación\n\n| Aspecto | Qué esperar |\n| --- | --- |\n| Duración | Los exámenes Fundamentals duran 45 minutos; reserva unos 65 minutos en total para instrucciones, acuerdo del candidato y comentarios. |\n| Cantidad de preguntas | Microsoft no la fija; la mayoría de sus exámenes tiene entre 40 y 60 preguntas. |\n| Puntuación | Escala de 1 a 1000; apruebas con 700 o más. Es una puntuación escalada, así que no equivale a un 70 % de aciertos. |\n| Errores | No restan puntos: responde siempre, aunque tengas que descartar y adivinar. |\n| Preguntas sin puntuar | Algunas sirven para calibrar el examen y no sabrás cuáles son; trátalas todas como si contaran. |\n| Tipos de ítems | Microsoft no anuncia los formatos concretos; entre los que publica como muestra están opción múltiple, arrastrar y soltar, área activa (*hot area*), pantalla activa y construir lista. Practica la interfaz en el entorno de prueba oficial (*exam sandbox*). |\n\nEn las preguntas de varias partes sueles obtener un punto por cada componente correcto. En los exámenes Fundamentals no tienes acceso a Microsoft Learn durante la prueba. Puedes tomar descansos, pero el reloj sigue corriendo y no podrás volver a las preguntas vistas antes del descanso.\n\n## Estrategia de tiempo\n\n- Con 45 minutos y hasta 60 preguntas tienes menos de un minuto por ítem: lee primero la pregunta final del enunciado y luego busca en el escenario el requisito que decide la respuesta (costo, control, región, sin servidores…).\n- Descarta primero lo que es claramente de otro dominio: un servicio de supervisión rara vez responde a una pregunta de identidad.\n- Marca para revisión las dudosas y avanza; vuelve al final si te queda tiempo.\n\n## Plan de estudio de 2 a 4 semanas en esta plataforma\n\n| Semana | Actividades |\n| --- | --- |\n| 1 | Haz el **diagnóstico inicial** y anota tus áreas débiles. Lee las lecturas del dominio 1, resuelve sus **ejercicios** y su **práctica libre**. |\n| 2 | Dominio 2 (el de mayor peso): lecturas, **apuntes** propios y **mapas conceptuales**; pregunta al **tutor por texto** cuando dos servicios se parezcan. |\n| 3 | Dominio 3, **quizzes cronometrados** de cada módulo y una **evaluación abierta** corregida por docente para explicar con tus palabras. |\n| 4 | **Simulacro completo**, revisión del **historial** de intentos y **repasos programados**: la plataforma usa la evidencia de cada prueba para proponer repeticiones espaciadas de lo que fallaste. Cierra con un simulacro oral usando el **tutor de voz**. |\n\nSi tienes poco tiempo, comprime el plan a dos semanas, pero no elimines el diagnóstico ni el simulacro final. Antes de agendar el examen, apunta a superar con holgura el simulacro de esta unidad en dos intentos seguidos.",
+        "source": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-900",
+        "objectives": [
+          "dominio-conceptos-nube",
+          "dominio-arquitectura-servicios",
+          "dominio-administracion-gobernanza"
+        ]
+      },
+      {
+        "key": "lectura-repaso-conceptos-nube",
+        "title": "Repaso intensivo: conceptos de nube",
+        "text": "Hoja de repaso del dominio 1, que vale entre el 25 y el 30 % del examen. Úsala después de estudiar los módulos de conceptos de nube.\n\n## Modelos de nube\n\n| Modelo | Idea clave | Caso típico |\n| --- | --- | --- |\n| Pública | Recursos del proveedor compartidos entre clientes, pago por uso | Empezar sin inversión inicial y crecer según la demanda |\n| Privada | Infraestructura dedicada a una sola organización | Control total del hardware o requisitos de aislamiento |\n| Híbrida | Combina entorno local o privado con nube pública | Datos regulados en local y picos de demanda en la nube |\n\nLa multinube combina varios proveedores públicos; Azure Arc ayuda a administrar ese tipo de entornos.\n\n## Responsabilidad compartida\n\n| Elemento | IaaS | PaaS | SaaS |\n| --- | --- | --- | --- |\n| Datos, cuentas e identidades, dispositivos | Cliente | Cliente | Cliente |\n| Aplicación | Cliente | Cliente | Proveedor |\n| Sistema operativo | Cliente | Proveedor | Proveedor |\n| Centro de datos físico, red física y hosts | Proveedor | Proveedor | Proveedor |\n\nCuanto más gestionado es el servicio, más responsabilidad asume el proveedor, pero nunca la de tus datos y tus cuentas.\n\n## Precios y consumo\n\n- **Modelo basado en consumo:** pagas por lo que usas; pasas de gasto de capital (CapEx) a gasto operativo (OpEx).\n- **Pago por uso:** flexible, sin compromiso.\n- **Reservas:** compromiso de uno o tres años a cambio de descuento; ideal para cargas estables.\n- **Spot:** capacidad sobrante muy barata que puede ser expulsada; sólo para cargas que toleran interrupciones.\n- **Sin servidor:** el proveedor administra la infraestructura y escala; pagas por ejecución (por ejemplo, Azure Functions).\n\n## Beneficios de la nube\n\n| Beneficio | Pregunta que responde |\n| --- | --- |\n| Alta disponibilidad | ¿Sigue funcionando si falla un componente? |\n| Escalabilidad y elasticidad | ¿Crece y se reduce con la demanda? Vertical = más potencia; horizontal = más instancias. |\n| Confiabilidad | ¿Se recupera de una falla, incluso regional? |\n| Previsibilidad | ¿Puedo prever rendimiento y costo? |\n| Seguridad y gobernanza | ¿Cumple estándares y se corrigen desviaciones? |\n| Administrabilidad | Administración **de** la nube (supervisión, escalado) y **en** la nube (portal, CLI, API). |\n\n## Para recordar en el examen\n\n- Si el escenario pide **máximo control del sistema operativo**, es IaaS; si pide **olvidarse de parches** pero conservar el código, es PaaS; si el usuario sólo **usa la aplicación**, es SaaS.\n- La seguridad física siempre es del proveedor; los datos y las identidades, siempre del cliente.\n- Alta disponibilidad no es lo mismo que escalabilidad: una mantiene el servicio, la otra ajusta la capacidad.\n- Reservas abaratan cargas constantes; spot no sirve si la carga no puede interrumpirse.",
+        "source": "https://learn.microsoft.com/en-us/training/paths/microsoft-azure-fundamentals-describe-cloud-concepts/",
+        "objectives": [
+          "dominio-conceptos-nube"
+        ]
+      },
+      {
+        "key": "lectura-repaso-arquitectura-servicios",
+        "title": "Repaso intensivo: arquitectura y servicios de Azure",
+        "text": "Hoja de repaso del dominio 2, el de mayor peso (35–40 %). Céntrate en elegir el servicio correcto según el requisito del escenario.\n\n## Infraestructura y jerarquía\n\n| Componente | Qué es | Trampa frecuente |\n| --- | --- | --- |\n| Región | Conjunto de centros de datos en una zona geográfica | No todos los servicios están en todas las regiones |\n| Par de regiones | Relación definida por Microsoft entre dos regiones | No eliges el par; muchas regiones nuevas no tienen par |\n| Región soberana | Instancia aislada, como Azure Government | No es una zona ni un grupo de administración |\n| Zona de disponibilidad | Uno o más centros de datos con energía, refrigeración y red propias | Las regiones con zonas tienen al menos tres |\n\nJerarquía, de mayor a menor alcance: **grupos de administración → suscripciones → grupos de recursos → recursos**. Un recurso vive en un solo grupo de recursos; al eliminar el grupo se eliminan sus recursos. La suscripción es límite de facturación y de acceso.\n\n## Cómputo y redes\n\n| Necesidad | Servicio |\n| --- | --- |\n| Control total del sistema operativo | Máquinas virtuales |\n| Escalar instancias idénticas automáticamente | Virtual Machine Scale Sets |\n| Separar VM en dominios de error y de actualización | Conjuntos de disponibilidad |\n| Escritorios Windows en la nube | Azure Virtual Desktop |\n| Aplicaciones ligeras y portables | Contenedores |\n| Código por eventos, pago por ejecución | Azure Functions |\n| Sitios y API administrados | Azure App Service |\n| Conectar dos redes virtuales | Emparejamiento de redes virtuales |\n| Túnel cifrado por internet al entorno local | VPN Gateway |\n| Enlace privado dedicado, sin internet pública | ExpressRoute |\n| Acceder a un servicio PaaS con IP privada | Punto de conexión privado |\n\n## Almacenamiento\n\n| Redundancia | Copias y alcance |\n| --- | --- |\n| LRS | Tres copias en un centro de datos |\n| ZRS | Copias en tres zonas de la región primaria |\n| GRS | LRS en la primaria + copia en la región secundaria |\n| GZRS | ZRS en la primaria + copia en la región secundaria |\n\nNiveles de acceso de blobs: Frecuente, Esporádico, Frío y Archivo; Archivo es el más barato para guardar y el más lento y caro para recuperar. Herramientas: AzCopy (línea de comandos), Storage Explorer (interfaz gráfica), Azure File Sync (caché local de Azure Files), Azure Migrate (descubrir, evaluar y migrar) y Data Box (traslado físico de grandes volúmenes).\n\n## Identidad y seguridad\n\n- **Microsoft Entra ID:** identidad en la nube. **Entra Domain Services:** dominio administrado con Kerberos, LDAP y unión a dominio.\n- **SSO** = una identidad para muchas aplicaciones; **MFA** = varias categorías de factores; **sin contraseña** = Windows Hello para empresas, Microsoft Authenticator o llaves FIDO2.\n- **Acceso condicional** decide según señales (usuario, ubicación, dispositivo). **RBAC** decide qué acciones se permiten en un ámbito y se hereda hacia abajo.\n- **Confianza cero:** verificar siempre y asumir vulneración. **Defensa en profundidad:** capas sucesivas.\n- **Defender for Cloud:** postura de seguridad y protección de cargas en Azure, otras nubes y entornos locales.\n\n## Para recordar en el examen\n\n- VPN Gateway cifra pero usa internet; ExpressRoute no usa la internet pública.\n- Sobrevivir a una región perdida exige GRS o GZRS; una zona caída se cubre con ZRS o GZRS.\n- Acceso condicional no asigna permisos sobre recursos: eso es RBAC.",
+        "source": "https://learn.microsoft.com/en-us/training/paths/azure-fundamentals-describe-azure-architecture-services/",
+        "objectives": [
+          "dominio-arquitectura-servicios"
+        ]
+      },
+      {
+        "key": "lectura-repaso-administracion-gobernanza",
+        "title": "Repaso intensivo: administración y gobernanza de Azure",
+        "text": "Hoja de repaso del dominio 3 (30–35 %). Muchas preguntas consisten en no confundir herramientas con nombres parecidos.\n\n## Costos\n\n| Herramienta o concepto | Para qué sirve |\n| --- | --- |\n| Factores de costo | Tipo y tamaño del recurso, consumo, región, tráfico de salida, tipo de compra (reserva, spot) |\n| Calculadora de precios | Estimar el costo de recursos que todavía no existen |\n| Microsoft Cost Management | Analizar el gasto real, crear presupuestos y alertas, y recibir recomendaciones |\n| Etiquetas | Pares nombre-valor para agrupar costos por proyecto, área o entorno |\n\nLas etiquetas no se heredan automáticamente del grupo de recursos; puedes forzarlas con Azure Policy. Los grupos de recursos y las etiquetas no generan costo por sí mismos.\n\n## Gobernanza y cumplimiento\n\n| Control | Pregunta que responde | Ejemplo |\n| --- | --- | --- |\n| Azure RBAC | ¿Quién puede hacer qué? | Un operador sólo puede reiniciar VM |\n| Azure Policy | ¿Cómo deben ser los recursos? | Sólo se permiten dos regiones |\n| Bloqueos de recursos | ¿Se puede borrar o modificar? | Bloqueo Eliminar sobre la base de datos productiva |\n| Microsoft Purview | ¿Dónde están y cómo se gobiernan los datos? | Clasificar datos confidenciales en Azure, entorno local y Microsoft 365 |\n\nLos bloqueos aplican a todos los usuarios, incluso a los Propietarios, hasta que alguien con permiso los quita. Hay dos niveles: Eliminar y Solo lectura.\n\n## Administración e implementación\n\n- **Portal de Azure:** interfaz gráfica, paneles personalizables; ideal para tareas puntuales.\n- **Azure Cloud Shell:** shell en el navegador con Bash o PowerShell, sin instalar nada.\n- **Azure CLI y Azure PowerShell:** capacidades equivalentes con sintaxis distinta; sirven para automatizar.\n- **Azure Arc:** lleva la administración de Azure a servidores, Kubernetes y datos fuera de Azure.\n- **Azure Resource Manager (ARM):** capa por la que pasa toda solicitud de administración.\n- **Infraestructura como código y plantillas de ARM:** archivos JSON declarativos e idempotentes; Bicep es un lenguaje más sencillo que se compila a ARM.\n\n## Supervisión\n\n| Herramienta | Mira hacia… |\n| --- | --- |\n| Azure Advisor | Tus recursos: recomendaciones de confiabilidad, seguridad, rendimiento, costo y excelencia operativa |\n| Azure Service Health | La plataforma: incidentes, mantenimientos planeados y avisos que te afectan |\n| Azure Monitor | Métricas y registros de tus recursos |\n| Log Analytics | Consultas KQL sobre los registros recopilados por Azure Monitor |\n| Alertas de Azure Monitor | Avisos y acciones cuando se cumple una condición |\n| Application Insights | Rendimiento, fallas y uso de aplicaciones |\n\n## Para recordar en el examen\n\n- Estimar antes de crear = calculadora de precios; analizar lo ya gastado = Cost Management.\n- Policy no da permisos y RBAC no valida propiedades de recursos.\n- Advisor recomienda; Service Health informa del estado de Azure; Monitor mide tus recursos.\n- Gestionar servidores de otra nube como recursos de Azure = Azure Arc, no Azure Migrate.",
+        "source": "https://learn.microsoft.com/en-us/training/paths/describe-azure-management-governance/",
+        "objectives": [
+          "dominio-administracion-gobernanza"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "ejercicio-plan-estudio-personal",
+        "objectives": [
+          "dominio-conceptos-nube",
+          "dominio-arquitectura-servicios",
+          "dominio-administracion-gobernanza"
+        ],
+        "prompt": "Diseña tu **plan de estudio personal** para el AZ-900.\n\n1. Fija la fecha tentativa del examen y cuenta las semanas disponibles (entre 2 y 4).\n2. Reparte las semanas según el peso de cada dominio: conceptos de nube (25–30 %), arquitectura y servicios (35–40 %), administración y gobernanza (30–35 %).\n3. Para cada semana anota qué recursos de la plataforma usarás: lecturas, ejercicios, práctica libre, quizzes cronometrados, tutor por texto o voz, apuntes y mapas conceptuales.\n4. Reserva al menos dos sesiones para el simulacro completo y la revisión de tu historial.\n5. Guarda el plan en tus apuntes y revísalo al final de cada semana."
+      },
+      {
+        "key": "ejercicio-tarjetas-pares-confusos",
+        "objectives": [
+          "dominio-conceptos-nube",
+          "dominio-arquitectura-servicios",
+          "dominio-administracion-gobernanza"
+        ],
+        "prompt": "Crea **tarjetas de memoria** para pares y tríos que se confunden en el examen. En el frente escribe el par; al reverso, una diferencia clave y un escenario de una línea donde sólo aplica uno de ellos.\n\n| Frente | Pista para el reverso |\n| --- | --- |\n| VPN Gateway vs ExpressRoute | ¿Usa internet pública? |\n| Azure Policy vs Azure RBAC vs bloqueos | ¿Qué controla cada uno: reglas, permisos o borrado? |\n| LRS vs ZRS vs GRS vs GZRS | ¿Qué falla soporta cada uno? |\n| Alta disponibilidad vs escalabilidad | ¿Mantener el servicio o ajustar capacidad? |\n| Azure Advisor vs Service Health vs Azure Monitor | ¿Recomienda, informa de Azure o mide tus recursos? |\n| Calculadora de precios vs Cost Management | ¿Antes o después de gastar? |\n| Entra ID vs Entra Domain Services | ¿Identidad en la nube o dominio administrado con Kerberos y LDAP? |\n\nAgrega al menos tres pares propios que te hayan costado en el diagnóstico y repásalos con el tutor por texto."
+      },
+      {
+        "key": "ejercicio-repasos-areas-debiles",
+        "objectives": [
+          "dominio-conceptos-nube",
+          "dominio-arquitectura-servicios",
+          "dominio-administracion-gobernanza"
+        ],
+        "prompt": "Después de completar el **Diagnóstico inicial AZ-900**:\n\n1. Revisa en tu historial qué preguntas fallaste y a qué área del temario pertenece cada una.\n2. Elige las tres áreas con peor resultado.\n3. Programa **repasos espaciados** a partir de la evidencia de esa prueba, por ejemplo a 1, 3 y 7 días.\n4. En cada repaso, lee la hoja de repaso del dominio correspondiente y resuelve su práctica por dominio.\n5. Anota en tus apuntes si el área mejoró; cuando la domines, reemplázala por la siguiente área débil."
+      },
+      {
+        "key": "ejercicio-simulacro-oral-voz",
+        "objectives": [
+          "dominio-conceptos-nube",
+          "dominio-arquitectura-servicios",
+          "dominio-administracion-gobernanza"
+        ],
+        "prompt": "Haz un **simulacro oral** de 15 minutos con el tutor de voz.\n\n1. Pide al tutor que te presente escenarios cortos de los tres dominios, uno a la vez.\n2. Responde en voz alta con el servicio o concepto correcto y **justifica** por qué descartas la alternativa más parecida.\n3. Pide que insista en tus áreas débiles del diagnóstico.\n4. Al terminar, anota en tus apuntes los conceptos en que dudaste y agrégalos a tus tarjetas de memoria."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluacion-dominio-conceptos-nube",
+        "objectives": [
+          "dominio-conceptos-nube"
+        ],
+        "prompt": "Una distribuidora regional tiene un ERP en servidores propios que vencen el próximo año, un portal de pedidos con picos los fines de mes y usa correo en la nube. Explica qué modelo de nube le recomiendas, qué tipo de servicio (IaaS, PaaS o SaaS) corresponde a cada sistema y cómo cambia su responsabilidad en cada caso. Incluye qué modelo de precios conviene para el ERP y para el portal, y qué beneficios de la nube obtiene.",
+        "privateCriteria": "Recomienda un modelo justificado (híbrido o público según supuestos explícitos). Asigna tipos de servicio coherentes: ERP en IaaS o PaaS según control requerido, portal en PaaS o sin servidor, correo como SaaS. Explica la responsabilidad compartida: datos e identidades siempre del cliente y seguridad física del proveedor. Propone reservas para cargas estables y pago por uso o escalado automático para los picos. Menciona al menos dos beneficios (escalabilidad, alta disponibilidad, confiabilidad, previsibilidad, gobernanza o administrabilidad) aplicados al caso. Penaliza confundir alta disponibilidad con escalabilidad o atribuir al proveedor la protección de los datos en SaaS."
+      },
+      {
+        "key": "evaluacion-dominio-arquitectura-servicios",
+        "objectives": [
+          "dominio-arquitectura-servicios"
+        ],
+        "prompt": "Una red de laboratorios clínicos va a llevar a Azure su sistema de resultados. Requisitos: tolerar la caída de un centro de datos y conservar una copia en otra región; conectar su sede principal con un enlace privado que no use internet; dar acceso a médicos externos con sus propias cuentas; exigir MFA desde ubicaciones desconocidas; y que sólo el equipo de operaciones pueda reiniciar las máquinas virtuales. Propón la arquitectura indicando regiones o zonas, redundancia de almacenamiento, conectividad, identidad y control de acceso, y justifica cada decisión.",
+        "privateCriteria": "Usa zonas de disponibilidad para la falla de un centro de datos y GZRS (o GRS con justificación) para la copia en otra región. Elige ExpressRoute para el enlace privado y explica por qué VPN Gateway no cumple. Usa identidades externas de Microsoft Entra para los médicos, acceso condicional para MFA basado en ubicación y Azure RBAC en el ámbito adecuado para operaciones. Organiza los recursos en grupos de recursos y suscripciones de forma coherente. Puntos extra por puntos de conexión privados, Defender for Cloud o mención de defensa en profundidad y confianza cero. Penaliza confundir acceso condicional con RBAC o ExpressRoute con VPN."
+      },
+      {
+        "key": "evaluacion-dominio-administracion-gobernanza",
+        "objectives": [
+          "dominio-administracion-gobernanza"
+        ],
+        "prompt": "Eres responsable de la plataforma Azure de una universidad con varias facultades. Diseña cómo vas a: estimar el costo de un nuevo laboratorio virtual antes de crearlo, repartir el gasto por facultad y avisar cuando se acerque al presupuesto; impedir recursos fuera de las regiones aprobadas y evitar el borrado accidental de la base de datos de notas; desplegar los mismos entornos cada semestre de forma repetible; administrar servidores que siguen en el campus; y detectar tanto problemas de la plataforma Azure como fallas de las aplicaciones. Nombra la herramienta de Azure para cada necesidad y explica brevemente por qué.",
+        "privateCriteria": "Calculadora de precios para estimar; etiquetas por facultad y presupuestos con alertas en Microsoft Cost Management; Azure Policy para regiones permitidas; bloqueo Eliminar para la base de datos; plantillas de ARM o Bicep (IaC) para entornos repetibles; Azure Arc para servidores del campus; Azure Service Health para problemas de la plataforma, Azure Monitor con alertas y Log Analytics y Application Insights para las aplicaciones; Azure Advisor como complemento de optimización. Penaliza usar RBAC en lugar de Policy, confundir Advisor con Service Health o proponer Azure Migrate para administrar servidores locales."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "area-beneficios-nube",
+        "requires": "area-computacion-nube"
+      },
+      {
+        "concept": "area-tipos-servicio",
+        "requires": "area-computacion-nube"
+      },
+      {
+        "concept": "area-computo-redes",
+        "requires": "area-arquitectura"
+      },
+      {
+        "concept": "area-almacenamiento",
+        "requires": "area-arquitectura"
+      },
+      {
+        "concept": "area-identidad-seguridad",
+        "requires": "area-arquitectura"
+      },
+      {
+        "concept": "area-costos",
+        "requires": "area-administracion-implementacion"
+      },
+      {
+        "concept": "area-gobernanza",
+        "requires": "area-administracion-implementacion"
+      },
+      {
+        "concept": "area-supervision",
+        "requires": "area-administracion-implementacion"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "cn-definicion-cooperativa",
+      "type": "singleChoice",
+      "prompt": "Una cooperativa de ahorro quiere dejar de comprar servidores cada tres años y, en su lugar, obtener cómputo, almacenamiento y red a través de internet, pagando sólo por lo que consume. ¿Qué describe mejor lo que está adoptando?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-computacion-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Computación en la nube con pago por uso",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Virtualización de sus servidores actuales en su propio centro de datos"
+        },
+        {
+          "key": "c",
+          "text": "Arrendamiento financiero de hardware con mantenimiento incluido en el contrato"
+        },
+        {
+          "key": "d",
+          "text": "Subcontratación de su mesa de ayuda a un proveedor externo"
+        }
+      ]
+    },
+    {
+      "key": "cn-responsabilidad-clinica-saas",
+      "type": "singleChoice",
+      "prompt": "Una clínica usa un servicio de correo y calendario ofrecido como SaaS. Un empleado reenvía datos de pacientes a una cuenta personal. Según el modelo de responsabilidad compartida, ¿a quién corresponde principalmente proteger esa información?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-computacion-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Al proveedor de la nube, porque en SaaS administra toda la pila tecnológica"
+        },
+        {
+          "key": "b",
+          "text": "A la clínica, porque los datos, las cuentas y los dispositivos siguen siendo suyos",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "A ambos por partes iguales, porque en SaaS los datos se reparten al 50 %"
+        },
+        {
+          "key": "d",
+          "text": "Al proveedor de internet que conecta a la clínica"
+        }
+      ]
+    },
+    {
+      "key": "cn-seguridad-fisica-proveedor",
+      "type": "trueFalse",
+      "prompt": "En cualquier tipo de servicio en la nube, ya sea IaaS, PaaS o SaaS, la seguridad física de los centros de datos es responsabilidad del proveedor de la nube.",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-computacion-nube"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "cn-banco-picos-campana",
+      "type": "singleChoice",
+      "prompt": "Un banco debe mantener su base de datos central en su propio centro de datos por regulación, pero quiere usar recursos de un proveedor de nube para absorber los picos de tráfico de su portal web durante campañas. ¿Qué modelo de nube encaja mejor?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-computacion-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Nube privada hospedada por un tercero"
+        },
+        {
+          "key": "b",
+          "text": "Nube pública exclusivamente"
+        },
+        {
+          "key": "c",
+          "text": "Nube híbrida",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Nube privada en su propio centro de datos"
+        }
+      ]
+    },
+    {
+      "key": "cn-casos-uso-nube-privada",
+      "type": "multipleChoice",
+      "prompt": "Una consultora clasifica a sus clientes según el modelo de nube que les conviene. ¿Qué dos situaciones son casos de uso típicos de una nube privada? Selecciona dos.",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-computacion-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una organización necesita control total del hardware y de su configuración física por políticas internas",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Una startup quiere empezar sin inversión inicial en equipos y crecer según la demanda"
+        },
+        {
+          "key": "c",
+          "text": "Una entidad debe operar sus sistemas en una infraestructura dedicada sólo a ella",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Una tienda en línea necesita capacidad casi ilimitada únicamente en temporada alta"
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "cn-precio-reserva-continua",
+      "type": "singleChoice",
+      "prompt": "Una empresa ejecuta las 24 horas, todos los días, un conjunto estable de máquinas virtuales que no puede interrumpirse y que seguirá usando al menos tres años. ¿Qué modelo de precios suele reducir más el costo de ese uso predecible?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-computacion-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Pago por uso sin ningún compromiso"
+        },
+        {
+          "key": "b",
+          "text": "Instancias de acceso puntual (spot) que Azure puede expulsar"
+        },
+        {
+          "key": "c",
+          "text": "Licencias perpetuas compradas por adelantado al fabricante"
+        },
+        {
+          "key": "d",
+          "text": "Reservas con compromiso de uno o tres años",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "cn-consumo-capex-opex",
+      "type": "trueFalse",
+      "prompt": "En el modelo basado en consumo, la organización sustituye buena parte del gasto de capital en equipos por un gasto operativo que varía según lo que realmente usa.",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-computacion-nube"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "cn-serverless-archivo-nuevo",
+      "type": "singleChoice",
+      "prompt": "Un equipo necesita ejecutar un fragmento de código cada vez que llega un archivo nuevo a un contenedor de almacenamiento. No quiere aprovisionar ni administrar servidores y prefiere pagar sólo por las ejecuciones. ¿Qué enfoque describe esa necesidad?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-computacion-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Máquinas virtuales reservadas que esperan el evento"
+        },
+        {
+          "key": "b",
+          "text": "Computación sin servidor",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Escalado vertical de un servidor dedicado en el entorno local"
+        },
+        {
+          "key": "d",
+          "text": "Una nube privada con hipervisor propio"
+        }
+      ]
+    },
+    {
+      "key": "bn-entradas-concierto-pico",
+      "type": "singleChoice",
+      "prompt": "Una plataforma de venta de entradas recibe diez veces más visitas en los minutos posteriores a anunciar un concierto. Quiere que la capacidad crezca automáticamente durante el pico y se reduzca al terminar, para no pagar recursos ociosos. ¿Qué beneficio de la nube aprovecha?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-beneficios-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Alta disponibilidad mediante réplicas en otra región"
+        },
+        {
+          "key": "b",
+          "text": "Previsibilidad del costo gracias a reservas anuales"
+        },
+        {
+          "key": "c",
+          "text": "Gobernanza mediante plantillas y directivas"
+        },
+        {
+          "key": "d",
+          "text": "Escalabilidad automática según la demanda",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "bn-aseguradora-region-completa",
+      "type": "multipleChoice",
+      "prompt": "Una aseguradora exige que su portal de clientes siga respondiendo aunque falle un centro de datos y que pueda recuperarse si se pierde una región completa. ¿Qué dos beneficios de la nube responden directamente a esos requisitos? Selecciona dos.",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-beneficios-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Alta disponibilidad",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Administrabilidad mediante el portal y la CLI"
+        },
+        {
+          "key": "c",
+          "text": "Confiabilidad",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Previsibilidad del costo"
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "bn-previsibilidad-rendimiento-costo",
+      "type": "trueFalse",
+      "prompt": "La previsibilidad en la nube abarca el rendimiento y el costo: el escalado automático ayuda a prever el rendimiento, y las herramientas de análisis de costos ayudan a prever el gasto.",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-beneficios-nube"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "bn-filiales-estandares",
+      "type": "singleChoice",
+      "prompt": "Una empresa con filiales en varios países quiere que todos los recursos que se creen en la nube cumplan sus estándares corporativos y que las desviaciones se detecten y corrijan. ¿Qué beneficio de la nube describe esa capacidad?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-beneficios-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Seguridad y gobernanza",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Confiabilidad ante desastres regionales"
+        },
+        {
+          "key": "c",
+          "text": "Elasticidad del cómputo durante los picos"
+        },
+        {
+          "key": "d",
+          "text": "Previsibilidad del rendimiento de las aplicaciones"
+        }
+      ]
+    },
+    {
+      "key": "bn-administrabilidad-solo-de",
+      "type": "trueFalse",
+      "prompt": "La administrabilidad de la nube se limita a la administración de la nube, como la supervisión y el escalado automático, y no incluye la administración en la nube mediante el portal, la CLI o las API.",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-beneficios-nube"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "ts-heredada-controladores",
+      "type": "singleChoice",
+      "prompt": "Una empresa de software debe migrar a la nube una aplicación heredada que depende de una versión específica del sistema operativo y de controladores instalados a mano. Quiere el máximo control sobre el sistema operativo. ¿Qué tipo de servicio es el más apropiado?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-tipos-servicio"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Plataforma como servicio (PaaS)"
+        },
+        {
+          "key": "b",
+          "text": "Software como servicio (SaaS)"
+        },
+        {
+          "key": "c",
+          "text": "Infraestructura como servicio (IaaS)",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Funciones sin servidor administradas"
+        }
+      ]
+    },
+    {
+      "key": "ts-api-sin-parches",
+      "type": "singleChoice",
+      "prompt": "Un equipo de desarrollo quiere publicar una API web sin aplicar parches al sistema operativo ni administrar el entorno de ejecución, pero conservando el control de su código y de la configuración de la aplicación. ¿Qué tipo de servicio se ajusta mejor?",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-tipos-servicio"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Infraestructura como servicio (IaaS)"
+        },
+        {
+          "key": "b",
+          "text": "Plataforma como servicio (PaaS)",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Software como servicio (SaaS)"
+        },
+        {
+          "key": "d",
+          "text": "Centro de datos local virtualizado"
+        }
+      ]
+    },
+    {
+      "key": "ts-ejemplos-saas-oficina",
+      "type": "multipleChoice",
+      "prompt": "Un director financiero revisa qué contrata su empresa en la nube. ¿Qué dos ofertas son ejemplos de software como servicio (SaaS)? Selecciona dos.",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-tipos-servicio"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Máquinas virtuales de Azure con Windows Server"
+        },
+        {
+          "key": "b",
+          "text": "Microsoft 365 para correo y documentos de oficina",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure App Service para hospedar una aplicación web propia"
+        },
+        {
+          "key": "d",
+          "text": "Un CRM en línea que los vendedores usan desde el navegador",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Una red virtual con subredes y grupos de seguridad"
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "ts-paas-parches-so",
+      "type": "trueFalse",
+      "prompt": "En PaaS, el cliente sigue siendo responsable de instalar las actualizaciones de seguridad del sistema operativo de los servidores que ejecutan su aplicación.",
+      "objectives": [
+        "dominio-conceptos-nube"
+      ],
+      "concepts": [
+        "area-tipos-servicio"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "ar-par-regiones-actualizaciones",
+      "type": "singleChoice",
+      "prompt": "Una empresa despliega su aplicación en una región de Azure que forma parte de un par de regiones. ¿Qué afirmación sobre los pares de regiones es correcta?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-arquitectura"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Cada cliente elige con qué región se empareja su suscripción"
+        },
+        {
+          "key": "b",
+          "text": "Todas las regiones de Azure tienen obligatoriamente una región emparejada"
+        },
+        {
+          "key": "c",
+          "text": "Desplegar en una región emparejada activa la conmutación por error automática de todos los recursos"
+        },
+        {
+          "key": "d",
+          "text": "Azure escalona las actualizaciones planeadas entre las dos regiones del par",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "ar-agencia-region-soberana",
+      "type": "singleChoice",
+      "prompt": "Una agencia del gobierno federal de Estados Unidos necesita una instancia de Azure separada física y lógicamente de la nube pública global y operada por personal examinado. ¿Qué debe considerar?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-arquitectura"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una región soberana, como Azure Government",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Una zona de disponibilidad dedicada dentro de una región pública"
+        },
+        {
+          "key": "c",
+          "text": "Un par de regiones dentro de la misma geografía"
+        },
+        {
+          "key": "d",
+          "text": "Un grupo de administración reservado para la agencia"
+        }
+      ]
+    },
+    {
+      "key": "ar-minorista-falla-centro-datos",
+      "type": "singleChoice",
+      "prompt": "Un minorista quiere que su base de datos siga funcionando aunque falle por completo un centro de datos, sin salir de la región donde residen sus clientes. ¿Qué característica debe usar?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-arquitectura"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una región soberana"
+        },
+        {
+          "key": "b",
+          "text": "Zonas de disponibilidad",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Grupos de recursos separados en la misma suscripción"
+        },
+        {
+          "key": "d",
+          "text": "Etiquetas que marquen los recursos críticos"
+        }
+      ]
+    },
+    {
+      "key": "ar-orden-jerarquia",
+      "type": "singleChoice",
+      "prompt": "Una corporación organiza Azure para aplicar reglas comunes a todas sus filiales y separar la facturación de cada una. ¿Qué secuencia representa la jerarquía de organización de Azure, de mayor a menor alcance?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-arquitectura"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Suscripciones, grupos de administración, grupos de recursos y recursos"
+        },
+        {
+          "key": "b",
+          "text": "Grupos de recursos, suscripciones, grupos de administración y recursos"
+        },
+        {
+          "key": "c",
+          "text": "Grupos de administración, grupos de recursos, suscripciones y recursos"
+        },
+        {
+          "key": "d",
+          "text": "Grupos de administración, suscripciones, grupos de recursos y recursos",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "cr-microservicio-segundos",
+      "type": "singleChoice",
+      "prompt": "Un equipo quiere empaquetar un microservicio con sus dependencias, iniciarlo en segundos y ejecutar muchas instancias en el mismo host sin incluir un sistema operativo completo en cada una. ¿Qué tipo de cómputo encaja mejor?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-computo-redes"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Máquinas virtuales independientes por instancia"
+        },
+        {
+          "key": "b",
+          "text": "Azure Virtual Desktop"
+        },
+        {
+          "key": "c",
+          "text": "Contenedores",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Conjuntos de disponibilidad"
+        }
+      ]
+    },
+    {
+      "key": "cr-opciones-maquinas-virtuales",
+      "type": "multipleChoice",
+      "prompt": "Un administrador compara opciones para cargas basadas en máquinas virtuales. ¿Qué dos afirmaciones son correctas? Selecciona dos.",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-computo-redes"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un conjunto de disponibilidad replica las máquinas virtuales en otra región"
+        },
+        {
+          "key": "b",
+          "text": "Virtual Machine Scale Sets agrega o quita instancias idénticas según la demanda",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure Virtual Desktop sólo admite una sesión de usuario por máquina virtual"
+        },
+        {
+          "key": "d",
+          "text": "Un conjunto de disponibilidad reparte las máquinas virtuales entre dominios de error y de actualización",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "cr-recursos-vm-internet",
+      "type": "multipleChoice",
+      "prompt": "Vas a crear una máquina virtual en Azure que debe ser accesible desde internet. Además de la propia máquina, ¿qué tres recursos se aprovisionan o asocian normalmente? Selecciona tres.",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-computo-redes"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un disco para el sistema operativo",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Un grupo de administración propio"
+        },
+        {
+          "key": "c",
+          "text": "Una interfaz de red conectada a una red virtual",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Una dirección IP pública",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Una cuenta de Microsoft Purview"
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "cr-agencia-sitios-web",
+      "type": "singleChoice",
+      "prompt": "Una agencia digital quiere publicar sitios web en .NET y Node.js con escalado automático, ranuras de implementación y certificados administrados, sin administrar máquinas virtuales. ¿Qué opción de hospedaje es la más adecuada?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-computo-redes"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Máquinas virtuales de Azure con IIS instalado"
+        },
+        {
+          "key": "b",
+          "text": "Azure App Service",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure Virtual Desktop con sesiones múltiples"
+        },
+        {
+          "key": "d",
+          "text": "Un conjunto de disponibilidad con dos servidores web"
+        }
+      ]
+    },
+    {
+      "key": "cr-hospital-conexion-dedicada",
+      "type": "singleChoice",
+      "prompt": "Un hospital necesita conectar su centro de datos con Azure mediante un enlace privado dedicado que no atraviese la internet pública y ofrezca un rendimiento más predecible. ¿Qué servicio cumple el requisito?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-computo-redes"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure VPN Gateway de sitio a sitio"
+        },
+        {
+          "key": "b",
+          "text": "Emparejamiento de redes virtuales"
+        },
+        {
+          "key": "c",
+          "text": "Un punto de conexión público con firewall"
+        },
+        {
+          "key": "d",
+          "text": "ExpressRoute",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "cr-vpn-cifrado-internet",
+      "type": "trueFalse",
+      "prompt": "Azure VPN Gateway envía tráfico cifrado entre una red virtual de Azure y una ubicación local a través de la internet pública.",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-computo-redes"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "cr-dos-redes-produccion",
+      "type": "singleChoice",
+      "prompt": "Una empresa tiene dos redes virtuales en Azure, una de producción y otra de servicios compartidos, y necesita que se comuniquen con direcciones privadas a través de la red troncal de Microsoft. ¿Qué debe configurar?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-computo-redes"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Emparejamiento de redes virtuales",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Una VPN Gateway hacia el centro de datos local"
+        },
+        {
+          "key": "c",
+          "text": "Un circuito de ExpressRoute por cada red"
+        },
+        {
+          "key": "d",
+          "text": "Una zona pública de Azure DNS compartida"
+        }
+      ]
+    },
+    {
+      "key": "cr-almacenamiento-ip-privada",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere que sus máquinas virtuales accedan a una cuenta de almacenamiento mediante una dirección IP privada de su red virtual, de modo que el tráfico no use la dirección pública del servicio. ¿Qué debe implementar?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-computo-redes"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un punto de conexión público con reglas de firewall"
+        },
+        {
+          "key": "b",
+          "text": "Una zona pública de Azure DNS"
+        },
+        {
+          "key": "c",
+          "text": "Un punto de conexión privado",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Una VPN Gateway de punto a sitio"
+        }
+      ]
+    },
+    {
+      "key": "al-recurso-compartido-smb",
+      "type": "singleChoice",
+      "prompt": "Un equipo necesita un recurso compartido de archivos accesible por SMB que varios servidores puedan montar como unidad de red. ¿Qué servicio de Azure Storage debe usar?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Blob Storage"
+        },
+        {
+          "key": "b",
+          "text": "Azure Queue Storage"
+        },
+        {
+          "key": "c",
+          "text": "Azure Table Storage"
+        },
+        {
+          "key": "d",
+          "text": "Azure Files",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "al-expedientes-siete-anios",
+      "type": "singleChoice",
+      "prompt": "Un estudio jurídico debe conservar durante siete años expedientes digitalizados que casi nunca se consultan, y puede esperar varias horas cuando necesite recuperar uno. ¿Qué nivel de acceso de blobs minimiza el costo de almacenamiento?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Archivo (Archive)",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Frecuente (Hot)"
+        },
+        {
+          "key": "c",
+          "text": "Esporádico (Cool)"
+        },
+        {
+          "key": "d",
+          "text": "Frío (Cold)"
+        }
+      ]
+    },
+    {
+      "key": "al-zona-y-region-secundaria",
+      "type": "singleChoice",
+      "prompt": "Una aseguradora quiere que su cuenta de almacenamiento siga disponible si falla una zona de la región primaria y, además, que exista una copia en una región secundaria por si se pierde la región completa. ¿Qué opción de redundancia cumple ambos requisitos?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Almacenamiento con redundancia local (LRS)"
+        },
+        {
+          "key": "b",
+          "text": "Almacenamiento con redundancia geográfica de zona (GZRS)",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Almacenamiento con redundancia de zona (ZRS)"
+        },
+        {
+          "key": "d",
+          "text": "Almacenamiento con redundancia geográfica (GRS)"
+        }
+      ]
+    },
+    {
+      "key": "al-gpv2-solo-blobs",
+      "type": "trueFalse",
+      "prompt": "Una cuenta de almacenamiento de uso general v2 sólo admite blobs; para archivos, colas y tablas debes crear tipos de cuenta separados.",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "al-analista-interfaz-grafica",
+      "type": "singleChoice",
+      "prompt": "Un analista sin experiencia en scripts necesita explorar contenedores de blobs y cargar o descargar archivos con una interfaz gráfica desde su equipo con Windows, macOS o Linux. ¿Qué herramienta debe usar?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "AzCopy desde la línea de comandos"
+        },
+        {
+          "key": "b",
+          "text": "Azure Storage Explorer",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure File Sync"
+        },
+        {
+          "key": "d",
+          "text": "Azure Data Box"
+        }
+      ]
+    },
+    {
+      "key": "al-migracion-enlace-lento",
+      "type": "multipleChoice",
+      "prompt": "Una empresa planea su migración a Azure: debe descubrir y evaluar sus servidores locales y, además, trasladar decenas de terabytes de archivos desde una sede con un enlace de internet muy lento. ¿Qué dos servicios usarías? Selecciona dos.",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure File Sync"
+        },
+        {
+          "key": "b",
+          "text": "Azure Migrate",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "AzCopy"
+        },
+        {
+          "key": "d",
+          "text": "Azure Data Box",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Azure Storage Explorer"
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "is-aplicacion-kerberos-ldap",
+      "type": "singleChoice",
+      "prompt": "Una empresa traslada a Azure una aplicación heredada que necesita unirse a un dominio y autenticarse con Kerberos y LDAP, pero no quiere desplegar ni mantener controladores de dominio. ¿Qué servicio debe usar?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-identidad-seguridad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Microsoft Entra ID sin servicios adicionales"
+        },
+        {
+          "key": "b",
+          "text": "Acceso condicional de Microsoft Entra"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Entra Domain Services",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Azure RBAC con roles personalizados"
+        }
+      ]
+    },
+    {
+      "key": "is-metodos-autenticacion",
+      "type": "multipleChoice",
+      "prompt": "Una universidad renueva su estrategia de inicio de sesión. ¿Qué tres afirmaciones sobre los métodos de autenticación son correctas? Selecciona tres.",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-identidad-seguridad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El inicio de sesión único permite usar una sola identidad para acceder a varias aplicaciones",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "La autenticación multifactor consiste en pedir dos contraseñas distintas"
+        },
+        {
+          "key": "c",
+          "text": "La autenticación multifactor combina elementos de categorías distintas, como algo que sabes y algo que tienes",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "La autenticación sin contraseña usa, por ejemplo, Windows Hello para empresas o una llave de seguridad FIDO2",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "El inicio de sesión único elimina la necesidad de proteger la identidad del usuario"
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "is-ingenieros-empresa-asociada",
+      "type": "singleChoice",
+      "prompt": "Una constructora necesita que los ingenieros de una empresa asociada accedan a un sitio de proyectos con sus propias credenciales corporativas, sin crearles cuentas nuevas con contraseña. ¿Qué capacidad debe usar?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-identidad-seguridad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Microsoft Entra Domain Services"
+        },
+        {
+          "key": "b",
+          "text": "Identidades externas de Microsoft Entra",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Bloqueos de recursos en la suscripción"
+        },
+        {
+          "key": "d",
+          "text": "Un grupo de administración para socios"
+        }
+      ]
+    },
+    {
+      "key": "is-nomina-dispositivo-ubicacion",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere permitir el acceso a su aplicación de nómina sólo desde dispositivos administrados y exigir MFA cuando el inicio de sesión llega desde una ubicación desconocida. ¿Qué característica evalúa esas señales?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-identidad-seguridad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Policy"
+        },
+        {
+          "key": "b",
+          "text": "Azure RBAC"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Defender for Cloud"
+        },
+        {
+          "key": "d",
+          "text": "Acceso condicional de Microsoft Entra",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "is-rbac-sin-herencia",
+      "type": "trueFalse",
+      "prompt": "En Azure RBAC, un rol asignado en el ámbito de una suscripción no se aplica a los grupos de recursos que contiene; debes repetir la asignación en cada uno.",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-identidad-seguridad"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "is-zero-trust-capas",
+      "type": "multipleChoice",
+      "prompt": "Un comité de seguridad compara modelos de protección. ¿Qué dos afirmaciones son correctas? Selecciona dos.",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-identidad-seguridad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Confianza cero confía de forma automática en los dispositivos de la red corporativa"
+        },
+        {
+          "key": "b",
+          "text": "Confianza cero asume una vulneración y verifica explícitamente cada solicitud",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "La defensa en profundidad depende de un único firewall perimetral muy robusto"
+        },
+        {
+          "key": "d",
+          "text": "La defensa en profundidad usa varias capas para que, si una falla, otra frene el ataque",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "is-postura-multinube",
+      "type": "singleChoice",
+      "prompt": "Un equipo de seguridad necesita evaluar la postura de seguridad de cargas en Azure, en otro proveedor de nube y en servidores locales, y recibir recomendaciones de mejora y alertas de amenazas. ¿Qué servicio cumple esto?",
+      "objectives": [
+        "dominio-arquitectura-servicios"
+      ],
+      "concepts": [
+        "area-identidad-seguridad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Microsoft Defender for Cloud",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Microsoft Purview"
+        },
+        {
+          "key": "c",
+          "text": "Azure Advisor"
+        },
+        {
+          "key": "d",
+          "text": "Azure Service Health"
+        }
+      ]
+    },
+    {
+      "key": "co-factores-factura",
+      "type": "multipleChoice",
+      "prompt": "Una empresa revisa su factura de Azure para entender qué la hace variar. ¿Qué tres factores pueden afectar el costo de sus recursos? Selecciona tres.",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-costos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El tipo y el tamaño de los recursos",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "El número de grupos de recursos de la suscripción"
+        },
+        {
+          "key": "c",
+          "text": "La región donde se despliegan los recursos",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "La cantidad de etiquetas asignadas a cada recurso"
+        },
+        {
+          "key": "e",
+          "text": "El tráfico de datos de salida entre regiones o hacia internet",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "co-estimar-sin-suscripcion",
+      "type": "singleChoice",
+      "prompt": "Antes de migrar, un arquitecto quiere estimar cuánto costaría al mes un grupo de máquinas virtuales, una base de datos y almacenamiento en una región concreta, sin tener todavía una suscripción. ¿Qué herramienta debe usar?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-costos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Microsoft Cost Management"
+        },
+        {
+          "key": "b",
+          "text": "La calculadora de precios de Azure",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure Advisor"
+        },
+        {
+          "key": "d",
+          "text": "Azure Service Health"
+        }
+      ]
+    },
+    {
+      "key": "co-aviso-ochenta-por-ciento",
+      "type": "singleChoice",
+      "prompt": "La gerencia financiera quiere recibir un aviso por correo cuando el gasto mensual de una suscripción llegue al 80 % del monto previsto. ¿Qué debe configurar?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-costos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una directiva de Azure Policy que deniegue recursos nuevos"
+        },
+        {
+          "key": "b",
+          "text": "Un bloqueo de solo lectura sobre la suscripción"
+        },
+        {
+          "key": "c",
+          "text": "Un presupuesto con alertas en Microsoft Cost Management",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Una alerta de Azure Service Health para la región"
+        }
+      ]
+    },
+    {
+      "key": "co-etiquetas-herencia-automatica",
+      "type": "trueFalse",
+      "prompt": "Las etiquetas asignadas a un grupo de recursos se heredan automáticamente en todos los recursos que contiene, sin configurar nada más.",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-costos"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "co-proyecto-atlas-informes",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere agrupar en sus informes de costos todos los recursos del proyecto Atlas, aunque estén repartidos en varias suscripciones y grupos de recursos. ¿Qué debe usar?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-costos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un bloqueo de recursos por proyecto"
+        },
+        {
+          "key": "b",
+          "text": "Una zona de disponibilidad dedicada al proyecto"
+        },
+        {
+          "key": "c",
+          "text": "Una región exclusiva para el proyecto"
+        },
+        {
+          "key": "d",
+          "text": "Etiquetas, por ejemplo proyecto=atlas",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "go-datos-confidenciales-unificado",
+      "type": "singleChoice",
+      "prompt": "Una organización quiere descubrir y clasificar datos confidenciales repartidos entre servicios de Azure, bases de datos locales y Microsoft 365, y obtener una visión unificada para gobernarlos. ¿Qué solución debe usar?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-gobernanza"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Policy"
+        },
+        {
+          "key": "b",
+          "text": "Microsoft Defender for Cloud"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Purview",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Azure Arc"
+        }
+      ]
+    },
+    {
+      "key": "go-regiones-aprobadas",
+      "type": "singleChoice",
+      "prompt": "Un equipo de cumplimiento quiere impedir que se creen recursos fuera de dos regiones aprobadas y ver qué recursos existentes no cumplen esa regla. ¿Qué servicio debe usar?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-gobernanza"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Policy",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure RBAC"
+        },
+        {
+          "key": "c",
+          "text": "Bloqueos de recursos"
+        },
+        {
+          "key": "d",
+          "text": "Microsoft Cost Management"
+        }
+      ]
+    },
+    {
+      "key": "go-bloqueo-eliminar-propietario",
+      "type": "trueFalse",
+      "prompt": "Un bloqueo de tipo Eliminar impide borrar el recurso incluso a un usuario con el rol Propietario, mientras el bloqueo no se quite.",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-gobernanza"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "go-policy-rbac-bloqueos",
+      "type": "multipleChoice",
+      "prompt": "Un auditor pide distinguir los controles de gobernanza de Azure. ¿Qué dos afirmaciones son correctas? Selecciona dos.",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-gobernanza"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure RBAC controla qué acciones puede realizar cada usuario, grupo o identidad sobre los recursos",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Un bloqueo de solo lectura concede permisos de lectura a usuarios nuevos"
+        },
+        {
+          "key": "c",
+          "text": "Azure Policy evalúa las propiedades de los recursos frente a reglas, sin importar quién los crea",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Azure Policy asigna roles a los usuarios y sustituye a Azure RBAC"
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "ad-equipo-prestado",
+      "type": "singleChoice",
+      "prompt": "Un consultor trabaja desde un equipo prestado donde no puede instalar software, pero necesita ejecutar comandos de Azure CLI y Azure PowerShell contra su suscripción. ¿Qué opción es la más adecuada?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-administracion-implementacion"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Arc"
+        },
+        {
+          "key": "b",
+          "text": "Plantillas de ARM"
+        },
+        {
+          "key": "c",
+          "text": "Azure Advisor"
+        },
+        {
+          "key": "d",
+          "text": "Azure Cloud Shell en el navegador",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "ad-cli-powershell-equivalentes",
+      "type": "trueFalse",
+      "prompt": "Azure CLI y Azure PowerShell ofrecen capacidades equivalentes para administrar Azure; la elección depende sobre todo de la sintaxis y del entorno que el equipo prefiera.",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-administracion-implementacion"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "ad-supermercados-kubernetes",
+      "type": "singleChoice",
+      "prompt": "Una cadena de supermercados tiene servidores Linux en sus tiendas y clústeres de Kubernetes en otro proveedor de nube. Quiere inventariarlos y aplicarles Azure Policy desde Azure como si fueran recursos de Azure. ¿Qué servicio debe usar?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-administracion-implementacion"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Arc",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure Migrate"
+        },
+        {
+          "key": "c",
+          "text": "Azure Virtual Desktop"
+        },
+        {
+          "key": "d",
+          "text": "Azure Data Box"
+        }
+      ]
+    },
+    {
+      "key": "ad-iac-arm-afirmaciones",
+      "type": "multipleChoice",
+      "prompt": "Un equipo adopta infraestructura como código. ¿Qué tres afirmaciones sobre IaC y Azure Resource Manager son correctas? Selecciona tres.",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-administracion-implementacion"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Las plantillas de ARM son archivos JSON declarativos que describen el estado deseado",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Las plantillas de ARM deben ejecutarse paso a paso en el orden que fija el operador"
+        },
+        {
+          "key": "c",
+          "text": "Azure Resource Manager recibe las solicitudes del portal, la CLI, PowerShell y las API",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "El portal de Azure crea recursos sin pasar por Azure Resource Manager"
+        },
+        {
+          "key": "e",
+          "text": "Implementar varias veces la misma plantilla produce de forma coherente el mismo resultado",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "ad-asistentes-visuales",
+      "type": "singleChoice",
+      "prompt": "Un administrador nuevo quiere crear recursos con asistentes visuales y armar un panel personalizado con el estado de sus servicios; no necesita automatizar tareas repetitivas. ¿Qué herramienta encaja mejor?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-administracion-implementacion"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Plantillas de ARM versionadas en un repositorio"
+        },
+        {
+          "key": "b",
+          "text": "El portal de Azure",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure CLI en scripts programados"
+        },
+        {
+          "key": "d",
+          "text": "Azure Arc"
+        }
+      ]
+    },
+    {
+      "key": "su-recomendaciones-redimensionar",
+      "type": "singleChoice",
+      "prompt": "Un administrador quiere recomendaciones personalizadas para reducir costos, como redimensionar o apagar máquinas virtuales infrautilizadas, junto con sugerencias de confiabilidad y rendimiento. ¿Qué servicio las proporciona?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-supervision"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Service Health"
+        },
+        {
+          "key": "b",
+          "text": "Application Insights"
+        },
+        {
+          "key": "c",
+          "text": "Azure Advisor",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Microsoft Purview"
+        }
+      ]
+    },
+    {
+      "key": "su-incidente-plataforma",
+      "type": "singleChoice",
+      "prompt": "La aplicación de una empresa dejó de responder y el equipo quiere saber si hay un incidente de la plataforma o un mantenimiento planeado de Azure que afecte a los servicios y regiones que usa. ¿Dónde debe consultar?",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-supervision"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Advisor"
+        },
+        {
+          "key": "b",
+          "text": "Azure Policy"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Cost Management"
+        },
+        {
+          "key": "d",
+          "text": "Azure Service Health",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "su-kql-cpu-app-lenta",
+      "type": "multipleChoice",
+      "prompt": "Una empresa de comercio electrónico quiere consultar con KQL los registros de todas sus máquinas virtuales, recibir un aviso cuando la CPU supere un umbral y detectar fallas y respuestas lentas en su aplicación web. ¿Qué tres capacidades de Azure Monitor debe usar? Selecciona tres.",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-supervision"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Log Analytics",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure Advisor"
+        },
+        {
+          "key": "c",
+          "text": "Alertas de Azure Monitor",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Application Insights",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Azure Service Health"
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "su-health-advisor-invertidos",
+      "type": "trueFalse",
+      "prompt": "Azure Service Health recomienda cómo optimizar el costo de tus recursos, mientras que Azure Advisor informa sobre incidentes y mantenimientos de la plataforma.",
+      "objectives": [
+        "dominio-administracion-gobernanza"
+      ],
+      "concepts": [
+        "area-supervision"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "key": "diagnostico",
+      "title": "Diagnóstico inicial AZ-900",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "cn-definicion-cooperativa",
+        "ar-par-regiones-actualizaciones",
+        "co-estimar-sin-suscripcion",
+        "cn-banco-picos-campana",
+        "cr-microservicio-segundos",
+        "go-datos-confidenciales-unificado",
+        "bn-entradas-concierto-pico",
+        "al-expedientes-siete-anios",
+        "ad-supermercados-kubernetes",
+        "ts-api-sin-parches",
+        "is-aplicacion-kerberos-ldap",
+        "su-incidente-plataforma",
+        "ts-ejemplos-saas-oficina",
+        "cr-recursos-vm-internet",
+        "go-policy-rbac-bloqueos"
+      ]
+    },
+    {
+      "key": "practica-conceptos-nube",
+      "title": "Práctica por dominio: conceptos de nube",
+      "mode": "practice",
+      "timeLimitMinutes": 30,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "cn-definicion-cooperativa",
+        "cn-responsabilidad-clinica-saas",
+        "cn-seguridad-fisica-proveedor",
+        "cn-banco-picos-campana",
+        "cn-casos-uso-nube-privada",
+        "cn-precio-reserva-continua",
+        "cn-consumo-capex-opex",
+        "cn-serverless-archivo-nuevo",
+        "bn-entradas-concierto-pico",
+        "bn-aseguradora-region-completa",
+        "bn-previsibilidad-rendimiento-costo",
+        "bn-filiales-estandares",
+        "bn-administrabilidad-solo-de",
+        "ts-heredada-controladores",
+        "ts-api-sin-parches",
+        "ts-ejemplos-saas-oficina",
+        "ts-paas-parches-so"
+      ]
+    },
+    {
+      "key": "practica-arquitectura-servicios",
+      "title": "Práctica por dominio: arquitectura y servicios de Azure",
+      "mode": "practice",
+      "timeLimitMinutes": 30,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "ar-par-regiones-actualizaciones",
+        "ar-agencia-region-soberana",
+        "ar-minorista-falla-centro-datos",
+        "ar-orden-jerarquia",
+        "cr-microservicio-segundos",
+        "cr-opciones-maquinas-virtuales",
+        "cr-recursos-vm-internet",
+        "cr-agencia-sitios-web",
+        "cr-hospital-conexion-dedicada",
+        "cr-vpn-cifrado-internet",
+        "cr-dos-redes-produccion",
+        "cr-almacenamiento-ip-privada",
+        "al-recurso-compartido-smb",
+        "al-expedientes-siete-anios",
+        "al-zona-y-region-secundaria",
+        "al-gpv2-solo-blobs",
+        "al-analista-interfaz-grafica",
+        "al-migracion-enlace-lento",
+        "is-aplicacion-kerberos-ldap",
+        "is-metodos-autenticacion",
+        "is-ingenieros-empresa-asociada",
+        "is-nomina-dispositivo-ubicacion",
+        "is-rbac-sin-herencia",
+        "is-zero-trust-capas",
+        "is-postura-multinube"
+      ]
+    },
+    {
+      "key": "practica-administracion-gobernanza",
+      "title": "Práctica por dominio: administración y gobernanza de Azure",
+      "mode": "practice",
+      "timeLimitMinutes": 30,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "co-factores-factura",
+        "co-estimar-sin-suscripcion",
+        "co-aviso-ochenta-por-ciento",
+        "co-etiquetas-herencia-automatica",
+        "co-proyecto-atlas-informes",
+        "go-datos-confidenciales-unificado",
+        "go-regiones-aprobadas",
+        "go-bloqueo-eliminar-propietario",
+        "go-policy-rbac-bloqueos",
+        "ad-equipo-prestado",
+        "ad-cli-powershell-equivalentes",
+        "ad-supermercados-kubernetes",
+        "ad-iac-arm-afirmaciones",
+        "ad-asistentes-visuales",
+        "su-recomendaciones-redimensionar",
+        "su-incidente-plataforma",
+        "su-kql-cpu-app-lenta",
+        "su-health-advisor-invertidos"
+      ]
+    },
+    {
+      "key": "simulacro-completo",
+      "title": "Simulacro completo AZ-900",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "ar-par-regiones-actualizaciones",
+        "co-factores-factura",
+        "cn-definicion-cooperativa",
+        "ar-minorista-falla-centro-datos",
+        "co-estimar-sin-suscripcion",
+        "cn-responsabilidad-clinica-saas",
+        "ar-orden-jerarquia",
+        "co-aviso-ochenta-por-ciento",
+        "cn-seguridad-fisica-proveedor",
+        "cr-microservicio-segundos",
+        "co-etiquetas-herencia-automatica",
+        "cr-opciones-maquinas-virtuales",
+        "cn-banco-picos-campana",
+        "co-proyecto-atlas-informes",
+        "cr-recursos-vm-internet",
+        "cn-casos-uso-nube-privada",
+        "go-datos-confidenciales-unificado",
+        "cr-agencia-sitios-web",
+        "go-regiones-aprobadas",
+        "cn-precio-reserva-continua",
+        "cr-hospital-conexion-dedicada",
+        "go-bloqueo-eliminar-propietario",
+        "cr-dos-redes-produccion",
+        "cn-serverless-archivo-nuevo",
+        "cr-almacenamiento-ip-privada",
+        "go-policy-rbac-bloqueos",
+        "bn-entradas-concierto-pico",
+        "al-expedientes-siete-anios",
+        "ad-equipo-prestado",
+        "al-zona-y-region-secundaria",
+        "bn-aseguradora-region-completa",
+        "ad-supermercados-kubernetes",
+        "al-gpv2-solo-blobs",
+        "ad-iac-arm-afirmaciones",
+        "bn-filiales-estandares",
+        "al-migracion-enlace-lento",
+        "ad-asistentes-visuales",
+        "bn-administrabilidad-solo-de",
+        "is-aplicacion-kerberos-ldap",
+        "su-recomendaciones-redimensionar",
+        "is-metodos-autenticacion",
+        "ts-heredada-controladores",
+        "su-incidente-plataforma",
+        "is-nomina-dispositivo-ubicacion",
+        "ts-api-sin-parches",
+        "su-kql-cpu-app-lenta",
+        "is-zero-trust-capas",
+        "ts-ejemplos-saas-oficina",
+        "su-health-advisor-invertidos",
+        "is-postura-multinube"
+      ]
+    },
+    {
+      "key": "simulacro-rapido",
+      "title": "Simulacro rápido (20 preguntas)",
+      "mode": "assessment",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 5,
+      "feedback": "afterSubmission",
+      "questions": [
+        "ar-agencia-region-soberana",
+        "ad-cli-powershell-equivalentes",
+        "cn-consumo-capex-opex",
+        "cr-vpn-cifrado-internet",
+        "co-factores-factura",
+        "bn-previsibilidad-rendimiento-costo",
+        "al-recurso-compartido-smb",
+        "co-aviso-ochenta-por-ciento",
+        "al-analista-interfaz-grafica",
+        "ts-paas-parches-so",
+        "go-regiones-aprobadas",
+        "is-ingenieros-empresa-asociada",
+        "ad-equipo-prestado",
+        "is-rbac-sin-herencia",
+        "cn-responsabilidad-clinica-saas",
+        "su-recomendaciones-redimensionar",
+        "cr-hospital-conexion-dedicada",
+        "ts-heredada-controladores",
+        "su-kql-cpu-app-lenta",
+        "al-zona-y-region-secundaria"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa del examen AZ-900",
+    "edges": [
+      {
+        "from": "area-beneficios-nube",
+        "to": "area-computacion-nube",
+        "relation": "requires"
+      },
+      {
+        "from": "area-tipos-servicio",
+        "to": "area-computacion-nube",
+        "relation": "requires"
+      },
+      {
+        "from": "area-arquitectura",
+        "to": "area-computacion-nube",
+        "relation": "requires"
+      },
+      {
+        "from": "area-computo-redes",
+        "to": "area-arquitectura",
+        "relation": "requires"
+      },
+      {
+        "from": "area-almacenamiento",
+        "to": "area-arquitectura",
+        "relation": "requires"
+      },
+      {
+        "from": "area-identidad-seguridad",
+        "to": "area-arquitectura",
+        "relation": "requires"
+      },
+      {
+        "from": "area-tipos-servicio",
+        "to": "area-computo-redes",
+        "relation": "explains"
+      },
+      {
+        "from": "area-administracion-implementacion",
+        "to": "area-arquitectura",
+        "relation": "requires"
+      },
+      {
+        "from": "area-gobernanza",
+        "to": "area-arquitectura",
+        "relation": "requires"
+      },
+      {
+        "from": "area-identidad-seguridad",
+        "to": "area-gobernanza",
+        "relation": "applies"
+      },
+      {
+        "from": "area-computacion-nube",
+        "to": "area-costos",
+        "relation": "explains"
+      },
+      {
+        "from": "area-costos",
+        "to": "area-supervision",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "area-supervision",
+        "to": "area-administracion-implementacion",
+        "relation": "requires"
+      },
+      {
+        "from": "area-beneficios-nube",
+        "to": "area-supervision",
+        "relation": "explains"
+      },
+      {
+        "from": "area-almacenamiento",
+        "to": "area-costos",
+        "relation": "applies"
+      }
+    ]
+  }
+}

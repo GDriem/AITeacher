@@ -1,0 +1,878 @@
+{
+  "slug": "componentes-de-arquitectura",
+  "name": "Componentes de arquitectura de Azure",
+  "category": "arquitectura-y-servicios",
+  "sortOrder": 4,
+  "profile": "module",
+  "description": "Conoce la infraestructura física de Azure (centros de datos, regiones, zonas de disponibilidad, pares de regiones y regiones soberanas) y la de administración (recursos, grupos de recursos, suscripciones y grupos de administración). Aprenderás a elegir una estrategia regional de resiliencia y a organizar una jerarquía de gobierno que aproveche la herencia de directivas y accesos.",
+  "outline": [
+    "Describe Azure regions, region pairs, and sovereign regions",
+    "Describe availability zones",
+    "Describe Azure datacenters",
+    "Describe Azure resources and resource groups",
+    "Describe subscriptions",
+    "Describe management groups",
+    "Describe the hierarchy of resource groups, subscriptions, and management groups"
+  ],
+  "unit": {
+    "title": "Componentes de arquitectura de Azure: infraestructura física y de administración",
+    "concepts": [
+      {
+        "key": "centros-de-datos",
+        "name": "Centros de datos de Azure"
+      },
+      {
+        "key": "regiones",
+        "name": "Regiones y geografías"
+      },
+      {
+        "key": "zonas-de-disponibilidad",
+        "name": "Zonas de disponibilidad"
+      },
+      {
+        "key": "pares-de-regiones",
+        "name": "Pares de regiones y regiones no emparejadas"
+      },
+      {
+        "key": "regiones-soberanas",
+        "name": "Regiones soberanas"
+      },
+      {
+        "key": "recursos-y-grupos-de-recursos",
+        "name": "Recursos y grupos de recursos"
+      },
+      {
+        "key": "suscripciones",
+        "name": "Suscripciones"
+      },
+      {
+        "key": "grupos-de-administracion",
+        "name": "Grupos de administración"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "infraestructura-fisica",
+        "description": "Distinguir centros de datos, regiones y zonas de disponibilidad, y justificar la elección de una región según latencia, cumplimiento y disponibilidad de servicios.",
+        "concepts": [
+          "centros-de-datos",
+          "regiones",
+          "zonas-de-disponibilidad"
+        ]
+      },
+      {
+        "key": "resiliencia-regional",
+        "description": "Elegir entre zonas de disponibilidad, una segunda región (emparejada o no) o una región soberana para un escenario de resiliencia o cumplimiento.",
+        "concepts": [
+          "zonas-de-disponibilidad",
+          "pares-de-regiones",
+          "regiones-soberanas"
+        ]
+      },
+      {
+        "key": "jerarquia-de-administracion",
+        "description": "Organizar recursos en grupos de recursos, suscripciones y grupos de administración para un escenario de empresa, explicando cómo se heredan directivas y accesos.",
+        "concepts": [
+          "recursos-y-grupos-de-recursos",
+          "suscripciones",
+          "grupos-de-administracion"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "centros-de-datos-y-regiones",
+        "title": "Centros de datos, regiones y geografías",
+        "objectives": [
+          "infraestructura-fisica"
+        ],
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-core-architectural-components-of-azure/5-describe-azure-physical-infrastructure",
+        "text": "La infraestructura de Azure se entiende mejor de abajo hacia arriba. En la base están los **centros de datos**: instalaciones con servidores organizados en racks y con energía, refrigeración y red dedicadas. Se parecen a un centro de datos local, pero a una escala mucho mayor y operados por Microsoft. Como cliente nunca eliges un centro de datos concreto ni interactúas con él: Azure los agrupa en estructuras lógicas que sí eliges.\n\n**Región.** Es un área geográfica que contiene al menos uno, y normalmente varios, centros de datos cercanos entre sí y conectados por una red de baja latencia. Al crear la mayoría de los recursos (una máquina virtual, una cuenta de almacenamiento, una base de datos) eliges la región donde vivirán. Esa decisión influye en:\n\n- **Latencia**: una región cercana a tus usuarios responde más rápido.\n- **Residencia de datos y cumplimiento**: algunas normas exigen que los datos permanezcan en un país o bloque.\n- **Disponibilidad de servicios**: no todos los servicios, tamaños de VM o tipos de almacenamiento existen en todas las regiones.\n- **Precio**: el costo de un mismo servicio puede variar entre regiones.\n\n**Geografía.** Las regiones se agrupan en geografías (por ejemplo, Estados Unidos o Europa), que funcionan como límite de residencia de datos y de cumplimiento.\n\n**Servicios globales.** Algunos servicios no te piden región porque operan de forma global, como Microsoft Entra ID, Azure Traffic Manager y Azure DNS.\n\n| Nivel | Qué es | ¿Lo eliges tú? |\n|---|---|---|\n| Centro de datos | Instalación física con servidores, energía, refrigeración y red | No |\n| Zona de disponibilidad | Uno o más centros de datos aislados dentro de una región | Sí, en servicios zonales |\n| Región | Conjunto de centros de datos cercanos con red de baja latencia | Sí, al crear casi cualquier recurso |\n| Geografía | Grupo de regiones que marca un límite de residencia de datos | Indirectamente, al elegir la región |\n\n**Ejemplo práctico.** Una cadena de farmacias con clientes en Centroamérica quiere publicar su tienda en línea. El equipo compara regiones cercanas por latencia, comprueba que el tamaño de VM que necesita esté disponible en ellas y revisa si alguna norma de protección de datos obliga a mantener la información en una geografía concreta. Solo entonces elige la región.\n\n**Para recordar en el examen**\n\n- El centro de datos es la pieza física; la región es lo que eliges al implementar.\n- Una región tiene uno o más centros de datos conectados con baja latencia.\n- No todos los servicios ni tamaños de VM están en todas las regiones.\n- Algunos servicios son globales y no requieren elegir región."
+      },
+      {
+        "key": "zonas-de-disponibilidad",
+        "title": "Zonas de disponibilidad: aislamiento dentro de una región",
+        "objectives": [
+          "infraestructura-fisica",
+          "resiliencia-regional"
+        ],
+        "source": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview",
+        "text": "Una **zona de disponibilidad** es una ubicación físicamente separada dentro de una región, formada por uno o más centros de datos con energía, refrigeración y red independientes. Las zonas de una región están lo bastante cerca para unirse con fibra privada de baja latencia, pero lo bastante lejos para que un incendio, una inundación o un corte eléctrico local no las afecte a todas a la vez. Cada zona es un **límite de aislamiento**: si una falla, las demás siguen funcionando.\n\nDatos clave:\n\n- Las regiones que admiten zonas tienen **como mínimo tres**.\n- **No todas las regiones** admiten zonas, y aun en una región con zonas no todos los servicios las aprovechan.\n- Duplicar recursos en varias zonas puede costar más: pagas más instancias y la transferencia de datos entre zonas.\n\nLos servicios se relacionan con las zonas de tres maneras:\n\n| Categoría | Cómo funciona | Ejemplos |\n|---|---|---|\n| Zonal | Fijas el recurso a una zona concreta y tú diseñas la réplica | Máquinas virtuales, discos administrados, direcciones IP |\n| Con redundancia de zona | La plataforma replica automáticamente entre zonas | Almacenamiento con redundancia de zona, Azure SQL Database |\n| No regional | Siempre disponible desde las geografías de Azure | Servicios globales |\n\n**Ejemplo práctico.** Un banco regional ejecuta su portal de clientes en dos máquinas virtuales. Si ambas quedan en el mismo centro de datos, una falla eléctrica detiene las dos. Al colocar cada VM en una zona distinta y poner un balanceador de carga delante, el portal sigue respondiendo aunque una zona completa quede fuera de servicio. El banco acepta pagar dos instancias a cambio de esa resiliencia.\n\n**Zonas frente a otras opciones.** Las zonas protegen contra fallas **dentro de una región**. Si el riesgo es que toda la región quede afectada, por ejemplo por un desastre natural de gran escala, necesitas una segunda región, tema de la siguiente lectura.\n\n**Para recordar en el examen**\n\n- Zona de disponibilidad = uno o más centros de datos aislados dentro de una región.\n- Mínimo tres zonas en las regiones que las admiten; no todas las regiones las tienen.\n- Zonal: tú eliges la zona. Con redundancia de zona: Azure replica por ti.\n- Las zonas protegen contra la falla de un centro de datos, no contra la pérdida de una región entera."
+      },
+      {
+        "key": "pares-y-regiones-soberanas",
+        "title": "Pares de regiones, regiones no emparejadas y regiones soberanas",
+        "objectives": [
+          "resiliencia-regional"
+        ],
+        "source": "https://learn.microsoft.com/en-us/azure/reliability/regions-paired",
+        "text": "Microsoft asocia algunas regiones con otra región, normalmente de la misma geografía y separada por cientos de kilómetros; juntas forman un **par de regiones**. Los pares los define Microsoft: **no puedes elegir ni cambiar** con qué región se empareja la tuya.\n\nVentajas de un par:\n\n- **Recuperación priorizada**: ante una interrupción amplia se prioriza restaurar una región de cada par.\n- **Actualizaciones secuenciales**: las actualizaciones planificadas se aplican a una región del par a la vez.\n- **Residencia de datos**: casi siempre ambas regiones están en la misma geografía.\n- Algunos servicios, como el almacenamiento con redundancia geográfica (GRS), replican hacia la región emparejada.\n\nMatices actuales que conviene conocer:\n\n- **No todas las regiones tienen par.** Muchas regiones nuevas no están emparejadas y usan las zonas de disponibilidad como principal mecanismo de redundancia.\n- **Hay pares asimétricos.** Brazil South tiene como secundaria a South Central US (fuera de su geografía), pero South Central US no tiene a Brazil South como par.\n- **Un par no es recuperación ante desastres automática.** Muchos servicios no replican ni conmutan por error solos: el cliente configura la réplica y la recuperación. Además, puedes usar como secundaria cualquier región que te convenga.\n\n**Regiones soberanas.** Son instancias de Azure aisladas de la nube pública global, pensadas para requisitos legales o de cumplimiento estrictos:\n\n- **Azure Government**: regiones como US Gov Virginia o US Gov Arizona, aisladas física y lógicamente, para agencias del gobierno de EE. UU. y sus socios, operadas por personal estadounidense evaluado.\n- **Azure operado por 21Vianet**: regiones como China East o China North; Microsoft no administra directamente esos centros de datos.\n\nSuelen ofrecer un catálogo de servicios más limitado que la nube global.\n\n| Necesidad | Opción adecuada |\n|---|---|\n| Sobrevivir a la falla de un centro de datos | Zonas de disponibilidad |\n| Recuperarse de la pérdida de una región | Segunda región, emparejada o no, con réplica configurada |\n| Cumplir requisitos gubernamentales o de soberanía | Región soberana |\n\n**Ejemplo práctico.** Un contratista federal de EE. UU. con requisitos gubernamentales elige Azure Government. Una startup latinoamericana que busca tolerancia a fallas usa zonas y, si su región tiene par, respalda datos con GRS.\n\n**Para recordar en el examen**\n\n- Los pares los define Microsoft; no se eligen.\n- No todas las regiones tienen par; Brazil South es un par unidireccional.\n- Región soberana = instancia aislada de Azure por motivos legales o de cumplimiento."
+      },
+      {
+        "key": "jerarquia-de-administracion",
+        "title": "Recursos, grupos de recursos, suscripciones y grupos de administración",
+        "objectives": [
+          "jerarquia-de-administracion"
+        ],
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-core-architectural-components-of-azure/6-describe-azure-management-infrastructure",
+        "text": "La infraestructura física responde a *dónde* corre algo; la de administración, a *cómo se organiza, se factura y se gobierna*. Tiene cuatro niveles.\n\n**1. Recursos.** Todo lo que creas es un recurso: una VM, una red virtual, una base de datos, un servicio de IA.\n\n**2. Grupos de recursos.** Contenedores lógicos para recursos que comparten ciclo de vida:\n\n- Cada recurso pertenece a **exactamente un** grupo de recursos; algunos se pueden mover, pero nunca están en dos a la vez.\n- Los grupos de recursos **no se anidan** ni se pueden renombrar.\n- Los recursos de un grupo pueden estar en regiones distintas.\n- Lo que haces al grupo afecta su contenido: **eliminar el grupo elimina todos sus recursos**, y el acceso concedido en el grupo se hereda.\n\n**3. Suscripciones.** Unidad de administración, facturación y escala. Una cuenta necesita al menos una y puede tener varias. Se vincula a un inquilino de Microsoft Entra ID y actúa como:\n\n- **Límite de facturación**: cada suscripción tiene sus propios informes y facturas.\n- **Límite de control de acceso**: las directivas y permisos se aplican a nivel de suscripción.\n\nSe crean suscripciones adicionales para separar entornos (desarrollo, pruebas, producción), equipos o centros de costo.\n\n**4. Grupos de administración.** Agrupan suscripciones para aplicar gobernanza, como Azure Policy o asignaciones de Azure RBAC, a muchas a la vez; lo que está debajo **hereda** esas condiciones.\n\n- Cada inquilino tiene un único **grupo de administración raíz**.\n- Se anidan hasta **seis niveles** (sin contar la raíz ni el nivel de suscripción).\n- Cada grupo de administración y cada suscripción tiene **un solo padre**.\n\n| Nivel | Contiene | Uso típico |\n|---|---|---|\n| Grupo de administración | Suscripciones y otros grupos de administración | Directivas y accesos corporativos |\n| Suscripción | Grupos de recursos | Facturación y acceso por entorno o equipo |\n| Grupo de recursos | Recursos | Ciclo de vida común de una solución |\n\n**Ejemplo práctico.** Una aseguradora crea el grupo de administración *Producción* con una directiva que solo permite implementar en regiones aprobadas. Debajo coloca las suscripciones de sus líneas de negocio, cada una con grupos de recursos por aplicación. La directiva alcanza todas las VM sin configurarlas una por una, y los dueños de cada suscripción no pueden saltársela.\n\n**Para recordar en el examen**\n\n- Jerarquía: grupo de administración → suscripción → grupo de recursos → recurso.\n- Un recurso vive en un solo grupo de recursos; estos no se anidan.\n- Suscripción = límite de facturación y de acceso.\n- La herencia fluye de arriba hacia abajo."
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explica-la-infraestructura",
+        "objectives": [
+          "infraestructura-fisica"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** cómo se relacionan un **centro de datos**, una **zona de disponibilidad**, una **región** y una **geografía**.\n\n1. Usa una analogía propia (por ejemplo, edificios, barrios, ciudades y países) para describir cada nivel.\n2. Señala en qué punto tu analogía deja de funcionar.\n3. Menciona dos factores que debes considerar al elegir una región.\n\nAl terminar, pide al tutor que te haga dos preguntas de seguimiento para comprobar si distingues bien zona y región."
+      },
+      {
+        "key": "decide-la-estrategia-regional",
+        "objectives": [
+          "infraestructura-fisica",
+          "resiliencia-regional"
+        ],
+        "prompt": "**Escenario.** *Transportes Quetzal*, una empresa ficticia de logística, tiene tres cargas de trabajo en Azure. Completa la tabla eligiendo para cada una **zonas de disponibilidad**, **segunda región** o **región soberana**, y justifica en una línea.\n\n| Carga de trabajo | Requisito | Tu elección | Justificación |\n|---|---|---|---|\n| Portal de rastreo de envíos | Seguir funcionando si falla un centro de datos | | |\n| Base de datos de facturación | Recuperarse aunque toda la región quede fuera de servicio | | |\n| Contrato con una agencia federal de EE. UU. | Cumplir requisitos gubernamentales de aislamiento | | |\n\nDespués responde: si la región principal de la empresa **no tiene par**, ¿qué alternativa le queda para la segunda carga de trabajo?"
+      },
+      {
+        "key": "disena-la-jerarquia",
+        "objectives": [
+          "jerarquia-de-administracion"
+        ],
+        "prompt": "**Tarjetas de autoexplicación.** Para cada afirmación, decide si es verdadera o falsa y explica **por qué** en una oración, sin consultar la lectura:\n\n- Un recurso puede pertenecer a dos grupos de recursos si están en la misma suscripción.\n- Eliminar un grupo de recursos elimina los recursos que contiene.\n- Una suscripción puede tener dos grupos de administración padre.\n- Una directiva asignada a un grupo de administración se hereda en sus suscripciones.\n\nLuego dibuja (en papel o como lista con sangrías) una jerarquía mínima para una empresa con dos áreas, *Ventas* y *Operaciones*, que separa desarrollo y producción. Comparte tu dibujo con el tutor y pídele que identifique un punto débil."
+      },
+      {
+        "key": "laboratorio-portal",
+        "objectives": [
+          "infraestructura-fisica",
+          "jerarquia-de-administracion"
+        ],
+        "prompt": "**Laboratorio opcional en el portal de Azure.**\n\n> **Aviso de costos:** usa una cuenta gratuita de Azure o un entorno de práctica. Los pasos sugeridos no crean recursos con cargo, pero revisa cada pantalla antes de confirmar y **elimina el grupo de recursos al terminar**.\n\n1. Inicia sesión en el portal y abre **Suscripciones**: anota el nombre de tu suscripción y busca su vínculo con la facturación.\n2. Abre **Grupos de administración** y ubica el grupo raíz del inquilino (si tienes permisos para verlo).\n3. Crea un grupo de recursos llamado `rg-practica-az900` en una región cercana.\n4. Inicia el asistente para crear una máquina virtual **sin finalizarlo**: observa el selector de región y el de **Opciones de disponibilidad** (zonas). Cambia de región y nota si cambian las opciones.\n5. Cancela el asistente y elimina `rg-practica-az900`.\n\nCuéntale al tutor qué regiones mostraron zonas de disponibilidad y qué concluyes de ello."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluacion-infraestructura-fisica",
+        "objectives": [
+          "infraestructura-fisica"
+        ],
+        "prompt": "Explica, con un ejemplo de empresa, qué es un centro de datos, una región y una zona de disponibilidad en Azure, cómo se relacionan entre sí y qué tres factores tendrías en cuenta para elegir una región.",
+        "privateCriteria": "Una respuesta correcta define el centro de datos como la instalación física con energía, refrigeración y red; la región como un área con uno o más centros de datos conectados por una red de baja latencia que el cliente elige al implementar; y la zona de disponibilidad como uno o más centros de datos aislados dentro de una región con energía, refrigeración y red independientes. Debe mostrar la relación de contención (centros de datos dentro de zonas, zonas dentro de regiones). Debe mencionar al menos tres factores válidos para elegir región: latencia/cercanía a usuarios, residencia de datos o cumplimiento, disponibilidad de servicios o tamaños, precio. Penaliza decir que el cliente elige un centro de datos concreto o que todas las regiones tienen zonas."
+      },
+      {
+        "key": "evaluacion-resiliencia-regional",
+        "objectives": [
+          "resiliencia-regional"
+        ],
+        "prompt": "Una empresa quiere protegerse tanto de la falla de un centro de datos como de la pérdida de toda una región, y un cliente gubernamental le pide además aislamiento especial. Recomienda una estrategia combinando zonas de disponibilidad, una segunda región y, si corresponde, una región soberana. Explica qué protege cada pieza y qué limitaciones tienen los pares de regiones.",
+        "privateCriteria": "Debe asignar las zonas de disponibilidad a la protección frente a fallas dentro de una región, y una segunda región (emparejada o no) con réplica configurada a la pérdida de una región. Debe indicar que los pares los define Microsoft, que no todas las regiones tienen par, que algunos pares son unidireccionales (p. ej., Brazil South) y que estar en un par no implica conmutación por error automática para todos los servicios. Debe identificar la región soberana (p. ej., Azure Government) solo para requisitos gubernamentales o legales y mencionar que suele tener menos servicios. Penaliza confundir región soberana con par de regiones."
+      },
+      {
+        "key": "evaluacion-jerarquia",
+        "objectives": [
+          "jerarquia-de-administracion"
+        ],
+        "prompt": "Describe la jerarquía de grupos de administración, suscripciones, grupos de recursos y recursos. Para una empresa con áreas de Finanzas y Marketing, que separa desarrollo de producción, propone una estructura y explica cómo usarías la herencia para aplicar una directiva de regiones permitidas.",
+        "privateCriteria": "Debe ordenar correctamente la jerarquía (grupo de administración raíz → grupos de administración → suscripciones → grupos de recursos → recursos) y explicar que la herencia fluye hacia abajo. Debe usar suscripciones como límite de facturación y de acceso (p. ej., una por entorno o por área) y grupos de recursos por ciclo de vida de la solución. Debe asignar la directiva de regiones en un grupo de administración para que la hereden todas las suscripciones. Debe respetar las reglas: un recurso en un solo grupo de recursos, grupos de recursos no anidados, un solo padre por suscripción o grupo de administración. Penaliza anidar grupos de recursos o asignar la directiva recurso por recurso."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "regiones",
+        "requires": "centros-de-datos"
+      },
+      {
+        "concept": "zonas-de-disponibilidad",
+        "requires": "regiones"
+      },
+      {
+        "concept": "pares-de-regiones",
+        "requires": "regiones"
+      },
+      {
+        "concept": "regiones-soberanas",
+        "requires": "regiones"
+      },
+      {
+        "concept": "suscripciones",
+        "requires": "recursos-y-grupos-de-recursos"
+      },
+      {
+        "concept": "grupos-de-administracion",
+        "requires": "suscripciones"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "eleccion-al-implementar",
+      "type": "singleChoice",
+      "prompt": "Una empresa crea su primera máquina virtual en Azure y el asistente le pide indicar dónde se implementará. ¿Qué elemento de la infraestructura física selecciona directamente?",
+      "objectives": [
+        "infraestructura-fisica"
+      ],
+      "concepts": [
+        "regiones",
+        "centros-de-datos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un centro de datos específico"
+        },
+        {
+          "key": "b",
+          "text": "Una región",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Un rack de servidores dentro de un edificio"
+        },
+        {
+          "key": "d",
+          "text": "Un clúster de hardware dedicado"
+        }
+      ]
+    },
+    {
+      "key": "definicion-zona",
+      "type": "singleChoice",
+      "prompt": "¿Cuál es la mejor descripción de una zona de disponibilidad de Azure?",
+      "objectives": [
+        "infraestructura-fisica"
+      ],
+      "concepts": [
+        "zonas-de-disponibilidad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una región secundaria que Microsoft asigna para recuperación ante desastres"
+        },
+        {
+          "key": "b",
+          "text": "Un conjunto de regiones que define un límite de residencia de datos"
+        },
+        {
+          "key": "c",
+          "text": "Un centro de datos reservado para los recursos de un solo cliente"
+        },
+        {
+          "key": "d",
+          "text": "Uno o más centros de datos aislados dentro de una región",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "todas-las-regiones-tienen-zonas",
+      "type": "trueFalse",
+      "prompt": "Todas las regiones de Azure admiten zonas de disponibilidad.",
+      "objectives": [
+        "infraestructura-fisica"
+      ],
+      "concepts": [
+        "zonas-de-disponibilidad",
+        "regiones"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "minimo-tres-zonas",
+      "type": "trueFalse",
+      "prompt": "En las regiones de Azure que admiten zonas de disponibilidad existen como mínimo tres zonas.",
+      "objectives": [
+        "infraestructura-fisica"
+      ],
+      "concepts": [
+        "zonas-de-disponibilidad"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "factores-de-region",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Una empresa va a elegir la región para su nueva aplicación. ¿Qué aspectos dependen directamente de esa elección? Selecciona tres.",
+      "objectives": [
+        "infraestructura-fisica"
+      ],
+      "concepts": [
+        "regiones"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "La latencia que perciben los usuarios",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "El cumplimiento de requisitos de residencia de datos",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "La disponibilidad de ciertos servicios y tamaños de VM",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "El número máximo de grupos de recursos de la suscripción"
+        },
+        {
+          "key": "e",
+          "text": "El inquilino de Microsoft Entra ID al que pertenece la cuenta"
+        }
+      ]
+    },
+    {
+      "key": "servicio-global",
+      "type": "singleChoice",
+      "prompt": "¿Cuál de los siguientes servicios opera de forma global y no te pide seleccionar una región al usarlo?",
+      "objectives": [
+        "infraestructura-fisica"
+      ],
+      "concepts": [
+        "regiones"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Virtual Machines"
+        },
+        {
+          "key": "b",
+          "text": "Azure SQL Database"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Entra ID",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Cuentas de Azure Storage"
+        }
+      ]
+    },
+    {
+      "key": "region-soberana-gobierno",
+      "type": "singleChoice",
+      "prompt": "Una agencia del gobierno de Estados Unidos necesita una instancia de Azure aislada física y lógicamente de la nube pública y operada por personal evaluado. ¿Qué debe usar?",
+      "objectives": [
+        "resiliencia-regional"
+      ],
+      "concepts": [
+        "regiones-soberanas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una región soberana",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Un par de regiones con replicación geográfica"
+        },
+        {
+          "key": "c",
+          "text": "Una región con zonas de disponibilidad"
+        },
+        {
+          "key": "d",
+          "text": "Un grupo de administración exclusivo para la agencia"
+        }
+      ]
+    },
+    {
+      "key": "cliente-elige-par",
+      "type": "trueFalse",
+      "prompt": "Un cliente puede elegir con qué región de Azure se empareja su región principal.",
+      "objectives": [
+        "resiliencia-regional"
+      ],
+      "concepts": [
+        "pares-de-regiones"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "regiones-sin-par",
+      "type": "trueFalse",
+      "prompt": "Algunas regiones de Azure no tienen región emparejada y usan las zonas de disponibilidad como principal mecanismo de redundancia.",
+      "objectives": [
+        "resiliencia-regional"
+      ],
+      "concepts": [
+        "pares-de-regiones",
+        "zonas-de-disponibilidad"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "ventajas-de-pares",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué ventajas ofrecen los pares de regiones de Azure? Selecciona dos.",
+      "objectives": [
+        "resiliencia-regional"
+      ],
+      "concepts": [
+        "pares-de-regiones"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Las actualizaciones planificadas se aplican a una región del par a la vez",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Ante una interrupción amplia se prioriza recuperar una región de cada par",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Todos los servicios conmutan por error automáticamente sin configuración del cliente"
+        },
+        {
+          "key": "d",
+          "text": "La transferencia de datos entre regiones emparejadas no se factura"
+        }
+      ]
+    },
+    {
+      "key": "falla-de-centro-de-datos",
+      "type": "singleChoice",
+      "prompt": "Una empresa necesita que su aplicación siga respondiendo si falla un centro de datos completo, sin salir de la región actual. ¿Qué opción lo resuelve con menor complejidad?",
+      "objectives": [
+        "resiliencia-regional"
+      ],
+      "concepts": [
+        "zonas-de-disponibilidad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Mover la aplicación a una región soberana"
+        },
+        {
+          "key": "b",
+          "text": "Crear una segunda suscripción en la misma región"
+        },
+        {
+          "key": "c",
+          "text": "Distribuir las instancias en varias zonas de disponibilidad",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Separar los recursos en dos grupos de recursos"
+        }
+      ]
+    },
+    {
+      "key": "mitos-del-par",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "El director técnico de una startup afirma que, como su región tiene par, ya cuenta con recuperación ante desastres completa. ¿Qué afirmaciones corrigen esa idea? Selecciona dos.",
+      "objectives": [
+        "resiliencia-regional"
+      ],
+      "concepts": [
+        "pares-de-regiones"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Muchos servicios requieren que el cliente configure la réplica y la recuperación",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Puede usar como secundaria una región distinta de la emparejada",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "El par garantiza que las máquinas virtuales se recrean solas en la otra región"
+        },
+        {
+          "key": "d",
+          "text": "Las regiones emparejadas siempre están en continentes distintos"
+        }
+      ]
+    },
+    {
+      "key": "eliminar-de-una-vez",
+      "type": "singleChoice",
+      "prompt": "Un equipo terminó una prueba de concepto y quiere eliminar todos los recursos creados para ella con una sola acción. ¿Cómo debió organizarlos desde el inicio?",
+      "objectives": [
+        "jerarquia-de-administracion"
+      ],
+      "concepts": [
+        "recursos-y-grupos-de-recursos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "En la misma suscripción que producción"
+        },
+        {
+          "key": "b",
+          "text": "En un mismo grupo de recursos",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "En un grupo de administración propio"
+        },
+        {
+          "key": "d",
+          "text": "En la misma zona de disponibilidad"
+        }
+      ]
+    },
+    {
+      "key": "directiva-varias-suscripciones",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere aplicar una directiva de regiones permitidas a doce suscripciones a la vez y que las futuras suscripciones del área también la reciban. ¿Dónde debe asignarla?",
+      "objectives": [
+        "jerarquia-de-administracion"
+      ],
+      "concepts": [
+        "grupos-de-administracion",
+        "suscripciones"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "En cada grupo de recursos existente"
+        },
+        {
+          "key": "b",
+          "text": "En la cuenta de facturación"
+        },
+        {
+          "key": "c",
+          "text": "En la región principal de la empresa"
+        },
+        {
+          "key": "d",
+          "text": "En un grupo de administración",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "grupos-de-recursos-anidados",
+      "type": "trueFalse",
+      "prompt": "Un grupo de recursos de Azure puede contener otro grupo de recursos.",
+      "objectives": [
+        "jerarquia-de-administracion"
+      ],
+      "concepts": [
+        "recursos-y-grupos-de-recursos"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "funciones-de-suscripcion",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué afirmaciones sobre las suscripciones de Azure son correctas? Selecciona dos.",
+      "objectives": [
+        "jerarquia-de-administracion"
+      ],
+      "concepts": [
+        "suscripciones"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Funcionan como límite de facturación",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Funcionan como límite de control de acceso",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Una cuenta solo puede tener una suscripción"
+        },
+        {
+          "key": "d",
+          "text": "Se crean dentro de un grupo de recursos"
+        }
+      ]
+    },
+    {
+      "key": "explica-zonas-y-regiones",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras la diferencia entre un centro de datos, una zona de disponibilidad y una región de Azure. Luego argumenta por qué distribuir una aplicación en varias zonas mejora su disponibilidad y menciona al menos una limitación de esta estrategia.",
+      "objectives": [
+        "infraestructura-fisica"
+      ],
+      "concepts": [
+        "centros-de-datos",
+        "zonas-de-disponibilidad",
+        "regiones"
+      ],
+      "rubric": {
+        "privateGuidance": "Busca definiciones propias, no memorizadas, y la idea de aislamiento: cada zona tiene energía, refrigeración y red independientes. Limitaciones aceptables: no todas las regiones tienen zonas, no todos los servicios las aprovechan, hay costo por instancias duplicadas y transferencia entre zonas, y no protege contra la pérdida de toda la región. Si el alumno confunde zona con región emparejada, otorga como máximo 1 punto en el criterio de definiciones.",
+        "criteria": [
+          {
+            "key": "definiciones",
+            "description": "Define correctamente centro de datos, zona de disponibilidad y región, y muestra cómo se contienen entre sí.",
+            "maxPoints": 3
+          },
+          {
+            "key": "aislamiento",
+            "description": "Explica que las zonas son límites de aislamiento físico y que una falla en una zona no detiene a las demás.",
+            "maxPoints": 2
+          },
+          {
+            "key": "limitacion",
+            "description": "Identifica al menos una limitación real (cobertura de regiones o servicios, costo, alcance solo regional).",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-agrodatos",
+      "type": "caseAnalysis",
+      "prompt": "AgroDatos es una empresa ficticia que ofrece análisis de cultivos a cooperativas de México y Centroamérica. Su plataforma corre en una sola máquina virtual dentro de una región de Azure que no tiene región emparejada. El mes pasado, una falla eléctrica en un centro de datos dejó el servicio caído seis horas y varios clientes amenazaron con cancelar. La gerencia quiere evitar que se repita y, además, prepararse para un escenario más grave en el que toda la región quede fuera de servicio. Un consultor les sugirió \"pasarse a una región soberana para tener más seguridad\". El presupuesto es limitado, así que deben priorizar.\n\nAnaliza el caso: identifica los riesgos actuales, propone una estrategia por etapas y evalúa la sugerencia del consultor.",
+      "objectives": [
+        "resiliencia-regional"
+      ],
+      "concepts": [
+        "zonas-de-disponibilidad",
+        "pares-de-regiones",
+        "regiones-soberanas"
+      ],
+      "rubric": {
+        "privateGuidance": "Respuesta esperada: el riesgo principal es el punto único de falla (una sola VM en un solo centro de datos). Primera etapa: distribuir instancias en zonas de disponibilidad (si la región las admite) con balanceo de carga. Segunda etapa: elegir una región secundaria (la región no tiene par, así que la elige la empresa según latencia, servicios y residencia de datos) y configurar réplica y recuperación. La sugerencia del consultor es inadecuada: las regiones soberanas responden a requisitos legales o gubernamentales, no a disponibilidad, y suelen tener menos servicios. Acepta matices razonables sobre costo.",
+        "criteria": [
+          {
+            "key": "riesgos",
+            "description": "Identifica el punto único de falla y distingue la falla de un centro de datos de la pérdida de una región.",
+            "maxPoints": 2
+          },
+          {
+            "key": "estrategia",
+            "description": "Propone zonas de disponibilidad para la primera etapa y una segunda región con réplica configurada para la segunda, considerando que la región no tiene par.",
+            "maxPoints": 4
+          },
+          {
+            "key": "region-soberana",
+            "description": "Explica por qué una región soberana no resuelve el problema de disponibilidad y para qué sí sirve.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "disena-jerarquia-empresa",
+      "type": "practicalExercise",
+      "prompt": "Diseña la jerarquía de administración de Azure para *Textiles del Valle*, una empresa ficticia con tres áreas (Producción industrial, Comercial y TI). Cada área necesita entornos separados de desarrollo y producción con facturas independientes. La empresa exige que ningún recurso de producción se implemente fuera de dos regiones aprobadas y que el equipo de auditoría tenga acceso de lectura a todo.\n\nEntrega: (1) el árbol de grupos de administración, suscripciones y ejemplos de grupos de recursos; (2) dónde asignas la directiva de regiones y el acceso de auditoría, y por qué; (3) una regla de la jerarquía que tu diseño respeta explícitamente.",
+      "objectives": [
+        "jerarquia-de-administracion"
+      ],
+      "concepts": [
+        "grupos-de-administracion",
+        "suscripciones",
+        "recursos-y-grupos-de-recursos"
+      ],
+      "rubric": {
+        "privateGuidance": "Diseño de referencia: grupo raíz → grupos de administración Producción y Desarrollo (o por área y luego por entorno); suscripciones por área y entorno para separar facturación; grupos de recursos por aplicación. Directiva de regiones en el grupo de administración de producción; acceso de lectura de auditoría en el grupo raíz o en un grupo superior para que se herede. Acepta variantes coherentes. Reglas válidas: un solo padre por suscripción, grupos de recursos no anidados, máximo seis niveles bajo la raíz, cada recurso en un solo grupo de recursos.",
+        "criteria": [
+          {
+            "key": "estructura",
+            "description": "El árbol es coherente: grupos de administración arriba, suscripciones que separan facturación por área y entorno, grupos de recursos por solución.",
+            "maxPoints": 4
+          },
+          {
+            "key": "herencia",
+            "description": "Asigna la directiva de regiones y el acceso de auditoría en el nivel adecuado y explica cómo se heredan.",
+            "maxPoints": 3
+          },
+          {
+            "key": "reglas",
+            "description": "Nombra y respeta explícitamente al menos una regla de la jerarquía.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Componentes de arquitectura de Azure",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "eleccion-al-implementar",
+        "definicion-zona",
+        "todas-las-regiones-tienen-zonas",
+        "minimo-tres-zonas",
+        "factores-de-region",
+        "servicio-global",
+        "region-soberana-gobierno",
+        "cliente-elige-par",
+        "regiones-sin-par",
+        "ventajas-de-pares",
+        "falla-de-centro-de-datos",
+        "mitos-del-par",
+        "eliminar-de-una-vez",
+        "directiva-varias-suscripciones",
+        "grupos-de-recursos-anidados",
+        "funciones-de-suscripcion"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Componentes de arquitectura de Azure",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "eleccion-al-implementar",
+        "definicion-zona",
+        "minimo-tres-zonas",
+        "region-soberana-gobierno",
+        "ventajas-de-pares",
+        "falla-de-centro-de-datos",
+        "eliminar-de-una-vez",
+        "funciones-de-suscripcion"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Componentes de arquitectura de Azure",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "explica-zonas-y-regiones",
+        "caso-agrodatos",
+        "disena-jerarquia-empresa"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Componentes de arquitectura de Azure",
+    "edges": [
+      {
+        "from": "regiones",
+        "to": "centros-de-datos",
+        "relation": "requires"
+      },
+      {
+        "from": "zonas-de-disponibilidad",
+        "to": "regiones",
+        "relation": "requires"
+      },
+      {
+        "from": "centros-de-datos",
+        "to": "zonas-de-disponibilidad",
+        "relation": "explains"
+      },
+      {
+        "from": "pares-de-regiones",
+        "to": "regiones",
+        "relation": "requires"
+      },
+      {
+        "from": "regiones-soberanas",
+        "to": "regiones",
+        "relation": "requires"
+      },
+      {
+        "from": "zonas-de-disponibilidad",
+        "to": "pares-de-regiones",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "regiones-soberanas",
+        "to": "pares-de-regiones",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "recursos-y-grupos-de-recursos",
+        "to": "regiones",
+        "relation": "applies"
+      },
+      {
+        "from": "suscripciones",
+        "to": "recursos-y-grupos-de-recursos",
+        "relation": "requires"
+      },
+      {
+        "from": "grupos-de-administracion",
+        "to": "suscripciones",
+        "relation": "requires"
+      }
+    ]
+  }
+}

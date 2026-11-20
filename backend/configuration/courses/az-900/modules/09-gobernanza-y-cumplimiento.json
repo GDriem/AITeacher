@@ -1,0 +1,807 @@
+{
+  "slug": "gobernanza-y-cumplimiento",
+  "name": "Gobernanza y cumplimiento en Azure",
+  "category": "administracion-y-gobernanza",
+  "sortOrder": 9,
+  "profile": "module",
+  "description": "Conoce las herramientas que mantienen un entorno de Azure ordenado y conforme: Microsoft Purview para descubrir, clasificar y gobernar datos; Azure Policy para exigir configuraciones con directivas e iniciativas heredables; y los bloqueos de recursos para evitar borrados o cambios accidentales incluso por usuarios con permisos amplios.",
+  "outline": [
+    "Describe the purpose of Microsoft Purview in Azure",
+    "Describe the purpose of Azure Policy",
+    "Describe the purpose of resource locks"
+  ],
+  "unit": {
+    "title": "Gobernanza y cumplimiento en Azure",
+    "concepts": [
+      {
+        "key": "microsoft-purview",
+        "name": "Microsoft Purview"
+      },
+      {
+        "key": "gobernanza-de-datos",
+        "name": "Gobernanza unificada de datos: mapa, clasificación y linaje"
+      },
+      {
+        "key": "riesgo-y-cumplimiento",
+        "name": "Soluciones de riesgo y cumplimiento"
+      },
+      {
+        "key": "azure-policy",
+        "name": "Azure Policy y efectos de las directivas"
+      },
+      {
+        "key": "iniciativas-y-ambito",
+        "name": "Iniciativas, ámbito y herencia de directivas"
+      },
+      {
+        "key": "bloqueos-de-recursos",
+        "name": "Bloqueos de recursos: eliminar y solo lectura"
+      },
+      {
+        "key": "bloqueos-y-rbac",
+        "name": "Relación entre bloqueos y RBAC"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "distinguir-microsoft-purview",
+        "description": "Distinguir el propósito de Microsoft Purview y sus dos áreas de soluciones frente a otras herramientas de gobernanza de Azure en un escenario centrado en datos.",
+        "concepts": [
+          "microsoft-purview",
+          "gobernanza-de-datos",
+          "riesgo-y-cumplimiento"
+        ]
+      },
+      {
+        "key": "elegir-azure-policy",
+        "description": "Elegir Azure Policy, el efecto adecuado y el ámbito de asignación para un escenario de empresa que exige estándares de configuración en los recursos.",
+        "concepts": [
+          "azure-policy",
+          "iniciativas-y-ambito"
+        ]
+      },
+      {
+        "key": "elegir-bloqueos-de-recursos",
+        "description": "Elegir el tipo y el ámbito de un bloqueo de recursos para proteger recursos críticos, explicando por qué se aplica aunque el usuario tenga permisos de RBAC.",
+        "concepts": [
+          "bloqueos-de-recursos",
+          "bloqueos-y-rbac"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "proposito-de-purview",
+        "title": "Microsoft Purview: gobernar y proteger los datos",
+        "text": "**Microsoft Purview** es una familia de soluciones de gobernanza, riesgo y cumplimiento centrada en los **datos**. Su promesa es darte una vista unificada de dónde están tus datos, qué tan sensibles son y cómo fluyen, sin importar si viven en Azure, en servidores locales, en otras nubes o en aplicaciones SaaS.\n\n**Las dos grandes áreas**\n\n| Área | Para qué sirve | Ejemplos de capacidades |\n|---|---|---|\n| **Gobernanza unificada de datos** | Conocer y administrar el patrimonio de datos | Descubrimiento automático de orígenes, mapa de datos, clasificación de datos sensibles, linaje de extremo a extremo, catálogo para que los consumidores encuentren datos confiables |\n| **Riesgo y cumplimiento** | Proteger información y cumplir regulaciones | Protección de datos sensibles en nubes, apps y dispositivos; identificación de riesgos; apoyo para gestionar requisitos regulatorios, con Microsoft 365 (Teams, OneDrive, Exchange) como pieza central |\n\n**Tres ideas clave**\n\n- **Descubrimiento automatizado:** Purview examina orígenes registrados, como cuentas de almacenamiento, bases de datos SQL o incluso Amazon S3, y construye un mapa actualizado.\n- **Clasificación:** detecta datos sensibles, por ejemplo números de tarjeta o documentos de identidad, para que sepas dónde están.\n- **Linaje:** muestra de dónde viene un dato y por qué transformaciones pasó hasta llegar a un informe.\n\n**Qué no es Purview**\n\nPurview no decide qué tamaño de VM puedes crear ni impide borrar un grupo de recursos. Esas tareas pertenecen a Azure Policy y a los bloqueos de recursos. Una forma de recordarlo: **Purview gobierna los datos; Azure Policy gobierna la configuración de los recursos**.\n\n**Ejemplo práctico**\n\nUna aseguradora tiene datos de clientes repartidos entre un data lake en Azure, un SQL Server local y archivos en OneDrive. El área legal pregunta: \"¿Dónde guardamos números de identificación y quién los usa en reportes?\". Con Purview registran esos orígenes, ejecutan análisis que clasifican la información sensible y consultan el linaje para ver qué canalizaciones llevan esos datos a los tableros de negocio. Con esa visibilidad pueden aplicar protección y responder auditorías.\n\n**Para recordar en el examen**\n\n- Purview = gobernanza, riesgo y cumplimiento **de datos**, en Azure, local, multinube y SaaS.\n- Dos áreas: gobernanza unificada de datos y riesgo y cumplimiento.\n- Palabras clave en un enunciado: *descubrir, clasificar, linaje, datos sensibles, catálogo* → piensa en Purview.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-features-tools-azure-for-governance-compliance/2-describe-purpose-microsoft-purview",
+        "objectives": [
+          "distinguir-microsoft-purview"
+        ]
+      },
+      {
+        "key": "proposito-de-azure-policy",
+        "title": "Azure Policy: reglas para la configuración de los recursos",
+        "text": "**Azure Policy** te permite crear, asignar y administrar reglas que evalúan la configuración de tus recursos. Su objetivo es que el entorno se mantenga alineado con los estándares de la organización: regiones permitidas, tamaños de VM aprobados, etiquetas obligatorias, cifrado activado, entre otros.\n\n**Piezas básicas**\n\n- **Definición de directiva:** describe una condición y el efecto que se aplica cuando se cumple. Azure incluye muchas definiciones integradas y también puedes crear las tuyas.\n- **Iniciativa:** agrupa varias definiciones relacionadas para perseguir un objetivo mayor, por ejemplo un conjunto de controles de seguridad, y medir el cumplimiento en conjunto.\n- **Asignación:** aplica una definición o iniciativa a un **ámbito**: grupo de administración, suscripción o grupo de recursos. Puedes excluir ámbitos concretos o declarar exenciones.\n\n**Herencia**\n\nUna asignación en un nivel alto se aplica a todo lo que está debajo. Si asignas una directiva al grupo de administración raíz de la empresa, alcanza a todas sus suscripciones, grupos de recursos y recursos.\n\n**Efectos más comunes**\n\n| Efecto | Qué hace |\n|---|---|\n| `audit` | Permite el recurso, pero lo marca como no conforme y deja registro. |\n| `deny` | Rechaza la creación o actualización que no cumple. |\n| `modify` / `append` | Altera la solicitud, por ejemplo agregando una etiqueta que falta. |\n| `deployIfNotExists` | Despliega una configuración relacionada si no existe, como un agente o una opción de diagnóstico. |\n\nAzure Policy **también evalúa los recursos que ya existían** antes de la asignación y los muestra como no conformes; no los elimina. Para algunos efectos puedes lanzar **tareas de corrección** que ajustan los recursos existentes.\n\n**Ejemplo práctico**\n\nUna empresa con datos regulados sólo puede operar en dos regiones. Asigna la directiva integrada de ubicaciones permitidas a su grupo de administración con efecto de denegación. Cuando alguien intenta crear una base de datos en otra región, la solicitud se rechaza. Una recomendación habitual es empezar con `audit` para medir el impacto y luego pasar a `deny`.\n\nCon la CLI puedes revisar asignaciones existentes:\n\n```bash\naz policy assignment list --output table\n```\n\n**Para recordar en el examen**\n\n- Azure Policy controla **cómo** se configuran los recursos; RBAC controla **quién** puede actuar.\n- Iniciativa = grupo de directivas.\n- Las asignaciones se heredan hacia abajo.\n- Evalúa recursos nuevos y existentes; puede auditar, denegar o corregir.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-features-tools-azure-for-governance-compliance/3-describe-purpose-azure-policy",
+        "objectives": [
+          "elegir-azure-policy"
+        ]
+      },
+      {
+        "key": "bloqueos-de-recursos",
+        "title": "Bloqueos de recursos: una red de seguridad contra accidentes",
+        "text": "Un **bloqueo de recursos** (resource lock) evita que un recurso se elimine o se modifique por accidente. Es una red de seguridad adicional: incluso alguien con permisos amplios, como el rol de Propietario, no puede ejecutar la acción bloqueada mientras el bloqueo exista.\n\n**Tipos de bloqueo**\n\n| Tipo (portal) | Valor en CLI/PowerShell | Permite | Impide |\n|---|---|---|---|\n| **Eliminar** (Delete) | `CanNotDelete` | Leer y modificar | Eliminar |\n| **Solo lectura** (Read-only) | `ReadOnly` | Leer | Modificar y eliminar |\n\nEl bloqueo de solo lectura se comporta de forma parecida a limitar a todos los usuarios al rol de Lector. Úsalo con cuidado: algunas operaciones que parecen lecturas en realidad son solicitudes de escritura en la API, por ejemplo listar las claves de una cuenta de almacenamiento, y quedarían bloqueadas.\n\n**Ámbito y herencia**\n\nPuedes aplicar bloqueos a un recurso, a un grupo de recursos o a una suscripción completa. Los bloqueos **se heredan**: si bloqueas un grupo de recursos, todos sus recursos, incluso los que se creen después, quedan protegidos.\n\n**Cómo cambiar algo bloqueado**\n\nEs un proceso de dos pasos: primero **quitas el bloqueo** (para eso necesitas permisos sobre bloqueos, como Propietario o Administrador de acceso de usuario) y después realizas la acción. Ese paso extra es intencional: obliga a pensar antes de borrar algo crítico.\n\n**Bloqueos frente a RBAC**\n\nRBAC responde \"¿quién tiene permiso para hacer esto?\". Un bloqueo responde \"¿se puede hacer esto ahora mismo, aunque tengas permiso?\". Los bloqueos se aplican **sin importar** los permisos de RBAC.\n\n**Ejemplo práctico**\n\nUna empresa tiene la red virtual y la puerta de enlace VPN que conectan su oficina con Azure. Un borrado accidental dejaría sin servicio a toda la sede. El equipo aplica un bloqueo de tipo eliminar al grupo de recursos de red: los administradores pueden seguir ajustando reglas y rutas, pero nadie puede borrar los recursos sin quitar antes el bloqueo.\n\n```bash\naz lock create --name no-borrar-red \\\n  --lock-type CanNotDelete --resource-group rg-red-prod\n```\n\n**Para recordar en el examen**\n\n- Dos tipos: eliminar (CanNotDelete) y solo lectura (ReadOnly).\n- Se aplican a recurso, grupo de recursos o suscripción y se heredan.\n- Prevalecen sobre RBAC: hasta el Propietario debe quitar el bloqueo primero.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-features-tools-azure-for-governance-compliance/4-describe-purpose-resource-locks",
+        "objectives": [
+          "elegir-bloqueos-de-recursos"
+        ]
+      },
+      {
+        "key": "como-encajan-las-herramientas",
+        "title": "RBAC, Azure Policy, bloqueos y Purview: cuál usar",
+        "text": "En gobernanza de Azure es frecuente que un enunciado describa una necesidad y te pida elegir la herramienta correcta. Varias parecen similares porque todas \"ponen reglas\", pero cada una responde una pregunta distinta.\n\n| Herramienta | Pregunta que responde | Ejemplo de uso |\n|---|---|---|\n| **Azure RBAC** | ¿Quién puede hacer qué y dónde? | Dar a un analista el rol de Lector sobre un grupo de recursos |\n| **Azure Policy** | ¿Cómo deben estar configurados los recursos? | Permitir sólo ciertas regiones o exigir una etiqueta |\n| **Bloqueos de recursos** | ¿Se puede borrar o cambiar este recurso ahora? | Impedir el borrado de la base de datos de producción |\n| **Microsoft Purview** | ¿Dónde están mis datos sensibles y cómo fluyen? | Clasificar datos personales y ver su linaje |\n| **Etiquetas** | ¿Cómo describo y agrupo mis recursos? | Asignar costos por centro de costo |\n\n**Cómo se combinan**\n\nEstas herramientas no compiten: se superponen como capas. Imagina una suscripción de producción:\n\n1. **RBAC** limita que sólo el equipo de plataforma pueda crear recursos.\n2. **Azure Policy** obliga a que esos recursos estén en regiones aprobadas y con etiquetas `Owner` y `CostCenter`.\n3. **Bloqueos** protegen los recursos más críticos contra el borrado.\n4. **Purview** clasifica la información sensible que guardan las bases de datos.\n\nSi falla una capa, otra sigue protegiendo. Por ejemplo, un ingeniero con permisos correctos (RBAC) intenta borrar por error la base de datos: el bloqueo lo impide.\n\n**Sobre Azure Blueprints**\n\nMaterial antiguo menciona Azure Blueprints para empaquetar directivas, roles y plantillas. Ese servicio, que siempre estuvo en versión preliminar, está en retiro: Microsoft indica migrar a pilas de implementación (deployment stacks) y especificaciones de plantilla (template specs). No forma parte del temario vigente, así que no lo uses como respuesta central.\n\n**Errores comunes**\n\n- Pensar que una directiva de denegación borra los recursos existentes que no cumplen: sólo los marca como no conformes.\n- Creer que el rol de Propietario puede ignorar un bloqueo: debe quitarlo primero.\n- Usar Purview para restringir tamaños de VM: eso es Azure Policy.\n\n**Ejemplo práctico**\n\nUn auditor pide demostrar que ningún recurso se crea fuera de la Unión Europea y que los datos personales están identificados. La respuesta combina Azure Policy (ubicaciones permitidas con efecto de denegación y su informe de cumplimiento) y Microsoft Purview (clasificación de datos personales).\n\n**Para recordar en el examen**\n\n- Quién → RBAC; cómo → Policy; protección contra borrado/cambio → bloqueos; datos → Purview.\n- Las capas se complementan; no se sustituyen.",
+        "source": "https://learn.microsoft.com/en-us/azure/governance/policy/overview",
+        "objectives": [
+          "distinguir-microsoft-purview",
+          "elegir-azure-policy",
+          "elegir-bloqueos-de-recursos"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explicar-purview",
+        "objectives": [
+          "distinguir-microsoft-purview"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** qué problema resuelve Microsoft Purview en una empresa que tiene datos en Azure, en servidores locales y en Microsoft 365. Usa los términos *mapa de datos*, *clasificación* y *linaje* con un ejemplo de cada uno, y termina diciendo una tarea que **no** le corresponde a Purview."
+      },
+      {
+        "key": "elegir-herramienta-de-gobernanza",
+        "objectives": [
+          "distinguir-microsoft-purview",
+          "elegir-azure-policy",
+          "elegir-bloqueos-de-recursos"
+        ],
+        "prompt": "**Escenarios rápidos.** Para cada necesidad, indica la herramienta (RBAC, Azure Policy, bloqueo de recursos o Microsoft Purview) y justifica en una línea:\n\n1. Sólo se permiten VM de las series aprobadas por arquitectura.\n2. Nadie debe poder borrar la cuenta de almacenamiento con los respaldos.\n3. Legal quiere saber en qué tablas hay números de tarjeta de crédito.\n4. Un contratista sólo debe ver, no cambiar, los recursos de un proyecto.\n5. Todo recurso nuevo debe tener la etiqueta `CostCenter`.\n6. Un archivo de configuración de producción no debe cambiar nunca sin un proceso formal."
+      },
+      {
+        "key": "tarjetas-policy-y-bloqueos",
+        "objectives": [
+          "elegir-azure-policy",
+          "elegir-bloqueos-de-recursos"
+        ],
+        "prompt": "**Tarjetas de autoexplicación.** Responde cada tarjeta sin mirar la lectura y luego compara con el tutor:\n\n- ¿Qué diferencia hay entre una definición de directiva y una iniciativa?\n- Si asigno una directiva a un grupo de administración, ¿qué recursos alcanza?\n- ¿Qué pasa con un recurso existente que no cumple una directiva con efecto `deny`?\n- ¿Qué permite y qué impide un bloqueo `CanNotDelete`?\n- ¿Por qué un Propietario no puede borrar un recurso con bloqueo?"
+      },
+      {
+        "key": "laboratorio-bloqueo-y-politica",
+        "objectives": [
+          "elegir-azure-policy",
+          "elegir-bloqueos-de-recursos"
+        ],
+        "prompt": "**Laboratorio opcional (Azure portal o Cloud Shell).**\n\n> Aviso de costos: usa una cuenta gratuita o una suscripción de pruebas. Asignar directivas y bloqueos no tiene costo, pero los recursos que crees sí podrían tenerlo; elimínalos al terminar.\n\n1. Crea un grupo de recursos `rg-lab-gobernanza`.\n2. Asigna a ese grupo la directiva integrada que exige una etiqueta en los recursos (por ejemplo, *Require a tag on resources*) con la etiqueta `Owner`.\n3. Intenta crear una cuenta de almacenamiento sin la etiqueta y observa el error; vuelve a intentarlo con ella.\n4. Aplica un bloqueo de tipo eliminar al grupo y trata de borrar la cuenta.\n5. Quita el bloqueo, quita la asignación de directiva y elimina el grupo de recursos.\n\nComenta con el tutor qué mensaje viste en los pasos 3 y 4."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluar-purview",
+        "objectives": [
+          "distinguir-microsoft-purview"
+        ],
+        "prompt": "Una empresa quiere saber dónde se almacenan datos personales de clientes en Azure, en un SQL Server local y en Amazon S3, y cómo llegan esos datos a sus reportes. ¿Qué servicio recomiendas y qué capacidades usarías?",
+        "privateCriteria": "Respuesta correcta: Microsoft Purview, área de gobernanza unificada de datos. Menciona registro/descubrimiento de orígenes (incluido multinube y local), clasificación de datos sensibles y linaje de extremo a extremo. Puede mencionar el catálogo o mapa de datos. Penaliza proponer Azure Policy o bloqueos como solución principal."
+      },
+      {
+        "key": "evaluar-azure-policy",
+        "objectives": [
+          "elegir-azure-policy"
+        ],
+        "prompt": "Explica cómo usarías Azure Policy para que en toda la organización sólo se creen recursos en dos regiones aprobadas, qué efecto elegirías y qué pasaría con los recursos que ya existen en otras regiones.",
+        "privateCriteria": "Debe proponer la directiva de ubicaciones permitidas (o equivalente) asignada en un ámbito alto, idealmente un grupo de administración, aprovechando la herencia. Efecto deny (puede proponer empezar con audit). Debe aclarar que los recursos existentes se evalúan y se marcan como no conformes, pero no se eliminan. Mencionar iniciativas o exclusiones suma."
+      },
+      {
+        "key": "evaluar-bloqueos",
+        "objectives": [
+          "elegir-bloqueos-de-recursos"
+        ],
+        "prompt": "Un administrador con rol de Propietario intenta eliminar una base de datos y recibe un error aunque tiene todos los permisos. Explica qué está ocurriendo, cómo procedería si de verdad necesita borrarla y qué tipo de bloqueo recomendarías para ese recurso.",
+        "privateCriteria": "Identifica un bloqueo de recursos (probablemente CanNotDelete/Eliminar, o ReadOnly) aplicado al recurso o heredado del grupo/suscripción. Explica que los bloqueos se aplican independientemente de RBAC y que primero debe quitar el bloqueo y luego borrar. Recomienda CanNotDelete para permitir operación diaria; justifica por qué ReadOnly podría ser demasiado restrictivo."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "gobernanza-de-datos",
+        "requires": "microsoft-purview"
+      },
+      {
+        "concept": "riesgo-y-cumplimiento",
+        "requires": "microsoft-purview"
+      },
+      {
+        "concept": "iniciativas-y-ambito",
+        "requires": "azure-policy"
+      },
+      {
+        "concept": "bloqueos-y-rbac",
+        "requires": "bloqueos-de-recursos"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "linaje-de-datos",
+      "type": "singleChoice",
+      "prompt": "Un equipo de analítica necesita ver de qué orígenes provienen los datos de un informe financiero y qué transformaciones sufrieron en el camino. ¿Qué servicio ofrece esa capacidad?",
+      "objectives": [
+        "distinguir-microsoft-purview"
+      ],
+      "concepts": [
+        "microsoft-purview",
+        "gobernanza-de-datos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Policy con una iniciativa de auditoría"
+        },
+        {
+          "key": "b",
+          "text": "Microsoft Purview",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure Monitor con Log Analytics"
+        },
+        {
+          "key": "d",
+          "text": "Un bloqueo de solo lectura sobre la base de datos"
+        }
+      ]
+    },
+    {
+      "key": "regiones-permitidas",
+      "type": "singleChoice",
+      "prompt": "Una empresa debe garantizar que nadie cree recursos fuera de las regiones aprobadas por su área legal. ¿Qué debe usar?",
+      "objectives": [
+        "elegir-azure-policy"
+      ],
+      "concepts": [
+        "azure-policy"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un bloqueo de solo lectura en cada suscripción"
+        },
+        {
+          "key": "b",
+          "text": "Un rol personalizado de RBAC para cada región"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Purview con clasificación automática"
+        },
+        {
+          "key": "d",
+          "text": "Una asignación de Azure Policy con efecto de denegación",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "agrupar-directivas",
+      "type": "singleChoice",
+      "prompt": "El equipo de seguridad quiere agrupar 25 definiciones de directiva relacionadas con un estándar y medir su cumplimiento como un solo objetivo. ¿Qué elemento de Azure Policy debe crear?",
+      "objectives": [
+        "elegir-azure-policy"
+      ],
+      "concepts": [
+        "iniciativas-y-ambito"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una iniciativa",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Un grupo de recursos"
+        },
+        {
+          "key": "c",
+          "text": "Un grupo de administración"
+        },
+        {
+          "key": "d",
+          "text": "Una exención"
+        }
+      ]
+    },
+    {
+      "key": "bloqueo-permite-cambios",
+      "type": "singleChoice",
+      "prompt": "Se necesita que los administradores puedan cambiar la configuración de una red virtual de producción, pero no eliminarla. ¿Qué tipo de bloqueo corresponde?",
+      "objectives": [
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "bloqueos-de-recursos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Solo lectura (ReadOnly)"
+        },
+        {
+          "key": "b",
+          "text": "Una directiva de auditoría sobre la red"
+        },
+        {
+          "key": "c",
+          "text": "Eliminar (CanNotDelete)",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Un rol de Lector asignado a todos"
+        }
+      ]
+    },
+    {
+      "key": "propietario-y-bloqueo",
+      "type": "singleChoice",
+      "prompt": "Una usuaria con rol de Propietario en la suscripción intenta eliminar un grupo de recursos que tiene un bloqueo de tipo eliminar. ¿Qué ocurre?",
+      "objectives": [
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "bloqueos-y-rbac"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El grupo se elimina porque el rol de Propietario ignora los bloqueos"
+        },
+        {
+          "key": "b",
+          "text": "La operación falla hasta que alguien con permisos quite el bloqueo",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Sólo se eliminan los recursos que no heredaron el bloqueo"
+        },
+        {
+          "key": "d",
+          "text": "Azure envía la solicitud a aprobación del administrador global"
+        }
+      ]
+    },
+    {
+      "key": "capacidades-purview",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "¿Qué capacidades forman parte de Microsoft Purview? Selecciona tres.",
+      "objectives": [
+        "distinguir-microsoft-purview"
+      ],
+      "concepts": [
+        "gobernanza-de-datos",
+        "riesgo-y-cumplimiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Clasificación de datos sensibles",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Restricción de los tamaños de VM permitidos"
+        },
+        {
+          "key": "c",
+          "text": "Linaje de datos de extremo a extremo",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Protección de datos sensibles en aplicaciones y dispositivos",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Impedir el borrado de un grupo de recursos"
+        }
+      ]
+    },
+    {
+      "key": "efectos-de-policy",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "Una organización evalúa qué puede hacer Azure Policy cuando un recurso no cumple una regla. ¿Qué comportamientos son posibles? Selecciona dos.",
+      "objectives": [
+        "elegir-azure-policy"
+      ],
+      "concepts": [
+        "azure-policy"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Marcar el recurso como no conforme y registrar el hallazgo",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Eliminar automáticamente los recursos existentes que no cumplen"
+        },
+        {
+          "key": "c",
+          "text": "Cambiar la contraseña del usuario que creó el recurso"
+        },
+        {
+          "key": "d",
+          "text": "Rechazar la creación del recurso que no cumple",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "ambitos-bloqueo",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "¿En qué niveles se puede aplicar un bloqueo de recursos? Selecciona tres.",
+      "objectives": [
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "bloqueos-de-recursos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un usuario de Microsoft Entra ID"
+        },
+        {
+          "key": "b",
+          "text": "Un recurso individual",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Un grupo de recursos",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Una etiqueta"
+        },
+        {
+          "key": "e",
+          "text": "Una suscripción",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "herencia-gobernanza",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "Un arquitecto aplica configuraciones a un grupo de recursos y quiere saber cuáles alcanzan automáticamente a los recursos que contiene. Selecciona dos.",
+      "objectives": [
+        "elegir-azure-policy",
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "iniciativas-y-ambito",
+        "bloqueos-de-recursos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Las etiquetas del grupo de recursos"
+        },
+        {
+          "key": "b",
+          "text": "Una asignación de Azure Policy",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "El nombre del grupo de recursos como prefijo de cada recurso"
+        },
+        {
+          "key": "d",
+          "text": "Un bloqueo de recursos",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "purview-multinube",
+      "type": "trueFalse",
+      "prompt": "Microsoft Purview puede gobernar datos almacenados fuera de Azure, por ejemplo en servidores locales o en Amazon S3.",
+      "objectives": [
+        "distinguir-microsoft-purview"
+      ],
+      "concepts": [
+        "microsoft-purview"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "purview-tamano-vm",
+      "type": "trueFalse",
+      "prompt": "Microsoft Purview es el servicio indicado para impedir que se creen máquinas virtuales de tamaños no aprobados.",
+      "objectives": [
+        "distinguir-microsoft-purview"
+      ],
+      "concepts": [
+        "microsoft-purview"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "policy-recursos-existentes",
+      "type": "trueFalse",
+      "prompt": "Azure Policy evalúa también los recursos que existían antes de asignar una directiva y puede mostrarlos como no conformes.",
+      "objectives": [
+        "elegir-azure-policy"
+      ],
+      "concepts": [
+        "azure-policy"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "readonly-permite-modificar",
+      "type": "trueFalse",
+      "prompt": "Un bloqueo de solo lectura permite modificar la configuración del recurso, pero impide eliminarlo.",
+      "objectives": [
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "bloqueos-de-recursos"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "bloqueo-no-hereda",
+      "type": "trueFalse",
+      "prompt": "Un bloqueo aplicado a un grupo de recursos no afecta a los recursos que se creen dentro de ese grupo después de aplicarlo.",
+      "objectives": [
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "bloqueos-de-recursos"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "respuesta-capas-gobernanza",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras la diferencia entre Azure RBAC, Azure Policy y los bloqueos de recursos. Para cada uno, describe la pregunta que responde y un ejemplo de uso, y explica por qué una empresa podría necesitar los tres a la vez.",
+      "objectives": [
+        "elegir-azure-policy",
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "azure-policy",
+        "bloqueos-de-recursos",
+        "bloqueos-y-rbac"
+      ],
+      "rubric": {
+        "privateGuidance": "La clave es la separación: RBAC = quién; Policy = cómo se configura; bloqueos = protección contra borrado/cambio independientemente de permisos. Valora ejemplos concretos y la idea de capas complementarias.",
+        "criteria": [
+          {
+            "key": "rbac-vs-policy",
+            "description": "Distingue correctamente RBAC (quién puede actuar) de Azure Policy (qué configuraciones se permiten).",
+            "maxPoints": 3
+          },
+          {
+            "key": "bloqueos",
+            "description": "Explica que los bloqueos impiden eliminar o modificar incluso con permisos de RBAC.",
+            "maxPoints": 3
+          },
+          {
+            "key": "combinacion",
+            "description": "Justifica con un ejemplo por qué se combinan las tres capas.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-clinica-salud-plus",
+      "type": "caseAnalysis",
+      "prompt": "Salud Plus es una red ficticia de clínicas que guarda historias médicas en Azure SQL Database, imágenes en Azure Storage y reportes en Microsoft 365. Una auditoría reciente encontró tres problemas: el equipo de desarrollo creó recursos en una región no autorizada por la regulación local; un técnico borró por error la cuenta de almacenamiento de respaldos, y nadie pudo responder en qué sistemas había datos de pacientes ni cómo llegaban a los tableros de gestión. La dirección pide un plan para que esto no se repita sin frenar el trabajo diario de los equipos. Analiza cada problema y recomienda la herramienta de gobernanza de Azure adecuada, con su configuración básica.",
+      "objectives": [
+        "distinguir-microsoft-purview",
+        "elegir-azure-policy",
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "microsoft-purview",
+        "azure-policy",
+        "iniciativas-y-ambito",
+        "bloqueos-de-recursos"
+      ],
+      "rubric": {
+        "privateGuidance": "Problema 1: Azure Policy de ubicaciones permitidas con deny en grupo de administración o suscripción (herencia). Problema 2: bloqueo CanNotDelete en la cuenta de respaldos o su grupo; explicar por qué no ReadOnly. Problema 3: Microsoft Purview para descubrir, clasificar y ver linaje. Valora que no se confundan las herramientas y que se considere no frenar el trabajo (audit antes de deny, CanNotDelete en vez de ReadOnly).",
+        "criteria": [
+          {
+            "key": "politica",
+            "description": "Propone Azure Policy con efecto y ámbito adecuados para las regiones.",
+            "maxPoints": 3
+          },
+          {
+            "key": "bloqueo",
+            "description": "Propone un bloqueo de eliminación con ámbito razonable y justifica el tipo.",
+            "maxPoints": 2
+          },
+          {
+            "key": "purview",
+            "description": "Propone Microsoft Purview con descubrimiento, clasificación y linaje.",
+            "maxPoints": 3
+          },
+          {
+            "key": "equilibrio",
+            "description": "Considera el impacto en el trabajo diario de los equipos.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "practica-plan-politicas-bloqueos",
+      "type": "practicalExercise",
+      "prompt": "Diseña, sin ejecutarlo, un plan de gobernanza para una suscripción de producción. Entrega: (1) una tabla con al menos tres asignaciones de Azure Policy indicando la regla, el efecto y el ámbito; (2) al menos dos bloqueos de recursos con su tipo y el recurso o grupo protegido; (3) un comando de la CLI de Azure o de Azure PowerShell, comentado, que cree uno de esos bloqueos; (4) una línea que explique cómo harías un cambio urgente sobre un recurso bloqueado.",
+      "objectives": [
+        "elegir-azure-policy",
+        "elegir-bloqueos-de-recursos"
+      ],
+      "concepts": [
+        "azure-policy",
+        "iniciativas-y-ambito",
+        "bloqueos-de-recursos",
+        "bloqueos-y-rbac"
+      ],
+      "rubric": {
+        "privateGuidance": "Acepta az lock create --lock-type CanNotDelete|ReadOnly o New-AzResourceLock -LockLevel CanNotDelete|ReadOnly. Efectos válidos: audit, deny, modify, append, deployIfNotExists, auditIfNotExists. El punto 4 debe describir el proceso de dos pasos (quitar bloqueo, hacer cambio, volver a aplicarlo) con alguien autorizado.",
+        "criteria": [
+          {
+            "key": "politicas",
+            "description": "Las tres asignaciones son coherentes, con efecto y ámbito válidos.",
+            "maxPoints": 3
+          },
+          {
+            "key": "bloqueos",
+            "description": "Los bloqueos tienen tipo y ámbito justificados.",
+            "maxPoints": 2
+          },
+          {
+            "key": "comando",
+            "description": "El comando es plausible y está comentado.",
+            "maxPoints": 2
+          },
+          {
+            "key": "cambio-urgente",
+            "description": "Describe el proceso de quitar y volver a aplicar el bloqueo.",
+            "maxPoints": 1
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Gobernanza y cumplimiento",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "linaje-de-datos",
+        "regiones-permitidas",
+        "agrupar-directivas",
+        "bloqueo-permite-cambios",
+        "propietario-y-bloqueo",
+        "capacidades-purview",
+        "efectos-de-policy",
+        "ambitos-bloqueo",
+        "herencia-gobernanza",
+        "purview-multinube",
+        "purview-tamano-vm",
+        "policy-recursos-existentes",
+        "readonly-permite-modificar",
+        "bloqueo-no-hereda"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Gobernanza y cumplimiento",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "linaje-de-datos",
+        "purview-tamano-vm",
+        "capacidades-purview",
+        "regiones-permitidas",
+        "agrupar-directivas",
+        "policy-recursos-existentes",
+        "propietario-y-bloqueo",
+        "ambitos-bloqueo"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Gobernanza y cumplimiento",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "respuesta-capas-gobernanza",
+        "caso-clinica-salud-plus",
+        "practica-plan-politicas-bloqueos"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Gobernanza y cumplimiento en Azure",
+    "edges": [
+      {
+        "from": "gobernanza-de-datos",
+        "to": "microsoft-purview",
+        "relation": "requires"
+      },
+      {
+        "from": "riesgo-y-cumplimiento",
+        "to": "microsoft-purview",
+        "relation": "requires"
+      },
+      {
+        "from": "gobernanza-de-datos",
+        "to": "riesgo-y-cumplimiento",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "microsoft-purview",
+        "to": "azure-policy",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "iniciativas-y-ambito",
+        "to": "azure-policy",
+        "relation": "explains"
+      },
+      {
+        "from": "azure-policy",
+        "to": "bloqueos-de-recursos",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "bloqueos-y-rbac",
+        "to": "bloqueos-de-recursos",
+        "relation": "explains"
+      }
+    ]
+  }
+}

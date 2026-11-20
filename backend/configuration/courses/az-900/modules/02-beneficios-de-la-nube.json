@@ -1,0 +1,836 @@
+{
+  "slug": "beneficios-de-la-nube",
+  "name": "Beneficios de la nube",
+  "category": "conceptos-de-nube",
+  "sortOrder": 2,
+  "profile": "module",
+  "description": "Por qué las organizaciones adoptan la nube: alta disponibilidad y acuerdos de nivel de servicio, escalado vertical y horizontal, confiabilidad ante fallas, previsibilidad de rendimiento y costos, beneficios de seguridad y gobernanza, y las dos caras de la capacidad de administración.",
+  "outline": [
+    "Describe the benefits of high availability and scalability in the cloud",
+    "Describe the benefits of reliability and predictability in the cloud",
+    "Describe the benefits of security and governance in the cloud",
+    "Describe the benefits of manageability in the cloud"
+  ],
+  "unit": {
+    "title": "Describir los beneficios de usar servicios en la nube",
+    "concepts": [
+      {
+        "key": "alta-disponibilidad",
+        "name": "Alta disponibilidad"
+      },
+      {
+        "key": "acuerdo-de-nivel-de-servicio",
+        "name": "Acuerdo de nivel de servicio (SLA)"
+      },
+      {
+        "key": "confiabilidad",
+        "name": "Confiabilidad"
+      },
+      {
+        "key": "escalado-vertical",
+        "name": "Escalado vertical"
+      },
+      {
+        "key": "escalado-horizontal",
+        "name": "Escalado horizontal"
+      },
+      {
+        "key": "previsibilidad",
+        "name": "Previsibilidad de rendimiento y costos"
+      },
+      {
+        "key": "seguridad-y-gobernanza",
+        "name": "Seguridad y gobernanza en la nube"
+      },
+      {
+        "key": "capacidad-de-administracion",
+        "name": "Capacidad de administración (de la nube y en la nube)"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "distinguir-disponibilidad-y-confiabilidad",
+        "description": "Distinguir alta disponibilidad, SLA y confiabilidad, e identificar cuál se prioriza en un escenario de falla o de tiempo de actividad.",
+        "concepts": [
+          "alta-disponibilidad",
+          "acuerdo-de-nivel-de-servicio",
+          "confiabilidad"
+        ]
+      },
+      {
+        "key": "elegir-escalado-y-previsibilidad",
+        "description": "Elegir entre escalado vertical y horizontal para un escenario de demanda, y explicar cómo la nube vuelve previsibles el rendimiento y los costos.",
+        "concepts": [
+          "escalado-vertical",
+          "escalado-horizontal",
+          "previsibilidad"
+        ]
+      },
+      {
+        "key": "identificar-seguridad-y-administracion",
+        "description": "Distinguir los beneficios de seguridad, gobernanza y administración de la nube, y reconocer cuál responde a una necesidad operativa descrita.",
+        "concepts": [
+          "seguridad-y-gobernanza",
+          "capacidad-de-administracion"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "disponibilidad-y-escalabilidad",
+        "title": "Alta disponibilidad y escalabilidad",
+        "text": "Al diseñar o desplegar una aplicación en la nube hay dos preguntas inevitables: ¿estará disponible cuando la necesiten? y ¿aguantará la demanda? La primera se responde con **alta disponibilidad**; la segunda, con **escalabilidad**.\n\n## Alta disponibilidad y SLA\n\nLa **alta disponibilidad** busca que un servicio siga accesible el mayor tiempo posible, a pesar de fallas o incidentes. En Azure, cada servicio publica un **acuerdo de nivel de servicio (SLA)**: el compromiso formal de Microsoft sobre tiempo de actividad y conectividad, y lo que ocurre (normalmente créditos de servicio) si no se cumple. El SLA depende del servicio y, a menudo, de cómo lo configures.\n\nCada \"nueve\" adicional reduce mucho el tiempo de inactividad permitido. Como referencia aritmética: 99,9 % equivale a unas 8,8 horas al año, mientras que 99,99 % deja apenas unos 53 minutos al año.\n\n## Escalabilidad\n\nLa **escalabilidad** es la capacidad de ajustar los recursos a la demanda. Si llega un pico, agregas capacidad; si la demanda cae, la reduces y dejas de pagarla, porque la nube cobra por consumo.\n\n| Tipo | Qué cambia | Términos | Ejemplo |\n| --- | --- | --- | --- |\n| **Vertical** | La potencia de un recurso (CPU, RAM) | Escalar verticalmente hacia arriba o hacia abajo | Pasar una VM de 4 a 16 GB de RAM |\n| **Horizontal** | La cantidad de recursos | Escalar horizontalmente (agregar o quitar instancias) | Pasar de 2 a 10 VM o contenedores |\n\nEl escalado horizontal puede ser manual o automático, y suele combinarse con equilibrio de carga para repartir el tráfico entre instancias.\n\n**Ejemplo práctico.** Una plataforma de matrícula universitaria corre en dos instancias todo el año. La semana de inscripciones, una regla de escalado automático la lleva a doce instancias y, al terminar, regresa a dos. Además, el equipo eligió una configuración cuyo SLA cubre sus horarios críticos.\n\n### Para recordar en el examen\n\n- Alta disponibilidad = maximizar el tiempo en que el servicio está accesible; el compromiso formal es el **SLA**.\n- Vertical = más potente; horizontal = más instancias.\n- La escalabilidad también ahorra dinero: reduces recursos cuando baja la demanda.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-benefits-use-cloud-services/2-high-availability-scalability-cloud",
+        "objectives": [
+          "distinguir-disponibilidad-y-confiabilidad",
+          "elegir-escalado-y-previsibilidad"
+        ]
+      },
+      {
+        "key": "confiabilidad-y-previsibilidad",
+        "title": "Confiabilidad y previsibilidad",
+        "text": "La **confiabilidad** y la **previsibilidad** te permiten construir soluciones con confianza: la primera tiene que ver con resistir fallas; la segunda, con anticipar rendimiento y costos.\n\n## Confiabilidad\n\nLa confiabilidad es la capacidad de un sistema de **recuperarse de fallas y seguir funcionando**. Es uno de los pilares del **Marco de buena arquitectura de Microsoft Azure** (*Azure Well-Architected Framework*). La nube favorece la confiabilidad gracias a su diseño descentralizado: puedes desplegar recursos en regiones de todo el mundo, de modo que si una región sufre un evento grave, otras siguen operando. Puedes diseñar tus aplicaciones para conmutar a otra región y, en algunos servicios, la propia plataforma lo hace por ti.\n\nNo confundas los términos: la alta disponibilidad mide cuánto tiempo está accesible el servicio; la confiabilidad describe cómo resiste y se recupera de las fallas. Se refuerzan entre sí, pero no son lo mismo.\n\n## Previsibilidad\n\n| Previsibilidad de… | En qué se enfoca | Qué la apoya |\n| --- | --- | --- |\n| **Rendimiento** | Prever los recursos necesarios para una buena experiencia | Escalado automático, equilibrio de carga, alta disponibilidad |\n| **Costos** | Pronosticar el gasto en la nube | Seguimiento del uso en tiempo real, análisis de tendencias, Calculadora de precios de Azure |\n\nSi el tráfico se dispara, el escalado automático agrega recursos y luego los retira; si el tráfico se concentra en un punto, el equilibrio de carga lo redistribuye. Para los costos, puedes monitorear el consumo, detectar patrones y estimar con la Calculadora de precios de Azure antes de desplegar.\n\n**Ejemplo práctico.** Un periódico digital despliega su sitio en dos regiones. Una falla eléctrica deja fuera de servicio una región y el tráfico pasa a la otra: eso es confiabilidad. Antes de las elecciones, el equipo usó el historial de consumo y la calculadora para anticipar cuánto escalaría y cuánto costaría: eso es previsibilidad.\n\n### Para recordar en el examen\n\n- Confiabilidad = recuperarse de fallas y seguir funcionando; se apoya en la escala global.\n- Previsibilidad tiene dos caras: rendimiento y costos.\n- La Calculadora de precios de Azure es la herramienta típica para estimar costos antes de desplegar.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-benefits-use-cloud-services/3-reliability-predictability-cloud",
+        "objectives": [
+          "distinguir-disponibilidad-y-confiabilidad",
+          "elegir-escalado-y-previsibilidad"
+        ]
+      },
+      {
+        "key": "seguridad-y-gobernanza",
+        "title": "Seguridad y gobernanza en la nube",
+        "text": "La nube aporta beneficios de **gobernanza** y **seguridad** sin importar si usas IaaS, PaaS o SaaS.\n\n## Gobernanza y cumplimiento\n\n- **Plantillas**: ayudan a que los recursos desplegados cumplan tus estándares técnicos y requisitos regulatorios desde el primer momento. Si los estándares cambian, puedes actualizar los recursos a escala.\n- **Auditoría en la nube**: detecta recursos que se desvían de tu línea base de cumplimiento y propone cómo corregirlos.\n- **Actualizaciones automáticas**: según el modelo de servicio, los parches del software pueden aplicarse solos, lo que favorece tanto la gobernanza como la seguridad.\n\n## Seguridad según el modelo de servicio\n\n| Si necesitas… | Modelo que encaja | Consecuencia |\n| --- | --- | --- |\n| Máximo control de la seguridad | IaaS | Administras SO y software instalado, incluidos parches y mantenimiento |\n| Que parches y mantenimiento se apliquen solos | PaaS o SaaS | El proveedor mantiene la plataforma; tú te concentras en datos y accesos |\n\nAdemás, los proveedores de nube suelen estar muy bien preparados para enfrentar amenazas a gran escala, como los ataques de **denegación de servicio distribuido (DDoS)**, lo que vuelve más robusta tu red. Recuerda que esto no elimina tu parte: datos, identidades y dispositivos siguen siendo tuyos.\n\n**Ejemplo práctico.** Una cadena de farmacias define una plantilla que crea cada nueva sucursal digital con cifrado activado y etiquetas obligatorias. Una herramienta de auditoría revisa cada semana qué recursos no cumplen la política y los marca para corregirlos. La cadena eligió PaaS para su aplicación de pedidos y así delegó los parches del sistema operativo.\n\nEstablecer una buena base de gobernanza desde el principio mantiene tu entorno actualizado, seguro y bien administrado conforme crece.\n\n### Para recordar en el examen\n\n- Plantillas = estándares consistentes; auditoría = detectar incumplimientos.\n- Más control de seguridad → IaaS; parches automáticos → PaaS o SaaS.\n- Protección DDoS a escala es un beneficio típico del proveedor.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-benefits-use-cloud-services/4-security-governance-cloud",
+        "objectives": [
+          "identificar-seguridad-y-administracion"
+        ]
+      },
+      {
+        "key": "capacidad-de-administracion",
+        "title": "Administración de la nube y en la nube",
+        "text": "Otro gran beneficio de la nube es lo **fácil de administrar** que resulta. Microsoft Learn distingue dos caras de esta capacidad, y el examen suele pedirte que las separes.\n\n## Administración de la nube: qué puedes hacer con los recursos\n\n- **Escalar automáticamente** los despliegues según la necesidad.\n- **Desplegar desde plantillas** preconfiguradas, sin configurar cada recurso a mano.\n- **Supervisar el estado** de los recursos y **reemplazar automáticamente** los que fallan.\n- **Recibir alertas automáticas** basadas en métricas configuradas, para conocer el rendimiento en tiempo real.\n\n## Administración en la nube: con qué herramientas lo haces\n\n- Un **portal web** (en Azure, el portal de Azure).\n- Una **interfaz de línea de comandos** (CLI).\n- **API**.\n- **PowerShell**.\n\n| Pregunta | Administración de la nube | Administración en la nube |\n| --- | --- | --- |\n| ¿Qué describe? | Capacidades sobre los recursos | Formas de acceder y operar |\n| Ejemplos | Escalado automático, plantillas, autorreparación, alertas | Portal, CLI, API, PowerShell |\n\n**Ejemplo práctico.** El equipo de operaciones de una empresa de logística despliega cada ambiente con la misma plantilla, revisa el estado en el portal y automatiza la limpieza nocturna con un script de PowerShell. Cuando una instancia falla, la plataforma la reemplaza y envía una alerta al canal de guardia. El resultado: menos trabajo manual y configuraciones consistentes.\n\nCombinar ambas caras reduce errores humanos, acelera los despliegues y facilita repetir el mismo entorno en desarrollo, pruebas y producción. También conecta con otros beneficios: la autorreparación contribuye a la confiabilidad y las alertas ayudan a la previsibilidad del rendimiento.\n\n### Para recordar en el examen\n\n- \"De la nube\" = qué hace la plataforma con tus recursos (escalar, plantillas, autorreparar, alertar).\n- \"En la nube\" = cómo la manejas (portal, CLI, API, PowerShell).\n- Las plantillas aparecen en gobernanza y en administración: ambas respuestas pueden ser válidas según el contexto de la pregunta.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-benefits-use-cloud-services/5-manageability-cloud",
+        "objectives": [
+          "identificar-seguridad-y-administracion"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explica-disponibilidad-confiabilidad",
+        "objectives": [
+          "distinguir-disponibilidad-y-confiabilidad"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** la diferencia entre alta disponibilidad y confiabilidad.\n\n1. Da una definición de cada una en una sola oración.\n2. Explica qué es un SLA y qué te dice como cliente.\n3. Calcula aproximadamente cuántas horas de inactividad al año permite un 99,9 % y compáralo con un 99,99 %.\n4. Inventa un ejemplo en el que un sistema tenga buena disponibilidad diaria pero poca confiabilidad ante un desastre regional.\n\nPide al tutor que cuestione tu ejemplo."
+      },
+      {
+        "key": "tabla-escalado",
+        "objectives": [
+          "elegir-escalado-y-previsibilidad"
+        ],
+        "prompt": "**Completa la tabla comparativa** y luego compártela con el tutor.\n\n| Situación | ¿Vertical u horizontal? | ¿Qué beneficio de previsibilidad apoya? |\n| --- | --- | --- |\n| Una base de datos en una VM necesita más memoria | | |\n| Una tienda en línea recibe 10 veces más visitas en una oferta | | |\n| Un equipo sobredimensionó su VM y quiere ahorrar | | |\n| Finanzas quiere saber cuánto costará el sistema el próximo trimestre | | |\n\nAñade una fila inventada por ti para cada tipo de escalado."
+      },
+      {
+        "key": "escenario-operaciones",
+        "objectives": [
+          "identificar-seguridad-y-administracion"
+        ],
+        "prompt": "**Escenario de empresa.** Una aseguradora te pide resolver cinco problemas. Para cada uno, indica si se resuelve con un beneficio de *seguridad y gobernanza*, de *administración de la nube* o de *administración en la nube*:\n\n1. Cada equipo configura los recursos a su manera y no cumplen la norma interna.\n2. Nadie se entera cuando una aplicación se vuelve lenta.\n3. Los administradores quieren automatizar tareas con scripts.\n4. Hay que saber qué recursos incumplen la política de cifrado.\n5. Una instancia que falla debe sustituirse sin intervención humana.\n\nExplica tu razonamiento al tutor."
+      },
+      {
+        "key": "laboratorio-escalado",
+        "objectives": [
+          "elegir-escalado-y-previsibilidad",
+          "identificar-seguridad-y-administracion"
+        ],
+        "prompt": "**Laboratorio opcional en el portal de Azure.**\n\n> **Aviso de costos:** usa una cuenta gratuita de Azure o un *sandbox* de Microsoft Learn y elimina el grupo de recursos al terminar. Las reglas de escalado pueden crear instancias adicionales con costo.\n\n1. Crea un plan de App Service de nivel básico o superior (o explora uno existente de práctica) y abre la sección **Escalar verticalmente** para ver los tamaños disponibles.\n2. Abre **Escalar horizontalmente** y revisa cómo se define una regla automática por porcentaje de CPU (no es necesario guardarla).\n3. En **Alertas**, observa qué métricas podrías usar para recibir avisos.\n\nExplica al tutor qué viste y qué beneficio de la nube representa cada pantalla."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evalua-disponibilidad",
+        "objectives": [
+          "distinguir-disponibilidad-y-confiabilidad"
+        ],
+        "prompt": "Un gerente dice: \"Si Azure nos da un SLA alto, ya no necesitamos pensar en confiabilidad\". Responde explicando la diferencia entre alta disponibilidad, SLA y confiabilidad.",
+        "privateCriteria": "Debe definir alta disponibilidad como maximizar el tiempo accesible; SLA como compromiso formal de tiempo de actividad por servicio, que depende de la configuración; y confiabilidad como capacidad de recuperarse de fallas y seguir funcionando (pilar del Well-Architected Framework), apoyada en despliegues en varias regiones. Debe concluir que el diseño del cliente sigue importando."
+      },
+      {
+        "key": "evalua-escalado",
+        "objectives": [
+          "elegir-escalado-y-previsibilidad"
+        ],
+        "prompt": "Explica cuándo usarías escalado vertical y cuándo horizontal, con un ejemplo de cada uno, y cómo la nube ayuda a que rendimiento y costos sean previsibles.",
+        "privateCriteria": "Vertical: aumentar o reducir CPU/RAM de un recurso. Horizontal: agregar o quitar instancias, manual o automáticamente. Previsibilidad de rendimiento: escalado automático, equilibrio de carga, alta disponibilidad. Previsibilidad de costos: seguimiento en tiempo real, análisis de tendencias y Calculadora de precios de Azure."
+      },
+      {
+        "key": "evalua-gobernanza-administracion",
+        "objectives": [
+          "identificar-seguridad-y-administracion"
+        ],
+        "prompt": "Describe dos beneficios de seguridad y gobernanza y dos de capacidad de administración que una empresa obtiene al pasar a la nube, distinguiendo entre administración de la nube y en la nube.",
+        "privateCriteria": "Gobernanza/seguridad: plantillas para cumplir estándares, auditoría que marca incumplimientos, parches automáticos según modelo, protección frente a DDoS, elección de IaaS vs. PaaS/SaaS según control deseado. Administración de la nube: escalado automático, plantillas, supervisión y reemplazo de recursos con fallas, alertas. En la nube: portal, CLI, API, PowerShell."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "acuerdo-de-nivel-de-servicio",
+        "requires": "alta-disponibilidad"
+      },
+      {
+        "concept": "confiabilidad",
+        "requires": "alta-disponibilidad"
+      },
+      {
+        "concept": "escalado-horizontal",
+        "requires": "escalado-vertical"
+      },
+      {
+        "concept": "previsibilidad",
+        "requires": "escalado-horizontal"
+      },
+      {
+        "concept": "capacidad-de-administracion",
+        "requires": "seguridad-y-gobernanza"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "donde-consultar-tiempo-actividad",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere saber qué porcentaje de tiempo de actividad garantiza Microsoft para un servicio de Azure y qué compensación recibe si no se cumple. ¿Qué debe consultar?",
+      "objectives": [
+        "distinguir-disponibilidad-y-confiabilidad"
+      ],
+      "concepts": [
+        "acuerdo-de-nivel-de-servicio"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El historial de facturación de la suscripción en el portal de Azure"
+        },
+        {
+          "key": "b",
+          "text": "El Marco de buena arquitectura de Azure"
+        },
+        {
+          "key": "c",
+          "text": "El acuerdo de nivel de servicio (SLA) del servicio",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "La Calculadora de precios de Azure con el servicio seleccionado"
+        }
+      ]
+    },
+    {
+      "key": "desastre-regional",
+      "type": "singleChoice",
+      "prompt": "Una aplicación de pagos debe seguir funcionando aunque una región completa de Azure sufra un desastre natural. ¿Qué beneficio de la nube se prioriza principalmente?",
+      "objectives": [
+        "distinguir-disponibilidad-y-confiabilidad"
+      ],
+      "concepts": [
+        "confiabilidad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El escalado vertical de las máquinas virtuales"
+        },
+        {
+          "key": "b",
+          "text": "La confiabilidad",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "La previsibilidad de costos mediante reservas"
+        },
+        {
+          "key": "d",
+          "text": "La administración en la nube mediante PowerShell"
+        }
+      ]
+    },
+    {
+      "key": "mas-ram-misma-vm",
+      "type": "singleChoice",
+      "prompt": "Una aplicación que corre en una sola máquina virtual se queda sin memoria. El equipo aumenta la RAM y las CPU de esa misma máquina virtual. ¿Qué tipo de escalado aplica?",
+      "objectives": [
+        "elegir-escalado-y-previsibilidad"
+      ],
+      "concepts": [
+        "escalado-vertical"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Escalado horizontal, porque aumenta la capacidad total disponible"
+        },
+        {
+          "key": "b",
+          "text": "Escalado vertical",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Equilibrio de carga entre varias instancias de la aplicación"
+        },
+        {
+          "key": "d",
+          "text": "Conmutación por error hacia otra región de Azure"
+        }
+      ]
+    },
+    {
+      "key": "venta-de-boletos",
+      "type": "singleChoice",
+      "prompt": "Un sitio de venta de boletos recibe picos de tráfico cuando sale a la venta un concierto y necesita agregar instancias automáticamente y retirarlas al terminar. ¿Qué describe mejor esta capacidad?",
+      "objectives": [
+        "elegir-escalado-y-previsibilidad"
+      ],
+      "concepts": [
+        "escalado-horizontal"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Escalado horizontal automático",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Escalado vertical manual de la máquina virtual principal"
+        },
+        {
+          "key": "c",
+          "text": "Alta disponibilidad garantizada por el SLA del servicio"
+        },
+        {
+          "key": "d",
+          "text": "Gobernanza mediante plantillas y auditoría de cumplimiento"
+        }
+      ]
+    },
+    {
+      "key": "estimar-costo-antes",
+      "type": "singleChoice",
+      "prompt": "Un director financiero quiere estimar cuánto costará una nueva solución en Azure antes de implementarla. ¿Qué beneficio de la nube y qué herramienta lo apoyan?",
+      "objectives": [
+        "elegir-escalado-y-previsibilidad"
+      ],
+      "concepts": [
+        "previsibilidad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Confiabilidad, con conmutación por error entre regiones"
+        },
+        {
+          "key": "b",
+          "text": "Escalabilidad vertical, con máquinas virtuales más grandes"
+        },
+        {
+          "key": "c",
+          "text": "Gobernanza, con auditoría de recursos fuera de cumplimiento"
+        },
+        {
+          "key": "d",
+          "text": "Previsibilidad de costos, con la Calculadora de precios de Azure",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "parches-automaticos",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere que los parches del sistema operativo y del middleware se apliquen automáticamente para que su equipo se dedique sólo a la aplicación. ¿Qué opción se ajusta mejor desde la perspectiva de seguridad?",
+      "objectives": [
+        "identificar-seguridad-y-administracion"
+      ],
+      "concepts": [
+        "seguridad-y-gobernanza"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "IaaS con máquinas virtuales administradas por el equipo"
+        },
+        {
+          "key": "b",
+          "text": "Un centro de datos local con un calendario de mantenimiento mensual"
+        },
+        {
+          "key": "c",
+          "text": "PaaS o SaaS",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Una nube privada con hardware propio y parches manuales"
+        }
+      ]
+    },
+    {
+      "key": "describen-confiabilidad",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué dos afirmaciones describen la confiabilidad en la nube? Selecciona dos.",
+      "objectives": [
+        "distinguir-disponibilidad-y-confiabilidad"
+      ],
+      "concepts": [
+        "confiabilidad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Garantiza que la factura mensual no varíe de un mes a otro"
+        },
+        {
+          "key": "b",
+          "text": "Es la capacidad de un sistema de recuperarse de fallas y seguir funcionando",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Consiste en agregar más CPU a una máquina virtual existente"
+        },
+        {
+          "key": "d",
+          "text": "Se apoya en el diseño descentralizado, con recursos en regiones de todo el mundo",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "apoyan-rendimiento-previsible",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Una empresa quiere que el rendimiento de su aplicación sea previsible aunque la demanda cambie. ¿Qué conceptos de la nube la apoyan? Selecciona tres.",
+      "objectives": [
+        "elegir-escalado-y-previsibilidad"
+      ],
+      "concepts": [
+        "previsibilidad",
+        "escalado-horizontal"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Escalado automático",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Pago anticipado de hardware para cinco años"
+        },
+        {
+          "key": "c",
+          "text": "Equilibrio de carga",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Alta disponibilidad",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Aplicar parches manualmente sin calendario"
+        }
+      ]
+    },
+    {
+      "key": "administracion-de-recursos",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "Un equipo de operaciones quiere aprovechar la capacidad de administración de la nube. ¿Qué dos capacidades corresponden a la administración de los recursos y no a la herramienta con que se administran? Selecciona dos.",
+      "objectives": [
+        "identificar-seguridad-y-administracion"
+      ],
+      "concepts": [
+        "capacidad-de-administracion"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Usar el portal web para revisar recursos"
+        },
+        {
+          "key": "b",
+          "text": "Reemplazar automáticamente los recursos que fallan",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Ejecutar comandos desde una interfaz de línea de comandos"
+        },
+        {
+          "key": "d",
+          "text": "Implementar recursos a partir de una plantilla preconfigurada",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "beneficios-gobernanza",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Una empresa regulada evalúa los beneficios de gobernanza de la nube. ¿Qué dos afirmaciones son correctas? Selecciona dos.",
+      "objectives": [
+        "identificar-seguridad-y-administracion"
+      ],
+      "concepts": [
+        "seguridad-y-gobernanza"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Las plantillas ayudan a que los recursos cumplan estándares y requisitos regulatorios",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "El proveedor se vuelve responsable de las cuentas de usuario de la empresa"
+        },
+        {
+          "key": "c",
+          "text": "La auditoría en la nube señala los recursos que no cumplen la línea base",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "La nube elimina la necesidad de definir políticas internas"
+        }
+      ]
+    },
+    {
+      "key": "sla-mas-nueves",
+      "type": "trueFalse",
+      "prompt": "Un SLA del 99,99 % permite menos tiempo de inactividad al año que un SLA del 99,9 %.",
+      "objectives": [
+        "distinguir-disponibilidad-y-confiabilidad"
+      ],
+      "concepts": [
+        "acuerdo-de-nivel-de-servicio",
+        "alta-disponibilidad"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "horizontal-es-mas-cpu",
+      "type": "trueFalse",
+      "prompt": "El escalado horizontal consiste en aumentar la CPU o la memoria de un recurso existente.",
+      "objectives": [
+        "elegir-escalado-y-previsibilidad"
+      ],
+      "concepts": [
+        "escalado-horizontal"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "costos-tiempo-real",
+      "type": "trueFalse",
+      "prompt": "La previsibilidad de costos en la nube se apoya en el seguimiento del uso de recursos en tiempo real y en el análisis de tendencias.",
+      "objectives": [
+        "elegir-escalado-y-previsibilidad"
+      ],
+      "concepts": [
+        "previsibilidad"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "proveedor-ddos",
+      "type": "trueFalse",
+      "prompt": "Los proveedores de nube suelen estar bien preparados para mitigar ataques de denegación de servicio distribuido (DDoS).",
+      "objectives": [
+        "identificar-seguridad-y-administracion"
+      ],
+      "concepts": [
+        "seguridad-y-gobernanza"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "solo-portal",
+      "type": "trueFalse",
+      "prompt": "La administración en la nube se limita al portal web; no es posible administrar los recursos mediante API o PowerShell.",
+      "objectives": [
+        "identificar-seguridad-y-administracion"
+      ],
+      "concepts": [
+        "capacidad-de-administracion"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "disponibilidad-vs-confiabilidad",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras la diferencia entre alta disponibilidad y confiabilidad, y qué papel cumple el SLA. Usa un ejemplo de una aplicación real o inventada.",
+      "objectives": [
+        "distinguir-disponibilidad-y-confiabilidad"
+      ],
+      "concepts": [
+        "alta-disponibilidad",
+        "acuerdo-de-nivel-de-servicio",
+        "confiabilidad"
+      ],
+      "rubric": {
+        "privateGuidance": "El error frecuente es usar ambos términos como sinónimos. Da el puntaje completo si separa 'tiempo accesible' de 'recuperación ante fallas' y ubica el SLA como compromiso formal por servicio. Acepta ejemplos con cálculo aproximado de nueves, pero no lo exijas.",
+        "criteria": [
+          {
+            "key": "definiciones",
+            "description": "Define alta disponibilidad y confiabilidad de forma correcta y diferenciada.",
+            "maxPoints": 3
+          },
+          {
+            "key": "sla",
+            "description": "Explica el SLA como compromiso formal del proveedor por servicio y que depende de cómo se configure el servicio.",
+            "maxPoints": 2
+          },
+          {
+            "key": "ejemplo",
+            "description": "Aporta un ejemplo coherente en el que se vea la diferencia entre ambos conceptos.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-boletera",
+      "type": "caseAnalysis",
+      "prompt": "Lee el caso y responde. Boletera Quetzal vende entradas para conciertos desde dos servidores físicos en su oficina. Cuando se anuncia un artista famoso, miles de personas entran al mismo tiempo y el sitio se cae durante horas; el resto del mes, los servidores están casi sin uso. La empresa pensó en comprar cuatro servidores más potentes, pero su contador teme gastar mucho en equipos que pasarán ociosos. Además, la gerencia no logra predecir cuánto gastará en tecnología cada trimestre. Analiza el caso: ¿qué tipo de escalado recomiendas, por qué no basta con servidores más potentes y cómo ayudaría la nube a prever rendimiento y costos?",
+      "objectives": [
+        "elegir-escalado-y-previsibilidad"
+      ],
+      "concepts": [
+        "escalado-vertical",
+        "escalado-horizontal",
+        "previsibilidad"
+      ],
+      "rubric": {
+        "privateGuidance": "Esperado: escalado horizontal automático (agregar y retirar instancias según demanda) con equilibrio de carga; explicar que el escalado vertical tiene límite y deja capacidad ociosa; previsibilidad de rendimiento por escalado automático y de costos por seguimiento del uso y la Calculadora de precios de Azure. Valora la mención de pagar sólo por lo usado en los picos.",
+        "criteria": [
+          {
+            "key": "tipo-escalado",
+            "description": "Recomienda escalado horizontal automático y lo justifica con los picos intermitentes del caso.",
+            "maxPoints": 3
+          },
+          {
+            "key": "limite-vertical",
+            "description": "Explica por qué comprar o escalar verticalmente servidores más potentes no resuelve bien el problema (límite de un solo recurso, capacidad ociosa).",
+            "maxPoints": 2
+          },
+          {
+            "key": "previsibilidad",
+            "description": "Explica cómo la nube apoya la previsibilidad de rendimiento y de costos con herramientas o prácticas concretas.",
+            "maxPoints": 3
+          }
+        ]
+      }
+    },
+    {
+      "key": "plan-gobernanza-operacion",
+      "type": "practicalExercise",
+      "prompt": "Diseña un plan breve de gobernanza y operación para una empresa que llevará a Azure diez aplicaciones internas. El plan debe incluir: cómo asegurar que todos los recursos nazcan con la misma configuración, cómo detectar los que incumplan las reglas, cómo enterarse de problemas de rendimiento y con qué herramientas trabajará el equipo de operaciones. No necesitas nombres exactos de todos los servicios; justifica cada elemento.",
+      "objectives": [
+        "identificar-seguridad-y-administracion"
+      ],
+      "concepts": [
+        "seguridad-y-gobernanza",
+        "capacidad-de-administracion"
+      ],
+      "rubric": {
+        "privateGuidance": "Esperado: plantillas para despliegues consistentes; auditoría o políticas que marquen recursos fuera de cumplimiento; supervisión con alertas por métricas y reemplazo automático de recursos con fallas; herramientas de administración en la nube (portal, CLI, API, PowerShell) para automatizar. Puntos extra si relaciona la elección PaaS/SaaS con parches automáticos.",
+        "criteria": [
+          {
+            "key": "consistencia",
+            "description": "Propone plantillas u otro mecanismo para desplegar recursos con una configuración estándar.",
+            "maxPoints": 2
+          },
+          {
+            "key": "cumplimiento",
+            "description": "Incluye un mecanismo de auditoría o revisión que detecte recursos fuera de cumplimiento.",
+            "maxPoints": 2
+          },
+          {
+            "key": "supervision",
+            "description": "Incluye supervisión del estado, alertas por métricas o reemplazo automático de recursos.",
+            "maxPoints": 2
+          },
+          {
+            "key": "herramientas",
+            "description": "Distingue las herramientas de administración en la nube (portal, CLI, API, PowerShell) y justifica su uso.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Beneficios de la nube",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "donde-consultar-tiempo-actividad",
+        "desastre-regional",
+        "mas-ram-misma-vm",
+        "venta-de-boletos",
+        "estimar-costo-antes",
+        "parches-automaticos",
+        "describen-confiabilidad",
+        "apoyan-rendimiento-previsible",
+        "administracion-de-recursos",
+        "beneficios-gobernanza",
+        "sla-mas-nueves",
+        "horizontal-es-mas-cpu",
+        "costos-tiempo-real",
+        "proveedor-ddos",
+        "solo-portal"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Beneficios de la nube",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "donde-consultar-tiempo-actividad",
+        "desastre-regional",
+        "sla-mas-nueves",
+        "mas-ram-misma-vm",
+        "venta-de-boletos",
+        "estimar-costo-antes",
+        "parches-automaticos",
+        "administracion-de-recursos"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Beneficios de la nube",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "disponibilidad-vs-confiabilidad",
+        "caso-boletera",
+        "plan-gobernanza-operacion"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Beneficios de la nube",
+    "edges": [
+      {
+        "from": "acuerdo-de-nivel-de-servicio",
+        "to": "alta-disponibilidad",
+        "relation": "explains"
+      },
+      {
+        "from": "confiabilidad",
+        "to": "alta-disponibilidad",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "acuerdo-de-nivel-de-servicio",
+        "to": "confiabilidad",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "escalado-horizontal",
+        "to": "escalado-vertical",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "previsibilidad",
+        "to": "escalado-horizontal",
+        "relation": "requires"
+      },
+      {
+        "from": "escalado-horizontal",
+        "to": "alta-disponibilidad",
+        "relation": "applies"
+      },
+      {
+        "from": "previsibilidad",
+        "to": "capacidad-de-administracion",
+        "relation": "requires"
+      },
+      {
+        "from": "capacidad-de-administracion",
+        "to": "seguridad-y-gobernanza",
+        "relation": "applies"
+      },
+      {
+        "from": "capacidad-de-administracion",
+        "to": "escalado-horizontal",
+        "relation": "applies"
+      }
+    ]
+  }
+}

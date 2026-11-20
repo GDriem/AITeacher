@@ -1,0 +1,815 @@
+{
+  "slug": "administracion-e-implementacion",
+  "name": "Herramientas para administrar e implementar recursos",
+  "category": "administracion-y-gobernanza",
+  "sortOrder": 10,
+  "profile": "module",
+  "description": "Descubre cómo interactuar con Azure desde el portal, Cloud Shell, la CLI de Azure y Azure PowerShell; cómo Azure Arc extiende la administración a servidores y clústeres fuera de Azure; y cómo Azure Resource Manager, las plantillas de ARM y Bicep hacen posible la infraestructura como código con despliegues repetibles.",
+  "outline": [
+    "Describe the Azure portal",
+    "Describe Azure Cloud Shell, Azure CLI, and Azure PowerShell",
+    "Describe the purpose of Azure Arc",
+    "Describe infrastructure as code (IaC)",
+    "Describe Azure Resource Manager (ARM) and ARM templates"
+  ],
+  "unit": {
+    "title": "Herramientas para administrar e implementar recursos de Azure",
+    "concepts": [
+      {
+        "key": "portal-de-azure",
+        "name": "Portal de Azure"
+      },
+      {
+        "key": "cloud-shell",
+        "name": "Azure Cloud Shell"
+      },
+      {
+        "key": "cli-y-powershell",
+        "name": "CLI de Azure y Azure PowerShell"
+      },
+      {
+        "key": "azure-arc",
+        "name": "Azure Arc"
+      },
+      {
+        "key": "azure-resource-manager",
+        "name": "Azure Resource Manager"
+      },
+      {
+        "key": "infraestructura-como-codigo",
+        "name": "Infraestructura como código"
+      },
+      {
+        "key": "plantillas-arm-y-bicep",
+        "name": "Plantillas de ARM y Bicep"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "elegir-herramienta-de-administracion",
+        "description": "Elegir entre el portal de Azure, Azure Cloud Shell, la CLI de Azure y Azure PowerShell para un escenario de administración, justificando la elección.",
+        "concepts": [
+          "portal-de-azure",
+          "cloud-shell",
+          "cli-y-powershell"
+        ]
+      },
+      {
+        "key": "distinguir-azure-arc",
+        "description": "Distinguir el propósito de Azure Arc para administrar recursos híbridos y multinube mediante Azure Resource Manager, frente a migrar o conectar redes.",
+        "concepts": [
+          "azure-arc",
+          "azure-resource-manager"
+        ]
+      },
+      {
+        "key": "explicar-iac-y-arm",
+        "description": "Explicar cómo Azure Resource Manager, las plantillas de ARM y Bicep aplican la infraestructura como código en un escenario que requiere despliegues repetibles.",
+        "concepts": [
+          "azure-resource-manager",
+          "infraestructura-como-codigo",
+          "plantillas-arm-y-bicep"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "herramientas-de-interaccion",
+        "title": "Portal, Cloud Shell, CLI de Azure y Azure PowerShell",
+        "text": "Para administrar Azure tienes varias puertas de entrada. Todas terminan en el mismo lugar, Azure Resource Manager, así que el resultado es consistente; lo que cambia es la forma de trabajar.\n\n**Portal de Azure**\n\nEs la consola web gráfica. Desde ella creas, configuras y supervisas recursos, armas **paneles personalizados** y ajustas opciones de accesibilidad. Es ideal para explorar, aprender, hacer tareas puntuales o revisar el estado de un entorno. Está diseñado para alta disponibilidad: tiene presencia en cada centro de datos de Azure y se actualiza sin ventanas de mantenimiento.\n\n**Azure Cloud Shell**\n\nEs un shell que se abre **en el navegador**, desde el portal o en `shell.azure.com`. Sus ventajas:\n\n- No requiere instalar nada en tu equipo.\n- Ya está **autenticado** con tu cuenta, así que respeta tus permisos.\n- Puedes elegir **Bash** o **PowerShell**, con la CLI de Azure y Azure PowerShell preinstaladas, además de herramientas como Git o Terraform.\n- Puedes trabajar en una sesión efímera o montar un recurso compartido de archivos para conservar tus scripts; en ese caso aplica el costo normal del almacenamiento.\n\n**CLI de Azure y Azure PowerShell**\n\nAmbas permiten automatizar tareas con comandos y scripts y son, en lo esencial, equivalentes en capacidades. Las dos se pueden instalar en Windows, Linux y macOS o usar desde Cloud Shell. La diferencia principal es la sintaxis:\n\n| | CLI de Azure | Azure PowerShell |\n|---|---|---|\n| Estilo | Comandos `az grupo subcomando` | Cmdlets verbo-sustantivo del módulo `Az` |\n| Entorno típico | Bash u otros shells | PowerShell |\n| Ejemplo | `az group create --name rg-demo --location eastus` | `New-AzResourceGroup -Name rg-demo -Location eastus` |\n\nElegir entre ellas suele depender de la experiencia del equipo: quien viene de Linux suele preferir la CLI; quien administra Windows, PowerShell.\n\n**Ejemplo práctico**\n\nUna administradora necesita crear el mismo grupo de recursos con tres cuentas de almacenamiento en diez suscripciones. Hacerlo en el portal sería lento y propenso a errores. Escribe un script con la CLI de Azure, lo prueba en Cloud Shell desde su navegador sin instalar nada y luego lo ejecuta para cada suscripción. Para revisar visualmente el resultado vuelve al portal.\n\n**Para recordar en el examen**\n\n- Portal = interfaz gráfica, paneles, tareas puntuales.\n- Cloud Shell = shell en el navegador, autenticado, sin instalación, con Bash o PowerShell.\n- CLI y PowerShell = automatización con scripts; misma capacidad, distinta sintaxis.\n- Todas pasan por Azure Resource Manager.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-features-tools-manage-deploy-azure-resources/2-describe-interacting-azure",
+        "objectives": [
+          "elegir-herramienta-de-administracion"
+        ]
+      },
+      {
+        "key": "proposito-de-azure-arc",
+        "title": "Azure Arc: administrar lo que está fuera de Azure",
+        "text": "Muchas empresas no viven sólo en Azure: tienen servidores en su centro de datos, clústeres de Kubernetes en otra nube y bases de datos SQL Server repartidas en sucursales. Administrar cada entorno con herramientas separadas complica la gobernanza. **Azure Arc** resuelve ese problema extendiendo el plano de administración de Azure a recursos que están **fuera de Azure**.\n\n**Cómo funciona la idea**\n\nAzure Arc **proyecta** recursos externos en **Azure Resource Manager**. Una vez conectados, aparecen en el portal como recursos de Azure, dentro de una suscripción y un grupo de recursos, y puedes aplicarles las mismas herramientas que a un recurso nativo:\n\n- **Azure Policy** para auditar o exigir configuraciones.\n- **Azure RBAC** para controlar quién puede administrarlos.\n- **Etiquetas** para organizarlos y reportarlos.\n- **Azure Monitor** y otros servicios de supervisión y seguridad.\n\n**Qué puedes conectar**\n\n- Servidores físicos y virtuales (Windows y Linux).\n- Clústeres de Kubernetes.\n- Servicios de datos de Azure ejecutándose fuera de Azure.\n- Instancias de SQL Server.\n- Máquinas virtuales de entornos locales como VMware o System Center (algunas capacidades en versión preliminar).\n\n**Lo que Azure Arc no hace**\n\nAzure Arc **no migra** los recursos a Azure ni los convierte en máquinas virtuales de Azure: siguen ejecutándose donde están. Tampoco es una conexión de red privada como VPN Gateway o ExpressRoute. Su propósito es la **administración y gobernanza unificadas**.\n\n**Ejemplo práctico**\n\nUna cadena de farmacias tiene 40 servidores Windows en sus sucursales, un clúster de Kubernetes en otro proveedor de nube y sus aplicaciones nuevas en Azure. El área de seguridad exige que todos los servidores tengan cierto agente de supervisión y la etiqueta `Owner`. Con Azure Arc conectan los servidores y el clúster, asignan una sola iniciativa de Azure Policy a la suscripción y ven el cumplimiento de todo el inventario en un solo panel, sin mover ninguna carga.\n\n**Para recordar en el examen**\n\n- Azure Arc = administrar recursos **híbridos y multinube** como si estuvieran en Azure.\n- Funciona proyectando los recursos en Azure Resource Manager.\n- Permite aplicar Policy, RBAC, etiquetas y supervisión a servidores, Kubernetes, SQL Server y servicios de datos externos.\n- No migra cargas ni crea conectividad de red.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-features-tools-manage-deploy-azure-resources/3-describe-purpose-of-azure-arc",
+        "objectives": [
+          "distinguir-azure-arc"
+        ]
+      },
+      {
+        "key": "azure-resource-manager",
+        "title": "Azure Resource Manager: la capa por la que pasa todo",
+        "text": "**Azure Resource Manager (ARM)** es el servicio de implementación y administración de Azure. Cada vez que haces algo con un recurso, sin importar la herramienta, ARM está en medio.\n\n**El recorrido de una solicitud**\n\n1. Envías una solicitud desde el portal, la CLI de Azure, Azure PowerShell, una API REST o un SDK.\n2. ARM la recibe, **autentica** quién eres y **autoriza** lo que pides según RBAC.\n3. ARM aplica controles como Azure Policy y bloqueos de recursos.\n4. Si todo está en orden, envía la solicitud al proveedor del servicio, que crea, actualiza o elimina el recurso.\n\nComo todas las herramientas pasan por la misma API, obtienes resultados y capacidades **consistentes**: lo que haces en el portal lo puedes repetir con un script.\n\n**Beneficios que aporta ARM**\n\n- Administrar la infraestructura con **plantillas declarativas** en lugar de scripts paso a paso.\n- Implementar, administrar y supervisar los recursos de una solución **como un grupo**.\n- Volver a implementar la solución en cada etapa del ciclo de vida con la seguridad de obtener el mismo estado.\n- Definir **dependencias** entre recursos para que se creen en el orden correcto.\n- Aplicar **control de acceso** de forma nativa, porque RBAC está integrado en la capa de administración.\n- Aplicar **etiquetas** para organizar y reportar costos.\n\n**Ámbitos que maneja ARM**\n\nARM organiza los recursos en la jerarquía grupo de administración, suscripción, grupo de recursos y recurso. Por eso puedes asignar permisos, directivas o bloqueos en un nivel y que se apliquen hacia abajo.\n\n**Relación con Azure Arc**\n\nAzure Arc aprovecha justamente esta capa: al proyectar servidores o clústeres externos en ARM, quedan sujetos a los mismos controles que un recurso nativo.\n\n**Ejemplo práctico**\n\nUn desarrollador crea una cuenta de almacenamiento desde la CLI y una compañera la revisa en el portal. Ambos ven la misma información porque las dos herramientas consultan ARM. Cuando el desarrollador intenta crear otra cuenta en una región prohibida, ARM rechaza la solicitud por una directiva antes de que llegue al servicio de almacenamiento.\n\n**Para recordar en el examen**\n\n- ARM = capa de implementación y administración por la que pasan todas las solicitudes.\n- Autentica, autoriza y garantiza resultados consistentes entre herramientas.\n- Habilita plantillas declarativas, dependencias, RBAC y etiquetas.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-features-tools-manage-deploy-azure-resources/4-describe-azure-resource-manager-azure-arm-templates",
+        "objectives": [
+          "distinguir-azure-arc",
+          "explicar-iac-y-arm"
+        ]
+      },
+      {
+        "key": "iac-plantillas-y-bicep",
+        "title": "Infraestructura como código con plantillas de ARM y Bicep",
+        "text": "**Infraestructura como código (IaC)** significa describir la infraestructura en archivos de código que se versionan, revisan y reutilizan, en lugar de configurarla a mano en un portal. Un mismo archivo puede crear el entorno de desarrollo, el de pruebas y el de producción de forma idéntica.\n\n**Imperativo frente a declarativo**\n\n- **Imperativo:** escribes los pasos. Un script de la CLI de Azure o de Azure PowerShell dice \"crea esto, luego aquello\". Ya es una forma inicial de IaC.\n- **Declarativo:** describes el **estado final** deseado y la plataforma decide cómo lograrlo. Así funcionan las plantillas de ARM y Bicep.\n\n**Plantillas de ARM**\n\nSon archivos **JSON** que declaran los recursos que quieres. Al implementarlas, Azure valida la plantilla, ordena la creación según las dependencias y crea en paralelo lo que puede. Sus beneficios:\n\n- **Sintaxis declarativa:** qué desplegar, no cómo.\n- **Resultados repetibles:** la misma plantilla produce el mismo entorno.\n- **Orquestación:** ARM resuelve el orden y el paralelismo.\n- **Modularidad:** se pueden dividir en partes reutilizables o plantillas anidadas.\n- **Extensibilidad:** admiten scripts de implementación para pasos adicionales.\n\n**Bicep**\n\nEs un lenguaje declarativo de Microsoft para implementar recursos de Azure a través de ARM. Expresa lo mismo que una plantilla JSON con una sintaxis más corta y legible, soporta módulos y está al día con los tipos de recursos de Azure. Es **idempotente**: implementarlo varias veces deja el mismo estado.\n\n```bicep\n// Cuenta de almacenamiento con nombre y región como parámetros\nparam nombre string\nparam region string = resourceGroup().location\n\nresource cuenta 'Microsoft.Storage/storageAccounts@2023-05-01' = {\n  name: nombre\n  location: region\n  sku: { name: 'Standard_LRS' }\n  kind: 'StorageV2'\n  tags: { Environment: 'Dev' }\n}\n```\n\nSe implementa, por ejemplo, con `az deployment group create --resource-group rg-dev --template-file main.bicep`.\n\n**Ejemplo práctico**\n\nUn equipo necesitaba dos días para recrear a mano su entorno de pruebas y siempre olvidaba algún ajuste. Pasaron la definición a Bicep, la guardaron en Git y ahora cada cambio pasa por revisión de código. Crear un entorno nuevo idéntico toma minutos.\n\n**Para recordar en el examen**\n\n- IaC = infraestructura definida en código, repetible y versionable.\n- Plantilla de ARM = JSON declarativo; Bicep = lenguaje declarativo más simple que también usa ARM.\n- Las implementaciones declarativas son repetibles e idempotentes.",
+        "source": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview",
+        "objectives": [
+          "explicar-iac-y-arm"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explicar-herramientas",
+        "objectives": [
+          "elegir-herramienta-de-administracion"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** en qué situación usarías el portal de Azure, en cuál Cloud Shell y en cuál la CLI de Azure o Azure PowerShell instalada en tu equipo. Da un ejemplo concreto para cada una y menciona qué tienen en común todas."
+      },
+      {
+        "key": "escenario-arc",
+        "objectives": [
+          "distinguir-azure-arc"
+        ],
+        "prompt": "**Escenario.** *Textiles del Pacífico* tiene 25 servidores Linux en su planta, un clúster de Kubernetes en otro proveedor de nube y una aplicación nueva en Azure. Quiere un solo inventario, aplicar la misma directiva de etiquetas a todo y controlar quién administra cada servidor.\n\n1. ¿Qué servicio propones y por qué?\n2. ¿Qué herramientas de Azure podrán usar sobre los recursos externos una vez conectados?\n3. Un gerente pregunta si eso significa que los servidores se mudarán a Azure. ¿Qué le respondes?"
+      },
+      {
+        "key": "tabla-imperativo-declarativo",
+        "objectives": [
+          "explicar-iac-y-arm"
+        ],
+        "prompt": "**Completa la tabla comparativa** y luego coméntala con el tutor.\n\n| Característica | Script de la CLI de Azure | Plantilla de ARM (JSON) | Bicep |\n|---|---|---|---|\n| ¿Imperativo o declarativo? | | | |\n| ¿Quién resuelve el orden de creación? | | | |\n| ¿Qué tan legible es? | | | |\n| ¿Pasa por Azure Resource Manager? | | | |\n\nTermina explicando qué significa que una implementación sea *idempotente*."
+      },
+      {
+        "key": "laboratorio-cloud-shell",
+        "objectives": [
+          "elegir-herramienta-de-administracion",
+          "explicar-iac-y-arm"
+        ],
+        "prompt": "**Laboratorio opcional (Cloud Shell).**\n\n> Aviso de costos: usa una cuenta gratuita o una suscripción de pruebas. Una sesión efímera de Cloud Shell no requiere cuenta de almacenamiento; la cuenta de almacenamiento que crees sí puede generar un costo pequeño. Elimina el grupo de recursos al terminar.\n\n1. Abre Cloud Shell en Bash y ejecuta `az group create --name rg-lab-iac --location eastus`.\n2. Crea un archivo `main.bicep` con una cuenta de almacenamiento parametrizada (usa la lectura como guía; el nombre debe ser único y en minúsculas).\n3. Implementa con `az deployment group create --resource-group rg-lab-iac --template-file main.bicep --parameters nombre=<nombre-unico>`.\n4. Vuelve a ejecutar el mismo comando y observa que no se crean duplicados.\n5. Revisa el recurso en el portal y luego ejecuta `az group delete --name rg-lab-iac --yes`.\n\nCuéntale al tutor qué ocurrió en el paso 4 y por qué."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluar-herramientas",
+        "objectives": [
+          "elegir-herramienta-de-administracion"
+        ],
+        "prompt": "Un técnico trabaja desde una computadora prestada en la que no puede instalar software y necesita ejecutar un script de la CLI de Azure para crear recursos. Más tarde, su jefa quiere revisar visualmente el resultado. Explica qué herramienta usaría cada uno y por qué.",
+        "privateCriteria": "El técnico debe usar Azure Cloud Shell: se abre en el navegador, no requiere instalación, ya está autenticado e incluye la CLI de Azure y Azure PowerShell. La jefa puede usar el portal de Azure por su interfaz gráfica y paneles. Valora que mencione que la CLI y PowerShell son equivalentes en capacidad con distinta sintaxis y que todas pasan por ARM."
+      },
+      {
+        "key": "evaluar-azure-arc",
+        "objectives": [
+          "distinguir-azure-arc"
+        ],
+        "prompt": "Explica qué es Azure Arc, cómo se relaciona con Azure Resource Manager y por qué no debe confundirse con un servicio de migración ni con una conexión VPN.",
+        "privateCriteria": "Debe explicar que Azure Arc extiende la administración y gobernanza de Azure a recursos locales y multinube (servidores, Kubernetes, SQL Server, servicios de datos) proyectándolos en Azure Resource Manager, lo que permite aplicar Policy, RBAC, etiquetas y supervisión. Debe aclarar que los recursos siguen ejecutándose donde están (no migra) y que no provee conectividad de red privada."
+      },
+      {
+        "key": "evaluar-iac",
+        "objectives": [
+          "explicar-iac-y-arm"
+        ],
+        "prompt": "Explica qué es la infraestructura como código y compara un script de Azure PowerShell con una plantilla de ARM o un archivo Bicep. Incluye el papel de Azure Resource Manager en la implementación.",
+        "privateCriteria": "Define IaC como gestión de infraestructura mediante archivos de código versionables y repetibles. Distingue el enfoque imperativo (scripts con pasos) del declarativo (plantillas ARM JSON y Bicep describen el estado deseado). Explica que ARM valida, resuelve dependencias y orquesta la creación (en paralelo cuando puede). Valora mencionar idempotencia, modularidad y control de versiones."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "cloud-shell",
+        "requires": "cli-y-powershell"
+      },
+      {
+        "concept": "azure-arc",
+        "requires": "azure-resource-manager"
+      },
+      {
+        "concept": "plantillas-arm-y-bicep",
+        "requires": "azure-resource-manager"
+      },
+      {
+        "concept": "plantillas-arm-y-bicep",
+        "requires": "infraestructura-como-codigo"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "sin-instalar-software",
+      "type": "singleChoice",
+      "prompt": "Una consultora necesita ejecutar comandos de Azure PowerShell desde un equipo en el que no puede instalar nada. ¿Qué opción le permite hacerlo con su identidad ya autenticada?",
+      "objectives": [
+        "elegir-herramienta-de-administracion"
+      ],
+      "concepts": [
+        "cloud-shell"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Instalar el módulo Az en modo portátil"
+        },
+        {
+          "key": "b",
+          "text": "Azure Cloud Shell",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "La calculadora de precios"
+        },
+        {
+          "key": "d",
+          "text": "Una plantilla de ARM"
+        }
+      ]
+    },
+    {
+      "key": "panel-personalizado",
+      "type": "singleChoice",
+      "prompt": "Un gerente sin experiencia en línea de comandos quiere una vista gráfica con el estado de los recursos de su proyecto en un panel personalizado. ¿Qué herramienta le conviene?",
+      "objectives": [
+        "elegir-herramienta-de-administracion"
+      ],
+      "concepts": [
+        "portal-de-azure"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "La CLI de Azure"
+        },
+        {
+          "key": "b",
+          "text": "Azure PowerShell"
+        },
+        {
+          "key": "c",
+          "text": "Una plantilla Bicep"
+        },
+        {
+          "key": "d",
+          "text": "El portal de Azure",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "arc-servidores-locales",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere aplicar Azure Policy y RBAC a 30 servidores que seguirán en su centro de datos local. ¿Qué servicio debe usar?",
+      "objectives": [
+        "distinguir-azure-arc"
+      ],
+      "concepts": [
+        "azure-arc"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Arc",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure Migrate"
+        },
+        {
+          "key": "c",
+          "text": "Azure VPN Gateway"
+        },
+        {
+          "key": "d",
+          "text": "Azure Cloud Shell"
+        }
+      ]
+    },
+    {
+      "key": "arm-autoriza",
+      "type": "singleChoice",
+      "prompt": "Un usuario envía desde la CLI de Azure una solicitud para crear una máquina virtual. ¿Qué componente autentica y autoriza la solicitud antes de enviarla al servicio correspondiente?",
+      "objectives": [
+        "distinguir-azure-arc",
+        "explicar-iac-y-arm"
+      ],
+      "concepts": [
+        "azure-resource-manager"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Monitor"
+        },
+        {
+          "key": "b",
+          "text": "Azure Resource Manager",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Purview"
+        },
+        {
+          "key": "d",
+          "text": "Azure Advisor"
+        }
+      ]
+    },
+    {
+      "key": "bicep-definicion",
+      "type": "singleChoice",
+      "prompt": "Un equipo quiere describir su infraestructura de forma declarativa con una sintaxis más concisa y legible que el JSON tradicional, sin dejar de implementarla mediante Azure Resource Manager. ¿Qué debe adoptar?",
+      "objectives": [
+        "explicar-iac-y-arm"
+      ],
+      "concepts": [
+        "plantillas-arm-y-bicep"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un script de Bash con comandos az"
+        },
+        {
+          "key": "b",
+          "text": "Un panel del portal de Azure"
+        },
+        {
+          "key": "c",
+          "text": "Bicep",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Azure Arc"
+        }
+      ]
+    },
+    {
+      "key": "capacidades-cloud-shell",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "¿Qué afirmaciones describen correctamente Azure Cloud Shell? Selecciona tres.",
+      "objectives": [
+        "elegir-herramienta-de-administracion"
+      ],
+      "concepts": [
+        "cloud-shell",
+        "cli-y-powershell"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Se abre desde el navegador sin instalar software local",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Permite elegir entre Bash y PowerShell",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Sólo funciona desde equipos con Windows"
+        },
+        {
+          "key": "d",
+          "text": "Usa la identidad con la que iniciaste sesión en Azure",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Requiere crear una máquina virtual dedicada en la suscripción"
+        }
+      ]
+    },
+    {
+      "key": "recursos-arc",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué tipos de recursos externos a Azure se pueden administrar con Azure Arc? Selecciona tres.",
+      "objectives": [
+        "distinguir-azure-arc"
+      ],
+      "concepts": [
+        "azure-arc"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Usuarios de un directorio LDAP local"
+        },
+        {
+          "key": "b",
+          "text": "Servidores Windows y Linux",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Clústeres de Kubernetes",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Redes Wi-Fi de oficina"
+        },
+        {
+          "key": "e",
+          "text": "Instancias de SQL Server",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "beneficios-plantillas",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Un equipo evalúa adoptar plantillas de ARM. ¿Qué beneficios obtendría? Selecciona dos.",
+      "objectives": [
+        "explicar-iac-y-arm"
+      ],
+      "concepts": [
+        "plantillas-arm-y-bicep",
+        "infraestructura-como-codigo"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Implementaciones repetibles que producen el mismo entorno",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Eliminación automática de los costos de proceso"
+        },
+        {
+          "key": "c",
+          "text": "Orden de creación resuelto a partir de las dependencias declaradas",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Migración automática de servidores locales a Azure"
+        }
+      ]
+    },
+    {
+      "key": "beneficios-arm",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué capacidades ofrece Azure Resource Manager como capa de administración? Selecciona dos.",
+      "objectives": [
+        "distinguir-azure-arc",
+        "explicar-iac-y-arm"
+      ],
+      "concepts": [
+        "azure-resource-manager"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Clasificar datos sensibles en bases de datos"
+        },
+        {
+          "key": "b",
+          "text": "Administrar los recursos de una solución como un grupo",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Medir el tiempo de respuesta de una aplicación web"
+        },
+        {
+          "key": "d",
+          "text": "Control de acceso integrado mediante RBAC",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "cli-y-ps-equivalentes",
+      "type": "trueFalse",
+      "prompt": "La CLI de Azure y Azure PowerShell ofrecen capacidades de administración similares; la diferencia principal es la sintaxis de los comandos.",
+      "objectives": [
+        "elegir-herramienta-de-administracion"
+      ],
+      "concepts": [
+        "cli-y-powershell"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "cli-solo-windows",
+      "type": "trueFalse",
+      "prompt": "La CLI de Azure sólo puede instalarse en equipos con Windows.",
+      "objectives": [
+        "elegir-herramienta-de-administracion"
+      ],
+      "concepts": [
+        "cli-y-powershell"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "arc-migra",
+      "type": "trueFalse",
+      "prompt": "Al conectar un servidor local con Azure Arc, el servidor se migra automáticamente a una máquina virtual de Azure.",
+      "objectives": [
+        "distinguir-azure-arc"
+      ],
+      "concepts": [
+        "azure-arc"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "plantilla-arm-json",
+      "type": "trueFalse",
+      "prompt": "Una plantilla de ARM es un archivo JSON que describe de forma declarativa los recursos que se desean implementar.",
+      "objectives": [
+        "explicar-iac-y-arm"
+      ],
+      "concepts": [
+        "plantillas-arm-y-bicep"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "iac-solo-portal",
+      "type": "trueFalse",
+      "prompt": "La infraestructura como código consiste en configurar cada recurso manualmente desde el portal y documentar los pasos en una hoja de cálculo.",
+      "objectives": [
+        "explicar-iac-y-arm"
+      ],
+      "concepts": [
+        "infraestructura-como-codigo"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "respuesta-elegir-herramienta",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras las diferencias entre el portal de Azure, Azure Cloud Shell, la CLI de Azure y Azure PowerShell. Indica para qué tipo de tarea conviene cada una y qué tienen en común todas en la forma en que llegan a los recursos.",
+      "objectives": [
+        "elegir-herramienta-de-administracion",
+        "distinguir-azure-arc"
+      ],
+      "concepts": [
+        "portal-de-azure",
+        "cloud-shell",
+        "cli-y-powershell",
+        "azure-resource-manager"
+      ],
+      "rubric": {
+        "privateGuidance": "Busca criterios de elección (interfaz gráfica frente a automatización, instalación local frente a navegador, preferencia de sintaxis) y la idea de que todas pasan por Azure Resource Manager. No penalices si no menciona Copilot.",
+        "criteria": [
+          {
+            "key": "portal",
+            "description": "Describe el portal como interfaz gráfica para tareas puntuales, exploración y paneles.",
+            "maxPoints": 2
+          },
+          {
+            "key": "cloud-shell",
+            "description": "Explica que Cloud Shell se usa desde el navegador, ya autenticado y con Bash o PowerShell.",
+            "maxPoints": 2
+          },
+          {
+            "key": "cli-ps",
+            "description": "Distingue CLI y PowerShell por sintaxis, con capacidades equivalentes para automatizar.",
+            "maxPoints": 2
+          },
+          {
+            "key": "arm",
+            "description": "Indica que todas las herramientas llegan a los recursos a través de Azure Resource Manager.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-agroexport",
+      "type": "caseAnalysis",
+      "prompt": "Agroexport Sur es una empresa ficticia que exporta frutas. Tiene tres entornos (desarrollo, pruebas y producción) que su único administrador crea a mano en el portal; cada vez tarda un día y los entornos terminan siendo distintos, lo que provoca errores al pasar a producción. Además, mantiene 15 servidores en sus plantas de empaque que no puede mover a la nube por requisitos de latencia, y la auditoría exige aplicarles las mismas reglas de etiquetado y control de acceso que a sus recursos de Azure. El administrador sólo conoce PowerShell. Analiza la situación y propone qué herramientas y prácticas de Azure resolverían ambos problemas.",
+      "objectives": [
+        "elegir-herramienta-de-administracion",
+        "distinguir-azure-arc",
+        "explicar-iac-y-arm"
+      ],
+      "concepts": [
+        "cli-y-powershell",
+        "azure-arc",
+        "infraestructura-como-codigo",
+        "plantillas-arm-y-bicep"
+      ],
+      "rubric": {
+        "privateGuidance": "Problema 1: infraestructura como código con Bicep o plantillas de ARM (declarativo, repetible, versionado), implementado con Azure PowerShell aprovechando su experiencia o desde Cloud Shell. Problema 2: Azure Arc para proyectar los servidores en ARM y aplicar Policy, RBAC y etiquetas sin moverlos. Valora que justifique y no proponga migrar los servidores.",
+        "criteria": [
+          {
+            "key": "iac",
+            "description": "Propone IaC con Bicep o plantillas de ARM y explica cómo evita diferencias entre entornos.",
+            "maxPoints": 3
+          },
+          {
+            "key": "herramienta",
+            "description": "Elige una herramienta de implementación coherente con la experiencia del administrador.",
+            "maxPoints": 2
+          },
+          {
+            "key": "arc",
+            "description": "Propone Azure Arc para gobernar los servidores locales sin migrarlos.",
+            "maxPoints": 3
+          },
+          {
+            "key": "justificacion",
+            "description": "Justifica las decisiones con beneficios concretos.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "practica-bicep-comentado",
+      "type": "practicalExercise",
+      "prompt": "Observa este archivo Bicep (no lo ejecutes):\n\nparam entorno string = 'dev'\nparam region string = resourceGroup().location\nresource plan 'Microsoft.Web/serverfarms@2023-12-01' = {\n  name: 'plan-${entorno}'\n  location: region\n  sku: { name: 'B1' }\n  tags: { Environment: entorno }\n}\nresource app 'Microsoft.Web/sites@2023-12-01' = {\n  name: 'app-tienda-${entorno}'\n  location: region\n  properties: { serverFarmId: plan.id }\n  tags: { Environment: entorno }\n}\n\nEntrega: (1) una explicación, bloque por bloque, de lo que declara el archivo; (2) qué dependencia existe entre los recursos y quién resuelve el orden de creación; (3) cómo lo reutilizarías para crear el entorno de producción; (4) un comando de la CLI de Azure o de Azure PowerShell que lo implementaría en un grupo de recursos.",
+      "objectives": [
+        "explicar-iac-y-arm"
+      ],
+      "concepts": [
+        "infraestructura-como-codigo",
+        "plantillas-arm-y-bicep",
+        "azure-resource-manager"
+      ],
+      "rubric": {
+        "privateGuidance": "El archivo declara dos parámetros, un plan de App Service y una aplicación web que referencia el plan (plan.id), con etiquetas. La dependencia implícita hace que ARM cree primero el plan. Para producción basta pasar entorno=prod. Comandos aceptables: az deployment group create --resource-group ... --template-file ... --parameters entorno=prod, o New-AzResourceGroupDeployment -ResourceGroupName ... -TemplateFile ... -entorno prod.",
+        "criteria": [
+          {
+            "key": "lectura",
+            "description": "Explica correctamente parámetros, recursos y etiquetas del archivo.",
+            "maxPoints": 3
+          },
+          {
+            "key": "dependencia",
+            "description": "Identifica la dependencia de la aplicación sobre el plan y que ARM resuelve el orden.",
+            "maxPoints": 2
+          },
+          {
+            "key": "reutilizacion",
+            "description": "Explica la reutilización mediante parámetros para otro entorno.",
+            "maxPoints": 2
+          },
+          {
+            "key": "comando",
+            "description": "Propone un comando de implementación plausible.",
+            "maxPoints": 1
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Administración e implementación",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "sin-instalar-software",
+        "panel-personalizado",
+        "arc-servidores-locales",
+        "arm-autoriza",
+        "bicep-definicion",
+        "capacidades-cloud-shell",
+        "recursos-arc",
+        "beneficios-plantillas",
+        "beneficios-arm",
+        "cli-y-ps-equivalentes",
+        "cli-solo-windows",
+        "arc-migra",
+        "plantilla-arm-json",
+        "iac-solo-portal"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Administración e implementación",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "sin-instalar-software",
+        "cli-y-ps-equivalentes",
+        "panel-personalizado",
+        "arc-servidores-locales",
+        "recursos-arc",
+        "bicep-definicion",
+        "beneficios-plantillas",
+        "iac-solo-portal"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Administración e implementación",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "respuesta-elegir-herramienta",
+        "caso-agroexport",
+        "practica-bicep-comentado"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Herramientas para administrar e implementar recursos",
+    "edges": [
+      {
+        "from": "cloud-shell",
+        "to": "cli-y-powershell",
+        "relation": "requires"
+      },
+      {
+        "from": "portal-de-azure",
+        "to": "cli-y-powershell",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "portal-de-azure",
+        "to": "azure-resource-manager",
+        "relation": "applies"
+      },
+      {
+        "from": "cli-y-powershell",
+        "to": "azure-resource-manager",
+        "relation": "applies"
+      },
+      {
+        "from": "azure-arc",
+        "to": "azure-resource-manager",
+        "relation": "requires"
+      },
+      {
+        "from": "plantillas-arm-y-bicep",
+        "to": "azure-resource-manager",
+        "relation": "requires"
+      },
+      {
+        "from": "plantillas-arm-y-bicep",
+        "to": "infraestructura-como-codigo",
+        "relation": "applies"
+      },
+      {
+        "from": "infraestructura-como-codigo",
+        "to": "portal-de-azure",
+        "relation": "differsFrom"
+      }
+    ]
+  }
+}
