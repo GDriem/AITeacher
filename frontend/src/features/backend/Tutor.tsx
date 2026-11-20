@@ -23,9 +23,9 @@ const time = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", hou
  * en producción) y debe remontarlo con otra `key` al cambiarla, para no
  * arrastrar solicitudes en memoria de otra conversación.
  */
-export function Tutor({ unit, mode, activityId, conversationId, openConversation }: {
+export function Tutor({ unit, mode, activityId, conversationId, openConversation, embedded = false }: {
   unit: Schema["UnitResponse"]; mode: "chat" | "reading" | "practice"; activityId?: string;
-  conversationId: string | null; openConversation: (id: string | null) => void;
+  conversationId: string | null; openConversation: (id: string | null) => void; embedded?: boolean;
 }) {
   const queries = useQueryClient();
   const workspace = useTutorViewport();
@@ -58,7 +58,7 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
   const items = messages.data?.pages.flatMap((page) => page.items) ?? [];
   const confirmed = id && conversation.data?.unitId === unit.id ? conversation.data : null;
   // El historial puede llegar antes que la conversación: el salto al final espera a que el chat esté montado.
-  const { end, ready, keep, follow, away, latest } = useChatScroll(messages.isSuccess && Boolean(confirmed), `${items.at(-1)?.id ?? ""}:${String(send.isPending)}`, items[0]?.id);
+  const { end, ready, keep, follow, away, latest } = useChatScroll(messages.isSuccess && Boolean(confirmed), `${items.at(-1)?.id ?? ""}:${String(send.isPending)}`, items[0]?.id, workspace);
   const top = useRef<HTMLDivElement>(null);
   const { hasPreviousPage, isFetchingPreviousPage, fetchPreviousPage } = messages;
   const earlier = () => { keep(); void fetchPreviousPage(); };
@@ -84,7 +84,7 @@ export function Tutor({ unit, mode, activityId, conversationId, openConversation
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (!event.nativeEvent.isComposing && (event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); event.currentTarget.form?.requestSubmit(); }
   };
-  return <div ref={workspace} className={[styles.workspace, mapOpen && confirmed ? styles.withMap : null].filter(Boolean).join(" ")}>
+  return <div ref={workspace} className={[styles.workspace, embedded ? styles.embedded : null, mapOpen && confirmed ? styles.withMap : null].filter(Boolean).join(" ")}>
     <TutorConversations unit={unit} current={id} busy={send.isPending} starting={start.isPending} start={() => start.mutate()} open={(next) => { if (next !== id) openConversation(next); }} />
     <section className={styles.chat} aria-label="Conversación educativa">
       {start.isError ? <Failure error={start.error} /> : null}

@@ -179,6 +179,12 @@
 .quizCallout h2 { margin: 0; font-size: var(--font-size-md); }
 .quizCallout p { margin: 0; max-width: 65ch; color: var(--content-muted); }
 
+.practice {
+  inline-size: min(100%, 48rem);
+  max-width: none;
+  margin-inline: auto;
+}
+
 .exerciseCard.exerciseCard {
   display: grid;
   padding: 0;
@@ -187,7 +193,8 @@
 .exercisePhoto {
   display: block;
   width: 100%;
-  height: 9rem;
+  aspect-ratio: 12 / 5;
+  max-block-size: 15rem;
   object-fit: cover;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
@@ -202,7 +209,22 @@
 .exerciseBody table { display: block; overflow-x: auto; max-width: 100%; }
 
 @media (min-width: 42rem) {
-  .exerciseCard { grid-template-columns: 28% minmax(0, 1fr); }
-  .exercisePhoto { height: 100%; min-height: 10rem; border-radius: var(--radius-md) 0 0 var(--radius-md); }
   .exerciseBody { padding: var(--space-5); }
+}
+
+.unit .tutorDialog {
+  width: min(100% - var(--space-4), 72rem);
+  max-height: calc(100dvh - var(--space-4));
+  overscroll-behavior: contain;
+}
+
+.tutorDialogActions {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 25;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  background: var(--surface-default);
 }

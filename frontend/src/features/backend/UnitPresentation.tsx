@@ -58,7 +58,7 @@ export function Learn({ document, current, choose }: { document: UnitDocument; c
 }
 
 export function Practice({ document, unitId, state, tutorEnabled }: { document: UnitDocument; unitId: string; state: unknown; tutorEnabled: boolean }) {
-  return <div className={styles.content}>
+  return <div className={[styles.content, styles.practice].join(" ")}>
     {document.exercises.map((exercise, index) => {
       const photo = <img className={styles.exercisePhoto} src={exercisePhoto} alt="" loading={index === 0 ? "eager" : "lazy"} />;
       const path = tutorPath(unitId, "practice", exercise.id);

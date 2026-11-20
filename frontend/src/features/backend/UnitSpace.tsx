@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { Learn, Practice } from "./UnitPresentation";
-import { Badge, PageHeader, Tabs, buttonClass } from "../../ui";
+import { Badge, Button, Dialog, PageHeader, Tabs, buttonClass } from "../../ui";
 import { required, type Schema } from "./client";
 import { Busy, Failure } from "./Shared";
 import { Assessments } from "./Assessments";
@@ -11,6 +11,7 @@ import styles from "./UnitSpace.module.css";
 type UnitDocument = Schema["UnitResponse"]["revision"]["document"];
 type TabId = "aprender" | "practicar" | "evaluar";
 const isTab = (value: string | null): value is TabId => value === "aprender" || value === "practicar" || value === "evaluar";
+const Tutor = lazy(async () => ({ default: (await import("./UnitTutor")).Tutor }));
 /** Contexto que el botón del tutor lleva a la conversación: la lectura o el ejercicio que el alumno tiene a la vista. */
 interface Visible { mode: TutorMode; id: string; title: string }
 
@@ -20,6 +21,7 @@ export function UnitSpace() {
   const state: unknown = useLocation().state;
   // La pestaña vive en la URL; `replace` evita que cada cambio de pestaña sume una entrada al historial.
   const [search, setSearch] = useSearchParams();
+  const [chat, setChat] = useState<{ unitId: string; activityId?: string; conversationId: string | null } | null>(null);
   const requested = search.get("pestana");
   const availability = useTutorAvailability();
   const unit = useStudyUnit(unitId);
@@ -45,6 +47,7 @@ export function UnitSpace() {
   // El slug solo se muestra si el currículo de origen ya respondió sin ese nivel: mientras carga no hay insignia.
   const level = provenance ? sourceLevels.data?.find((entry) => entry.slug === provenance)?.name ?? (sourceLevels.isPending ? undefined : provenance) : catalogLevel.data?.name;
   const tutor = visible ? tutorPath(unitId, visible.mode, visible.id) : tutorPath(unitId);
+  const activeChat = tab === "aprender" && chat?.unitId === unitId ? chat : null;
 
   const learn = <Learn document={document} current={current} choose={choose} />;
   return <section className={styles.unit}>
@@ -61,12 +64,34 @@ export function UnitSpace() {
         tutorEnabled={Boolean(availability.data?.enabled)} /> }] : []),
       { id: "evaluar", label: "Evaluar", content: <Assessments unit={unit.data} /> },
     ]} />}
-    {availability.data?.enabled ? <Link className={buttonClass("primary", "md", styles.tutor)} to={tutor} state={state}>
+    {availability.data?.enabled ? <Link className={buttonClass("primary", "md", styles.tutor)} to={tutor} state={state}
+      aria-haspopup={tab === "aprender" ? "dialog" : undefined}
+      onClick={(event) => {
+        if (tab !== "aprender" || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        setChat({ unitId, activityId: visible?.id, conversationId: null });
+      }}>
       Preguntar al tutor<span className={styles.context}>{visible ? ` sobre «${visible.title}»` : " sobre esta unidad"}</span>
     </Link> : availability.isError ? <div className={styles.tutorFailure}>
       {/* Un fallo transitorio no deja la unidad sin tutor: el aviso ocupa el sitio del botón y permite reintentar. */}
       <Failure title="No pudimos comprobar el tutor" error={availability.error} retry={() => void availability.refetch()} />
     </div> : null}
+    <Dialog open={Boolean(activeChat)} title="Tutor de la unidad" className={availability.data?.enabled ? styles.tutorDialog : undefined} onClose={() => setChat(null)}>
+      {activeChat ? <>
+        <div className={styles.tutorDialogActions}>
+          {availability.data?.enabled ? <Link className={buttonClass("ghost", "sm")} state={state}
+            to={tutorPath(unitId, activeChat.activityId ? "reading" : "chat", activeChat.activityId, activeChat.conversationId ?? undefined)}>Abrir en pantalla completa</Link> : null}
+          <Button size="sm" onClick={() => setChat(null)}>Cerrar chat</Button>
+        </div>
+        {availability.isPending ? <Busy /> : availability.isError
+          ? <Failure error={availability.error} retry={() => void availability.refetch()} />
+          : availability.data.enabled ? <Suspense fallback={<Busy />}>
+            <Tutor key={activeChat.conversationId ?? "nueva"} embedded unit={unit.data} mode={activeChat.activityId ? "reading" : "chat"}
+              activityId={activeChat.activityId} conversationId={activeChat.conversationId}
+              openConversation={(conversationId) => setChat((current) => current && { ...current, conversationId })} />
+          </Suspense> : <p>El tutor no está disponible por ahora.</p>}
+      </> : null}
+    </Dialog>
   </section>;
 }
 

@@ -6,8 +6,8 @@ import styles from "./Dialog.module.css";
  * inerte el resto de la página y cierra con Escape. Al cerrarse, el foco
  * regresa al elemento que lo abrió.
  */
-export function Dialog({ open, title, onClose, children, actions }: {
-  open: boolean; title: string; onClose: () => void; children?: ReactNode; actions?: ReactNode;
+export function Dialog({ open, title, onClose, children, actions, className }: {
+  open: boolean; title: string; onClose: () => void; children?: ReactNode; actions?: ReactNode; className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -22,7 +22,7 @@ export function Dialog({ open, title, onClose, children, actions }: {
       dialog.close();
     }
   }, [open]);
-  return <dialog ref={ref} className={styles.dialog} aria-labelledby={titleId}
+  return <dialog ref={ref} className={[styles.dialog, className].filter(Boolean).join(" ")} aria-labelledby={titleId}
     onCancel={(event) => { event.preventDefault(); onClose(); }}
     onClose={() => { opener.current?.focus(); opener.current = null; }}>
     {open ? <div className={styles.content}>
