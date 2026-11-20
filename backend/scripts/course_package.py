@@ -323,6 +323,8 @@ def _closed(q, where, errors):
 
 def _bias(slug, closed, warnings):
     """Advierte de pistas involuntarias: posición fija o respuesta más larga."""
+    # Sólo preguntas bien formadas: las demás ya quedaron como errores de contrato.
+    closed = [q for q in closed if any(o.get('correct') for o in q.get('options') or [])]
     single = [q for q in closed if q['type'] == 'singleChoice']
     if len(single) >= 4:
         positions = Counter(next(i for i, o in enumerate(q['options']) if o.get('correct')) for q in single)

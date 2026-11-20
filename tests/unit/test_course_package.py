@@ -97,6 +97,8 @@ def test_minimal_module_is_valid_and_ids_are_deterministic(tmp_path):
 @pytest.mark.parametrize('break_it, message', [
     (lambda m: m['unit']['exercises'].clear(), 'sin ejercicio'),
     (lambda m: m['questions'][0]['options'][1].update(correct=True), 'una sola correcta'),
+    (lambda m: [o.update(correct=False) for o in m['questions'][0]['options']], 'una correcta'),
+    (lambda m: m['questions'][3].update(options=[]), 'una correcta'),
     (lambda m: m['questions'][2].update(prompt='Elige las correctas de esta lista.'), 'Selecciona'),
     (lambda m: m['questions'][0].update(scoringPolicy='partialCredit'), 'política de puntuación'),
     (lambda m: m['questions'][0].update(concepts=['c2']), 'conceptos deben pertenecer'),
