@@ -106,6 +106,15 @@ public sealed class AssessmentApiTests(ApiFixture fixture) : IClassFixture<ApiFi
             Assert.Equal(HttpStatusCode.Forbidden, (await student.GetAsync(Root + path)).StatusCode);
         var definitions = await student.GetStringAsync(Root + "/definitions");
         Assert.DoesNotContain("correctOptionIds", definitions); Assert.DoesNotContain("questionRevisionIds", definitions);
+        var otherUnit = await Create(author);
+        var filtered = await Success(await student.GetAsync(Root + "/definitions?limit=1&unitId=" + s.UnitId));
+        Assert.Equal(1, filtered["total"]!.GetValue<int>());
+        Assert.Equal(s.DefinitionRevision, Id(filtered["items"]!.AsArray().Single()!.AsObject()));
+        Assert.NotEqual(s.UnitId, otherUnit.UnitId);
+        Assert.Equal(0, (await Success(await student.GetAsync(Root + "/definitions?unitId=" + Guid.NewGuid())))["total"]!.GetValue<int>());
+        Assert.Equal(HttpStatusCode.BadRequest, (await student.GetAsync(Root + "/definitions?unitId=" + Guid.Empty)).StatusCode);
+        var byRevision = await Success(await student.GetAsync(Root + "/definitions?unitRevisionId=" + s.Definition.Document.UnitRevisionId));
+        Assert.Equal(s.DefinitionRevision, Id(byRevision["items"]!.AsArray().Single()!.AsObject()));
         foreach (var client in new[] { other, author })
         {
             Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(Attempt(id))).StatusCode);

@@ -1,0 +1,823 @@
+{
+  "slug": "administracion-de-costos",
+  "name": "Administración de costos en Azure",
+  "category": "administracion-y-gobernanza",
+  "sortOrder": 8,
+  "profile": "module",
+  "description": "Aprende qué hace subir o bajar la factura de Azure, cómo estimar una solución con la calculadora de precios antes de desplegarla, cómo vigilar el gasto real con Microsoft Cost Management, presupuestos y alertas, y cómo usar etiquetas para organizar recursos y asignar costos por equipo, entorno o proyecto.",
+  "outline": [
+    "Describe factors that can affect costs in Azure",
+    "Explore the pricing calculator",
+    "Describe cost management capabilities in Azure",
+    "Describe the purpose of tags"
+  ],
+  "unit": {
+    "title": "Administración de costos en Azure",
+    "concepts": [
+      {
+        "key": "factores-de-costo",
+        "name": "Factores que afectan el costo en Azure"
+      },
+      {
+        "key": "opciones-de-ahorro",
+        "name": "Reservas, plan de ahorro y máquinas virtuales de acceso puntual"
+      },
+      {
+        "key": "calculadora-de-precios",
+        "name": "Calculadora de precios de Azure"
+      },
+      {
+        "key": "cost-management",
+        "name": "Microsoft Cost Management y análisis de costos"
+      },
+      {
+        "key": "presupuestos-y-alertas",
+        "name": "Presupuestos y alertas de costos"
+      },
+      {
+        "key": "etiquetas",
+        "name": "Etiquetas de recursos"
+      },
+      {
+        "key": "gobierno-de-etiquetas",
+        "name": "Aplicación y cumplimiento del etiquetado"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "distinguir-factores-de-costo",
+        "description": "Distinguir los factores que hacen variar el costo de un recurso de Azure (tipo y configuración, consumo, región, tráfico de salida, tipo de suscripción y Marketplace) y las opciones de descuento disponibles.",
+        "concepts": [
+          "factores-de-costo",
+          "opciones-de-ahorro"
+        ]
+      },
+      {
+        "key": "elegir-herramienta-de-costos",
+        "description": "Elegir entre la calculadora de precios y Microsoft Cost Management (análisis de costos, presupuestos y alertas) para un escenario de estimación, seguimiento o control del gasto.",
+        "concepts": [
+          "calculadora-de-precios",
+          "cost-management",
+          "presupuestos-y-alertas"
+        ]
+      },
+      {
+        "key": "disenar-esquema-de-etiquetas",
+        "description": "Diseñar un esquema básico de etiquetas para un escenario de empresa, explicando cómo se aplican, por qué no se heredan automáticamente y cómo se hacen cumplir.",
+        "concepts": [
+          "etiquetas",
+          "gobierno-de-etiquetas"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "factores-que-afectan-costos",
+        "title": "Qué hace variar la factura de Azure",
+        "text": "En Azure no compras servidores: pagas por lo que aprovisionas y consumes. Por eso el monto de la factura depende de decisiones concretas que tomas al crear y operar cada recurso. Entender esos factores te permite anticipar el gasto y explicar por qué dos soluciones parecidas cuestan distinto.\n\n**Factores principales**\n\n| Factor | Qué significa en la práctica |\n|---|---|\n| Tipo de recurso y configuración | Una máquina virtual cuesta según su tamaño (núcleos, memoria), el disco, la licencia del sistema operativo y la red; una cuenta de almacenamiento, según el nivel de acceso y la redundancia elegidos. |\n| Consumo | El modelo de pago por uso cobra lo que usas en cada ciclo de facturación: si usas más, pagas más. |\n| Mantenimiento | Al eliminar una VM pueden quedar discos, IP públicas o interfaces de red que siguen generando cargos si nadie los limpia. |\n| Región (geografía) | Energía, impuestos y mano de obra varían por ubicación, así que el mismo recurso puede tener precio distinto en otra región. |\n| Tráfico de red | Por lo general la entrada de datos a Azure no tiene costo, mientras que la salida se cobra según **zonas de facturación**, que agrupan regiones y no son lo mismo que las zonas de disponibilidad. |\n| Tipo de suscripción | Una cuenta gratuita incluye crédito inicial y servicios gratis por un tiempo; otras ofertas tienen condiciones propias. |\n| Azure Marketplace | Al comprar una solución de terceros pagas los recursos de Azure y, además, lo que cobre el proveedor según su propio modelo. |\n\n**Opciones para pagar menos**\n\n- **Reservas (Azure Reservations):** te comprometes a un recurso concreto por uno o tres años a cambio de descuento. Convienen para cargas estables y predecibles.\n- **Plan de ahorro para proceso (Azure savings plan for compute):** te comprometes a un gasto por hora en servicios de proceso elegibles durante uno o tres años, sin atarte a un tamaño de VM específico.\n- **Máquinas virtuales de acceso puntual (Azure Spot Virtual Machines):** usan capacidad sobrante a menor precio, pero Azure puede desalojarlas cuando necesita esa capacidad. Sirven para trabajos tolerantes a interrupciones, como procesamiento por lotes.\n\n**Ejemplo práctico**\n\nUna startup despliega su API en una VM en una región cercana a sus clientes y otra copia para pruebas. Al revisar la factura descubre tres cosas: la región elegida es más cara que otra igual de cercana, la VM de pruebas se queda encendida los fines de semana y quedaron dos discos huérfanos de un experimento anterior. Cambiar de región, apagar pruebas fuera de horario y eliminar discos sin uso reduce el gasto sin tocar la aplicación.\n\n**Para recordar en el examen**\n\n- Región, tamaño, configuración y tiempo de uso cambian el precio.\n- Entrada de datos normalmente gratis; salida cobrada por zona de facturación.\n- Reservas = recurso fijo y compromiso; plan de ahorro = gasto por hora en proceso; Spot = barato pero interrumpible.\n- Marketplace suma el cobro del proveedor externo.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cost-management-azure/2-describe-factors-affect-costs-azure",
+        "objectives": [
+          "distinguir-factores-de-costo"
+        ]
+      },
+      {
+        "key": "calculadora-de-precios",
+        "title": "Estimar antes de desplegar: la calculadora de precios",
+        "text": "La **calculadora de precios de Azure** (Azure pricing calculator) es una herramienta web para estimar cuánto costaría una solución **antes** de desplegarla. Eliges servicios, ajustas sus opciones y obtienes un estimado mensual. Es útil para preparar presupuestos, comparar alternativas de arquitectura o justificar una propuesta ante la gerencia.\n\n**Qué puedes hacer con ella**\n\n- Estimar recursos individuales o una solución completa con varios servicios.\n- Partir de escenarios de ejemplo y adaptarlos.\n- Ajustar región, nivel o tamaño del servicio, horas de uso, tipo de almacenamiento, nivel de acceso y redundancia.\n- Incluir costos de red asociados, como transferencia de datos.\n- Comparar el efecto de pagar por uso frente a compromisos como reservas o plan de ahorro, cuando el servicio lo permite.\n- Guardar, compartir o exportar la estimación.\n\n**Lo que no hace**\n\n- **No crea recursos**: agregar una VM a la calculadora no la aprovisiona ni genera cargos.\n- **No muestra tu gasto real**: para eso existe Microsoft Cost Management.\n- **No es una cotización vinculante**: los precios son estimados e informativos; el cobro final depende del uso real, de tu contrato y de posibles impuestos.\n\n**La calculadora de TCO ya no está disponible**\n\nAntes existía una calculadora de costo total de propiedad para comparar un centro de datos local con Azure. Microsoft la retiró y el temario vigente sólo pide la calculadora de precios. Si ves material antiguo que la mencione, trátalo como histórico.\n\n**Ejemplo práctico**\n\nUn equipo planea una aplicación web con un plan de App Service, una base de datos administrada y almacenamiento de blobs. En la calculadora arman dos versiones: una en una región con redundancia local y otra en una región con redundancia geográfica. Comparan los totales mensuales, eligen la opción que cumple el requisito de recuperación ante desastres y usan esa cifra como línea base para pedir aprobación del presupuesto. Cuando la arquitectura cambia, actualizan la estimación para no desviarse del plan.\n\n| Pregunta del escenario | Herramienta adecuada |\n|---|---|\n| ¿Cuánto costará esta arquitectura que aún no existe? | Calculadora de precios |\n| ¿Cuánto llevamos gastado este mes y en qué servicio? | Cost Management (análisis de costos) |\n| ¿Cómo me entero si superamos 80 % del límite mensual? | Cost Management (presupuesto con alerta) |\n\n**Para recordar en el examen**\n\n- Calculadora de precios = estimación previa, sin aprovisionar nada y sin costo.\n- Considera región, nivel, redundancia y red al estimar.\n- La calculadora de TCO fue retirada; no es la respuesta para estimar costos en el temario actual.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cost-management-azure/3-compare-pricing-total-cost-of-ownership-calculators",
+        "objectives": [
+          "elegir-herramienta-de-costos"
+        ]
+      },
+      {
+        "key": "cost-management-presupuestos",
+        "title": "Microsoft Cost Management: análisis, presupuestos y alertas",
+        "text": "**Microsoft Cost Management** es el conjunto de herramientas para analizar, supervisar y controlar el gasto **real** en Azure. Mientras la calculadora de precios mira hacia adelante, Cost Management mira lo que ya se consumió y te ayuda a reaccionar a tiempo.\n\n**Análisis de costos (cost analysis)**\n\nMuestra el gasto acumulado y su tendencia. Puedes agruparlo por suscripción, grupo de recursos, servicio, región, recurso o etiqueta, y ver cómo evoluciona a lo largo del mes para proyectar el cierre. Es la herramienta para responder \"¿quién o qué está gastando?\" y detectar picos tras un despliegue o recursos olvidados en entornos que no son de producción.\n\n**Presupuestos (budgets)**\n\nUn presupuesto define un monto de gasto para un ámbito (por ejemplo, una suscripción o un grupo de recursos) y un periodo (mensual, trimestral o anual). Le agregas umbrales, como 50 %, 80 % y 100 %, sobre el costo real o el pronosticado.\n\nPunto clave: **un presupuesto no detiene los recursos por sí mismo**. Cuando se alcanza un umbral, envía notificaciones. Si quieres que pase algo más, como apagar VM de desarrollo, puedes conectar el presupuesto a un **grupo de acciones** de Azure Monitor que ejecute una automatización (por ejemplo, un runbook o una aplicación lógica).\n\n**Alertas de costos**\n\nCost Management reúne en un solo lugar distintos avisos:\n\n- **Alertas de presupuesto:** se generan cuando el gasto alcanza un umbral definido.\n- **Alertas de crédito:** avisan del consumo del prepago en contratos Enterprise Agreement.\n- **Alertas de cuota de gasto por departamento:** también propias de Enterprise Agreement.\n- Además existen alertas de anomalías que detectan cambios inesperados en el consumo diario.\n\n**Ejemplo práctico**\n\nUn equipo de desarrollo tiene una suscripción con límite mensual acordado. Crean un presupuesto mensual con aviso al 80 % por correo al líder técnico y un umbral al 100 % vinculado a un grupo de acciones que apaga las VM etiquetadas como `Environment=Dev`. Cada semana revisan el análisis de costos agrupado por etiqueta `Owner` para conversar con quien tenga el mayor gasto.\n\nCon la CLI, puedes listar los presupuestos de la suscripción activa:\n\n```bash\naz consumption budget list --output table\n```\n\n**Para recordar en el examen**\n\n- Cost Management = gasto real: análisis, presupuestos y alertas.\n- Presupuesto = notificación; no bloquea ni elimina recursos salvo que agregues automatización.\n- El análisis de costos se puede filtrar por etiquetas, lo que conecta este tema con el etiquetado.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cost-management-azure/6-describe-azure-tool",
+        "objectives": [
+          "elegir-herramienta-de-costos"
+        ]
+      },
+      {
+        "key": "etiquetas-de-recursos",
+        "title": "Etiquetas: organizar recursos y asignar costos",
+        "text": "Las **etiquetas** (tags) son pares **nombre y valor** que agregas a recursos, grupos de recursos y suscripciones para describirlos con metadatos propios de tu organización. No cambian el comportamiento técnico del recurso, pero hacen posible ordenarlo, encontrarlo y atribuirle costos.\n\n**Para qué sirven**\n\n- **Gestión de recursos:** localizar todo lo que pertenece a una carga de trabajo, entorno, equipo o responsable.\n- **Costos:** agrupar el gasto en el análisis de costos por centro de costo, proyecto o cliente, y hacer cargos internos.\n- **Operaciones:** marcar la criticidad de un recurso para priorizar soporte y acuerdos de nivel de servicio.\n- **Seguridad:** indicar la clasificación de los datos, por ejemplo pública o confidencial.\n- **Gobernanza y cumplimiento:** identificar recursos sujetos a una norma o exigir que todos tengan responsable.\n- **Automatización:** seleccionar recursos por etiqueta en scripts o canalizaciones, como apagar todo lo marcado como desarrollo.\n\n**Un esquema inicial**\n\n| Nombre | Valor de ejemplo | Uso principal |\n|---|---|---|\n| `Environment` | `Prod`, `Dev`, `Test` | Automatización y costos por entorno |\n| `Owner` | `ana.lopez` | Saber a quién preguntar |\n| `CostCenter` | `CC-1042` | Cargos internos |\n| `Workload` | `facturacion` | Agrupar una aplicación |\n\n**Cómo se aplican y se hacen cumplir**\n\nPuedes agregar, cambiar o quitar etiquetas desde el portal, Azure PowerShell, la CLI de Azure, plantillas de ARM o Bicep y la API REST. Por ejemplo:\n\n```bash\naz tag update --resource-id <id-del-recurso> \\\n  --operation Merge --tags Environment=Dev CostCenter=CC-1042\n```\n\nDos ideas que suelen preguntarse:\n\n1. **Los recursos no heredan automáticamente** las etiquetas del grupo de recursos o de la suscripción. Si las necesitas en cada recurso, debes aplicarlas o automatizarlas.\n2. **Azure Policy** puede exigir etiquetas al crear recursos, denegar los que no las traen o agregarlas automáticamente (por ejemplo, copiar la etiqueta del grupo de recursos).\n\nNo hace falta que todas las etiquetas estén en todos los recursos: puedes usar algunas sólo donde aporten, como `Impact=MissionCritical` en lo verdaderamente crítico.\n\n**Ejemplo práctico**\n\nUna consultora tiene una sola suscripción con recursos de tres clientes. Define `Client` y `CostCenter` como obligatorias mediante Azure Policy y, a fin de mes, filtra el análisis de costos por `Client` para facturar a cada uno su consumo.\n\n**Para recordar en el examen**\n\n- Etiqueta = nombre + valor, metadatos para organizar y asignar costos.\n- No hay herencia automática de etiquetas hacia los recursos.\n- Azure Policy hace cumplir el etiquetado; Cost Management lo aprovecha para reportes.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cost-management-azure/7-describe-purpose-of-tags",
+        "objectives": [
+          "disenar-esquema-de-etiquetas"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explicar-factores",
+        "objectives": [
+          "distinguir-factores-de-costo"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** por qué dos máquinas virtuales con el mismo tamaño pueden tener costos mensuales distintos. Menciona al menos **cuatro factores** y, para cada uno, un ejemplo concreto. Cierra explicando en qué caso elegirías una reserva, un plan de ahorro o una VM de acceso puntual."
+      },
+      {
+        "key": "escenario-herramienta",
+        "objectives": [
+          "elegir-herramienta-de-costos"
+        ],
+        "prompt": "**Escenario.** La empresa *Andina Logística* quiere migrar su portal de clientes. Responde con una herramienta y una justificación de una línea para cada necesidad:\n\n1. El director financiero pide una cifra mensual aproximada antes de aprobar el proyecto.\n2. Tras el despliegue, el equipo quiere saber qué servicio concentra el gasto.\n3. Quieren un aviso por correo cuando se alcance 75 % del monto mensual acordado.\n4. Quieren que, al llegar al 100 %, se apaguen las VM de pruebas.\n\nLuego comenta con el tutor qué limitación tiene la herramienta del punto 1."
+      },
+      {
+        "key": "tabla-etiquetas",
+        "objectives": [
+          "disenar-esquema-de-etiquetas"
+        ],
+        "prompt": "**Completa la tabla** con un esquema de etiquetas para una empresa con tres equipos (Ventas, Datos, Plataforma) y entornos de desarrollo y producción.\n\n| Nombre de etiqueta | Valores permitidos | ¿Obligatoria? | Para qué la usarás |\n|---|---|---|---|\n| | | | |\n| | | | |\n| | | | |\n\nDespués responde: si aplicas la etiqueta `CostCenter` al grupo de recursos, ¿aparecerá en las VM que contiene? ¿Cómo lo resolverías?"
+      },
+      {
+        "key": "laboratorio-presupuesto",
+        "objectives": [
+          "elegir-herramienta-de-costos",
+          "disenar-esquema-de-etiquetas"
+        ],
+        "prompt": "**Laboratorio opcional (Azure portal).**\n\n> Aviso de costos: usa una cuenta gratuita o una suscripción de pruebas. Crear un presupuesto y etiquetas no genera cargos, pero cualquier recurso que despliegues sí podría hacerlo; elimínalo al terminar.\n\n1. Abre la calculadora de precios y estima una VM pequeña Linux en dos regiones distintas. Anota la diferencia.\n2. En el portal, crea un grupo de recursos `rg-lab-costos` con las etiquetas `Environment=Lab` y `Owner=<tu-nombre>`.\n3. En Cost Management, crea un presupuesto mensual pequeño para ese grupo de recursos con alertas al 50 % y 100 %.\n4. Abre el análisis de costos y agrupa por etiqueta.\n5. Elimina el grupo de recursos y el presupuesto.\n\nCuéntale al tutor qué viste en cada paso y qué te sorprendió."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluar-factores",
+        "objectives": [
+          "distinguir-factores-de-costo"
+        ],
+        "prompt": "Una empresa tiene un servidor de reportes que se ejecuta sin interrupciones todo el año y un proceso nocturno de cálculo que puede reiniciarse si se interrumpe. Explica qué factores influyen en el costo de ambos y qué opción de ahorro recomendarías para cada uno.",
+        "privateCriteria": "Respuesta correcta: identifica al menos tres factores (tamaño/configuración, horas de consumo, región, licencias, almacenamiento o tráfico de salida). Para el servidor estable recomienda reserva de 1 o 3 años o plan de ahorro para proceso, explicando el compromiso. Para el proceso nocturno recomienda VM de acceso puntual (Spot) porque tolera desalojos. Penaliza recomendar Spot para la carga continua o confundir reservas con presupuestos."
+      },
+      {
+        "key": "evaluar-herramientas",
+        "objectives": [
+          "elegir-herramienta-de-costos"
+        ],
+        "prompt": "Explica la diferencia entre la calculadora de precios y Microsoft Cost Management, y describe qué ocurre exactamente cuando un presupuesto alcanza su umbral del 100 %.",
+        "privateCriteria": "Debe indicar que la calculadora estima antes del despliegue y no aprovisiona ni cobra, mientras Cost Management analiza el gasto real. Debe afirmar que el presupuesto envía alertas/notificaciones pero no detiene recursos por sí mismo; sólo con un grupo de acciones y automatización se puede apagar o modificar recursos. Mencionar análisis de costos y alertas suma. Error grave: decir que el presupuesto bloquea el gasto automáticamente."
+      },
+      {
+        "key": "evaluar-etiquetas",
+        "objectives": [
+          "disenar-esquema-de-etiquetas"
+        ],
+        "prompt": "Propón tres etiquetas para una organización que necesita repartir costos entre departamentos y saber quién es responsable de cada recurso. Indica cómo garantizarías que los recursos nuevos las tengan.",
+        "privateCriteria": "Propone etiquetas nombre-valor coherentes (p. ej. CostCenter/Department, Owner, Environment). Explica que se usan para agrupar en el análisis de costos. Indica que no se heredan automáticamente del grupo de recursos o suscripción y que Azure Policy puede exigirlas, denegar recursos sin ellas o agregarlas/heredarlas. Penaliza confundir etiquetas con grupos de recursos o con RBAC."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "opciones-de-ahorro",
+        "requires": "factores-de-costo"
+      },
+      {
+        "concept": "calculadora-de-precios",
+        "requires": "factores-de-costo"
+      },
+      {
+        "concept": "presupuestos-y-alertas",
+        "requires": "cost-management"
+      },
+      {
+        "concept": "gobierno-de-etiquetas",
+        "requires": "etiquetas"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "region-precio-distinto",
+      "type": "singleChoice",
+      "prompt": "Un arquitecto cotiza la misma máquina virtual, con idéntico tamaño y disco, en dos regiones de Azure y obtiene precios mensuales diferentes. ¿Cuál es la explicación más adecuada?",
+      "objectives": [
+        "distinguir-factores-de-costo"
+      ],
+      "concepts": [
+        "factores-de-costo"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "La región con mayor precio incluye de forma automática soporte técnico premium sin costo adicional"
+        },
+        {
+          "key": "b",
+          "text": "Los costos de energía, impuestos y operación varían según la ubicación del centro de datos",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Una de las regiones aplica automáticamente una reserva de tres años"
+        },
+        {
+          "key": "d",
+          "text": "Las regiones más caras ofrecen siempre mayor rendimiento de CPU"
+        }
+      ]
+    },
+    {
+      "key": "proceso-por-lotes-interrumpible",
+      "type": "singleChoice",
+      "prompt": "Una empresa ejecuta cada noche un trabajo de procesamiento por lotes que puede reanudarse si se interrumpe. Quiere el menor costo de proceso posible. ¿Qué opción conviene?",
+      "objectives": [
+        "distinguir-factores-de-costo"
+      ],
+      "concepts": [
+        "opciones-de-ahorro"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Reserva de VM por tres años"
+        },
+        {
+          "key": "b",
+          "text": "Plan de soporte Standard"
+        },
+        {
+          "key": "c",
+          "text": "Máquinas virtuales de acceso puntual (Spot)",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "VM de pago por uso con disco premium"
+        }
+      ]
+    },
+    {
+      "key": "estimar-antes-de-desplegar",
+      "type": "singleChoice",
+      "prompt": "Antes de aprobar un proyecto, la gerencia pide una estimación del costo mensual de una solución con App Service, una base de datos administrada y almacenamiento. Aún no se ha creado ningún recurso. ¿Qué herramienta deben usar?",
+      "objectives": [
+        "elegir-herramienta-de-costos"
+      ],
+      "concepts": [
+        "calculadora-de-precios"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Calculadora de precios de Azure",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Análisis de costos de Microsoft Cost Management"
+        },
+        {
+          "key": "c",
+          "text": "Azure Advisor"
+        },
+        {
+          "key": "d",
+          "text": "Azure Service Health"
+        }
+      ]
+    },
+    {
+      "key": "presupuesto-al-cien",
+      "type": "singleChoice",
+      "prompt": "Un equipo configuró un presupuesto mensual con una alerta al 100 % y sin grupo de acciones. ¿Qué sucede cuando el gasto alcanza ese umbral?",
+      "objectives": [
+        "elegir-herramienta-de-costos"
+      ],
+      "concepts": [
+        "presupuestos-y-alertas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure detiene todas las máquinas virtuales de la suscripción"
+        },
+        {
+          "key": "b",
+          "text": "La suscripción pasa a modo de sólo lectura"
+        },
+        {
+          "key": "c",
+          "text": "Se rechazan todas las implementaciones nuevas en la suscripción hasta que comience el siguiente mes"
+        },
+        {
+          "key": "d",
+          "text": "Se generan la alerta y la notificación, y los recursos siguen funcionando",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "etiquetas-no-se-heredan",
+      "type": "singleChoice",
+      "prompt": "Una administradora agrega la etiqueta CostCenter=CC-200 a un grupo de recursos que ya contiene cinco recursos. ¿Qué ocurre con esos cinco recursos?",
+      "objectives": [
+        "disenar-esquema-de-etiquetas"
+      ],
+      "concepts": [
+        "etiquetas",
+        "gobierno-de-etiquetas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Reciben la etiqueta en la siguiente evaluación diaria"
+        },
+        {
+          "key": "b",
+          "text": "Conservan sus etiquetas actuales; la etiqueta no se hereda automáticamente",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Pierden sus etiquetas anteriores y adoptan la del grupo"
+        },
+        {
+          "key": "d",
+          "text": "Quedan bloqueados hasta que se les asigne la etiqueta"
+        }
+      ]
+    },
+    {
+      "key": "exigir-etiqueta-owner",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere impedir que se cree cualquier recurso sin la etiqueta Owner. ¿Qué servicio permite hacerlo cumplir?",
+      "objectives": [
+        "disenar-esquema-de-etiquetas"
+      ],
+      "concepts": [
+        "gobierno-de-etiquetas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Microsoft Cost Management"
+        },
+        {
+          "key": "b",
+          "text": "Bloqueos de recursos"
+        },
+        {
+          "key": "c",
+          "text": "Azure Policy",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Calculadora de precios"
+        }
+      ]
+    },
+    {
+      "key": "factores-que-cambian-precio",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Un equipo revisa por qué subió la factura de su aplicación. ¿Qué cambios pueden aumentar directamente el costo? Selecciona tres.",
+      "objectives": [
+        "distinguir-factores-de-costo"
+      ],
+      "concepts": [
+        "factores-de-costo"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Mover la VM a una región con precios más altos",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Aumentar el volumen de datos que salen de Azure hacia Internet",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Cambiar el nombre del grupo de recursos"
+        },
+        {
+          "key": "d",
+          "text": "Comprar una solución de un proveedor en Azure Marketplace",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Agregar una etiqueta Environment a la VM"
+        }
+      ]
+    },
+    {
+      "key": "cargas-para-reserva",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué características hacen que una carga de trabajo sea buena candidata para una reserva de Azure? Selecciona dos.",
+      "objectives": [
+        "distinguir-factores-de-costo"
+      ],
+      "concepts": [
+        "opciones-de-ahorro"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Necesidad de cambiar con frecuencia de servicio y de región"
+        },
+        {
+          "key": "b",
+          "text": "Uso estable y predecible durante uno o tres años",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Ejecución continua del mismo tipo de recurso",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Tolerancia a interrupciones en cualquier momento"
+        }
+      ]
+    },
+    {
+      "key": "capacidades-cost-management",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "¿Qué tareas puedes realizar con Microsoft Cost Management? Selecciona tres.",
+      "objectives": [
+        "elegir-herramienta-de-costos"
+      ],
+      "concepts": [
+        "cost-management",
+        "presupuestos-y-alertas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Ver el gasto acumulado agrupado por servicio o grupo de recursos",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Crear presupuestos con umbrales de alerta",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Revisar alertas de costos en un solo lugar",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Desplegar recursos a partir de una plantilla de Bicep"
+        },
+        {
+          "key": "e",
+          "text": "Medir la latencia de las solicitudes de una aplicación web"
+        }
+      ]
+    },
+    {
+      "key": "usos-de-etiquetas",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Para qué usos son apropiadas las etiquetas de recursos? Selecciona dos.",
+      "objectives": [
+        "disenar-esquema-de-etiquetas"
+      ],
+      "concepts": [
+        "etiquetas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Conceder permisos de escritura sobre un recurso"
+        },
+        {
+          "key": "b",
+          "text": "Agrupar el gasto por centro de costo en el análisis de costos",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Impedir que un recurso sea eliminado"
+        },
+        {
+          "key": "d",
+          "text": "Identificar al responsable de un recurso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "entrada-de-datos",
+      "type": "trueFalse",
+      "prompt": "En general, la transferencia de datos de entrada hacia los centros de datos de Azure no tiene costo, mientras que la salida se cobra según zonas de facturación.",
+      "objectives": [
+        "distinguir-factores-de-costo"
+      ],
+      "concepts": [
+        "factores-de-costo"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "calculadora-aprovisiona",
+      "type": "trueFalse",
+      "prompt": "Al agregar una máquina virtual a la calculadora de precios, Azure la aprovisiona en modo de prueba y cobra sólo las horas que la estimación permanezca guardada.",
+      "objectives": [
+        "elegir-herramienta-de-costos"
+      ],
+      "concepts": [
+        "calculadora-de-precios"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "presupuesto-grupo-acciones",
+      "type": "trueFalse",
+      "prompt": "Un presupuesto de Cost Management puede vincularse a un grupo de acciones para desencadenar una automatización, como apagar máquinas virtuales de desarrollo.",
+      "objectives": [
+        "elegir-herramienta-de-costos"
+      ],
+      "concepts": [
+        "presupuestos-y-alertas"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "etiqueta-cambia-rendimiento",
+      "type": "trueFalse",
+      "prompt": "Agregar la etiqueta Impact=MissionCritical a una máquina virtual aumenta su prioridad de CPU dentro de Azure.",
+      "objectives": [
+        "disenar-esquema-de-etiquetas"
+      ],
+      "concepts": [
+        "etiquetas"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "plan-ahorro-tamano",
+      "type": "trueFalse",
+      "prompt": "El plan de ahorro para proceso de Azure exige elegir un tamaño de máquina virtual específico durante todo el plazo del compromiso.",
+      "objectives": [
+        "distinguir-factores-de-costo"
+      ],
+      "concepts": [
+        "opciones-de-ahorro"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "respuesta-factores-y-ahorro",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras cómo influyen la región, el consumo y el mantenimiento en el costo de una solución en Azure, y compara las reservas, el plan de ahorro para proceso y las máquinas virtuales de acceso puntual indicando un caso de uso para cada una.",
+      "objectives": [
+        "distinguir-factores-de-costo"
+      ],
+      "concepts": [
+        "factores-de-costo",
+        "opciones-de-ahorro"
+      ],
+      "rubric": {
+        "privateGuidance": "Busca comprensión causal, no una lista memorizada. La región debe asociarse a diferencias de precio por ubicación; el consumo al pago por uso; el mantenimiento a recursos huérfanos (discos, IP). Las tres opciones deben distinguirse por tipo de compromiso y tolerancia a interrupciones. No exijas cifras de descuento.",
+        "criteria": [
+          {
+            "key": "factores",
+            "description": "Explica correctamente región, consumo y mantenimiento con un ejemplo para al menos dos de ellos.",
+            "maxPoints": 3
+          },
+          {
+            "key": "opciones",
+            "description": "Distingue reservas (recurso concreto, 1 o 3 años), plan de ahorro (gasto por hora en proceso) y Spot (capacidad sobrante interrumpible).",
+            "maxPoints": 3
+          },
+          {
+            "key": "casos",
+            "description": "Asigna a cada opción un caso de uso coherente.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-mercado-verde",
+      "type": "caseAnalysis",
+      "prompt": "Mercado Verde es una cadena de supermercados ficticia que migró su tienda en línea a Azure hace tres meses. Tiene una sola suscripción donde conviven los recursos de producción, los de pruebas del equipo de desarrollo y un piloto de analítica de datos. La factura del último mes duplicó lo previsto y nadie sabe explicar qué la causó. El área de finanzas exige repartir el gasto entre tecnología, marketing y analítica, y quiere enterarse antes de que el gasto se salga de control, no al recibir la factura. El equipo de desarrollo admite que a veces crea máquinas virtuales para pruebas y olvida eliminarlas. Analiza la situación y propone qué herramientas y prácticas de administración de costos de Azure aplicarías, en qué orden y por qué.",
+      "objectives": [
+        "elegir-herramienta-de-costos",
+        "disenar-esquema-de-etiquetas"
+      ],
+      "concepts": [
+        "cost-management",
+        "presupuestos-y-alertas",
+        "etiquetas",
+        "gobierno-de-etiquetas"
+      ],
+      "rubric": {
+        "privateGuidance": "Una buena respuesta empieza por diagnosticar con el análisis de costos, define etiquetas (área, entorno, responsable) y las hace obligatorias con Azure Policy, crea presupuestos con alertas por ámbito o filtro y, opcionalmente, automatización para apagar recursos de pruebas. Valora que mencione que los presupuestos no detienen el gasto por sí solos y que las etiquetas no se heredan automáticamente.",
+        "criteria": [
+          {
+            "key": "diagnostico",
+            "description": "Usa el análisis de costos para identificar qué servicios o recursos explican el aumento.",
+            "maxPoints": 2
+          },
+          {
+            "key": "etiquetado",
+            "description": "Propone un esquema de etiquetas útil para repartir costos y lo hace cumplir con Azure Policy.",
+            "maxPoints": 3
+          },
+          {
+            "key": "control",
+            "description": "Define presupuestos con umbrales y alertas, y explica que sólo con un grupo de acciones se automatiza una respuesta.",
+            "maxPoints": 3
+          },
+          {
+            "key": "orden",
+            "description": "Presenta un orden de acciones justificado y realista.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "practica-esquema-y-presupuesto",
+      "type": "practicalExercise",
+      "prompt": "Diseña, sin ejecutar nada, la configuración de costos para una suscripción de desarrollo de una empresa con tres equipos. Entrega: (1) una tabla con al menos cuatro etiquetas, sus valores permitidos y si son obligatorias; (2) la definición de un presupuesto mensual con su ámbito, sus umbrales y quién recibe cada aviso; (3) un comando de la CLI de Azure o de Azure PowerShell, comentado, que agregue tus etiquetas a un recurso existente.",
+      "objectives": [
+        "elegir-herramienta-de-costos",
+        "disenar-esquema-de-etiquetas"
+      ],
+      "concepts": [
+        "presupuestos-y-alertas",
+        "etiquetas",
+        "gobierno-de-etiquetas"
+      ],
+      "rubric": {
+        "privateGuidance": "Acepta comandos equivalentes: az tag update --operation Merge, az resource tag, Update-AzTag -Operation Merge o New-AzTag. No exijas sintaxis perfecta, sí que el comando apunte a un recurso y use pares nombre=valor. El presupuesto debe tener ámbito claro y al menos dos umbrales.",
+        "criteria": [
+          {
+            "key": "tabla-etiquetas",
+            "description": "La tabla incluye cuatro o más etiquetas útiles, con valores acotados y criterio de obligatoriedad.",
+            "maxPoints": 3
+          },
+          {
+            "key": "presupuesto",
+            "description": "El presupuesto tiene ámbito, periodo, umbrales y destinatarios coherentes.",
+            "maxPoints": 3
+          },
+          {
+            "key": "comando",
+            "description": "El comando es plausible para agregar etiquetas y está comentado.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Administración de costos",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "region-precio-distinto",
+        "proceso-por-lotes-interrumpible",
+        "estimar-antes-de-desplegar",
+        "presupuesto-al-cien",
+        "etiquetas-no-se-heredan",
+        "exigir-etiqueta-owner",
+        "factores-que-cambian-precio",
+        "cargas-para-reserva",
+        "capacidades-cost-management",
+        "usos-de-etiquetas",
+        "entrada-de-datos",
+        "calculadora-aprovisiona",
+        "presupuesto-grupo-acciones",
+        "etiqueta-cambia-rendimiento",
+        "plan-ahorro-tamano"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Administración de costos",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "region-precio-distinto",
+        "proceso-por-lotes-interrumpible",
+        "factores-que-cambian-precio",
+        "estimar-antes-de-desplegar",
+        "presupuesto-al-cien",
+        "calculadora-aprovisiona",
+        "etiquetas-no-se-heredan",
+        "usos-de-etiquetas"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Administración de costos",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "respuesta-factores-y-ahorro",
+        "caso-mercado-verde",
+        "practica-esquema-y-presupuesto"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Administración de costos en Azure",
+    "edges": [
+      {
+        "from": "opciones-de-ahorro",
+        "to": "factores-de-costo",
+        "relation": "requires"
+      },
+      {
+        "from": "calculadora-de-precios",
+        "to": "factores-de-costo",
+        "relation": "applies"
+      },
+      {
+        "from": "calculadora-de-precios",
+        "to": "cost-management",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "presupuestos-y-alertas",
+        "to": "cost-management",
+        "relation": "requires"
+      },
+      {
+        "from": "etiquetas",
+        "to": "cost-management",
+        "relation": "explains"
+      },
+      {
+        "from": "gobierno-de-etiquetas",
+        "to": "etiquetas",
+        "relation": "requires"
+      },
+      {
+        "from": "presupuestos-y-alertas",
+        "to": "etiquetas",
+        "relation": "applies"
+      }
+    ]
+  }
+}

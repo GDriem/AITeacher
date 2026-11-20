@@ -306,6 +306,7 @@ pnpm-debug.log*
 !/docs/ui-ux-u5/
 !/docs/ui-ux-validation.md
 !/docs/ui-ux-u6/
+!/docs/az-900-launch-course.md
 
 # Worktrees locales de Claude Code
 .claude/worktrees/

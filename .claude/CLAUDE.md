@@ -188,6 +188,7 @@ credenciales cloud.
 | Persistencia JSON | `mcp_learning_server/repositories/local_progress.py` |
 | Versionado editorial | `mcp_learning_server/repositories/content_authoring.py` |
 | Despliegue reproducible | `infra/cloudrun/deploy.sh` |
+| Cursos completos (AZ-900) y su cargador | `backend/configuration/courses/`, `backend/scripts/load-course.py`, `docs/az-900-launch-course.md` |
 | Pruebas manuales de API/MCP | `postman/agent-mcp-run.postman_collection.json` |
 | Accesibilidad/performance de UI | `frontend/e2e/*.spec.ts` (axe, teclado, responsive) y `frontend/bundle-budget.json` |
 | Integración contra MCP remoto real | `tests/integration/test_agent_mcp_remote.py` |

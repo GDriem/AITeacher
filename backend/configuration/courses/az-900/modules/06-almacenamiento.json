@@ -1,0 +1,849 @@
+{
+  "slug": "almacenamiento",
+  "name": "Almacenamiento en Azure",
+  "category": "arquitectura-y-servicios",
+  "sortOrder": 6,
+  "profile": "module",
+  "description": "Compara los servicios de Azure Storage (Blobs, Files, Queues, Disks y Tables), los niveles de acceso Hot, Cool, Cold y Archive, los tipos de cuenta de almacenamiento y las opciones de redundancia LRS, ZRS, GRS y GZRS con acceso de lectura. Aprende también a elegir entre AzCopy, Azure Storage Explorer y Azure File Sync para mover archivos, y entre Azure Migrate y Azure Data Box para migrar datos a Azure.",
+  "outline": [
+    "Compare Azure Storage services",
+    "Describe storage tiers",
+    "Describe redundancy options",
+    "Describe storage account options and storage types",
+    "Identify options for moving files, including AzCopy, Azure Storage Explorer, and Azure File Sync",
+    "Describe migration options, including Azure Migrate and Azure Data Box"
+  ],
+  "unit": {
+    "title": "Almacenamiento en Azure: servicios, cuentas, redundancia y migración",
+    "concepts": [
+      {
+        "key": "servicios-almacenamiento",
+        "name": "Servicios de Azure Storage: Blobs, Files, Queues, Disks y Tables"
+      },
+      {
+        "key": "niveles-acceso-blob",
+        "name": "Niveles de acceso de Blob Storage: Hot, Cool, Cold y Archive"
+      },
+      {
+        "key": "cuenta-almacenamiento",
+        "name": "Cuentas de almacenamiento: tipos, nombre y puntos de conexión"
+      },
+      {
+        "key": "redundancia-region-primaria",
+        "name": "Redundancia en la región primaria: LRS y ZRS"
+      },
+      {
+        "key": "redundancia-geografica",
+        "name": "Redundancia geográfica: GRS, GZRS, RA-GRS y RA-GZRS"
+      },
+      {
+        "key": "herramientas-movimiento-archivos",
+        "name": "Herramientas para mover archivos: AzCopy, Azure Storage Explorer y Azure File Sync"
+      },
+      {
+        "key": "azure-migrate",
+        "name": "Azure Migrate"
+      },
+      {
+        "key": "azure-data-box",
+        "name": "Azure Data Box"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "servicios-y-niveles",
+        "description": "Distinguir los servicios de Azure Storage según la forma de los datos y elegir el nivel de acceso de Blob Storage adecuado para un escenario según la frecuencia de acceso y el tiempo de retención.",
+        "concepts": [
+          "servicios-almacenamiento",
+          "niveles-acceso-blob"
+        ]
+      },
+      {
+        "key": "cuenta-y-redundancia",
+        "description": "Elegir el tipo de cuenta de almacenamiento y la opción de redundancia para un escenario según los servicios requeridos, la tolerancia a fallas de zona o de región y la necesidad de leer la copia secundaria.",
+        "concepts": [
+          "cuenta-almacenamiento",
+          "redundancia-region-primaria",
+          "redundancia-geografica"
+        ]
+      },
+      {
+        "key": "movimiento-y-migracion",
+        "description": "Elegir la herramienta de movimiento de archivos o el servicio de migración adecuado para un escenario, distinguiendo AzCopy, Azure Storage Explorer, Azure File Sync, Azure Migrate y Azure Data Box.",
+        "concepts": [
+          "herramientas-movimiento-archivos",
+          "azure-migrate",
+          "azure-data-box"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "servicios-y-niveles-de-acceso",
+        "title": "Servicios de Azure Storage y niveles de acceso de Blob",
+        "text": "Azure Storage agrupa varios servicios de datos administrados en una misma plataforma. Microsoft se encarga del hardware, las actualizaciones y la replicación; tú decides qué servicio encaja con la forma de tus datos y cómo vas a usarlos. Todo lo que se escribe en una cuenta de almacenamiento se cifra automáticamente y se puede consultar por HTTP o HTTPS mediante API REST, SDK, Azure CLI, PowerShell, el portal o Azure Storage Explorer.\n\n| Servicio | Qué guarda | Caso típico |\n| --- | --- | --- |\n| **Azure Blobs** | Objetos no estructurados (texto o binario) | Imágenes de un sitio web, video, respaldos, datos para análisis |\n| **Azure Files** | Recursos compartidos de archivos administrados (SMB o NFS) | Carpeta compartida que montan varios servidores a la vez |\n| **Azure Queues** | Mensajes de hasta 64 KB | Desacoplar componentes; por ejemplo, disparar una Azure Function |\n| **Azure Disks** | Volúmenes en bloque (discos administrados) | Disco del sistema operativo o de datos de una máquina virtual |\n| **Azure Tables** | Datos estructurados NoSQL, no relacionales | Catálogos o perfiles con esquema flexible |\n\nUna pista útil: si el enunciado habla de *montar* una unidad compartida, piensa en Files; si habla de *objetos* servidos por URL, en Blobs; si habla de *mensajes* entre componentes, en Queues; y si habla del disco de una VM, en Disks.\n\n**Niveles de acceso de Blob Storage**\n\nEl patrón de acceso a los datos cambia con el tiempo. Por eso Blob Storage ofrece niveles que equilibran el costo de almacenar contra el costo de leer:\n\n- **Hot**: datos de uso frecuente. Mayor costo de almacenamiento, menor costo de acceso.\n- **Cool**: datos de acceso esporádico que se conservan al menos **30 días**.\n- **Cold**: datos de acceso poco frecuente que se conservan al menos **90 días**.\n- **Archive**: datos que casi nunca se leen, se conservan al menos **180 días** y toleran una latencia alta. Tiene el menor costo de almacenamiento, pero leerlos exige *rehidratarlos*, lo que tarda y cuesta más.\n\nHot, Cool y Cold pueden fijarse como nivel predeterminado de la cuenta; **Archive sólo se asigna a blobs individuales**. Cualquier blob puede cambiar de nivel al subirlo o después. Cool y Cold, además de un acceso más caro, tienen un SLA de disponibilidad algo menor que Hot.\n\n**Ejemplo práctico.** Una tienda en línea guarda las fotos de productos en Hot porque se muestran a diario; las facturas del mes anterior pasan a Cool; los respaldos trimestrales, a Cold; y los registros contables que la ley obliga a conservar durante años, a Archive.\n\n**Para recordar en el examen**\n\n- Cinco servicios: Blobs, Files, Queues, Disks y Tables; asócialos con la forma de los datos.\n- Retención mínima: Cool 30 días, Cold 90 días, Archive 180 días.\n- Archive no se configura a nivel de cuenta y requiere rehidratación antes de leer.\n- Menor costo de almacenamiento implica mayor costo de acceso.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-storage-services/4-describe-azure-storage-services",
+        "objectives": [
+          "servicios-y-niveles"
+        ]
+      },
+      {
+        "key": "cuentas-de-almacenamiento",
+        "title": "Cuentas de almacenamiento: tipos, nombres y puntos de conexión",
+        "text": "Una **cuenta de almacenamiento** es el contenedor de nivel superior para tus datos en Azure Storage. Le da a tus datos un espacio de nombres único, accesible desde cualquier lugar por HTTP o HTTPS. Al crearla tomas dos decisiones que condicionan todo lo demás: el **tipo de cuenta** y la **redundancia**.\n\n**Tipos de cuenta**\n\n| Tipo | Servicios admitidos | Redundancia | Cuándo elegirlo |\n| --- | --- | --- | --- |\n| Standard general-purpose v2 | Blobs (incluido Data Lake Storage), Files, Queues y Tables | LRS, ZRS, GRS, RA-GRS, GZRS, RA-GZRS | La opción recomendada para la mayoría de los escenarios |\n| Premium block blobs | Blobs en bloque y en anexión | LRS, ZRS | Muchas transacciones, objetos pequeños, latencia baja y constante |\n| Premium file shares | Sólo Azure Files | LRS, ZRS | Recursos compartidos de alto rendimiento; admite SMB y NFS |\n| Premium page blobs | Sólo blobs en páginas | LRS | Escenarios específicos de blobs en páginas |\n\nObserva el patrón: las cuentas **Premium** priorizan el rendimiento y ofrecen menos opciones de redundancia; ninguna replica a otra región. Si un escenario exige GRS o GZRS, la respuesta apunta a Standard general-purpose v2.\n\n**Nombre y puntos de conexión**\n\nEl nombre de la cuenta debe ser **único en todo Azure**, tener entre **3 y 24 caracteres** y usar sólo **números y letras minúsculas**. Ese nombre se combina con el punto de conexión de cada servicio:\n\n- Blob Storage: `https://<cuenta>.blob.core.windows.net`\n- Data Lake Storage Gen2: `https://<cuenta>.dfs.core.windows.net`\n- Azure Files: `https://<cuenta>.file.core.windows.net`\n- Queue Storage: `https://<cuenta>.queue.core.windows.net`\n- Table Storage: `https://<cuenta>.table.core.windows.net`\n\n**Ejemplo práctico.** Un equipo intenta crear la cuenta `Fotos_Tienda2026` y Azure la rechaza: contiene mayúsculas y un guion bajo. Una alternativa válida es `fotostienda2026`, y sus imágenes quedarían en `https://fotostienda2026.blob.core.windows.net`. Como guardará blobs, una cola de pedidos y un recurso compartido de archivos, y quiere poder replicar a otra región en el futuro, elige Standard general-purpose v2.\n\n**Para recordar en el examen**\n\n- Standard general-purpose v2 es la recomendación por defecto y la única con todas las opciones de redundancia.\n- Las cuentas Premium sólo ofrecen LRS o ZRS (page blobs, sólo LRS).\n- Nombre: único en Azure, 3 a 24 caracteres, minúsculas y números.\n- El tipo de cuenta determina qué servicios y qué redundancia puedes usar.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-storage-services/2-accounts",
+        "objectives": [
+          "cuenta-y-redundancia"
+        ]
+      },
+      {
+        "key": "opciones-de-redundancia",
+        "title": "Opciones de redundancia: de LRS a RA-GZRS",
+        "text": "Azure Storage siempre guarda **tres copias** de tus datos en la región primaria. Lo que cambia entre opciones es *dónde* están esas copias y si además existe una copia en otra región. Al decidir, equilibras costo contra disponibilidad y durabilidad.\n\n**Redundancia en la región primaria**\n\n- **LRS (almacenamiento con redundancia local)**: tres copias dentro de **un solo centro de datos**. Es la opción más económica; protege contra fallas de discos y racks, pero no contra un desastre que afecte a todo el centro de datos.\n- **ZRS (almacenamiento con redundancia de zona)**: tres copias sincrónicas en **tres zonas de disponibilidad** de la región. Si una zona falla, los datos siguen disponibles para lectura y escritura. Microsoft la recomienda para alta disponibilidad dentro de la región y cuando los datos deben permanecer en un país o región.\n\n**Redundancia en una región secundaria**\n\nAl crear la cuenta eliges la región primaria; la secundaria la asigna Azure según los **pares de regiones**. La copia hacia la secundaria es **asíncrona**, así que existe un objetivo de punto de recuperación (RPO): Azure Storage suele mantenerlo por debajo de 15 minutos, aunque no hay SLA sobre ese tiempo.\n\n- **GRS**: LRS en la primaria más copia asíncrona a la secundaria (también LRS).\n- **GZRS**: ZRS en la primaria más copia asíncrona a la secundaria (LRS). Combina resiliencia de zona y recuperación ante desastres regionales.\n\nPor defecto, la copia secundaria **no se puede leer** hasta que se hace una conmutación por error (*failover*). Si tu aplicación necesita leerla antes, eliges **RA-GRS** o **RA-GZRS** (*read-access*). Por el RPO, esa copia puede no estar al día.\n\n| Opción | Copias en la primaria | Región secundaria | Lectura en la secundaria sin failover |\n| --- | --- | --- | --- |\n| LRS | 1 centro de datos | No | No |\n| ZRS | 3 zonas | No | No |\n| GRS | 1 centro de datos | Sí | No |\n| RA-GRS | 1 centro de datos | Sí | Sí |\n| GZRS | 3 zonas | Sí | No |\n| RA-GZRS | 3 zonas | Sí | Sí |\n\n**Ejemplo práctico.** Un banco regional exige que su portal siga funcionando si cae una zona, que los datos sobrevivan a un desastre en toda la región y que su sitio de consultas pueda leer datos aunque la primaria esté caída. La opción que cubre los tres requisitos es **RA-GZRS**.\n\n**Para recordar en el examen**\n\n- Siempre hay tres copias en la primaria: LRS (un centro de datos) o ZRS (tres zonas).\n- La \"G\" agrega una región secundaria; la \"Z\" de GZRS indica ZRS en la primaria.\n- \"RA-\" agrega lectura en la secundaria sin esperar el failover.\n- La replicación a la secundaria es asíncrona: puede perderse lo escrito más recientemente.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-storage-services/3-redundancy",
+        "objectives": [
+          "cuenta-y-redundancia"
+        ]
+      },
+      {
+        "key": "mover-y-migrar-datos",
+        "title": "Mover archivos y migrar datos a Azure",
+        "text": "Llevar datos a Azure no siempre requiere el mismo enfoque. Conviene distinguir entre **migrar** entornos completos o grandes volúmenes y **mover** archivos en el día a día.\n\n**Servicios de migración**\n\n- **Azure Migrate** es un centro unificado para descubrir, evaluar y migrar un centro de datos local a Azure. Desde un solo portal inicias, ejecutas y das seguimiento a la migración. Incluye herramientas integradas como *Discovery and assessment* y *Server Migration*, opciones para bases de datos y aplicaciones web, y se integra con soluciones de terceros (ISV). Es una migración **en línea**, a través de la red.\n- **Azure Data Box** es un servicio de migración **física**: pides desde el portal un dispositivo resistente, lo conectas a tu red, copias los datos y lo devuelves por mensajería; Microsoft carga los datos en tu cuenta de almacenamiento. Sirve para importar o exportar y conviene con **decenas de terabytes o más** y un ancho de banda limitado. Al terminar, los discos se borran según el estándar NIST 800-88r1.\n\n**Herramientas para mover archivos**\n\n| Herramienta | Interfaz | Para qué sirve |\n| --- | --- | --- |\n| **AzCopy** | Línea de comandos | Cargar, descargar, copiar entre cuentas y sincronizar en **un solo sentido**; ideal para scripts |\n| **Azure Storage Explorer** | Aplicación gráfica (Windows, macOS, Linux) | Administrar blobs y archivos con clics; internamente usa AzCopy |\n| **Azure File Sync** | Agente en Windows Server | Sincronización **bidireccional** entre servidores de archivos Windows y Azure Files |\n\nAzure File Sync convierte un servidor Windows en una caché local de Azure Files: el personal sigue usando SMB, NFS o FTPS en el servidor, puedes tener cachés en varias sedes, reemplazar un servidor dañado instalando el agente en uno nuevo y activar **niveles de nube** (*cloud tiering*) para que sólo los archivos más usados ocupen espacio local.\n\n**Ejemplo práctico.** Una cadena de clínicas tiene 70 TB de imágenes históricas y un enlace lento: usa Data Box para la carga inicial. Evalúa y migra sus servidores de aplicaciones con Azure Migrate. En cada sucursal instala Azure File Sync para que el personal conserve su servidor de archivos local, y TI programa AzCopy para copiar cada noche los reportes a otra cuenta.\n\n**Para recordar en el examen**\n\n- Azure Migrate: evaluar y migrar servidores, bases de datos y apps en línea.\n- Azure Data Box: dispositivo físico para grandes volúmenes con poco ancho de banda.\n- AzCopy: línea de comandos, sincronización en un solo sentido.\n- Storage Explorer: interfaz gráfica que usa AzCopy por debajo.\n- Azure File Sync: sincronización bidireccional con Windows Server y cloud tiering.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-storage-services/7-identify-azure-file-movement-options",
+        "objectives": [
+          "movimiento-y-migracion"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explica-servicios-y-niveles",
+        "prompt": "**Explícale al tutor con tus palabras**\n\nImagina que le explicas a un compañero recién llegado, sin jerga, qué servicio de Azure Storage usarías en cada caso y por qué:\n\n1. Las fotos de un catálogo que se muestran en una página web.\n2. Una carpeta compartida que montan diez servidores al mismo tiempo.\n3. Los avisos que la tienda web envía al proceso que genera facturas.\n4. El disco de datos de una máquina virtual.\n5. Un catálogo de productos con atributos que cambian según la categoría.\n\nDespués explica la diferencia entre Hot, Cool, Cold y Archive con un ejemplo de tu vida diaria (por ejemplo, las fotos de tu celular). Pide al tutor que señale cualquier imprecisión y que te pregunte por la retención mínima de cada nivel.",
+        "objectives": [
+          "servicios-y-niveles"
+        ]
+      },
+      {
+        "key": "tabla-redundancia",
+        "prompt": "**Completa la tabla comparativa de redundancia**\n\nCopia esta tabla en tus apuntes y complétala sin mirar la lectura. Luego compárala con el tutor.\n\n| Opción | ¿Cuántas copias y dónde, en la primaria? | ¿Copia en región secundaria? | ¿Lectura en la secundaria sin failover? | ¿Sobrevive a la caída de una zona? |\n| --- | --- | --- | --- | --- |\n| LRS | | | | |\n| ZRS | | | | |\n| GRS | | | | |\n| RA-GRS | | | | |\n| GZRS | | | | |\n| RA-GZRS | | | | |\n\nPara cerrar, responde: ¿qué tipos de cuenta Premium podrían usar cada fila? ¿Por qué ninguna cuenta Premium aparece en las filas con región secundaria?",
+        "objectives": [
+          "cuenta-y-redundancia"
+        ]
+      },
+      {
+        "key": "escenario-herramientas",
+        "prompt": "**Escenario de empresa: elige la herramienta**\n\nLaboratorios Sierra Azul te contrata como consultor. Para cada necesidad, elige entre Azure Migrate, Azure Data Box, AzCopy, Azure Storage Explorer y Azure File Sync, y explica en una línea por qué descartas la alternativa más parecida:\n\n1. Evaluar 40 servidores locales para saber qué tamaño de VM necesitarían en Azure.\n2. Enviar 90 TB de resultados históricos con un enlace que ya se satura en horario laboral.\n3. Que una analista sin experiencia en consola revise y descargue algunos blobs.\n4. Mantener el servidor de archivos de cada laboratorio regional sincronizado con un recurso compartido central en Azure.\n5. Un script programado que copie cada noche un contenedor a otra cuenta.\n\nComparte tus respuestas con el tutor y pídele un caso adicional más difícil.",
+        "objectives": [
+          "movimiento-y-migracion"
+        ]
+      },
+      {
+        "key": "laboratorio-cuenta-almacenamiento",
+        "prompt": "**Laboratorio opcional en el portal de Azure**\n\n> **Aviso de costos:** crear recursos puede generar cargos. Usa una cuenta gratuita de Azure o un entorno de prueba, elige la redundancia LRS y **elimina el grupo de recursos al terminar**.\n\n1. Crea un grupo de recursos `rg-lab-almacenamiento`.\n2. Crea una cuenta de almacenamiento Standard general-purpose v2. Prueba primero un nombre con mayúsculas y observa el error de validación; luego usa un nombre válido.\n3. En la pestaña de redundancia, revisa qué opciones aparecen y anota en qué cambian. Cambia temporalmente el rendimiento a Premium y observa qué opciones desaparecen.\n4. Crea un contenedor, sube un archivo pequeño y cambia su nivel de acceso a Cool y luego a Archive. Intenta abrirlo y observa qué pide el portal.\n5. Abre la sección de puntos de conexión y localiza la URL de Blob Storage.\n6. Elimina el grupo de recursos.\n\nCuéntale al tutor qué te sorprendió y qué relación tiene con lo que estudiaste.",
+        "objectives": [
+          "servicios-y-niveles",
+          "cuenta-y-redundancia"
+        ]
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluacion-servicios-y-niveles",
+        "prompt": "Una agencia de publicidad guarda: (a) videos de campañas activas que se reproducen a diario desde su sitio web, (b) piezas de campañas terminadas que se consultan pocas veces al trimestre, (c) contratos firmados que debe conservar diez años y casi nunca abre, y (d) un recurso compartido que montan los equipos de diseño. Indica qué servicio de Azure Storage y, cuando aplique, qué nivel de acceso usarías para cada caso. Justifica cada elección.",
+        "privateCriteria": "Una respuesta correcta: (a) Blob Storage en nivel Hot por el acceso frecuente; (b) Blob Storage en Cool o Cold (se acepta cualquiera si menciona acceso poco frecuente y retención mínima de 30 o 90 días); (c) Blob Storage en Archive, mencionando menor costo de almacenamiento, retención mínima de 180 días y que la lectura requiere rehidratación con alta latencia; (d) Azure Files, porque ofrece recursos compartidos montables por SMB o NFS. Penaliza proponer Archive para datos de acceso diario, Queues o Tables para archivos, o afirmar que Archive puede ser el nivel predeterminado de la cuenta.",
+        "objectives": [
+          "servicios-y-niveles"
+        ]
+      },
+      {
+        "key": "evaluacion-cuenta-y-redundancia",
+        "prompt": "Un hospital necesita una cuenta de almacenamiento para imágenes médicas, una cola de mensajes y tablas de configuración. Requisitos: seguir operando si falla una zona de disponibilidad, conservar los datos si ocurre un desastre que afecte a toda la región, y permitir que su sistema de consulta lea imágenes desde la región secundaria aunque no se haya hecho failover. Elige el tipo de cuenta y la opción de redundancia, y explica por qué descartas al menos otras dos opciones.",
+        "privateCriteria": "Debe elegir Standard general-purpose v2, porque es el tipo que admite Blobs, Queues y Tables a la vez y todas las redundancias (las cuentas Premium sólo ofrecen LRS o ZRS). La redundancia correcta es RA-GZRS: ZRS en la primaria (tolerancia a falla de zona), replicación asíncrona a la región secundaria (desastre regional) y lectura en la secundaria sin failover. Debe descartar con argumentos al menos dos opciones, por ejemplo GZRS (sin lectura previa al failover), RA-GRS (LRS en la primaria, no tolera la caída de una zona) o ZRS (sin región secundaria). Valora si menciona que la secundaria puede no estar al día por el RPO.",
+        "objectives": [
+          "cuenta-y-redundancia"
+        ]
+      },
+      {
+        "key": "evaluacion-movimiento-y-migracion",
+        "prompt": "Para cada situación, elige entre Azure Migrate, Azure Data Box, AzCopy, Azure Storage Explorer y Azure File Sync, y justifica: (1) una empresa con 80 TB de respaldos y poco ancho de banda; (2) un equipo que quiere evaluar sus servidores locales antes de migrarlos; (3) sucursales que quieren conservar su servidor de archivos Windows pero centralizar los datos en Azure; (4) un administrador que necesita copiar archivos con un script programado.",
+        "privateCriteria": "Respuestas esperadas: (1) Azure Data Box, migración física sin conexión adecuada para decenas de terabytes con ancho de banda limitado; (2) Azure Migrate, hub de descubrimiento, evaluación y migración; (3) Azure File Sync, sincronización bidireccional entre Windows Server y Azure Files, con opción de cloud tiering; (4) AzCopy, herramienta de línea de comandos apta para scripts, con sincronización en un solo sentido. Se acepta mencionar Storage Explorer sólo como interfaz gráfica para tareas manuales. Penaliza confundir la sincronización unidireccional de AzCopy con la bidireccional de File Sync, o proponer Data Box para evaluar servidores.",
+        "objectives": [
+          "movimiento-y-migracion"
+        ]
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "niveles-acceso-blob",
+        "requires": "servicios-almacenamiento"
+      },
+      {
+        "concept": "cuenta-almacenamiento",
+        "requires": "servicios-almacenamiento"
+      },
+      {
+        "concept": "redundancia-region-primaria",
+        "requires": "cuenta-almacenamiento"
+      },
+      {
+        "concept": "redundancia-geografica",
+        "requires": "redundancia-region-primaria"
+      },
+      {
+        "concept": "herramientas-movimiento-archivos",
+        "requires": "cuenta-almacenamiento"
+      },
+      {
+        "concept": "azure-data-box",
+        "requires": "cuenta-almacenamiento"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "servicio-recurso-compartido-smb",
+      "type": "singleChoice",
+      "prompt": "Una empresa necesita que varios servidores Windows y Linux, en Azure y en sus oficinas, monten al mismo tiempo una carpeta compartida mediante SMB, sin administrar servidores de archivos. ¿Qué servicio de Azure Storage debe usar?",
+      "objectives": [
+        "servicios-y-niveles"
+      ],
+      "concepts": [
+        "servicios-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Files",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure Blobs"
+        },
+        {
+          "key": "c",
+          "text": "Azure Queues"
+        },
+        {
+          "key": "d",
+          "text": "Azure Disks"
+        }
+      ]
+    },
+    {
+      "key": "nivel-grabaciones-siete-anios",
+      "type": "singleChoice",
+      "prompt": "Una aseguradora debe conservar grabaciones de llamadas durante siete años por regulación. Casi nunca se consultan y, cuando ocurre, puede esperar varias horas para recuperarlas. ¿Qué nivel de acceso de Blob Storage minimiza el costo de almacenamiento?",
+      "objectives": [
+        "servicios-y-niveles"
+      ],
+      "concepts": [
+        "niveles-acceso-blob"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Nivel Hot, de acceso frecuente"
+        },
+        {
+          "key": "b",
+          "text": "Nivel Cool, de acceso esporádico"
+        },
+        {
+          "key": "c",
+          "text": "Nivel Archive",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Nivel Cold, de acceso poco frecuente"
+        }
+      ]
+    },
+    {
+      "key": "tipo-cuenta-recomendado",
+      "type": "singleChoice",
+      "prompt": "Una empresa necesita una sola cuenta de almacenamiento para blobs, colas, tablas y recursos compartidos de archivos, y quiere poder elegir cualquier opción de redundancia, incluida la geográfica. ¿Qué tipo de cuenta debe crear?",
+      "objectives": [
+        "cuenta-y-redundancia"
+      ],
+      "concepts": [
+        "cuenta-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Premium block blobs, pensada para blobs con latencia baja y constante"
+        },
+        {
+          "key": "b",
+          "text": "Standard general-purpose v2",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Premium file shares, pensada para recursos compartidos de alto rendimiento"
+        },
+        {
+          "key": "d",
+          "text": "Premium page blobs, pensada exclusivamente para blobs en páginas"
+        }
+      ]
+    },
+    {
+      "key": "redundancia-falla-de-zona",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere que los datos de su cuenta sigan disponibles para lectura y escritura si falla una zona de disponibilidad completa, pero por un requisito legal los datos no pueden replicarse fuera de la región primaria. ¿Qué opción de redundancia debe elegir?",
+      "objectives": [
+        "cuenta-y-redundancia"
+      ],
+      "concepts": [
+        "redundancia-region-primaria"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Almacenamiento con redundancia local (LRS)"
+        },
+        {
+          "key": "b",
+          "text": "Almacenamiento con redundancia geográfica (GRS)"
+        },
+        {
+          "key": "c",
+          "text": "Almacenamiento con redundancia geográfica y de zona con acceso de lectura (RA-GZRS)"
+        },
+        {
+          "key": "d",
+          "text": "Almacenamiento con redundancia de zona (ZRS)",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "migracion-gran-volumen-sin-ancho-de-banda",
+      "type": "singleChoice",
+      "prompt": "Un estudio de animación tiene unos 70 TB de material en su centro de datos y una conexión a internet lenta que ya se satura en horario laboral. Necesita llevar todo a Azure en pocas semanas. ¿Qué opción es la más adecuada?",
+      "objectives": [
+        "movimiento-y-migracion"
+      ],
+      "concepts": [
+        "azure-data-box"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Copiar los archivos por internet con AzCopy durante las noches"
+        },
+        {
+          "key": "b",
+          "text": "Azure Data Box",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Instalar Azure File Sync en el servidor local y esperar la sincronización"
+        },
+        {
+          "key": "d",
+          "text": "Arrastrar las carpetas con Azure Storage Explorer"
+        }
+      ]
+    },
+    {
+      "key": "herramienta-script-copia-blobs",
+      "type": "singleChoice",
+      "prompt": "Un administrador quiere programar un script nocturno que copie blobs de una cuenta de almacenamiento a otra desde la línea de comandos. ¿Qué herramienta debe usar?",
+      "objectives": [
+        "movimiento-y-migracion"
+      ],
+      "concepts": [
+        "herramientas-movimiento-archivos"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure File Sync"
+        },
+        {
+          "key": "b",
+          "text": "Azure Migrate"
+        },
+        {
+          "key": "c",
+          "text": "AzCopy",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Azure Data Box"
+        }
+      ]
+    },
+    {
+      "key": "afirmaciones-niveles-acceso",
+      "type": "multipleChoice",
+      "prompt": "Un equipo revisa los niveles de acceso de Azure Blob Storage antes de definir su política de retención. ¿Qué afirmaciones son correctas? Selecciona dos.",
+      "objectives": [
+        "servicios-y-niveles"
+      ],
+      "concepts": [
+        "niveles-acceso-blob"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El nivel Archive puede configurarse como nivel predeterminado de la cuenta de almacenamiento."
+        },
+        {
+          "key": "b",
+          "text": "Cool y Cold tienen menor costo de almacenamiento que Hot, pero mayor costo de acceso.",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Un blob puede cambiar de nivel de acceso después de cargarse.",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Cold está pensado para datos que se conservan al menos 30 días, y Cool para al menos 90 días."
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "redundancias-con-region-secundaria",
+      "type": "multipleChoice",
+      "prompt": "Una empresa quiere protegerse contra un desastre que deje fuera de servicio toda la región primaria. ¿Qué opciones de redundancia replican los datos a una región secundaria? Selecciona tres.",
+      "objectives": [
+        "cuenta-y-redundancia"
+      ],
+      "concepts": [
+        "redundancia-geografica"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "LRS"
+        },
+        {
+          "key": "b",
+          "text": "GRS",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "ZRS"
+        },
+        {
+          "key": "d",
+          "text": "GZRS",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "RA-GRS",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "afirmaciones-azure-migrate",
+      "type": "multipleChoice",
+      "prompt": "Una empresa planea trasladar su centro de datos a Azure. ¿Qué afirmaciones describen correctamente Azure Migrate? Selecciona dos.",
+      "objectives": [
+        "movimiento-y-migracion"
+      ],
+      "concepts": [
+        "azure-migrate"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Ofrece un centro unificado para descubrir, evaluar y migrar servidores locales a Azure.",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Envía a la empresa un dispositivo físico resistente para transferir datos sin conexión."
+        },
+        {
+          "key": "c",
+          "text": "Integra herramientas para bases de datos y aplicaciones web, además de ofertas de terceros (ISV).",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Mantiene una sincronización bidireccional entre un servidor de archivos Windows y Azure Files."
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "nombre-cuenta-almacenamiento",
+      "type": "multipleChoice",
+      "prompt": "Un desarrollador va a crear una cuenta de almacenamiento para el portal web de su empresa. ¿Qué afirmaciones sobre el nombre de la cuenta son correctas? Selecciona dos.",
+      "objectives": [
+        "cuenta-y-redundancia"
+      ],
+      "concepts": [
+        "cuenta-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Sólo necesita ser único dentro del grupo de recursos."
+        },
+        {
+          "key": "b",
+          "text": "Debe ser único en todo Azure.",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Puede incluir guiones y mayúsculas para mejorar la legibilidad."
+        },
+        {
+          "key": "d",
+          "text": "Debe tener entre 3 y 24 caracteres y contener sólo números y letras minúsculas.",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "queues-para-discos-vm",
+      "type": "trueFalse",
+      "prompt": "Azure Queue Storage se usa principalmente para proporcionar volúmenes de disco a las máquinas virtuales de Azure.",
+      "objectives": [
+        "servicios-y-niveles"
+      ],
+      "concepts": [
+        "servicios-almacenamiento"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "archive-menor-costo-mayor-latencia",
+      "type": "trueFalse",
+      "prompt": "En Azure Blob Storage, el nivel Archive tiene el menor costo de almacenamiento, pero la mayor latencia y el mayor costo para rehidratar y leer los datos.",
+      "objectives": [
+        "servicios-y-niveles"
+      ],
+      "concepts": [
+        "niveles-acceso-blob"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "grs-secundaria-no-legible",
+      "type": "trueFalse",
+      "prompt": "Con GRS, si no se habilita el acceso de lectura (RA-GRS), los datos de la región secundaria no pueden leerse a menos que ocurra una conmutación por error.",
+      "objectives": [
+        "cuenta-y-redundancia"
+      ],
+      "concepts": [
+        "redundancia-geografica"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "azcopy-sincronizacion-bidireccional",
+      "type": "trueFalse",
+      "prompt": "La sincronización de AzCopy es bidireccional: compara marcas de tiempo y propaga los cambios en ambos sentidos entre origen y destino.",
+      "objectives": [
+        "movimiento-y-migracion"
+      ],
+      "concepts": [
+        "herramientas-movimiento-archivos"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "file-sync-cloud-tiering",
+      "type": "trueFalse",
+      "prompt": "Azure File Sync permite conservar en un servidor Windows local los archivos usados con más frecuencia, mientras los menos usados permanecen en Azure Files hasta que alguien los solicita.",
+      "objectives": [
+        "movimiento-y-migracion"
+      ],
+      "concepts": [
+        "herramientas-movimiento-archivos"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "explica-redundancia-primaria-secundaria",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras la diferencia entre la redundancia en la región primaria (LRS y ZRS) y la redundancia en una región secundaria (GRS y GZRS). Incluye qué agrega el prefijo RA- y por qué podría perderse información reciente al hacer una conmutación por error a la región secundaria.",
+      "objectives": [
+        "cuenta-y-redundancia"
+      ],
+      "concepts": [
+        "redundancia-region-primaria",
+        "redundancia-geografica"
+      ],
+      "rubric": {
+        "privateGuidance": "Busca precisión conceptual, no memorización de porcentajes de durabilidad. LRS: tres copias en un centro de datos; ZRS: tres copias en tres zonas de disponibilidad. GRS y GZRS agregan copia asíncrona a la región emparejada (LRS en la secundaria). RA- permite leer la secundaria sin failover. La replicación asíncrona implica un RPO (típicamente menor a 15 minutos, sin SLA), por lo que las escrituras más recientes podrían perderse. No otorgues puntos completos si afirma que la secundaria se replica de forma sincrónica.",
+        "criteria": [
+          {
+            "key": "primaria",
+            "description": "Describe correctamente LRS (un centro de datos) y ZRS (tres zonas de disponibilidad) y qué tipo de falla cubre cada una.",
+            "maxPoints": 2
+          },
+          {
+            "key": "secundaria",
+            "description": "Explica que GRS y GZRS replican a una región secundaria emparejada y en qué se diferencian (LRS o ZRS en la primaria).",
+            "maxPoints": 2
+          },
+          {
+            "key": "acceso-lectura",
+            "description": "Explica que RA- permite leer la copia secundaria sin esperar la conmutación por error.",
+            "maxPoints": 1
+          },
+          {
+            "key": "replicacion-asincrona",
+            "description": "Relaciona la posible pérdida de datos recientes con la replicación asíncrona y el RPO.",
+            "maxPoints": 1
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-comercial-altamira",
+      "type": "caseAnalysis",
+      "prompt": "Comercial Altamira, una distribuidora con tres sucursales, quiere cerrar su centro de datos en dos meses. Tiene 25 servidores virtuales con aplicaciones de inventario y una base de datos SQL Server, un archivo histórico de 60 TB de documentos escaneados y un enlace a internet de baja capacidad que se satura en horario laboral. En cada sucursal hay un servidor de archivos Windows que el personal usa a diario y no quiere dejar de usar. Además, el equipo de TI necesita copiar cada noche, mediante un script, los reportes de una cuenta de almacenamiento a otra de respaldo. Analiza el caso: propone qué servicio o herramienta de Azure usarías para cada necesidad, justifica tu elección y menciona qué alternativa descartaste y por qué.",
+      "objectives": [
+        "movimiento-y-migracion"
+      ],
+      "concepts": [
+        "herramientas-movimiento-archivos",
+        "azure-migrate",
+        "azure-data-box"
+      ],
+      "rubric": {
+        "privateGuidance": "Solución de referencia: Azure Migrate para descubrir, evaluar y migrar los servidores virtuales y la base de datos (centro unificado con herramientas para servidores y bases de datos); Azure Data Box para los 60 TB históricos por el ancho de banda limitado; Azure File Sync en los servidores de sucursal para centralizar en Azure Files sin cambiar la experiencia del personal (sincronización bidireccional y cloud tiering); AzCopy para el script nocturno entre cuentas. Acepta propuestas alternativas razonadas (por ejemplo, mover parte del histórico en línea fuera de horario) si analizan el tiempo y el ancho de banda.",
+        "criteria": [
+          {
+            "key": "servidores",
+            "description": "Asigna Azure Migrate a la evaluación y migración de servidores y base de datos, con justificación.",
+            "maxPoints": 2
+          },
+          {
+            "key": "volumen-historico",
+            "description": "Elige Azure Data Box para el histórico y lo justifica por el volumen y el ancho de banda.",
+            "maxPoints": 2
+          },
+          {
+            "key": "sucursales-y-script",
+            "description": "Elige Azure File Sync para las sucursales y AzCopy para el script, distinguiendo sincronización bidireccional y unidireccional.",
+            "maxPoints": 3
+          },
+          {
+            "key": "alternativas",
+            "description": "Explica al menos una alternativa descartada con un argumento técnico válido.",
+            "maxPoints": 1
+          }
+        ]
+      }
+    },
+    {
+      "key": "propuesta-ruta-verde",
+      "type": "practicalExercise",
+      "prompt": "Ejercicio práctico (no requiere ejecutar nada). La startup Ruta Verde lanzará una app de entregas y te pide proponer su configuración de almacenamiento. (1) Elige el tipo de cuenta para guardar fotos de comprobantes de entrega, una cola de pedidos y una tabla de configuración. (2) Elige el nivel de acceso para: fotos de los últimos 15 días, que se consultan a diario; comprobantes de dos a seis meses, consultados de vez en cuando ante reclamos; y comprobantes de más de un año que se guardan por obligación fiscal y casi nunca se leen. (3) Elige la redundancia si la empresa exige seguir operando ante la caída de una zona y conservar los datos ante un desastre regional, sin necesidad de leer la región secundaria antes de un failover. Presenta tu propuesta en una tabla y justifica cada decisión.",
+      "objectives": [
+        "servicios-y-niveles",
+        "cuenta-y-redundancia"
+      ],
+      "concepts": [
+        "niveles-acceso-blob",
+        "cuenta-almacenamiento",
+        "redundancia-geografica"
+      ],
+      "rubric": {
+        "privateGuidance": "Propuesta de referencia: (1) Standard general-purpose v2, porque combina Blobs, Queues y Tables y admite redundancia geográfica. (2) Hot para fotos recientes; Cool (o Cold, si lo justifica por la retención mínima de 90 días y el acceso poco frecuente) para comprobantes de dos a seis meses; Archive para los de más de un año, señalando que la lectura requiere rehidratación. (3) GZRS: ZRS en la primaria más copia a la región secundaria; RA-GZRS no es necesario porque no se pide lectura previa al failover (si lo elige, otorga crédito parcial si reconoce que excede el requisito). Penaliza elegir cuentas Premium, que no admiten redundancia geográfica.",
+        "criteria": [
+          {
+            "key": "tipo-cuenta",
+            "description": "Elige Standard general-purpose v2 y lo justifica por los servicios y la redundancia que admite.",
+            "maxPoints": 2
+          },
+          {
+            "key": "niveles",
+            "description": "Asigna niveles coherentes a los tres grupos de datos y menciona retención mínima o rehidratación.",
+            "maxPoints": 3
+          },
+          {
+            "key": "redundancia",
+            "description": "Elige GZRS y explica por qué cubre la falla de zona y el desastre regional sin necesitar RA-.",
+            "maxPoints": 3
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Almacenamiento en Azure",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "servicio-recurso-compartido-smb",
+        "nivel-grabaciones-siete-anios",
+        "tipo-cuenta-recomendado",
+        "redundancia-falla-de-zona",
+        "migracion-gran-volumen-sin-ancho-de-banda",
+        "herramienta-script-copia-blobs",
+        "afirmaciones-niveles-acceso",
+        "redundancias-con-region-secundaria",
+        "afirmaciones-azure-migrate",
+        "nombre-cuenta-almacenamiento",
+        "queues-para-discos-vm",
+        "archive-menor-costo-mayor-latencia",
+        "grs-secundaria-no-legible",
+        "azcopy-sincronizacion-bidireccional",
+        "file-sync-cloud-tiering"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Almacenamiento en Azure",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "servicio-recurso-compartido-smb",
+        "nivel-grabaciones-siete-anios",
+        "afirmaciones-niveles-acceso",
+        "redundancia-falla-de-zona",
+        "redundancias-con-region-secundaria",
+        "grs-secundaria-no-legible",
+        "migracion-gran-volumen-sin-ancho-de-banda",
+        "azcopy-sincronizacion-bidireccional"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Almacenamiento en Azure",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "explica-redundancia-primaria-secundaria",
+        "caso-comercial-altamira",
+        "propuesta-ruta-verde"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Almacenamiento en Azure",
+    "edges": [
+      {
+        "from": "niveles-acceso-blob",
+        "to": "servicios-almacenamiento",
+        "relation": "requires"
+      },
+      {
+        "from": "cuenta-almacenamiento",
+        "to": "servicios-almacenamiento",
+        "relation": "requires"
+      },
+      {
+        "from": "cuenta-almacenamiento",
+        "to": "niveles-acceso-blob",
+        "relation": "explains"
+      },
+      {
+        "from": "redundancia-region-primaria",
+        "to": "cuenta-almacenamiento",
+        "relation": "requires"
+      },
+      {
+        "from": "redundancia-geografica",
+        "to": "redundancia-region-primaria",
+        "relation": "requires"
+      },
+      {
+        "from": "redundancia-region-primaria",
+        "to": "redundancia-geografica",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "herramientas-movimiento-archivos",
+        "to": "servicios-almacenamiento",
+        "relation": "applies"
+      },
+      {
+        "from": "azure-data-box",
+        "to": "cuenta-almacenamiento",
+        "relation": "applies"
+      },
+      {
+        "from": "azure-data-box",
+        "to": "azure-migrate",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "herramientas-movimiento-archivos",
+        "to": "azure-data-box",
+        "relation": "differsFrom"
+      }
+    ]
+  }
+}

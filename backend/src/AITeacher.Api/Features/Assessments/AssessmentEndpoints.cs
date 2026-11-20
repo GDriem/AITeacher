@@ -16,7 +16,7 @@ public static class AssessmentEndpoints
         group.MapGet("/questions", (int? offset, int? limit, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.List("question", offset, limit, user, ct)).RequireAuthorization("Author");
         group.MapGet("/questions/{id:guid}", (Guid id, AssessmentService s, CancellationToken ct) => s.GetRevision("question", id, ct)).RequireAuthorization("Author");
         group.MapPost("/definitions", (DefinitionRequest request, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.CreateDefinition(request, user, ct)).RequireAuthorization("Author");
-        group.MapGet("/definitions", (int? offset, int? limit, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.List("definition", offset, limit, user, ct));
+        group.MapGet("/definitions", (int? offset, int? limit, Guid? unitId, Guid? unitRevisionId, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.List("definition", offset, limit, user, ct, unitId, unitRevisionId));
         group.MapGet("/definitions/{id:guid}", (Guid id, AssessmentService s, CancellationToken ct) => s.GetRevision("definition", id, ct)).RequireAuthorization("Author");
         group.MapGet("/attempts/{id:guid}/review", (Guid id, AssessmentService s, CancellationToken ct) => s.GetReview(id, ct)).RequireAuthorization("Author");
         group.MapPost("/attempts/{id:guid}/review", (Guid id, ReviewRequest request, ClaimsPrincipal user, AssessmentService s, CancellationToken ct) => s.Review(id, request, user, ct)).RequireAuthorization("Author");

@@ -1,0 +1,849 @@
+{
+  "slug": "tipos-de-servicio-en-la-nube",
+  "name": "Tipos de servicio en la nube",
+  "category": "conceptos-de-nube",
+  "sortOrder": 3,
+  "profile": "module",
+  "description": "Infraestructura, plataforma y software como servicio: qué administra el proveedor y qué conserva el cliente en cada tipo, cómo se equilibran control y esfuerzo operativo, y cómo elegir IaaS, PaaS o SaaS para escenarios típicos de empresa.",
+  "outline": [
+    "Describe infrastructure as a service (IaaS)",
+    "Describe platform as a service (PaaS)",
+    "Describe software as a service (SaaS)",
+    "Identify appropriate use cases for each cloud service type (IaaS, PaaS, and SaaS)"
+  ],
+  "unit": {
+    "title": "Describir los tipos de servicio en la nube",
+    "concepts": [
+      {
+        "key": "iaas",
+        "name": "Infraestructura como servicio (IaaS)"
+      },
+      {
+        "key": "paas",
+        "name": "Plataforma como servicio (PaaS)"
+      },
+      {
+        "key": "saas",
+        "name": "Software como servicio (SaaS)"
+      },
+      {
+        "key": "responsabilidad-por-tipo-de-servicio",
+        "name": "Responsabilidad por tipo de servicio"
+      },
+      {
+        "key": "control-frente-a-esfuerzo",
+        "name": "Control frente a esfuerzo operativo"
+      },
+      {
+        "key": "casos-de-uso-iaas",
+        "name": "Casos de uso de IaaS"
+      },
+      {
+        "key": "casos-de-uso-paas",
+        "name": "Casos de uso de PaaS"
+      },
+      {
+        "key": "casos-de-uso-saas",
+        "name": "Casos de uso de SaaS"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "distinguir-iaas-paas-saas",
+        "description": "Distinguir IaaS, PaaS y SaaS según las capas que administra el proveedor y las que conserva el cliente.",
+        "concepts": [
+          "iaas",
+          "paas",
+          "saas"
+        ]
+      },
+      {
+        "key": "explicar-responsabilidad-por-servicio",
+        "description": "Explicar cómo cambian la responsabilidad y el control del cliente entre IaaS, PaaS y SaaS, e identificar qué responsabilidades nunca se transfieren.",
+        "concepts": [
+          "responsabilidad-por-tipo-de-servicio",
+          "control-frente-a-esfuerzo"
+        ]
+      },
+      {
+        "key": "elegir-tipo-de-servicio",
+        "description": "Elegir el tipo de servicio en la nube adecuado para un escenario de empresa y justificar la elección.",
+        "concepts": [
+          "casos-de-uso-iaas",
+          "casos-de-uso-paas",
+          "casos-de-uso-saas"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "infraestructura-como-servicio",
+        "title": "Infraestructura como servicio (IaaS)",
+        "text": "La **infraestructura como servicio (IaaS)** es la categoría más flexible de servicios en la nube y la que te da **más control** sobre tus recursos. En esencia, \"alquilas\" hardware en un centro de datos del proveedor; lo que hagas con él depende de ti.\n\n## Quién hace qué en IaaS\n\n| Proveedor | Cliente |\n| --- | --- |\n| Hardware físico | Instalación, configuración y mantenimiento del sistema operativo |\n| Conectividad de red hacia internet | Configuración de red de tus recursos |\n| Seguridad física del centro de datos | Configuración de bases de datos y almacenamiento |\n| | Aplicaciones, datos, identidades y muchos controles de seguridad |\n\nEsta combinación ofrece la máxima flexibilidad, pero también la **mayor carga operativa**: tú aplicas parches, configuras el sistema operativo y decides cómo proteger cada capa por encima del hardware.\n\n## Escenarios típicos\n\n- **Migración \"lift-and-shift\"** (levantar y mover): replicas en la nube una configuración similar a la de tu centro de datos y trasladas las cargas sin rediseñarlas. Es habitual cuando hay aplicaciones heredadas que dependen de un sistema operativo o configuración específicos.\n- **Desarrollo y pruebas**: necesitas recrear rápidamente configuraciones establecidas, encender y apagar entornos con frecuencia y conservar control total sobre ellos.\n\nEn Azure, el ejemplo más claro de IaaS son las **máquinas virtuales de Azure**, junto con las redes virtuales y los discos administrados que las acompañan.\n\n**Ejemplo práctico.** Una distribuidora tiene un sistema de inventario de hace diez años que sólo funciona con una versión específica de Windows Server y una configuración de red particular. Para salir de su centro de datos antes de que venza el contrato de alquiler, lo mueve tal cual a máquinas virtuales de Azure. Gana tiempo y deja de mantener hardware, pero su equipo sigue aplicando parches al sistema operativo cada mes.\n\n### Para recordar en el examen\n\n- IaaS = más control y más flexibilidad, pero más responsabilidad para el cliente.\n- El proveedor se ocupa de lo físico: hardware, red hacia internet y seguridad física.\n- Pistas en el enunciado: \"migrar sin cambios\", \"control del sistema operativo\", \"entornos de prueba replicables\".\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cloud-service-types/2-describe-infrastructure-service",
+        "objectives": [
+          "distinguir-iaas-paas-saas",
+          "explicar-responsabilidad-por-servicio",
+          "elegir-tipo-de-servicio"
+        ]
+      },
+      {
+        "key": "plataforma-como-servicio",
+        "title": "Plataforma como servicio (PaaS)",
+        "text": "La **plataforma como servicio (PaaS)** es el punto medio entre alquilar infraestructura (IaaS) y pagar por una solución terminada (SaaS). El proveedor mantiene la infraestructura física, la seguridad física y la conexión a internet, y además **los sistemas operativos, el middleware, las herramientas de desarrollo y los servicios de análisis** que forman la plataforma.\n\nEn PaaS no tienes que preocuparte por las licencias ni por los parches de los sistemas operativos y de las bases de datos. Tu trabajo se concentra en el **código de tu aplicación, tus datos y los controles de acceso**. Según cómo configures el servicio, algunas opciones de red y de seguridad de la aplicación se comparten con el proveedor.\n\n## Escenarios típicos\n\n- **Marco de desarrollo**: la plataforma ofrece componentes listos sobre los cuales los desarrolladores construyen o personalizan aplicaciones en la nube. Capacidades como escalabilidad, alta disponibilidad y multiinquilino vienen incluidas, lo que reduce el código que el equipo debe escribir.\n- **Análisis o inteligencia empresarial**: herramientas ofrecidas como servicio permiten analizar datos, encontrar patrones y predecir resultados para mejorar la planificación.\n\n| Aspecto | IaaS | PaaS |\n| --- | --- | --- |\n| Parches del sistema operativo | Cliente | Proveedor |\n| Licencias de SO y motor de base de datos | Cliente | Proveedor |\n| Código y datos | Cliente | Cliente |\n| Flexibilidad | Máxima | Alta, dentro de la plataforma |\n\nEjemplos de PaaS en Azure son **Azure App Service** para aplicaciones web y **Azure SQL Database** como base de datos administrada.\n\n**Ejemplo práctico.** Una startup de telemedicina publica su API en Azure App Service. No administra servidores ni sistemas operativos: sube su código, define reglas de escalado y la plataforma se encarga de los parches. Su equipo de tres desarrolladores dedica el tiempo a nuevas funciones en lugar de mantener infraestructura.\n\n### Para recordar en el examen\n\n- PaaS = el proveedor administra SO, middleware y herramientas; tú, tu aplicación y tus datos.\n- Pistas: \"sin administrar servidores ni SO\", \"entorno de desarrollo completo\", \"análisis o BI como servicio\".\n- Es el punto medio de responsabilidad entre IaaS y SaaS.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cloud-service-types/3-describe-platform-service",
+        "objectives": [
+          "distinguir-iaas-paas-saas",
+          "elegir-tipo-de-servicio"
+        ]
+      },
+      {
+        "key": "software-como-servicio",
+        "title": "Software como servicio (SaaS)",
+        "text": "El **software como servicio (SaaS)** es el modelo más completo desde el punto de vista del producto: alquilas o usas una **aplicación completamente desarrollada**. El correo electrónico, el software financiero, las aplicaciones de mensajería y las herramientas de conectividad son ejemplos comunes.\n\nSaaS es el modelo **menos flexible**, porque no controlas cómo está construida la aplicación, pero también el **más fácil de poner en marcha** y el que exige menos conocimientos técnicos. Es, además, el que implica menor carga operativa para el cliente.\n\n## Quién hace qué en SaaS\n\nEl proveedor administra casi toda la pila: infraestructura, plataforma y mantenimiento de la aplicación, incluidas actualizaciones y disponibilidad. El cliente conserva:\n\n- Sus **datos**.\n- La configuración de **identidades y accesos** (quién entra y con qué permisos).\n- El estado de los **dispositivos** que se conectan.\n\nEste último punto es importante: SaaS no te libera por completo. Si una persona comparte su contraseña o un dispositivo infectado accede a la aplicación, el problema sigue siendo tuyo.\n\n## Escenarios típicos\n\n| Escenario | Ejemplo de uso |\n| --- | --- |\n| Correo y mensajería | Buzones corporativos y chat de equipos |\n| Productividad | Procesador de texto, hojas de cálculo y almacenamiento colaborativo |\n| Finanzas y gastos | Registro de gastos de viaje y facturación |\n\nMicrosoft 365 es un ejemplo conocido de SaaS de Microsoft.\n\n**Ejemplo práctico.** Una ONG con veinte personas reemplaza su servidor de correo local por un servicio de correo en la nube. Ya no aplica parches ni compra licencias de servidor; su encargada de TI se dedica a crear usuarios, activar la autenticación multifactor y definir quién puede compartir archivos fuera de la organización.\n\n### Para recordar en el examen\n\n- SaaS = aplicación terminada; menor flexibilidad, menor esfuerzo, menor responsabilidad.\n- Aun en SaaS el cliente responde por datos, identidades/accesos y dispositivos.\n- Pistas: \"correo\", \"productividad\", \"aplicación lista para usar\", \"sin desarrollar\".\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cloud-service-types/4-describe-software-service",
+        "objectives": [
+          "distinguir-iaas-paas-saas",
+          "elegir-tipo-de-servicio"
+        ]
+      },
+      {
+        "key": "comparar-y-elegir",
+        "title": "Comparar los tipos de servicio y elegir",
+        "text": "El modelo de responsabilidad compartida está estrechamente ligado a los tres tipos de servicio. Una forma útil de verlo es como una pila de capas: red, almacenamiento, servidores, virtualización, sistema operativo, middleware, entorno de ejecución, aplicaciones y datos. Cuanto más \"arriba\" llega el proveedor, menos capas operas tú.\n\n| Capa | Local | IaaS | PaaS | SaaS |\n| --- | --- | --- | --- | --- |\n| Centro de datos, red y hosts físicos | Cliente | Proveedor | Proveedor | Proveedor |\n| Sistema operativo | Cliente | Cliente | Proveedor | Proveedor |\n| Middleware y entorno de ejecución | Cliente | Cliente | Proveedor | Proveedor |\n| Aplicación | Cliente | Cliente | Cliente | Proveedor |\n| Datos, identidades y dispositivos | Cliente | Cliente | Cliente | Cliente |\n\n## Control frente a esfuerzo\n\nExiste un intercambio constante: **más control significa más esfuerzo operativo**. IaaS te deja decidir casi todo, pero también te obliga a mantenerlo. SaaS te libera del mantenimiento, pero aceptas la aplicación tal como el proveedor la ofrece. PaaS equilibra ambos extremos.\n\n## Cómo elegir en un escenario\n\n1. ¿Necesitas una aplicación estándar lista para usar (correo, productividad, gastos)? → **SaaS**.\n2. ¿Vas a desarrollar tu propia aplicación y no quieres administrar servidores ni SO? → **PaaS**.\n3. ¿Debes migrar sin cambios, controlar el SO o replicar entornos complejos? → **IaaS**.\n\nUna misma empresa suele combinar los tres: SaaS para el correo, PaaS para su portal de clientes e IaaS para una aplicación heredada.\n\n**Ejemplo práctico.** Un hospital usa SaaS para el correo del personal, PaaS para la aplicación de citas que desarrolló su equipo y IaaS para un sistema de imágenes médicas que exige una configuración específica del sistema operativo.\n\n### Para recordar en el examen\n\n- Responsabilidad del cliente: IaaS > PaaS > SaaS.\n- Datos, identidades y dispositivos nunca pasan al proveedor.\n- Lee el verbo del enunciado: \"usar\" suele ser SaaS, \"desarrollar\" PaaS, \"migrar tal cual\" IaaS.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cloud-compute/4-describe-shared-responsibility-model",
+        "objectives": [
+          "explicar-responsabilidad-por-servicio",
+          "elegir-tipo-de-servicio"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explica-tres-modelos",
+        "objectives": [
+          "distinguir-iaas-paas-saas"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** los tres tipos de servicio usando una analogía cotidiana (por ejemplo, transporte: auto propio, auto rentado, taxi; o comida: cocinar, kit de comida, restaurante).\n\n1. Asigna cada parte de la analogía a IaaS, PaaS o SaaS.\n2. Señala en qué punto tu analogía falla o se queda corta.\n3. Nombra un servicio de Azure o de Microsoft que sea ejemplo de cada tipo.\n\nPide al tutor que evalúe si tu analogía refleja bien quién administra el sistema operativo."
+      },
+      {
+        "key": "tabla-responsabilidades",
+        "objectives": [
+          "explicar-responsabilidad-por-servicio"
+        ],
+        "prompt": "**Completa la tabla** escribiendo *Cliente* o *Proveedor* en cada celda, sin mirar la lectura:\n\n| Capa | IaaS | PaaS | SaaS |\n| --- | --- | --- | --- |\n| Hardware físico | | | |\n| Sistema operativo | | | |\n| Middleware y entorno de ejecución | | | |\n| Aplicación | | | |\n| Datos | | | |\n| Cuentas e identidades | | | |\n\nLuego compárala con la lectura \"Comparar los tipos de servicio y elegir\" y explica al tutor cada error que hayas cometido."
+      },
+      {
+        "key": "decide-tipo-servicio",
+        "objectives": [
+          "elegir-tipo-de-servicio"
+        ],
+        "prompt": "**Escenario de empresa: decide el tipo de servicio.** Una empresa de logística tiene estas necesidades. Para cada una, elige IaaS, PaaS o SaaS y justifica en una línea:\n\n1. Correo y calendario para 300 empleados.\n2. Un portal de rastreo de envíos que su equipo desarrollará desde cero.\n3. Un sistema de facturación antiguo que requiere una versión específica de sistema operativo.\n4. Tableros de análisis sobre los datos de entregas.\n5. Entornos de prueba idénticos a producción que se crean y destruyen cada semana.\n\nComparte tus respuestas con el tutor y discute el caso que te parezca más ambiguo."
+      },
+      {
+        "key": "laboratorio-comparar",
+        "objectives": [
+          "distinguir-iaas-paas-saas",
+          "elegir-tipo-de-servicio"
+        ],
+        "prompt": "**Laboratorio opcional en el portal de Azure.**\n\n> **Aviso de costos:** usa una cuenta gratuita de Azure o un *sandbox* de Microsoft Learn. No crees recursos en la suscripción de tu empresa y elimina el grupo de recursos al terminar.\n\n1. Inicia la creación de una **máquina virtual** y anota qué decisiones te pide el asistente (imagen del sistema operativo, tamaño, discos, red). No es necesario crearla.\n2. Inicia la creación de una **aplicación web** de App Service y anota qué decisiones te pide (pila de ejecución, plan).\n3. Compara ambas listas: ¿qué decisiones desaparecen en PaaS y quién las asume?\n\nExplica al tutor qué te dice esa comparación sobre la responsabilidad compartida."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evalua-tres-modelos",
+        "objectives": [
+          "distinguir-iaas-paas-saas"
+        ],
+        "prompt": "Describe IaaS, PaaS y SaaS indicando, para cada uno, qué administra el proveedor, qué administra el cliente y un ejemplo de servicio.",
+        "privateCriteria": "IaaS: proveedor = hardware, red a internet, seguridad física; cliente = SO, red, bases de datos, aplicaciones y datos (ej. máquinas virtuales de Azure). PaaS: proveedor además administra SO, middleware, herramientas; cliente = código, datos y accesos (ej. Azure App Service, Azure SQL Database). SaaS: proveedor administra casi toda la pila; cliente = datos, identidades/accesos y dispositivos (ej. Microsoft 365, correo)."
+      },
+      {
+        "key": "evalua-responsabilidad-control",
+        "objectives": [
+          "explicar-responsabilidad-por-servicio"
+        ],
+        "prompt": "Explica el intercambio entre control y esfuerzo operativo al pasar de IaaS a PaaS y a SaaS, e indica qué responsabilidades conserva siempre el cliente.",
+        "privateCriteria": "Debe indicar que IaaS da máximo control y máxima carga operativa, PaaS es intermedio y SaaS ofrece mínimo esfuerzo y menor flexibilidad. Debe nombrar datos, cuentas/identidades y dispositivos como responsabilidades que el cliente nunca transfiere. Penaliza afirmar que en SaaS el cliente no tiene responsabilidad de seguridad."
+      },
+      {
+        "key": "evalua-eleccion",
+        "objectives": [
+          "elegir-tipo-de-servicio"
+        ],
+        "prompt": "Propón un escenario de empresa con tres necesidades distintas y asigna a cada una IaaS, PaaS o SaaS, justificando la elección.",
+        "privateCriteria": "Las asignaciones deben ser coherentes: IaaS para lift-and-shift, control del SO o entornos de prueba replicables; PaaS para desarrollo de aplicaciones propias o análisis/BI administrado; SaaS para correo, productividad o finanzas listas para usar. Cada justificación debe mencionar el nivel de control o esfuerzo deseado."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "responsabilidad-por-tipo-de-servicio",
+        "requires": "iaas"
+      },
+      {
+        "concept": "responsabilidad-por-tipo-de-servicio",
+        "requires": "paas"
+      },
+      {
+        "concept": "responsabilidad-por-tipo-de-servicio",
+        "requires": "saas"
+      },
+      {
+        "concept": "control-frente-a-esfuerzo",
+        "requires": "responsabilidad-por-tipo-de-servicio"
+      },
+      {
+        "concept": "casos-de-uso-iaas",
+        "requires": "iaas"
+      },
+      {
+        "concept": "casos-de-uso-paas",
+        "requires": "paas"
+      },
+      {
+        "concept": "casos-de-uso-saas",
+        "requires": "saas"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "mayor-control-so",
+      "type": "singleChoice",
+      "prompt": "¿Qué tipo de servicio en la nube ofrece el mayor control sobre el sistema operativo y el software instalado?",
+      "objectives": [
+        "distinguir-iaas-paas-saas"
+      ],
+      "concepts": [
+        "iaas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Software como servicio (SaaS)"
+        },
+        {
+          "key": "b",
+          "text": "Plataforma como servicio (PaaS)"
+        },
+        {
+          "key": "c",
+          "text": "Infraestructura como servicio (IaaS)",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Una aplicación de productividad en línea con suscripción mensual"
+        }
+      ]
+    },
+    {
+      "key": "correo-en-la-nube",
+      "type": "singleChoice",
+      "prompt": "Una empresa adopta un servicio de correo electrónico en la nube: sólo crea usuarios y buzones, y el proveedor administra la aplicación, la plataforma y la infraestructura. ¿Qué tipo de servicio usa?",
+      "objectives": [
+        "distinguir-iaas-paas-saas"
+      ],
+      "concepts": [
+        "saas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "SaaS",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "IaaS, porque los buzones se almacenan en servidores del proveedor"
+        },
+        {
+          "key": "c",
+          "text": "PaaS, porque la empresa configura usuarios sobre una plataforma"
+        },
+        {
+          "key": "d",
+          "text": "Nube privada administrada por el proveedor de correo"
+        }
+      ]
+    },
+    {
+      "key": "mayor-responsabilidad-cliente",
+      "type": "singleChoice",
+      "prompt": "Según el modelo de responsabilidad compartida, ¿en qué tipo de servicio asume el cliente la mayor parte de la responsabilidad?",
+      "objectives": [
+        "explicar-responsabilidad-por-servicio"
+      ],
+      "concepts": [
+        "responsabilidad-por-tipo-de-servicio"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "En SaaS, porque configura usuarios y permisos de la aplicación"
+        },
+        {
+          "key": "b",
+          "text": "En IaaS",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "En PaaS, porque escribe y mantiene el código de la aplicación"
+        },
+        {
+          "key": "d",
+          "text": "Es igual en los tres, porque el cliente siempre protege sus datos"
+        }
+      ]
+    },
+    {
+      "key": "tarea-en-base-administrada",
+      "type": "singleChoice",
+      "prompt": "Una empresa usa una base de datos administrada (PaaS) en Azure. ¿Cuál de estas tareas sigue siendo responsabilidad de la empresa?",
+      "objectives": [
+        "explicar-responsabilidad-por-servicio"
+      ],
+      "concepts": [
+        "responsabilidad-por-tipo-de-servicio"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Aplicar los parches del motor de base de datos"
+        },
+        {
+          "key": "b",
+          "text": "Mantener el hardware de los servidores que alojan la base"
+        },
+        {
+          "key": "c",
+          "text": "Actualizar el sistema operativo subyacente del servicio"
+        },
+        {
+          "key": "d",
+          "text": "Controlar quién tiene acceso a los datos",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "migrar-sin-cambios",
+      "type": "singleChoice",
+      "prompt": "Una empresa necesita trasladar rápidamente sus servidores locales a la nube sin modificar las aplicaciones y conservando el control del sistema operativo. ¿Qué tipo de servicio le conviene?",
+      "objectives": [
+        "elegir-tipo-de-servicio"
+      ],
+      "concepts": [
+        "casos-de-uso-iaas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "SaaS, reemplazando cada aplicación por una equivalente en línea"
+        },
+        {
+          "key": "b",
+          "text": "PaaS, publicando las aplicaciones en una plataforma administrada"
+        },
+        {
+          "key": "c",
+          "text": "IaaS",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Ninguno: primero debe rediseñar todas las aplicaciones para la nube"
+        }
+      ]
+    },
+    {
+      "key": "app-web-sin-servidores",
+      "type": "singleChoice",
+      "prompt": "Un equipo de desarrollo quiere construir una aplicación web sin administrar servidores ni sistemas operativos, aprovechando el escalado y la alta disponibilidad que incluye la plataforma. ¿Qué tipo de servicio debe elegir?",
+      "objectives": [
+        "elegir-tipo-de-servicio"
+      ],
+      "concepts": [
+        "casos-de-uso-paas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "IaaS, con máquinas virtuales configuradas por el equipo"
+        },
+        {
+          "key": "b",
+          "text": "SaaS, con una aplicación comercial ya terminada"
+        },
+        {
+          "key": "c",
+          "text": "Una nube privada con hardware propio"
+        },
+        {
+          "key": "d",
+          "text": "PaaS",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "describen-paas",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "¿Qué dos afirmaciones describen correctamente la plataforma como servicio (PaaS)? Selecciona dos.",
+      "objectives": [
+        "distinguir-iaas-paas-saas"
+      ],
+      "concepts": [
+        "paas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El proveedor administra los sistemas operativos, el middleware y las herramientas de desarrollo",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "El cliente instala y aplica parches al sistema operativo"
+        },
+        {
+          "key": "c",
+          "text": "El cliente se concentra en el código de su aplicación y en sus datos",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "El cliente sólo usa una aplicación terminada sin desarrollar nada"
+        }
+      ]
+    },
+    {
+      "key": "proveedor-en-iaas",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "Una empresa despliega máquinas virtuales en Azure. ¿Qué elementos administra el proveedor de nube en este modelo IaaS? Selecciona tres.",
+      "objectives": [
+        "explicar-responsabilidad-por-servicio"
+      ],
+      "concepts": [
+        "responsabilidad-por-tipo-de-servicio"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El sistema operativo de las máquinas virtuales"
+        },
+        {
+          "key": "b",
+          "text": "El hardware físico",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "La seguridad física del centro de datos",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "La configuración de la base de datos que instala el cliente"
+        },
+        {
+          "key": "e",
+          "text": "La conectividad de red hacia internet",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "casos-saas",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "¿Qué dos escenarios son casos de uso típicos del software como servicio (SaaS)? Selecciona dos.",
+      "objectives": [
+        "elegir-tipo-de-servicio"
+      ],
+      "concepts": [
+        "casos-de-uso-saas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Migración lift-and-shift de servidores heredados"
+        },
+        {
+          "key": "b",
+          "text": "Correo electrónico y mensajería",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Entorno para que los desarrolladores construyan aplicaciones propias"
+        },
+        {
+          "key": "d",
+          "text": "Aplicaciones de productividad de oficina",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "asignaciones-correctas",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "Una empresa clasificó sus necesidades por tipo de servicio. ¿Qué dos asignaciones son correctas? Selecciona dos.",
+      "objectives": [
+        "elegir-tipo-de-servicio"
+      ],
+      "concepts": [
+        "casos-de-uso-iaas",
+        "casos-de-uso-paas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Entornos de prueba replicables con control total: SaaS"
+        },
+        {
+          "key": "b",
+          "text": "Migrar un servidor heredado sin cambios: IaaS",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Análisis e inteligencia empresarial con herramientas administradas: PaaS",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Software de control de gastos listo para usar: IaaS"
+        }
+      ]
+    },
+    {
+      "key": "paas-sin-licencias-so",
+      "type": "trueFalse",
+      "prompt": "En PaaS, el cliente no tiene que preocuparse por las licencias ni por los parches del sistema operativo.",
+      "objectives": [
+        "distinguir-iaas-paas-saas"
+      ],
+      "concepts": [
+        "paas"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "saas-sin-responsabilidad",
+      "type": "trueFalse",
+      "prompt": "En SaaS, el cliente deja de tener cualquier responsabilidad de seguridad, incluida la gestión de las cuentas de usuario.",
+      "objectives": [
+        "explicar-responsabilidad-por-servicio"
+      ],
+      "concepts": [
+        "responsabilidad-por-tipo-de-servicio"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "iaas-flexible-y-costosa",
+      "type": "trueFalse",
+      "prompt": "IaaS es el tipo de servicio más flexible, pero también el que implica mayor esfuerzo operativo para el cliente.",
+      "objectives": [
+        "explicar-responsabilidad-por-servicio"
+      ],
+      "concepts": [
+        "control-frente-a-esfuerzo"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "pruebas-en-iaas",
+      "type": "trueFalse",
+      "prompt": "Los entornos de desarrollo y prueba que deben crearse y eliminarse rápidamente con control total son un caso de uso habitual de IaaS.",
+      "objectives": [
+        "elegir-tipo-de-servicio"
+      ],
+      "concepts": [
+        "casos-de-uso-iaas"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "analisis-es-iaas",
+      "type": "trueFalse",
+      "prompt": "Un servicio de análisis de datos administrado, en el que el equipo sólo carga datos y crea consultas, es un ejemplo típico de IaaS.",
+      "objectives": [
+        "elegir-tipo-de-servicio"
+      ],
+      "concepts": [
+        "casos-de-uso-paas"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "compara-tres-servicios",
+      "type": "openResponse",
+      "prompt": "Compara IaaS, PaaS y SaaS con tus palabras: qué administra el proveedor, qué administra el cliente y cuál es la principal ventaja y desventaja de cada uno.",
+      "objectives": [
+        "distinguir-iaas-paas-saas"
+      ],
+      "concepts": [
+        "iaas",
+        "paas",
+        "saas"
+      ],
+      "rubric": {
+        "privateGuidance": "Busca una comparación ordenada (tabla o párrafos) que ubique al sistema operativo como frontera IaaS/PaaS y a la aplicación como frontera PaaS/SaaS. Acepta ejemplos de servicios de cualquier proveedor si están bien clasificados.",
+        "criteria": [
+          {
+            "key": "reparto",
+            "description": "Describe correctamente qué administra el proveedor y qué el cliente en cada uno de los tres tipos.",
+            "maxPoints": 4
+          },
+          {
+            "key": "ventajas-desventajas",
+            "description": "Identifica una ventaja y una desventaja coherentes para cada tipo (por ejemplo, control frente a esfuerzo).",
+            "maxPoints": 3
+          },
+          {
+            "key": "ejemplos",
+            "description": "Incluye al menos un ejemplo bien clasificado por tipo.",
+            "maxPoints": 1
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-colegio",
+      "type": "caseAnalysis",
+      "prompt": "Lee el caso y responde. El Colegio San Andrés tiene un servidor en una bodega que aloja tres cosas: el correo de los docentes, una aplicación de calificaciones que un exalumno programó hace años y que sólo funciona con una versión antigua de sistema operativo, y un sitio web de inscripciones que el equipo de TI quiere rehacer con funciones nuevas. El único técnico del colegio pasa la mayor parte del tiempo aplicando parches y reiniciando el servidor. La dirección quiere pasar todo a la nube, reducir el trabajo del técnico y no perder el control de los datos de los alumnos. Propón un tipo de servicio para cada carga y explica qué responsabilidades seguirá teniendo el colegio.",
+      "objectives": [
+        "explicar-responsabilidad-por-servicio",
+        "elegir-tipo-de-servicio"
+      ],
+      "concepts": [
+        "responsabilidad-por-tipo-de-servicio",
+        "casos-de-uso-iaas",
+        "casos-de-uso-paas",
+        "casos-de-uso-saas"
+      ],
+      "rubric": {
+        "privateGuidance": "Esperado: correo → SaaS; aplicación de calificaciones → IaaS (lift-and-shift por dependencia del SO); sitio de inscripciones → PaaS (desarrollo nuevo sin administrar servidores). Debe aclarar que el colegio conserva datos de alumnos, cuentas/identidades y dispositivos en todos los casos, y que en IaaS seguirá aplicando parches al SO.",
+        "criteria": [
+          {
+            "key": "asignacion",
+            "description": "Asigna un tipo de servicio coherente a cada una de las tres cargas.",
+            "maxPoints": 3
+          },
+          {
+            "key": "justificacion",
+            "description": "Justifica cada asignación con las características del caso (dependencia del SO, desarrollo nuevo, aplicación estándar).",
+            "maxPoints": 3
+          },
+          {
+            "key": "responsabilidades",
+            "description": "Explica qué responsabilidades conserva el colegio, incluyendo datos e identidades, y el esfuerzo que queda en la carga IaaS.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "matriz-de-decision",
+      "type": "practicalExercise",
+      "prompt": "Diseña una matriz de decisión de una página que un equipo de TI pueda usar para elegir entre IaaS, PaaS y SaaS. Incluye al menos cuatro preguntas de decisión (por ejemplo, sobre control del sistema operativo o si la aplicación es estándar), el resultado al que lleva cada respuesta y un ejemplo de carga real para cada tipo. Explica cómo usarías la matriz con una carga concreta de tu elección.",
+      "objectives": [
+        "elegir-tipo-de-servicio"
+      ],
+      "concepts": [
+        "casos-de-uso-iaas",
+        "casos-de-uso-paas",
+        "casos-de-uso-saas"
+      ],
+      "rubric": {
+        "privateGuidance": "Valora preguntas que discriminen bien: ¿existe una aplicación estándar? (SaaS), ¿desarrollan código propio sin querer administrar SO? (PaaS), ¿necesitan control del SO, migración sin cambios o réplicas de entornos? (IaaS). El ejemplo de aplicación debe recorrer la matriz de forma coherente. No se ejecuta código.",
+        "criteria": [
+          {
+            "key": "preguntas",
+            "description": "Incluye al menos cuatro preguntas de decisión pertinentes que distingan los tres tipos.",
+            "maxPoints": 3
+          },
+          {
+            "key": "resultados",
+            "description": "Cada camino de la matriz conduce a un tipo de servicio coherente, con un ejemplo de carga por tipo.",
+            "maxPoints": 3
+          },
+          {
+            "key": "aplicacion",
+            "description": "Aplica la matriz a una carga concreta y justifica el resultado.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Tipos de servicio en la nube",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "mayor-control-so",
+        "correo-en-la-nube",
+        "mayor-responsabilidad-cliente",
+        "tarea-en-base-administrada",
+        "migrar-sin-cambios",
+        "app-web-sin-servidores",
+        "describen-paas",
+        "proveedor-en-iaas",
+        "casos-saas",
+        "asignaciones-correctas",
+        "paas-sin-licencias-so",
+        "saas-sin-responsabilidad",
+        "iaas-flexible-y-costosa",
+        "pruebas-en-iaas",
+        "analisis-es-iaas"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Tipos de servicio en la nube",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "mayor-control-so",
+        "correo-en-la-nube",
+        "describen-paas",
+        "tarea-en-base-administrada",
+        "proveedor-en-iaas",
+        "saas-sin-responsabilidad",
+        "migrar-sin-cambios",
+        "asignaciones-correctas"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Tipos de servicio en la nube",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "compara-tres-servicios",
+        "caso-colegio",
+        "matriz-de-decision"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Tipos de servicio en la nube",
+    "edges": [
+      {
+        "from": "iaas",
+        "to": "paas",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "paas",
+        "to": "saas",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "responsabilidad-por-tipo-de-servicio",
+        "to": "iaas",
+        "relation": "explains"
+      },
+      {
+        "from": "responsabilidad-por-tipo-de-servicio",
+        "to": "paas",
+        "relation": "explains"
+      },
+      {
+        "from": "responsabilidad-por-tipo-de-servicio",
+        "to": "saas",
+        "relation": "explains"
+      },
+      {
+        "from": "control-frente-a-esfuerzo",
+        "to": "responsabilidad-por-tipo-de-servicio",
+        "relation": "requires"
+      },
+      {
+        "from": "casos-de-uso-iaas",
+        "to": "iaas",
+        "relation": "applies"
+      },
+      {
+        "from": "casos-de-uso-paas",
+        "to": "paas",
+        "relation": "applies"
+      },
+      {
+        "from": "casos-de-uso-saas",
+        "to": "saas",
+        "relation": "applies"
+      },
+      {
+        "from": "control-frente-a-esfuerzo",
+        "to": "casos-de-uso-iaas",
+        "relation": "explains"
+      }
+    ]
+  }
+}

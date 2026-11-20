@@ -85,12 +85,15 @@ public sealed partial class AssessmentService(AssessmentDbContext db, IAssessmen
         var r = await db.Revisions.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Kind == kind, ct);
         return r is null ? Results.NotFound() : Results.Ok(RevisionResponse(r));
     }
-    public async Task<IResult> List(string kind, int? offset, int? limit, ClaimsPrincipal user, CancellationToken ct)
+    public async Task<IResult> List(string kind, int? offset, int? limit, ClaimsPrincipal user, CancellationToken ct, Guid? unitId = null, Guid? unitRevisionId = null)
     {
         var skip = offset ?? 0;
         var take = limit ?? 50;
-        if (skip < 0 || take is < 1 or > 100) return Invalid("Invalid pagination.");
+        if (skip < 0 || take is < 1 or > 100 || unitId == Guid.Empty || unitRevisionId == Guid.Empty) return Invalid("Invalid pagination.");
         var query = db.Revisions.AsNoTracking().Where(x => x.Kind == kind);
+        // Containment jsonb (@>): a unit's tests stay on its first page however many the catalog holds.
+        if (unitId is { } unit) query = query.Where(x => EF.Functions.JsonContains(x.DocumentJson, Write(new { unitId = unit })));
+        if (unitRevisionId is { } revision) query = query.Where(x => EF.Functions.JsonContains(x.DocumentJson, Write(new { unitRevisionId = revision })));
         var total = await query.CountAsync(ct);
         var rows = await query.OrderBy(x => x.ResourceId).ThenByDescending(x => x.Number).Skip(skip).Take(take).ToListAsync(ct);
         return Results.Ok(new { items = rows.Select(x => kind == "question" ? RevisionResponse(x) : DefinitionSummary(x)), total, offset = skip, limit = take });

@@ -1,0 +1,894 @@
+{
+  "slug": "computo-y-redes",
+  "name": "Cómputo y redes en Azure",
+  "category": "arquitectura-y-servicios",
+  "sortOrder": 5,
+  "profile": "module",
+  "description": "Compara los servicios de cómputo de Azure (máquinas virtuales, Scale Sets, conjuntos de disponibilidad, Azure Virtual Desktop, contenedores, Azure Functions y App Service) y los de redes (redes virtuales, subredes, emparejamiento, VPN Gateway, ExpressRoute, Azure DNS y endpoints públicos y privados). Aprenderás a elegir dónde hospedar una carga de trabajo y cómo conectarla de forma segura.",
+  "outline": [
+    "Compare compute types, including containers, virtual machines, and functions",
+    "Describe virtual machine options, including Azure virtual machines, Azure Virtual Machine Scale Sets, availability sets, and Azure Virtual Desktop",
+    "Describe the resources required for virtual machines",
+    "Describe application hosting options, including web apps, containers, and virtual machines",
+    "Describe virtual networking, including the purpose of Azure virtual networks, subnets, peering, Azure DNS, Azure VPN Gateway, and ExpressRoute",
+    "Define public and private endpoints"
+  ],
+  "unit": {
+    "title": "Cómputo y redes en Azure: hospedar y conectar cargas de trabajo",
+    "concepts": [
+      {
+        "key": "maquinas-virtuales",
+        "name": "Azure Virtual Machines (IaaS)"
+      },
+      {
+        "key": "recursos-de-una-vm",
+        "name": "Recursos que requiere una máquina virtual"
+      },
+      {
+        "key": "opciones-de-vm",
+        "name": "Scale Sets, conjuntos de disponibilidad y Azure Virtual Desktop"
+      },
+      {
+        "key": "contenedores",
+        "name": "Contenedores en Azure (Container Instances, Container Apps y AKS)"
+      },
+      {
+        "key": "azure-functions",
+        "name": "Azure Functions (cómputo sin servidor)"
+      },
+      {
+        "key": "app-service",
+        "name": "Azure App Service"
+      },
+      {
+        "key": "redes-virtuales",
+        "name": "Redes virtuales, subredes y emparejamiento"
+      },
+      {
+        "key": "conectividad-hibrida",
+        "name": "Conectividad híbrida: Azure VPN Gateway y ExpressRoute"
+      },
+      {
+        "key": "endpoints-y-dns",
+        "name": "Endpoints públicos y privados y Azure DNS"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "elegir-computo",
+        "description": "Elegir entre contenedores, Azure Functions, App Service o máquinas virtuales para hospedar una carga de trabajo descrita en un escenario.",
+        "concepts": [
+          "contenedores",
+          "azure-functions",
+          "app-service"
+        ]
+      },
+      {
+        "key": "opciones-de-maquinas-virtuales",
+        "description": "Distinguir las opciones de máquinas virtuales (Scale Sets, conjuntos de disponibilidad y Azure Virtual Desktop) e identificar los recursos que requiere una VM.",
+        "concepts": [
+          "maquinas-virtuales",
+          "recursos-de-una-vm",
+          "opciones-de-vm"
+        ]
+      },
+      {
+        "key": "elegir-servicio-de-red",
+        "description": "Elegir el servicio de red adecuado (subredes, emparejamiento, VPN Gateway, ExpressRoute, Azure DNS o endpoints públicos y privados) para un escenario de conectividad.",
+        "concepts": [
+          "redes-virtuales",
+          "conectividad-hibrida",
+          "endpoints-y-dns"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "maquinas-virtuales",
+        "title": "Máquinas virtuales: control, recursos y opciones de disponibilidad",
+        "objectives": [
+          "opciones-de-maquinas-virtuales"
+        ],
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-compute-networking-services/2-virtual-machines",
+        "text": "**Azure Virtual Machines** te da servidores virtualizados como infraestructura como servicio (IaaS). Controlas el sistema operativo y el software instalado, igual que en un servidor físico, pero sin comprar hardware. A cambio, **tú aplicas parches, actualizaciones y configuración** dentro de la VM. Conviene cuando necesitas control total del sistema operativo, software personalizado o una migración *lift and shift* con pocos cambios.\n\n**Recursos que requiere una VM.** Al crearla defines o creas varios recursos relacionados:\n\n- **Tamaño**: familia, núcleos de vCPU y memoria RAM (por ejemplo, una familia de propósito general o una optimizada para memoria).\n- **Discos**: el disco del sistema operativo y, si hace falta, discos de datos.\n- **Red**: una red virtual y subred, una interfaz de red y, opcionalmente, una IP pública y reglas de puertos (grupo de seguridad de red).\n- **Imagen**: plantilla con el sistema operativo y, a veces, software preinstalado.\n\n**Opciones para agrupar VMs:**\n\n| Opción | Qué resuelve | Idea clave |\n|---|---|---|\n| Virtual Machine Scale Sets | Escalar un grupo de VMs idénticas y con balanceo de carga | Agrega o quita instancias según la demanda o un horario |\n| Conjuntos de disponibilidad | Reducir el impacto de mantenimiento y fallas de hardware | Reparte VMs en **dominios de actualización** y **dominios de error**; no cobra extra |\n| Azure Virtual Desktop | Ofrecer escritorios y aplicaciones Windows desde la nube | Gestión centralizada, integración con Microsoft Entra ID, sesión única o multisesión |\n\nUn **dominio de actualización** agrupa VMs que pueden reiniciarse juntas durante el mantenimiento planificado; un **dominio de error** agrupa VMs que comparten energía y red. En regiones con zonas de disponibilidad suelen preferirse los diseños por zonas, que aíslan fallas a mayor escala.\n\n**Ejemplo práctico.** Una distribuidora migra su ERP heredado, que exige una versión concreta de Windows Server: usa VMs. Para su tienda en línea, con picos en temporada alta, usa un Scale Set que crece automáticamente. Y su centro de llamadas recibe escritorios estandarizados con Azure Virtual Desktop, sin guardar datos en los equipos locales.\n\n**Para recordar en el examen**\n\n- VM = IaaS: máximo control y máxima responsabilidad de administración.\n- Scale Sets = escalado automático de VMs idénticas.\n- Conjunto de disponibilidad = dominios de actualización y de error, sin costo adicional.\n- Azure Virtual Desktop = escritorios y apps Windows virtualizados."
+      },
+      {
+        "key": "contenedores-functions-app-service",
+        "title": "Contenedores, Azure Functions y App Service: elegir dónde hospedar",
+        "objectives": [
+          "elegir-computo"
+        ],
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-compute-networking-services/7-describe-application-hosting-options",
+        "text": "Además de las VMs, Azure ofrece opciones que te liberan de administrar el sistema operativo. Entenderlas como un espectro ayuda: a la izquierda, más control; a la derecha, menos trabajo operativo.\n\n**Contenedores.** Empaquetan una aplicación con sus dependencias y comparten el sistema operativo del host, así que son livianos, arrancan rápido y se crean o detienen dinámicamente. Docker es uno de los motores más usados. Opciones en Azure:\n\n- **Azure Container Instances**: la forma más rápida y simple de ejecutar un contenedor, sin administrar VMs (PaaS).\n- **Azure Container Apps**: también PaaS, con balanceo de carga y escalado integrados.\n- **Azure Kubernetes Service (AKS)**: orquestador que administra el ciclo de vida de flotas de contenedores.\n\nLos contenedores encajan con **microservicios**: separas front end, back end y otros componentes para escalar o actualizar cada uno por su cuenta.\n\n**Azure Functions.** Cómputo **sin servidor** y **controlado por eventos**: una solicitud HTTP, un temporizador o un mensaje activa el código, que se ejecuta y libera recursos al terminar. Escala automáticamente y, en el modelo sin servidor, pagas solo el tiempo de ejecución. Ideal para tareas breves. Por defecto las funciones no guardan estado; **Durable Functions** permite flujos con estado.\n\n**Azure App Service.** Servicio PaaS basado en HTTP para hospedar aplicaciones web, API REST, back ends móviles y WebJobs en .NET, Java, Node.js, Python o PHP, sobre Windows o Linux. Incluye escalado, alta disponibilidad y despliegue continuo desde GitHub, Azure DevOps u otro repositorio Git.\n\n| Opción | ¿Administras el SO? | Escalado | Caso típico |\n|---|---|---|---|\n| Máquina virtual | Sí | Manual o con Scale Sets | Software heredado o personalizado |\n| Contenedores | No (en ACI y Container Apps) | Por contenedor u orquestado | Microservicios portables |\n| Azure Functions | No | Automático por eventos | Tareas cortas activadas por eventos |\n| App Service | No | Integrado | Sitios web y API |\n\n**Ejemplo práctico.** Una agencia de viajes publica su sitio web en App Service; usa Azure Functions para generar el PDF de cada reserva cuando llega un mensaje a una cola, y mueve su motor de precios a contenedores en AKS para escalarlo aparte.\n\n**Para recordar en el examen**\n\n- Contenedor: liviano, sin SO propio que administrar.\n- Functions: eventos + sin servidor + pago por ejecución.\n- App Service: hospedaje web PaaS con despliegue continuo."
+      },
+      {
+        "key": "redes-virtuales-y-endpoints",
+        "title": "Redes virtuales, subredes, emparejamiento y endpoints",
+        "objectives": [
+          "elegir-servicio-de-red"
+        ],
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-networking-services/2-virtual-network",
+        "text": "**Azure Virtual Network** permite que tus recursos (VMs, aplicaciones, bases de datos) se comuniquen entre sí, con internet y con tu red local. Piensa en ella como una extensión de tu red privada dentro de Azure.\n\nCapacidades principales de una red virtual:\n\n- **Aislamiento y segmentación**: defines un espacio de direcciones IP y lo divides en **subredes**, por ejemplo una para la capa web y otra para datos.\n- **Comunicación con internet**: asignando una IP pública a un recurso o colocándolo detrás de un balanceador de carga público.\n- **Comunicación entre recursos de Azure** y con servicios como Azure Storage o Azure SQL Database.\n- **Comunicación con la red local** mediante VPN o ExpressRoute.\n- **Enrutamiento** con tablas de rutas y rutas definidas por el usuario.\n- **Filtrado de tráfico** con grupos de seguridad de red (reglas por IP, puerto y protocolo) o aplicaciones virtuales de red, como un firewall.\n\n**Emparejamiento (peering).** Conecta dos redes virtuales directamente, aunque estén en regiones distintas. El tráfico es privado y viaja por la red troncal de Microsoft, sin pasar por internet. El emparejamiento **no es transitivo**: si A está emparejada con B y B con C, A no llega a C sin una configuración adicional.\n\n**Endpoints públicos y privados:**\n\n| Tipo | Dirección | Alcance |\n|---|---|---|\n| Endpoint público | IP pública | Accesible desde cualquier lugar de internet, sujeto a los controles que configures |\n| Endpoint privado | IP privada del espacio de direcciones de tu red virtual | Solo accesible desde la red virtual, redes emparejadas o la red local conectada |\n\nUn endpoint privado (con Azure Private Link) es una interfaz de red que \"trae\" un servicio PaaS, como una base de datos, a tu red virtual. Así el tráfico no sale a internet y puedes desactivar el acceso público al servicio.\n\n**Ejemplo práctico.** Una fintech crea la red `vnet-pagos` con las subredes `web` y `datos`. Su base de datos de Azure SQL Database se expone solo mediante un endpoint privado en la subred `datos`, mientras el sitio web conserva un endpoint público. Una segunda red con servicios compartidos se conecta por emparejamiento.\n\n**Para recordar en el examen**\n\n- Subred = división del espacio de direcciones de una red virtual.\n- Emparejamiento = conexión privada entre redes virtuales, incluso entre regiones; no transitiva.\n- Endpoint público = IP pública; endpoint privado = IP privada de tu red virtual."
+      },
+      {
+        "key": "vpn-expressroute-dns",
+        "title": "Conectividad híbrida y nombres: VPN Gateway, ExpressRoute y Azure DNS",
+        "objectives": [
+          "elegir-servicio-de-red"
+        ],
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-networking-services/3-virtual-private-networks",
+        "text": "Muchas empresas combinan su red local con Azure. Hay dos caminos principales y un servicio que ayuda a encontrar todo por nombre.\n\n**Azure VPN Gateway.** Una VPN usa un túnel **cifrado** sobre una red no confiable, normalmente internet. VPN Gateway se implementa en una subred dedicada de la red virtual y admite:\n\n- **Sitio a sitio**: conecta un centro de datos u oficina con la red virtual.\n- **Punto a sitio**: conecta un dispositivo individual, como la laptop de alguien que trabaja desde casa.\n- **Red a red**: conecta dos redes virtuales.\n\nSolo puede haber **una puerta de enlace VPN por red virtual**, aunque una sola puede conectar varios sitios. Las VPN **basadas en rutas** son las preferidas y se requieren para punto a sitio, conexiones entre redes virtuales y coexistencia con ExpressRoute. Por defecto la puerta de enlace funciona como activa/en espera; también puede ser activa/activa o con redundancia de zona.\n\n**Azure ExpressRoute.** Extiende tu red local hacia la nube de Microsoft mediante una **conexión privada** a través de un proveedor de conectividad (un *circuito*). **No pasa por internet**, por lo que ofrece más confiabilidad, latencia consistente y mayor ancho de banda. Da acceso a servicios de Azure y de Microsoft 365, usa BGP para enrutamiento dinámico y tiene redundancia integrada. Con **ExpressRoute Global Reach** puedes conectar entre sí sedes que ya tienen circuitos. Una VPN puede servir como respaldo de ExpressRoute.\n\n| Criterio | VPN Gateway | ExpressRoute |\n|---|---|---|\n| Medio | Internet, con cifrado | Conexión privada con un proveedor |\n| Latencia | Variable | Predecible |\n| Caso típico | Oficinas pequeñas, trabajo remoto | Cargas críticas, alto volumen o cumplimiento |\n\n**Azure DNS.** Hospeda tus dominios DNS en la infraestructura de Azure, con las mismas credenciales, facturación y control de acceso (Azure RBAC, registros de actividad, bloqueos) que tus otros recursos. Usa red *anycast*, admite **zonas privadas** para nombres dentro de tus redes virtuales y **registros de alias** que siguen a un recurso aunque cambie su IP. **No sirve para comprar dominios**: eso se hace con un registrador.\n\n**Ejemplo práctico.** Una cadena de tiendas conecta su oficina central con ExpressRoute y usa VPN punto a sitio para sus supervisores en ruta; publica `tienda.ejemplo.com` en Azure DNS con un registro de alias hacia la IP pública de su aplicación.\n\n**Para recordar en el examen**\n\n- VPN = cifrada por internet; ExpressRoute = privada, sin internet.\n- Punto a sitio = un dispositivo; sitio a sitio = una red local completa.\n- Azure DNS hospeda dominios, no los vende."
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explica-el-espectro-de-computo",
+        "objectives": [
+          "elegir-computo"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** la diferencia entre una máquina virtual, un contenedor, Azure Functions y App Service.\n\nUsa una analogía de transporte: tener un auto propio, rentar un auto, tomar un taxi o usar un servicio de entregas. Asigna cada opción de Azure a una forma de transporte y explica qué parte del trabajo sigue siendo tuya en cada caso.\n\nTermina pidiéndole al tutor un escenario nuevo para que elijas la opción adecuada en voz alta."
+      },
+      {
+        "key": "tabla-comparativa-de-computo",
+        "objectives": [
+          "elegir-computo",
+          "opciones-de-maquinas-virtuales"
+        ],
+        "prompt": "**Completa la tabla comparativa** sin mirar las lecturas y luego verifícala con el tutor.\n\n| Opción | ¿Quién administra el SO? | ¿Cómo escala? | ¿Cómo pagas? | Un caso de uso |\n|---|---|---|---|---|\n| Azure Virtual Machines | | | | |\n| Virtual Machine Scale Sets | | | | |\n| Azure Container Instances | | | | |\n| Azure Kubernetes Service | | | | |\n| Azure Functions | | | | |\n| Azure App Service | | | | |\n| Azure Virtual Desktop | | | | |\n\nMarca con un asterisco las dos filas en las que dudaste más y pide al tutor una explicación adicional solo de esas."
+      },
+      {
+        "key": "escenario-de-conectividad",
+        "objectives": [
+          "elegir-servicio-de-red"
+        ],
+        "prompt": "**Escenario.** *Hospital San Lucas*, una red de clínicas ficticia, migra a Azure. Decide qué servicio de red usarías para cada necesidad y explica por qué:\n\n1. La sede central necesita conectarse a Azure con latencia predecible y sin que el tráfico clínico pase por internet.\n2. Mientras se contrata ese enlace, necesitan una conexión cifrada provisional desde la sede.\n3. Los médicos de turno deben conectarse desde sus laptops a la red virtual.\n4. La red de laboratorio y la red de historias clínicas, en regiones distintas, deben comunicarse en privado.\n5. La base de datos de pacientes no debe tener una IP pública accesible.\n6. Quieren administrar el dominio `sanlucas.ejemplo` con las mismas credenciales que el resto de Azure.\n\nCompara tus respuestas con el tutor y discutan cuál de ellas tiene más de una opción válida."
+      },
+      {
+        "key": "laboratorio-red-virtual",
+        "objectives": [
+          "opciones-de-maquinas-virtuales",
+          "elegir-servicio-de-red"
+        ],
+        "prompt": "**Laboratorio opcional en el portal de Azure.**\n\n> **Aviso de costos:** usa una cuenta gratuita de Azure o un entorno de práctica. Crear una red virtual con subredes no tiene cargo, pero una VM, una IP pública o una puerta de enlace VPN **sí generan costos**. No completes la creación de VMs ni de puertas de enlace, y **elimina el grupo de recursos al terminar**.\n\n1. Crea el grupo de recursos `rg-redes-az900`.\n2. Crea la red virtual `vnet-practica` con dos subredes: `web` y `datos`.\n3. Inicia el asistente de **Máquina virtual** sin finalizarlo: identifica dónde eliges tamaño, imagen, discos, red virtual, subred, IP pública y puertos de entrada. Anota qué recursos crearía el asistente junto con la VM.\n4. Cancela el asistente y elimina `rg-redes-az900`.\n\nExplícale al tutor qué recursos requiere una VM y cuáles de ellos generan costo aunque la VM esté detenida."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluacion-eleccion-de-computo",
+        "objectives": [
+          "elegir-computo"
+        ],
+        "prompt": "Una empresa tiene tres necesidades: un sitio web corporativo con despliegue continuo, una tarea que redimensiona imágenes cada vez que se suben a almacenamiento y una aplicación dividida en microservicios que deben escalar por separado. Elige un servicio de cómputo de Azure para cada una y justifica tu elección comparándolo con al menos una alternativa.",
+        "privateCriteria": "Respuesta correcta: App Service para el sitio web (PaaS HTTP, escalado integrado, despliegue continuo desde GitHub/Azure DevOps); Azure Functions para la tarea por eventos (sin servidor, se activa por evento, escala automáticamente, pago por ejecución); contenedores con AKS o Azure Container Apps para microservicios (escalado independiente, orquestación). La comparación debe mencionar por qué una VM implicaría más administración del sistema operativo o pago por capacidad inactiva. Penaliza elegir VMs para todo sin justificar control del SO, o confundir Functions con App Service."
+      },
+      {
+        "key": "evaluacion-opciones-de-vm",
+        "objectives": [
+          "opciones-de-maquinas-virtuales"
+        ],
+        "prompt": "Explica qué recursos necesita una máquina virtual en Azure y cuándo usarías Virtual Machine Scale Sets, conjuntos de disponibilidad o Azure Virtual Desktop. Incluye un ejemplo de empresa para cada opción.",
+        "privateCriteria": "Debe listar al menos tamaño (vCPU/RAM), discos (SO y datos), red virtual/subred, interfaz de red y, opcionalmente, IP pública y reglas de puertos o NSG. Debe explicar que la VM es IaaS y el cliente administra el SO. Scale Sets: grupos de VMs idénticas con escalado automático y balanceo de carga. Conjuntos de disponibilidad: dominios de actualización y de error para reducir el impacto de mantenimiento y fallas, sin costo adicional. Azure Virtual Desktop: escritorios y aplicaciones Windows virtualizados, gestión centralizada e integración con Microsoft Entra ID. Penaliza confundir conjunto de disponibilidad con escalado automático."
+      },
+      {
+        "key": "evaluacion-servicios-de-red",
+        "objectives": [
+          "elegir-servicio-de-red"
+        ],
+        "prompt": "Diseña en texto la conectividad de una empresa con una sede local y dos redes virtuales en regiones distintas. Indica dónde usarías subredes, emparejamiento, VPN Gateway o ExpressRoute, Azure DNS y endpoints públicos o privados, y justifica cada decisión.",
+        "privateCriteria": "Debe segmentar cada red virtual en subredes; conectar las redes virtuales con emparejamiento (tráfico privado por la red troncal de Microsoft, válido entre regiones, no transitivo); elegir VPN Gateway (cifrada por internet; sitio a sitio para la sede, punto a sitio para usuarios) o ExpressRoute (privada, sin internet, latencia predecible) con criterio explícito; usar Azure DNS para hospedar el dominio o zonas privadas, aclarando que no vende dominios; usar endpoints privados (IP privada de la red virtual) para servicios internos y públicos solo para lo que debe ser accesible desde internet. Penaliza afirmar que ExpressRoute viaja por internet o que el emparejamiento es transitivo."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "recursos-de-una-vm",
+        "requires": "maquinas-virtuales"
+      },
+      {
+        "concept": "opciones-de-vm",
+        "requires": "maquinas-virtuales"
+      },
+      {
+        "concept": "contenedores",
+        "requires": "maquinas-virtuales"
+      },
+      {
+        "concept": "recursos-de-una-vm",
+        "requires": "redes-virtuales"
+      },
+      {
+        "concept": "conectividad-hibrida",
+        "requires": "redes-virtuales"
+      },
+      {
+        "concept": "endpoints-y-dns",
+        "requires": "redes-virtuales"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "codigo-por-evento",
+      "type": "singleChoice",
+      "prompt": "Una empresa necesita ejecutar un fragmento de código breve cada vez que se sube un archivo a su almacenamiento y no quiere pagar por servidores encendidos cuando no hay archivos nuevos. ¿Qué servicio es el más adecuado?",
+      "objectives": [
+        "elegir-computo"
+      ],
+      "concepts": [
+        "azure-functions"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Virtual Machines"
+        },
+        {
+          "key": "b",
+          "text": "Azure App Service"
+        },
+        {
+          "key": "c",
+          "text": "Azure Functions",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Azure Virtual Desktop"
+        }
+      ]
+    },
+    {
+      "key": "contenedor-simple",
+      "type": "singleChoice",
+      "prompt": "Un equipo de desarrollo quiere ejecutar un único contenedor en Azure de la forma más rápida y sencilla, sin administrar máquinas virtuales ni un orquestador. ¿Qué servicio debe usar?",
+      "objectives": [
+        "elegir-computo"
+      ],
+      "concepts": [
+        "contenedores"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Container Instances",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure Kubernetes Service"
+        },
+        {
+          "key": "c",
+          "text": "Virtual Machine Scale Sets"
+        },
+        {
+          "key": "d",
+          "text": "Azure Virtual Desktop"
+        }
+      ]
+    },
+    {
+      "key": "sitio-web-paas",
+      "type": "singleChoice",
+      "prompt": "Una agencia de marketing quiere publicar un sitio web en Node.js con despliegue continuo desde GitHub y escalado integrado, sin administrar el sistema operativo. ¿Qué opción le conviene?",
+      "objectives": [
+        "elegir-computo"
+      ],
+      "concepts": [
+        "app-service"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una máquina virtual con un servidor web instalado"
+        },
+        {
+          "key": "b",
+          "text": "Azure App Service",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Un conjunto de disponibilidad con dos VMs"
+        },
+        {
+          "key": "d",
+          "text": "Azure Virtual Desktop con aplicaciones publicadas"
+        }
+      ]
+    },
+    {
+      "key": "aks-orquesta",
+      "type": "trueFalse",
+      "prompt": "Azure Kubernetes Service es un servicio de orquestación que administra el ciclo de vida de flotas de contenedores.",
+      "objectives": [
+        "elegir-computo"
+      ],
+      "concepts": [
+        "contenedores"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "rasgos-de-functions",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "¿Qué características corresponden a Azure Functions? Selecciona dos.",
+      "objectives": [
+        "elegir-computo"
+      ],
+      "concepts": [
+        "azure-functions"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Se ejecuta en respuesta a eventos como una solicitud HTTP o un temporizador",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Escala automáticamente según la demanda",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Requiere que administres parches del sistema operativo"
+        },
+        {
+          "key": "d",
+          "text": "Siempre conserva el estado entre ejecuciones sin configuración adicional"
+        }
+      ]
+    },
+    {
+      "key": "microservicios",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "Una empresa divide su tienda en línea en microservicios y necesita escalar cada componente de forma independiente con balanceo de carga u orquestación. ¿Qué servicios son opciones adecuadas? Selecciona dos.",
+      "objectives": [
+        "elegir-computo"
+      ],
+      "concepts": [
+        "contenedores"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Kubernetes Service",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure Container Apps",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure Virtual Desktop"
+        },
+        {
+          "key": "d",
+          "text": "Azure DNS"
+        },
+        {
+          "key": "e",
+          "text": "Azure VPN Gateway"
+        }
+      ]
+    },
+    {
+      "key": "aplicacion-heredada",
+      "type": "singleChoice",
+      "prompt": "Una empresa migra una aplicación heredada que exige una versión específica del sistema operativo y software personalizado instalado en el servidor. ¿Qué opción le da más control?",
+      "objectives": [
+        "opciones-de-maquinas-virtuales"
+      ],
+      "concepts": [
+        "maquinas-virtuales"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Functions"
+        },
+        {
+          "key": "b",
+          "text": "Azure App Service"
+        },
+        {
+          "key": "c",
+          "text": "Azure Container Instances"
+        },
+        {
+          "key": "d",
+          "text": "Azure Virtual Machines",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "escalado-de-vms",
+      "type": "singleChoice",
+      "prompt": "Una tienda en línea necesita un grupo de máquinas virtuales idénticas que aumente o reduzca instancias automáticamente según la demanda. ¿Qué debe usar?",
+      "objectives": [
+        "opciones-de-maquinas-virtuales"
+      ],
+      "concepts": [
+        "opciones-de-vm"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un conjunto de disponibilidad"
+        },
+        {
+          "key": "b",
+          "text": "Virtual Machine Scale Sets",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure Virtual Desktop"
+        },
+        {
+          "key": "d",
+          "text": "Un grupo de administración"
+        }
+      ]
+    },
+    {
+      "key": "escritorios-en-la-nube",
+      "type": "singleChoice",
+      "prompt": "Un centro de llamadas con personal en varias ciudades necesita escritorios Windows estandarizados en la nube, administrados de forma centralizada e integrados con Microsoft Entra ID. ¿Qué servicio cumple el requisito?",
+      "objectives": [
+        "opciones-de-maquinas-virtuales"
+      ],
+      "concepts": [
+        "opciones-de-vm"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Virtual Desktop",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure App Service"
+        },
+        {
+          "key": "c",
+          "text": "Azure Container Apps"
+        },
+        {
+          "key": "d",
+          "text": "Azure Functions"
+        }
+      ]
+    },
+    {
+      "key": "recursos-al-crear-vm",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Al crear una máquina virtual en Azure, ¿qué recursos se definen o se crean junto con ella? Selecciona tres.",
+      "objectives": [
+        "opciones-de-maquinas-virtuales"
+      ],
+      "concepts": [
+        "recursos-de-una-vm",
+        "maquinas-virtuales"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Uno o más discos",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Una interfaz de red",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Una red virtual con su subred",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Un grupo de administración"
+        },
+        {
+          "key": "e",
+          "text": "Un circuito de ExpressRoute"
+        }
+      ]
+    },
+    {
+      "key": "dominios-del-conjunto",
+      "type": "trueFalse",
+      "prompt": "Un conjunto de disponibilidad reparte las máquinas virtuales en dominios de actualización y dominios de error para reducir el impacto del mantenimiento y de las fallas de hardware.",
+      "objectives": [
+        "opciones-de-maquinas-virtuales"
+      ],
+      "concepts": [
+        "opciones-de-vm"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "enlace-privado-local",
+      "type": "singleChoice",
+      "prompt": "Una empresa necesita conectar su centro de datos local con Azure mediante un enlace privado que no pase por internet y que ofrezca latencia predecible. ¿Qué servicio debe usar?",
+      "objectives": [
+        "elegir-servicio-de-red"
+      ],
+      "concepts": [
+        "conectividad-hibrida"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "VPN Gateway con conexión de sitio a sitio"
+        },
+        {
+          "key": "b",
+          "text": "Emparejamiento de redes virtuales"
+        },
+        {
+          "key": "c",
+          "text": "Azure ExpressRoute",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Un endpoint público con IP fija"
+        }
+      ]
+    },
+    {
+      "key": "redes-en-dos-regiones",
+      "type": "singleChoice",
+      "prompt": "Dos redes virtuales ubicadas en regiones distintas deben comunicarse de forma privada a través de la red troncal de Microsoft. ¿Qué configura el administrador?",
+      "objectives": [
+        "elegir-servicio-de-red"
+      ],
+      "concepts": [
+        "redes-virtuales"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una VPN de punto a sitio"
+        },
+        {
+          "key": "b",
+          "text": "Un endpoint público en cada red"
+        },
+        {
+          "key": "c",
+          "text": "Una zona privada de Azure DNS"
+        },
+        {
+          "key": "d",
+          "text": "Emparejamiento de redes virtuales",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "tipos-de-endpoint",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué afirmaciones sobre los endpoints en Azure son correctas? Selecciona dos.",
+      "objectives": [
+        "elegir-servicio-de-red"
+      ],
+      "concepts": [
+        "endpoints-y-dns"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Un endpoint privado usa una IP privada del espacio de direcciones de la red virtual",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Un endpoint público usa una IP pública alcanzable desde internet",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Un endpoint privado obliga a que el tráfico viaje por internet"
+        },
+        {
+          "key": "d",
+          "text": "Un endpoint público solo es accesible desde redes virtuales emparejadas"
+        }
+      ]
+    },
+    {
+      "key": "dns-compra-dominios",
+      "type": "trueFalse",
+      "prompt": "Azure DNS permite comprar y registrar nombres de dominio nuevos.",
+      "objectives": [
+        "elegir-servicio-de-red"
+      ],
+      "concepts": [
+        "endpoints-y-dns"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "peering-transitivo",
+      "type": "trueFalse",
+      "prompt": "El emparejamiento de redes virtuales es transitivo: si la red A está emparejada con B y B con C, A se comunica con C automáticamente.",
+      "objectives": [
+        "elegir-servicio-de-red"
+      ],
+      "concepts": [
+        "redes-virtuales"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "compara-tipos-de-computo",
+      "type": "openResponse",
+      "prompt": "Compara máquinas virtuales, contenedores y Azure Functions según tres criterios: nivel de control, responsabilidad de administración y modelo de pago. Propón un caso de uso adecuado para cada uno.",
+      "objectives": [
+        "elegir-computo"
+      ],
+      "concepts": [
+        "contenedores",
+        "azure-functions",
+        "app-service"
+      ],
+      "rubric": {
+        "privateGuidance": "Esperado: VM = máximo control, el cliente administra el SO, paga mientras la VM está asignada; contenedores = livianos, comparten el SO del host, sin administrar SO en ACI/Container Apps, adecuados para microservicios; Functions = sin servidor, por eventos, pago por ejecución, tareas cortas. Puede mencionar App Service como alternativa web. Si el alumno solo define sin comparar, limita el primer criterio a 2 puntos.",
+        "criteria": [
+          {
+            "key": "comparacion",
+            "description": "Compara las tres opciones en control, administración y modelo de pago con precisión.",
+            "maxPoints": 4
+          },
+          {
+            "key": "casos-de-uso",
+            "description": "Propone un caso de uso coherente para cada opción.",
+            "maxPoints": 3
+          },
+          {
+            "key": "vocabulario",
+            "description": "Usa correctamente términos como IaaS, PaaS, sin servidor y controlado por eventos.",
+            "maxPoints": 1
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-muebles-maya",
+      "type": "caseAnalysis",
+      "prompt": "Muebles Maya es una empresa ficticia de fabricación con 300 empleados. Su ERP corre en un servidor físico con Windows Server y un software contable antiguo que solo funciona con una versión específica del sistema operativo. La tienda en línea sufre caídas en temporada de fin de año porque un solo servidor no soporta los picos de tráfico. Además, el área de atención al cliente trabaja desde tres ciudades y cada agente usa una computadora configurada a mano, lo que genera problemas de seguridad cuando se pierde un equipo. La gerencia quiere mover todo a Azure sin rediseñar el ERP.\n\nAnaliza el caso y recomienda las opciones de máquinas virtuales de Azure para cada problema, indicando qué recursos necesitarías crear.",
+      "objectives": [
+        "opciones-de-maquinas-virtuales"
+      ],
+      "concepts": [
+        "maquinas-virtuales",
+        "recursos-de-una-vm",
+        "opciones-de-vm"
+      ],
+      "rubric": {
+        "privateGuidance": "Esperado: ERP en Azure Virtual Machines (lift and shift; el SO específico exige IaaS); tienda en línea en Virtual Machine Scale Sets con balanceo de carga para escalar en picos (acepta App Service como alternativa si lo justifica, aunque el caso pide opciones de VM); agentes con Azure Virtual Desktop para centralizar escritorios y evitar datos en equipos locales. Recursos: tamaño, discos, red virtual/subred, interfaz de red, IP pública o balanceador, reglas de puertos. Puede mencionar conjuntos de disponibilidad o zonas para el ERP.",
+        "criteria": [
+          {
+            "key": "diagnostico",
+            "description": "Identifica los tres problemas (dependencia del SO, picos de demanda, escritorios dispersos e inseguros).",
+            "maxPoints": 2
+          },
+          {
+            "key": "opciones",
+            "description": "Asigna VM, Scale Sets y Azure Virtual Desktop a cada problema con justificación.",
+            "maxPoints": 4
+          },
+          {
+            "key": "recursos",
+            "description": "Enumera los recursos que requiere una VM (tamaño, discos, red, interfaz, IP o puertos).",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "disena-red-hub",
+      "type": "practicalExercise",
+      "prompt": "Diseña la red de Azure para *EduNube*, una plataforma educativa ficticia. Requisitos: una aplicación web pública, una capa de API interna y una base de datos de Azure SQL Database que no debe ser accesible desde internet; una red de servicios compartidos en otra región; la oficina central debe conectarse primero por VPN y, en un año, por un enlace privado dedicado; y el dominio `edunube.ejemplo` debe administrarse en Azure.\n\nEntrega: (1) redes virtuales y subredes con su propósito; (2) cómo conectas las redes entre sí y con la oficina; (3) qué recursos usan endpoint público y cuáles privado; (4) el papel de Azure DNS. No necesitas escribir código.",
+      "objectives": [
+        "elegir-servicio-de-red"
+      ],
+      "concepts": [
+        "redes-virtuales",
+        "conectividad-hibrida",
+        "endpoints-y-dns"
+      ],
+      "rubric": {
+        "privateGuidance": "Diseño de referencia: red principal con subredes web, api y datos (la puerta de enlace VPN requiere su propia subred dedicada); red de servicios compartidos conectada por emparejamiento global; VPN Gateway sitio a sitio ahora y ExpressRoute después (la VPN puede quedar como respaldo); endpoint público solo para la web; endpoint privado para Azure SQL Database y acceso público deshabilitado; Azure DNS para hospedar el dominio (comprado en un registrador) y zona privada para resolución interna. Acepta diseños equivalentes bien justificados.",
+        "criteria": [
+          {
+            "key": "segmentacion",
+            "description": "Define redes virtuales y subredes con propósitos claros y coherentes con los requisitos.",
+            "maxPoints": 3
+          },
+          {
+            "key": "conectividad",
+            "description": "Usa emparejamiento entre redes y elige VPN Gateway y luego ExpressRoute para la oficina, explicando la diferencia.",
+            "maxPoints": 3
+          },
+          {
+            "key": "endpoints",
+            "description": "Asigna endpoint público solo a lo que debe ser accesible desde internet y endpoint privado a la base de datos.",
+            "maxPoints": 2
+          },
+          {
+            "key": "dns",
+            "description": "Describe el papel de Azure DNS y aclara que no sirve para comprar el dominio.",
+            "maxPoints": 1
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Cómputo y redes en Azure",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "codigo-por-evento",
+        "contenedor-simple",
+        "sitio-web-paas",
+        "aks-orquesta",
+        "rasgos-de-functions",
+        "microservicios",
+        "aplicacion-heredada",
+        "escalado-de-vms",
+        "escritorios-en-la-nube",
+        "recursos-al-crear-vm",
+        "dominios-del-conjunto",
+        "enlace-privado-local",
+        "redes-en-dos-regiones",
+        "tipos-de-endpoint",
+        "dns-compra-dominios",
+        "peering-transitivo"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Cómputo y redes en Azure",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "codigo-por-evento",
+        "contenedor-simple",
+        "rasgos-de-functions",
+        "aplicacion-heredada",
+        "escritorios-en-la-nube",
+        "recursos-al-crear-vm",
+        "enlace-privado-local",
+        "tipos-de-endpoint"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Cómputo y redes en Azure",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "compara-tipos-de-computo",
+        "caso-muebles-maya",
+        "disena-red-hub"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Cómputo y redes en Azure",
+    "edges": [
+      {
+        "from": "recursos-de-una-vm",
+        "to": "maquinas-virtuales",
+        "relation": "requires"
+      },
+      {
+        "from": "opciones-de-vm",
+        "to": "maquinas-virtuales",
+        "relation": "requires"
+      },
+      {
+        "from": "contenedores",
+        "to": "maquinas-virtuales",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "azure-functions",
+        "to": "contenedores",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "app-service",
+        "to": "maquinas-virtuales",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "azure-functions",
+        "to": "app-service",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "recursos-de-una-vm",
+        "to": "redes-virtuales",
+        "relation": "requires"
+      },
+      {
+        "from": "conectividad-hibrida",
+        "to": "redes-virtuales",
+        "relation": "requires"
+      },
+      {
+        "from": "endpoints-y-dns",
+        "to": "redes-virtuales",
+        "relation": "requires"
+      },
+      {
+        "from": "app-service",
+        "to": "endpoints-y-dns",
+        "relation": "applies"
+      }
+    ]
+  }
+}

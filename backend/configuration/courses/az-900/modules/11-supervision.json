@@ -1,0 +1,848 @@
+{
+  "slug": "herramientas-de-supervision",
+  "name": "Herramientas de supervisión en Azure",
+  "category": "administracion-y-gobernanza",
+  "sortOrder": 11,
+  "profile": "module",
+  "description": "Aprende a elegir la herramienta de supervisión adecuada: Azure Advisor para recomendaciones de confiabilidad, seguridad, rendimiento, operación y costo; Azure Service Health para conocer incidentes y mantenimiento de Azure que te afectan; y Azure Monitor, con Log Analytics, alertas y Application Insights, para analizar métricas, registros y el comportamiento de tus aplicaciones.",
+  "outline": [
+    "Describe the purpose of Azure Advisor",
+    "Describe Azure Service Health",
+    "Describe Azure Monitor, including Log Analytics, Azure Monitor alerts, and Azure Monitor Application Insights"
+  ],
+  "unit": {
+    "title": "Herramientas de supervisión en Azure",
+    "concepts": [
+      {
+        "key": "azure-advisor",
+        "name": "Azure Advisor"
+      },
+      {
+        "key": "categorias-de-recomendaciones",
+        "name": "Categorías de recomendaciones de Advisor"
+      },
+      {
+        "key": "azure-service-health",
+        "name": "Azure Service Health"
+      },
+      {
+        "key": "vistas-de-salud",
+        "name": "Azure Status, Service Health y Resource Health"
+      },
+      {
+        "key": "azure-monitor",
+        "name": "Azure Monitor: métricas y registros"
+      },
+      {
+        "key": "log-analytics",
+        "name": "Log Analytics y consultas KQL"
+      },
+      {
+        "key": "alertas-de-monitor",
+        "name": "Alertas de Azure Monitor y grupos de acciones"
+      },
+      {
+        "key": "application-insights",
+        "name": "Application Insights"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "distinguir-herramientas-de-supervision",
+        "description": "Distinguir Azure Advisor, Azure Service Health y Azure Monitor según la pregunta que responde cada uno en un escenario de operación.",
+        "concepts": [
+          "azure-advisor",
+          "azure-service-health",
+          "azure-monitor"
+        ]
+      },
+      {
+        "key": "elegir-recomendacion-o-vista-de-salud",
+        "description": "Elegir la categoría de recomendación de Advisor o la vista de salud (Azure Status, Service Health o Resource Health) adecuada para un escenario de optimización o incidente.",
+        "concepts": [
+          "categorias-de-recomendaciones",
+          "vistas-de-salud"
+        ]
+      },
+      {
+        "key": "elegir-componente-de-azure-monitor",
+        "description": "Elegir entre Log Analytics, las alertas de Azure Monitor y Application Insights para un escenario de supervisión de infraestructura o de aplicaciones.",
+        "concepts": [
+          "log-analytics",
+          "alertas-de-monitor",
+          "application-insights"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "proposito-de-advisor",
+        "title": "Azure Advisor: recomendaciones personalizadas",
+        "text": "**Azure Advisor** analiza la configuración y el uso de tus recursos y te entrega **recomendaciones personalizadas** basadas en buenas prácticas. Piensa en él como un consultor que revisa tu suscripción y te dice qué mejorar. Viene integrado en el portal y no requiere instalar nada.\n\n**Las cinco categorías**\n\n| Categoría | En qué te ayuda | Ejemplo de recomendación |\n|---|---|---|\n| **Confiabilidad** | Mantener las aplicaciones disponibles y resilientes | Usar zonas de disponibilidad o habilitar copias de seguridad |\n| **Seguridad** | Detectar amenazas y vulnerabilidades | Recomendaciones de seguridad integradas desde Microsoft Defender for Cloud |\n| **Rendimiento** | Mejorar la velocidad de las aplicaciones | Ajustar el nivel de un servicio que está saturado |\n| **Excelencia operativa** | Mejorar procesos, implementación y administración | Configurar alertas de Service Health |\n| **Costo** | Reducir gasto innecesario | Reducir el tamaño o apagar VM infrautilizadas, comprar reservas |\n\n**Cómo se trabaja con Advisor**\n\n- El panel muestra recomendaciones de todas tus suscripciones y puedes filtrarlas por suscripción, grupo de recursos o servicio.\n- Cada recomendación incluye una acción sugerida que puedes aplicar de inmediato, **posponer** o **descartar**.\n- Puedes configurar **notificaciones** para enterarte cuando aparecen recomendaciones nuevas.\n- Una puntuación general te ayuda a ver el avance a medida que aplicas mejoras.\n\n**Lo que Advisor no es**\n\nAdvisor **recomienda**; no impone reglas como Azure Policy ni informa caídas de la plataforma como Service Health. Tampoco recolecta métricas detalladas de tus aplicaciones: eso es trabajo de Azure Monitor.\n\n**Ejemplo práctico**\n\nUna empresa de comercio electrónico abre Advisor después de su temporada alta. En la categoría de costo aparecen cinco VM con uso de CPU muy bajo durante semanas; en confiabilidad, una base de datos sin redundancia geográfica. El equipo reduce el tamaño de las VM, programa la mejora de la base de datos y pospone una recomendación de rendimiento que evaluará en el siguiente trimestre.\n\n**Para recordar en el examen**\n\n- Advisor = recomendaciones personalizadas y accionables.\n- Cinco categorías: confiabilidad, seguridad, rendimiento, excelencia operativa y costo.\n- Puedes aplicar, posponer o descartar recomendaciones y recibir notificaciones.\n- Si el enunciado habla de \"sugerencias para optimizar\", piensa en Advisor.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-monitoring-tools-azure/2-describe-purpose-of-azure-advisor",
+        "objectives": [
+          "distinguir-herramientas-de-supervision",
+          "elegir-recomendacion-o-vista-de-salud"
+        ]
+      },
+      {
+        "key": "azure-service-health",
+        "title": "Azure Service Health: ¿es problema de Azure o nuestro?",
+        "text": "Cuando algo falla, la primera pregunta suele ser: \"¿Es problema nuestro o de Azure?\". **Azure Service Health** responde esa pregunta combinando tres vistas que van de lo general a lo particular.\n\n**Las tres vistas**\n\n| Vista | Alcance | Cuándo consultarla |\n|---|---|---|\n| **Azure Status** | Global: todos los servicios y regiones de Azure | Oyes de una caída generalizada y quieres confirmar si afecta a Azure |\n| **Service Health** | Los servicios y regiones que **tú** usas | Quieres saber de incidentes, mantenimiento planificado y avisos que te afectan |\n| **Resource Health** | Un recurso individual, como una VM concreta | Un recurso no responde y necesitas saber si el problema está del lado de Azure o del tuyo |\n\n**Qué te ofrece Service Health**\n\n- **Problemas de servicio:** incidentes que afectan ahora a tus recursos.\n- **Mantenimiento planificado:** trabajos programados que podrían afectar la disponibilidad.\n- **Avisos de salud:** cambios que requieren acción, como funciones que se retiran.\n- **Alertas:** puedes configurar alertas de Service Health que, mediante un grupo de acciones, te notifiquen por correo, SMS u otros canales.\n- **Historial:** conserva eventos pasados para identificar tendencias y documentar incidentes.\n- **Vínculos a soporte** para actuar rápido cuando un evento afecta tus cargas.\n\n**Diferencia con Advisor y Monitor**\n\nService Health habla de la **salud de la plataforma Azure** y de cómo te afecta. Advisor da **recomendaciones** sobre tu configuración. Azure Monitor recopila **datos de tus recursos y aplicaciones**. Un mismo incidente puede mostrarse en Service Health como evento de plataforma, mientras Monitor te muestra el aumento de errores en tu aplicación.\n\n**Ejemplo práctico**\n\nUn lunes, la aplicación de una aseguradora responde lento. El equipo revisa **Resource Health** de la VM principal y ve un evento iniciado por la plataforma. En **Service Health** confirma un incidente en el servicio de proceso de su región y lee la actualización con la hora estimada de solución. Para no volver a enterarse por los usuarios, configura una alerta de Service Health para sus regiones y servicios, conectada al grupo de acciones del equipo de guardia.\n\n**Para recordar en el examen**\n\n- Azure Status = salud global; Service Health = lo que tú usas; Resource Health = un recurso.\n- Service Health informa incidentes, mantenimiento y avisos, y admite alertas.\n- Resource Health ayuda a saber si el problema es de Azure o de tu configuración.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-monitoring-tools-azure/3-describe-azure-service-health",
+        "objectives": [
+          "distinguir-herramientas-de-supervision",
+          "elegir-recomendacion-o-vista-de-salud"
+        ]
+      },
+      {
+        "key": "azure-monitor-logs-alertas",
+        "title": "Azure Monitor: métricas, Log Analytics y alertas",
+        "text": "**Azure Monitor** es la plataforma para **recopilar, analizar y actuar** sobre datos de supervisión de tus recursos y aplicaciones, ya sea en Azure, en tu centro de datos o en otras nubes.\n\n**Qué datos recopila**\n\n- **Métricas:** valores numéricos en el tiempo, como porcentaje de CPU o solicitudes por segundo. Son ligeras y casi en tiempo real.\n- **Registros (logs):** eventos y datos con más detalle, como errores de la aplicación, registros de actividad o datos de rendimiento del sistema operativo.\n\nEsos datos se almacenan de forma centralizada y se aprovechan con paneles, consultas, alertas y automatización.\n\n**Log Analytics**\n\nEs la herramienta del portal para **escribir y ejecutar consultas** sobre los registros que Azure Monitor guarda en un área de trabajo de Log Analytics. Usa el lenguaje **KQL** (Kusto Query Language). Sirve tanto para filtros simples como para análisis de tendencias:\n\n```kusto\n// Promedio de CPU por equipo en la última hora\nPerf\n| where TimeGenerated > ago(1h) and CounterName == \"% Processor Time\"\n| summarize CPU = avg(CounterValue) by Computer\n```\n\n**Alertas de Azure Monitor**\n\nUna alerta te avisa cuando se cumple una condición que definiste. Tiene dos piezas:\n\n1. **Regla de alerta:** qué se vigila y cuál es la condición. Puede basarse en una **métrica** (CPU sobre 80 % durante 10 minutos) o en una **consulta de registros** (más de 20 errores de un tipo en 5 minutos).\n2. **Grupo de acciones:** quién recibe el aviso y qué se ejecuta: correo, SMS, notificación en la app, webhook o una automatización. Los grupos de acciones son reutilizables por Azure Monitor, Service Health, Advisor e incluso presupuestos de costos.\n\n**Ejemplo práctico**\n\nUn equipo de operaciones administra 50 VM. Crea una alerta de métrica cuando la CPU de cualquiera supera 85 % durante 15 minutos y otra de registros para detectar fallos repetidos de inicio de sesión. Ambas usan el mismo grupo de acciones que envía correo al equipo de guardia y abre un ticket mediante un webhook. Cuando llega una alerta, investigan en Log Analytics con consultas como la anterior.\n\n**Para recordar en el examen**\n\n- Azure Monitor recopila métricas y registros de Azure, local y multinube.\n- Log Analytics = consultas KQL sobre registros.\n- Alerta = regla (condición) + grupo de acciones (quién y qué).\n- Las alertas pueden basarse en métricas o en registros.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-monitoring-tools-azure/4-describe-azure-monitor",
+        "objectives": [
+          "distinguir-herramientas-de-supervision",
+          "elegir-componente-de-azure-monitor"
+        ]
+      },
+      {
+        "key": "application-insights",
+        "title": "Application Insights y cómo elegir la herramienta de supervisión",
+        "text": "**Application Insights** es la característica de Azure Monitor enfocada en el **rendimiento y uso de aplicaciones**, sobre todo aplicaciones web. Funciona con aplicaciones hospedadas en Azure, en tu propio centro de datos o en otra nube.\n\n**Cómo se habilita**\n\n- Agregando un **SDK** al código de la aplicación, o\n- Activando la **instrumentación automática** mediante un agente, sin modificar el código, en entornos compatibles como App Service.\n\n**Qué te permite ver**\n\n- Tasa de solicitudes, tiempos de respuesta y tasa de errores.\n- Llamadas a **dependencias**, como bases de datos o API externas, y cuánto tardan.\n- Tiempos de carga de página, número de usuarios y sesiones.\n- Contadores de rendimiento del servidor: CPU, memoria y red.\n- **Pruebas de disponibilidad** que envían solicitudes sintéticas periódicas para comprobar que la aplicación responde aunque no haya usuarios.\n\n**¿Qué herramienta de supervisión elijo?**\n\n| Si el escenario dice... | Herramienta |\n|---|---|\n| \"Quiero recomendaciones para ahorrar o mejorar la seguridad\" | Azure Advisor |\n| \"¿Hay una caída de Azure que afecte mis regiones?\" | Azure Service Health |\n| \"¿Esta VM concreta tiene un problema de plataforma?\" | Resource Health |\n| \"Necesito consultar registros de varios recursos\" | Log Analytics |\n| \"Avísame cuando la CPU pase de 80 %\" | Alertas de Azure Monitor |\n| \"¿Por qué la página de pago tarda tanto y qué dependencia falla?\" | Application Insights |\n| \"Quiero saber si mi sitio responde a las 3 a. m.\" | Pruebas de disponibilidad de Application Insights |\n\n**Ejemplo práctico**\n\nUna tienda en línea recibe quejas de que el pago tarda. La VM se ve saludable en las métricas. El equipo habilita Application Insights y descubre que las solicitudes al endpoint de pago esperan varios segundos por una API externa de validación de tarjetas. Agregan una alerta sobre el tiempo de respuesta de esa dependencia y una prueba de disponibilidad del sitio cada cinco minutos.\n\n**Para recordar en el examen**\n\n- Application Insights forma parte de Azure Monitor y supervisa aplicaciones.\n- Se habilita con SDK o con agente sin cambiar el código.\n- Mide solicitudes, errores, dependencias, usuarios y disponibilidad.\n- Funciona para aplicaciones en Azure, locales o en otras nubes.",
+        "source": "https://learn.microsoft.com/en-us/azure/azure-monitor/app/app-insights-overview",
+        "objectives": [
+          "elegir-componente-de-azure-monitor"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explicar-tres-herramientas",
+        "objectives": [
+          "distinguir-herramientas-de-supervision"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** la diferencia entre Azure Advisor, Azure Service Health y Azure Monitor. Para cada uno, formula la pregunta típica que responde (por ejemplo, \"¿qué debería mejorar?\") y da un ejemplo de una empresa real o imaginaria."
+      },
+      {
+        "key": "escenarios-de-salud-y-advisor",
+        "objectives": [
+          "elegir-recomendacion-o-vista-de-salud"
+        ],
+        "prompt": "**Decide en cada escenario** qué vista o categoría corresponde y por qué:\n\n1. Las noticias hablan de una caída en un servicio de Azure en Europa; tú no tienes recursos allí.\n2. Tu VM de base de datos dejó de responder hace 10 minutos.\n3. Quieres enterarte con anticipación del mantenimiento planificado en tu región.\n4. Advisor sugiere habilitar zonas de disponibilidad para tu aplicación.\n5. Advisor indica que tres VM están infrautilizadas.\n6. Advisor recomienda configurar alertas de Service Health.\n\nDespués, dile al tutor cuál de los seis te costó más y por qué."
+      },
+      {
+        "key": "tarjetas-monitor",
+        "objectives": [
+          "elegir-componente-de-azure-monitor"
+        ],
+        "prompt": "**Tarjetas de memoria.** Responde sin mirar la lectura y luego verifica con el tutor:\n\n- ¿Qué diferencia hay entre una métrica y un registro?\n- ¿Qué lenguaje usa Log Analytics?\n- ¿Cuáles son las dos piezas de una alerta de Azure Monitor?\n- Nombra dos formas de habilitar Application Insights.\n- ¿Para qué sirve una prueba de disponibilidad?\n- ¿Qué otros servicios pueden reutilizar un grupo de acciones?"
+      },
+      {
+        "key": "laboratorio-alerta",
+        "objectives": [
+          "distinguir-herramientas-de-supervision",
+          "elegir-componente-de-azure-monitor"
+        ],
+        "prompt": "**Laboratorio opcional (Azure portal).**\n\n> Aviso de costos: usa una cuenta gratuita o una suscripción de pruebas. Consultar Advisor y Service Health no tiene costo; las reglas de alerta, las notificaciones y la ingesta de registros pueden generar cargos, igual que la VM o aplicación supervisada. Elimina todo al terminar.\n\n1. Abre Azure Advisor y revisa cuántas recomendaciones tienes por categoría.\n2. Abre Service Health y crea una alerta de Service Health para tus regiones con un grupo de acciones que te envíe correo.\n3. Si tienes un recurso de prueba, crea una alerta de métrica (por ejemplo, CPU mayor que 80 %) con el mismo grupo de acciones.\n4. Revisa Resource Health de ese recurso.\n5. Elimina las reglas de alerta, el grupo de acciones y el recurso de prueba.\n\nCuéntale al tutor qué datos te pidió el asistente al crear cada alerta."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluar-herramientas-supervision",
+        "objectives": [
+          "distinguir-herramientas-de-supervision"
+        ],
+        "prompt": "Un director de tecnología pregunta: \"¿Cuál es la diferencia entre Advisor, Service Health y Monitor? ¿No hacen lo mismo?\". Responde con una explicación breve y un ejemplo de uso para cada uno.",
+        "privateCriteria": "Advisor: recomendaciones personalizadas de mejora (confiabilidad, seguridad, rendimiento, excelencia operativa, costo). Service Health: estado de la plataforma Azure y eventos que afectan a tus servicios/regiones (incidentes, mantenimiento, avisos). Monitor: recopila y analiza métricas y registros de tus recursos y aplicaciones, con alertas. Ejemplos coherentes. Penaliza confundir Service Health con Monitor."
+      },
+      {
+        "key": "evaluar-vistas-y-categorias",
+        "objectives": [
+          "elegir-recomendacion-o-vista-de-salud"
+        ],
+        "prompt": "Explica cuándo consultarías Azure Status, Service Health y Resource Health, y nombra las cinco categorías de recomendaciones de Azure Advisor con un ejemplo de al menos dos de ellas.",
+        "privateCriteria": "Azure Status: vista global pública de todos los servicios/regiones. Service Health: eventos de los servicios y regiones que usa la organización, con alertas. Resource Health: salud de un recurso concreto, indica si el problema es de la plataforma. Categorías: confiabilidad, seguridad, rendimiento, excelencia operativa y costo, con ejemplos plausibles."
+      },
+      {
+        "key": "evaluar-componentes-monitor",
+        "objectives": [
+          "elegir-componente-de-azure-monitor"
+        ],
+        "prompt": "Una aplicación web en App Service tiene quejas de lentitud y el equipo de operaciones quiere recibir un aviso cuando los errores aumenten. Explica qué componentes de Azure Monitor usarías para diagnosticar, consultar los datos y recibir avisos.",
+        "privateCriteria": "Application Insights para medir solicitudes, tiempos, errores y dependencias de la aplicación (SDK o instrumentación automática). Log Analytics para consultas KQL sobre los registros. Alertas de Azure Monitor con regla (métrica o registros) y grupo de acciones para notificar. Valora mencionar pruebas de disponibilidad."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "categorias-de-recomendaciones",
+        "requires": "azure-advisor"
+      },
+      {
+        "concept": "vistas-de-salud",
+        "requires": "azure-service-health"
+      },
+      {
+        "concept": "log-analytics",
+        "requires": "azure-monitor"
+      },
+      {
+        "concept": "alertas-de-monitor",
+        "requires": "azure-monitor"
+      },
+      {
+        "concept": "application-insights",
+        "requires": "azure-monitor"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "recomendaciones-personalizadas",
+      "type": "singleChoice",
+      "prompt": "Un administrador quiere una lista de sugerencias personalizadas para mejorar la confiabilidad, la seguridad y el costo de sus recursos, sin configurar recopilación de datos. ¿Qué servicio debe consultar?",
+      "objectives": [
+        "distinguir-herramientas-de-supervision"
+      ],
+      "concepts": [
+        "azure-advisor"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Service Health"
+        },
+        {
+          "key": "b",
+          "text": "Log Analytics"
+        },
+        {
+          "key": "c",
+          "text": "Azure Advisor",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Application Insights"
+        }
+      ]
+    },
+    {
+      "key": "incidente-en-mi-region",
+      "type": "singleChoice",
+      "prompt": "Varios usuarios reportan fallas y el equipo quiere confirmar si hay un incidente de Azure que afecte a los servicios y regiones que la empresa usa. ¿Dónde debe mirar?",
+      "objectives": [
+        "distinguir-herramientas-de-supervision"
+      ],
+      "concepts": [
+        "azure-service-health"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Service Health",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure Advisor"
+        },
+        {
+          "key": "c",
+          "text": "Calculadora de precios"
+        },
+        {
+          "key": "d",
+          "text": "Azure Policy"
+        }
+      ]
+    },
+    {
+      "key": "vm-no-responde",
+      "type": "singleChoice",
+      "prompt": "Una máquina virtual específica dejó de responder y el equipo necesita saber si el problema se origina en la plataforma de Azure. ¿Qué vista ofrece esa información para ese recurso?",
+      "objectives": [
+        "elegir-recomendacion-o-vista-de-salud"
+      ],
+      "concepts": [
+        "vistas-de-salud"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Status"
+        },
+        {
+          "key": "b",
+          "text": "La categoría de rendimiento de Advisor"
+        },
+        {
+          "key": "c",
+          "text": "Una consulta de costos en Cost Management"
+        },
+        {
+          "key": "d",
+          "text": "Resource Health",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "vm-infrautilizada",
+      "type": "singleChoice",
+      "prompt": "Azure Advisor indica que varias máquinas virtuales tienen un uso de CPU muy bajo y sugiere reducir su tamaño. ¿A qué categoría pertenece principalmente esta recomendación?",
+      "objectives": [
+        "elegir-recomendacion-o-vista-de-salud"
+      ],
+      "concepts": [
+        "categorias-de-recomendaciones"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Confiabilidad"
+        },
+        {
+          "key": "b",
+          "text": "Costo",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Seguridad"
+        },
+        {
+          "key": "d",
+          "text": "Excelencia operativa"
+        }
+      ]
+    },
+    {
+      "key": "consultar-registros",
+      "type": "singleChoice",
+      "prompt": "Un analista necesita escribir una consulta para encontrar todos los errores registrados por varias máquinas virtuales en la última hora. ¿Qué herramienta usa?",
+      "objectives": [
+        "elegir-componente-de-azure-monitor"
+      ],
+      "concepts": [
+        "log-analytics"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Advisor"
+        },
+        {
+          "key": "b",
+          "text": "Resource Health"
+        },
+        {
+          "key": "c",
+          "text": "Log Analytics",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Azure Status"
+        }
+      ]
+    },
+    {
+      "key": "dependencia-lenta",
+      "type": "singleChoice",
+      "prompt": "Una aplicación web tarda en responder y el equipo sospecha de una API externa a la que llama. ¿Qué componente permite ver el tiempo de cada llamada a esa dependencia?",
+      "objectives": [
+        "elegir-componente-de-azure-monitor"
+      ],
+      "concepts": [
+        "application-insights"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Application Insights",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Azure Service Health"
+        },
+        {
+          "key": "c",
+          "text": "Un bloqueo de solo lectura"
+        },
+        {
+          "key": "d",
+          "text": "Azure Advisor"
+        }
+      ]
+    },
+    {
+      "key": "categorias-advisor",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "¿Cuáles son categorías de recomendaciones de Azure Advisor? Selecciona tres.",
+      "objectives": [
+        "elegir-recomendacion-o-vista-de-salud"
+      ],
+      "concepts": [
+        "categorias-de-recomendaciones"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Confiabilidad",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Facturación de terceros"
+        },
+        {
+          "key": "c",
+          "text": "Rendimiento",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Excelencia operativa",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Migración de datos"
+        }
+      ]
+    },
+    {
+      "key": "contenido-service-health",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué tipos de información muestra Azure Service Health sobre los servicios que usa una organización? Selecciona dos.",
+      "objectives": [
+        "distinguir-herramientas-de-supervision",
+        "elegir-recomendacion-o-vista-de-salud"
+      ],
+      "concepts": [
+        "azure-service-health",
+        "vistas-de-salud"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Recomendaciones para reducir el tamaño de las VM"
+        },
+        {
+          "key": "b",
+          "text": "Mantenimiento planificado",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Tiempos de carga de página de los usuarios"
+        },
+        {
+          "key": "d",
+          "text": "Problemas de servicio en curso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "partes-alerta",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Un equipo configura una alerta de Azure Monitor para recibir un correo cuando la CPU de una VM supere 80 %. ¿Qué elementos debe definir? Selecciona dos.",
+      "objectives": [
+        "elegir-componente-de-azure-monitor"
+      ],
+      "concepts": [
+        "alertas-de-monitor"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una regla de alerta con la condición",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Una iniciativa de Azure Policy"
+        },
+        {
+          "key": "c",
+          "text": "Un grupo de acciones con el destinatario",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Un bloqueo de recursos sobre la VM"
+        }
+      ]
+    },
+    {
+      "key": "capacidades-app-insights",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué puede supervisar Application Insights en una aplicación web? Selecciona tres.",
+      "objectives": [
+        "elegir-componente-de-azure-monitor"
+      ],
+      "concepts": [
+        "application-insights"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Tasa de errores de las solicitudes",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Llamadas a dependencias y su duración",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Cumplimiento de directivas de etiquetado"
+        },
+        {
+          "key": "d",
+          "text": "Disponibilidad mediante pruebas sintéticas",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Recomendaciones de reservas"
+        }
+      ]
+    },
+    {
+      "key": "monitor-multinube",
+      "type": "trueFalse",
+      "prompt": "Azure Monitor puede recopilar datos de recursos que se ejecutan en Azure, en centros de datos locales y en otras nubes.",
+      "objectives": [
+        "distinguir-herramientas-de-supervision"
+      ],
+      "concepts": [
+        "azure-monitor"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "advisor-aplica-solo",
+      "type": "trueFalse",
+      "prompt": "Azure Advisor aplica automáticamente todas sus recomendaciones sin que el administrador intervenga.",
+      "objectives": [
+        "distinguir-herramientas-de-supervision"
+      ],
+      "concepts": [
+        "azure-advisor"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "azure-status-personal",
+      "type": "trueFalse",
+      "prompt": "Azure Status muestra únicamente el estado de los recursos de tu propia suscripción.",
+      "objectives": [
+        "elegir-recomendacion-o-vista-de-salud"
+      ],
+      "concepts": [
+        "vistas-de-salud"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "app-insights-sin-codigo",
+      "type": "trueFalse",
+      "prompt": "En algunos entornos, Application Insights puede habilitarse mediante un agente sin modificar el código de la aplicación.",
+      "objectives": [
+        "elegir-componente-de-azure-monitor"
+      ],
+      "concepts": [
+        "application-insights"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "alerta-solo-metricas",
+      "type": "trueFalse",
+      "prompt": "Las alertas de Azure Monitor sólo pueden basarse en métricas y nunca en consultas de registros.",
+      "objectives": [
+        "elegir-componente-de-azure-monitor"
+      ],
+      "concepts": [
+        "alertas-de-monitor"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "respuesta-que-herramienta",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras qué pregunta responde cada una de estas herramientas y en qué se diferencian: Azure Advisor, Azure Service Health (con sus tres vistas) y Azure Monitor. Incluye un ejemplo de uso para cada una.",
+      "objectives": [
+        "distinguir-herramientas-de-supervision",
+        "elegir-recomendacion-o-vista-de-salud"
+      ],
+      "concepts": [
+        "azure-advisor",
+        "azure-service-health",
+        "azure-monitor",
+        "vistas-de-salud"
+      ],
+      "rubric": {
+        "privateGuidance": "La respuesta debe separar recomendaciones (Advisor), salud de la plataforma (Service Health) y datos de tus recursos (Monitor), y describir las tres vistas de Service Health con su alcance. Los ejemplos deben ser coherentes.",
+        "criteria": [
+          {
+            "key": "advisor",
+            "description": "Describe Advisor como fuente de recomendaciones personalizadas con un ejemplo.",
+            "maxPoints": 2
+          },
+          {
+            "key": "service-health",
+            "description": "Describe Service Health y sus tres vistas (Azure Status, Service Health, Resource Health) con su alcance.",
+            "maxPoints": 3
+          },
+          {
+            "key": "monitor",
+            "description": "Describe Azure Monitor como plataforma de métricas y registros con un ejemplo.",
+            "maxPoints": 2
+          },
+          {
+            "key": "comparacion",
+            "description": "Deja clara la diferencia entre las tres herramientas.",
+            "maxPoints": 1
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-viajes-andes",
+      "type": "caseAnalysis",
+      "prompt": "Viajes Andes es una agencia ficticia que vende paquetes turísticos desde una aplicación web en Azure App Service con una base de datos en Azure SQL Database. El fin de semana pasado el sitio estuvo lento durante dos horas y el equipo se enteró por las quejas en redes sociales. Nadie supo decir si la causa fue un problema de Azure, la base de datos o una API externa de aerolíneas que la aplicación consulta. Además, el director financiero sospecha que pagan por recursos que no se usan y el auditor pregunta si la configuración sigue buenas prácticas de confiabilidad. Analiza el caso y propone qué herramientas de supervisión de Azure usarías, cómo las configurarías y en qué orden.",
+      "objectives": [
+        "distinguir-herramientas-de-supervision",
+        "elegir-recomendacion-o-vista-de-salud",
+        "elegir-componente-de-azure-monitor"
+      ],
+      "concepts": [
+        "azure-advisor",
+        "azure-service-health",
+        "vistas-de-salud",
+        "application-insights",
+        "alertas-de-monitor"
+      ],
+      "rubric": {
+        "privateGuidance": "Espera: Service Health/Resource Health para descartar o confirmar problemas de plataforma y alertas de Service Health; Application Insights para solicitudes, dependencias (API de aerolíneas, SQL) y pruebas de disponibilidad; alertas de Azure Monitor con grupo de acciones para enterarse antes que los clientes; Advisor categorías costo y confiabilidad para las otras dos inquietudes. Valora orden lógico y justificación.",
+        "criteria": [
+          {
+            "key": "plataforma",
+            "description": "Usa Service Health y Resource Health para distinguir problemas de Azure y propone alertas de Service Health.",
+            "maxPoints": 2
+          },
+          {
+            "key": "aplicacion",
+            "description": "Usa Application Insights para diagnosticar dependencias y tiempos de respuesta.",
+            "maxPoints": 3
+          },
+          {
+            "key": "alertas",
+            "description": "Propone alertas de Azure Monitor con grupo de acciones para detección temprana.",
+            "maxPoints": 2
+          },
+          {
+            "key": "advisor",
+            "description": "Usa Advisor (costo y confiabilidad) para las preguntas del director y el auditor.",
+            "maxPoints": 3
+          }
+        ]
+      }
+    },
+    {
+      "key": "practica-plan-de-alertas",
+      "type": "practicalExercise",
+      "prompt": "Diseña, sin ejecutarlo, un plan de alertas para una tienda en línea con dos VM de back-end y una aplicación web. Entrega una tabla con al menos cuatro alertas que incluya: qué se vigila, tipo de señal (métrica, registro, Service Health o disponibilidad), condición, severidad y grupo de acciones. Agrega una consulta KQL sencilla, comentada, que usarías en Log Analytics para investigar una de las alertas, y explica cómo evitarías que el equipo reciba avisos excesivos.",
+      "objectives": [
+        "elegir-componente-de-azure-monitor"
+      ],
+      "concepts": [
+        "log-analytics",
+        "alertas-de-monitor",
+        "application-insights"
+      ],
+      "rubric": {
+        "privateGuidance": "No exijas sintaxis KQL perfecta; sí que use una tabla plausible (Perf, Event, AppRequests, AppExceptions, Heartbeat) y operadores como where y summarize. Las alertas deben combinar señales distintas y reutilizar grupos de acciones. Para evitar ruido: umbrales y ventanas razonables, severidades, agrupar destinatarios, no alertar por todo.",
+        "criteria": [
+          {
+            "key": "tabla",
+            "description": "La tabla incluye cuatro o más alertas coherentes con señal, condición, severidad y grupo de acciones.",
+            "maxPoints": 4
+          },
+          {
+            "key": "kql",
+            "description": "La consulta KQL es plausible y está comentada.",
+            "maxPoints": 2
+          },
+          {
+            "key": "ruido",
+            "description": "Propone medidas razonables para evitar la fatiga de alertas.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Herramientas de supervisión",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "recomendaciones-personalizadas",
+        "incidente-en-mi-region",
+        "vm-no-responde",
+        "vm-infrautilizada",
+        "consultar-registros",
+        "dependencia-lenta",
+        "categorias-advisor",
+        "contenido-service-health",
+        "partes-alerta",
+        "capacidades-app-insights",
+        "monitor-multinube",
+        "advisor-aplica-solo",
+        "azure-status-personal",
+        "app-insights-sin-codigo",
+        "alerta-solo-metricas"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Herramientas de supervisión",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "recomendaciones-personalizadas",
+        "incidente-en-mi-region",
+        "advisor-aplica-solo",
+        "vm-no-responde",
+        "categorias-advisor",
+        "consultar-registros",
+        "partes-alerta",
+        "app-insights-sin-codigo"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Herramientas de supervisión",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "respuesta-que-herramienta",
+        "caso-viajes-andes",
+        "practica-plan-de-alertas"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Herramientas de supervisión en Azure",
+    "edges": [
+      {
+        "from": "categorias-de-recomendaciones",
+        "to": "azure-advisor",
+        "relation": "explains"
+      },
+      {
+        "from": "vistas-de-salud",
+        "to": "azure-service-health",
+        "relation": "explains"
+      },
+      {
+        "from": "azure-advisor",
+        "to": "azure-service-health",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "azure-service-health",
+        "to": "azure-monitor",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "log-analytics",
+        "to": "azure-monitor",
+        "relation": "requires"
+      },
+      {
+        "from": "alertas-de-monitor",
+        "to": "azure-monitor",
+        "relation": "requires"
+      },
+      {
+        "from": "application-insights",
+        "to": "azure-monitor",
+        "relation": "requires"
+      },
+      {
+        "from": "alertas-de-monitor",
+        "to": "log-analytics",
+        "relation": "applies"
+      }
+    ]
+  }
+}

@@ -1,0 +1,852 @@
+{
+  "slug": "computacion-en-la-nube",
+  "name": "Computación en la nube",
+  "category": "conceptos-de-nube",
+  "sortOrder": 1,
+  "profile": "module",
+  "description": "Qué es la computación en la nube, cómo se reparten las responsabilidades entre el cliente y el proveedor, cuándo usar nube pública, privada o híbrida, cómo funciona el modelo basado en consumo, en qué se diferencian los modelos de precios y qué significa realmente la computación sin servidor.",
+  "outline": [
+    "Define cloud computing",
+    "Describe the shared responsibility model",
+    "Define cloud models, including public, private, and hybrid",
+    "Identify appropriate use cases for each cloud model",
+    "Describe the consumption-based model",
+    "Compare cloud pricing models",
+    "Describe serverless"
+  ],
+  "unit": {
+    "title": "Describir la computación en la nube",
+    "concepts": [
+      {
+        "key": "definicion-computacion-en-la-nube",
+        "name": "Computación en la nube"
+      },
+      {
+        "key": "modelo-responsabilidad-compartida",
+        "name": "Modelo de responsabilidad compartida"
+      },
+      {
+        "key": "nube-publica",
+        "name": "Nube pública"
+      },
+      {
+        "key": "nube-privada",
+        "name": "Nube privada"
+      },
+      {
+        "key": "nube-hibrida",
+        "name": "Nube híbrida y multinube"
+      },
+      {
+        "key": "modelo-basado-en-consumo",
+        "name": "Modelo basado en consumo (CapEx y OpEx)"
+      },
+      {
+        "key": "modelos-de-precios",
+        "name": "Modelos de precios en la nube"
+      },
+      {
+        "key": "computacion-sin-servidor",
+        "name": "Computación sin servidor"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "explicar-nube-y-responsabilidad",
+        "description": "Distinguir qué responsabilidades conserva el cliente y cuáles asume el proveedor en la nube, a partir de una definición precisa de computación en la nube.",
+        "concepts": [
+          "definicion-computacion-en-la-nube",
+          "modelo-responsabilidad-compartida"
+        ]
+      },
+      {
+        "key": "elegir-modelo-de-nube",
+        "description": "Elegir el modelo de nube (pública, privada o híbrida) adecuado para un escenario de empresa y justificar la elección.",
+        "concepts": [
+          "nube-publica",
+          "nube-privada",
+          "nube-hibrida"
+        ]
+      },
+      {
+        "key": "comparar-costos-y-sin-servidor",
+        "description": "Distinguir CapEx de OpEx y elegir entre pago por uso, compromiso o computación sin servidor para una carga de trabajo descrita.",
+        "concepts": [
+          "modelo-basado-en-consumo",
+          "modelos-de-precios",
+          "computacion-sin-servidor"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "que-es-la-nube-y-responsabilidad",
+        "title": "Qué es la nube y quién responde por qué",
+        "text": "La **computación en la nube** es la entrega de servicios de TI a través de internet: máquinas virtuales, almacenamiento, bases de datos y redes, pero también servicios más avanzados como inteligencia artificial, aprendizaje automático o Internet de las cosas. En lugar de comprar equipos y esperar semanas a que lleguen, solicitas capacidad cuando la necesitas y la liberas cuando ya no te sirve.\n\nEsta forma de trabajar cambia la planificación de infraestructura: los ciclos largos de compra se sustituyen por aprovisionamiento a demanda. Los equipos pueden probar ideas más rápido, recuperarse antes de una falla y llevar servicios cerca de usuarios en otras partes del mundo sin construir centros de datos propios.\n\n## El modelo de responsabilidad compartida\n\nEn un centro de datos local, tu organización responde por **todo**: el edificio, la energía, la refrigeración, los servidores, el sistema operativo, las aplicaciones y los datos. En la nube esas tareas se reparten entre el proveedor y el cliente.\n\n| Siempre del proveedor | Depende del tipo de servicio | Siempre del cliente |\n| --- | --- | --- |\n| Centro de datos físico | Sistema operativo | Datos e información |\n| Red física | Controles de red | Dispositivos que se conectan |\n| Hosts físicos | Aplicaciones | Cuentas e identidades |\n| | Identidad y acceso (plataforma) | |\n\nCuanto más \"administrado\" es el servicio, más responsabilidad asume el proveedor: en **IaaS** el cliente administra casi toda la pila; en **PaaS** la carga se reparte; en **SaaS** el proveedor se ocupa de casi todo.\n\n**Ejemplo práctico.** Una cooperativa instala SQL Server dentro de una máquina virtual en Azure: ella aplica los parches del sistema operativo y del motor de base de datos. Si en cambio usa una base de datos administrada, Microsoft mantiene el motor, pero la cooperativa sigue respondiendo por los datos que guarda y por quién puede consultarlos.\n\n### Para recordar en el examen\n\n- Nube = servicios de TI entregados por internet, aprovisionados a demanda.\n- El proveedor siempre responde por lo **físico**; tú siempre respondes por **datos, dispositivos e identidades**.\n- La responsabilidad del cliente es máxima en IaaS y mínima en SaaS.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cloud-compute/4-describe-shared-responsibility-model",
+        "objectives": [
+          "explicar-nube-y-responsabilidad"
+        ]
+      },
+      {
+        "key": "modelos-de-nube",
+        "title": "Nube pública, privada, híbrida y multinube",
+        "text": "Los **modelos de nube** describen dónde se despliegan los recursos y quién puede usarlos. El examen se enfoca en tres: pública, privada e híbrida, y menciona un cuarto escenario cada vez más común, la multinube.\n\n- **Nube pública**: la construye, controla y mantiene un proveedor externo, y cualquier persona u organización puede contratar sus servicios. No necesitas gasto de capital para crecer, aprovisionas y liberas recursos en minutos y pagas sólo lo que usas. A cambio, no controlas por completo el hardware ni todas las capas de seguridad.\n- **Nube privada**: la usa una sola organización. Puede vivir en el centro de datos propio o en uno externo, incluso operado por un tercero, siempre que los recursos estén dedicados. Ofrece control total, pero exige comprar y mantener hardware y renuncia a parte de los beneficios de escala de la nube pública.\n- **Nube híbrida**: combina nubes públicas y privadas interconectadas. Permite que la parte privada \"desborde\" hacia la pública ante picos temporales y que decidas qué cargas viven en cada lado según requisitos de seguridad, cumplimiento o legales. Es el modelo más flexible.\n- **Multinube**: usas dos o más proveedores de nube pública a la vez, por ejemplo para aprovechar servicios distintos o durante una migración entre proveedores. Debes administrar recursos y seguridad en todos ellos.\n\n| Criterio | Pública | Privada | Híbrida |\n| --- | --- | --- | --- |\n| Gasto inicial | Ninguno en hardware | Alto | Mixto |\n| Control | Menor | Total | Tú decides dónde corre cada carga |\n| Escala rápida | Sí | Limitada a tu hardware | Sí, desbordando a la pública |\n\nAzure ofrece herramientas para estos escenarios: **Azure Arc** ayuda a administrar recursos en Azure, en tu centro de datos o en otras nubes desde un mismo lugar, y **Azure VMware Solution** permite ejecutar cargas de VMware en Azure.\n\n**Ejemplo práctico.** Un banco regional guarda los expedientes de clientes en su nube privada por exigencia regulatoria, pero publica su campaña de tarjetas en Azure para absorber el tráfico del lanzamiento: eso es una nube híbrida.\n\n### Para recordar en el examen\n\n- \"Uso exclusivo de una organización\" apunta a nube privada; \"cualquiera puede contratarla\" apunta a pública.\n- \"Picos temporales\" + \"datos que deben quedarse en casa\" suele indicar híbrida.\n- Multinube = varios proveedores públicos; no es lo mismo que híbrida.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cloud-compute/5-define-cloud-models",
+        "objectives": [
+          "elegir-modelo-de-nube"
+        ]
+      },
+      {
+        "key": "consumo-y-precios",
+        "title": "Modelo basado en consumo y modelos de precios",
+        "text": "La nube funciona con un **modelo basado en consumo**: pagas por los recursos de TI que usas y nada más. En vez de comprar y mantener tu propio centro de datos, \"alquilas\" capacidad de cómputo y almacenamiento y la devuelves cuando terminas.\n\n## CapEx frente a OpEx\n\n- **Gasto de capital (CapEx)**: inversión inicial en infraestructura física, como servidores, equipos de red o espacio en un centro de datos.\n- **Gasto operativo (OpEx)**: gasto continuo en servicios a lo largo del tiempo. Como la nube se paga a medida que se consume, se clasifica como **OpEx**.\n\nCon un centro de datos tradicional debes estimar la demanda futura. Si sobreestimas, pagas equipos ociosos; si subestimas, tus aplicaciones se degradan hasta que compras, instalas y aprovisionas más hardware. En la nube ajustas la capacidad a la demanda real: agregas recursos en el pico y los retiras cuando el tráfico baja.\n\n## Comparar modelos de precios\n\n| Modelo | Cómo se paga | Cuándo conviene |\n| --- | --- | --- |\n| Pago por uso (*pay-as-you-go*) | Por consumo real, con medidores por hora, segundo u operación | Cargas variables, entornos de desarrollo y prueba, proyectos cortos |\n| Basado en compromiso (reservas o planes de ahorro) | Te comprometes a un uso durante un plazo, normalmente uno o tres años, a cambio de una tarifa con descuento | Cargas estables y predecibles que funcionarán todo el plazo |\n| Sin servidor (*serverless*) | Por ejecuciones y recursos consumidos; sin uso no hay cargo de cómputo | Tareas por eventos, tráfico intermitente |\n\nEl pago por uso maximiza la flexibilidad; el compromiso reduce la tarifa a cambio de previsibilidad en tu uso. Elegir bien depende de qué tan estable y duradera es cada carga.\n\n**Ejemplo práctico.** Una distribuidora mantiene su ERP encendido todo el año con un uso casi constante: le conviene una reserva. Su entorno de pruebas sólo funciona en horario laboral y se apaga los fines de semana: le conviene el pago por uso.\n\n### Para recordar en el examen\n\n- Nube = OpEx; comprar servidores = CapEx.\n- Beneficios del consumo: sin costos iniciales, sin capacidad ociosa, agregar o liberar recursos según la demanda.\n- Compromiso a uno o tres años = descuento a cambio de previsibilidad; pago por uso = flexibilidad.\n",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-cloud-compute/6-describe-consumption-based-model",
+        "objectives": [
+          "comparar-costos-y-sin-servidor"
+        ]
+      },
+      {
+        "key": "computacion-sin-servidor",
+        "title": "Computación sin servidor",
+        "text": "**Sin servidor** (*serverless*) no significa que no existan servidores: tu código sigue ejecutándose en máquinas físicas en algún centro de datos. La diferencia es que **ya no te ocupas de ellos**. El proveedor aprovisiona, escala, actualiza y protege la infraestructura, y tú te concentras en la lógica del negocio.\n\n## Características principales\n\n- **Basado en eventos**: una función se ejecuta cuando ocurre algo, como una solicitud HTTP, un mensaje en una cola o un archivo nuevo en el almacenamiento.\n- **Escalado automático**: la plataforma agrega o quita instancias según la cantidad de eventos, incluso hasta cero cuando no hay trabajo.\n- **Cobro por uso**: normalmente pagas por ejecuciones y tiempo de cómputo consumido; si no hay consumo, no se generan cargos de cómputo.\n- **Menos código de infraestructura**: no configuras servidores web, sistemas operativos ni parches.\n\nEn Azure, los servicios sin servidor más representativos son **Azure Functions**, para ejecutar fragmentos de código en respuesta a eventos, y **Azure Logic Apps**, para orquestar flujos de trabajo con poco código. También existen opciones de contenedores sin servidor como Azure Container Apps.\n\n| Aspecto | Máquina virtual | Sin servidor |\n| --- | --- | --- |\n| Quién administra el sistema operativo | Tú | El proveedor |\n| Escalado | Lo configuras tú | Automático según eventos |\n| Cobro cuando no hay tráfico | Sigue corriendo y cobrando | Sin cargos de cómputo |\n| Ideal para | Cargas de larga duración con control total | Tareas cortas, intermitentes y por eventos |\n\nDesde el punto de vista de la responsabilidad compartida, sin servidor está en el extremo más administrado del cómputo: tu responsabilidad se reduce casi a tu código, tus datos y el acceso.\n\n**Ejemplo práctico.** Una aseguradora recibe fotos de siniestros. Cada vez que se sube una foto al almacenamiento, una función de Azure Functions la redimensiona y registra el caso. De noche casi no llegan fotos, así que la factura de cómputo baja casi a cero; en temporada de lluvias la plataforma escala sola.\n\n### Para recordar en el examen\n\n- Sin servidor = sin administrar servidores, no sin servidores.\n- Palabras clave: eventos, escalado automático, pagar sólo cuando el código se ejecuta.\n- Azure Functions y Azure Logic Apps son los ejemplos clásicos.\n",
+        "source": "https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-serverless-overview",
+        "objectives": [
+          "comparar-costos-y-sin-servidor"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explica-responsabilidad",
+        "objectives": [
+          "explicar-nube-y-responsabilidad"
+        ],
+        "prompt": "**Explícale al tutor con tus palabras** el modelo de responsabilidad compartida.\n\n1. Define computación en la nube en una sola oración, sin usar la palabra \"nube\".\n2. Nombra tres cosas que **siempre** son responsabilidad del cliente y tres que **siempre** son del proveedor.\n3. Elige una tarea, por ejemplo \"aplicar parches al sistema operativo\", y explica cómo cambia su responsable entre IaaS, PaaS y SaaS.\n\nPide al tutor que te haga una pregunta de seguimiento sobre el punto que te haya costado más."
+      },
+      {
+        "key": "decide-modelo-de-nube",
+        "objectives": [
+          "elegir-modelo-de-nube"
+        ],
+        "prompt": "**Escenario: decide el modelo de nube.** Para cada empresa, indica si le conviene nube pública, privada o híbrida, y justifica en una línea.\n\n| Empresa | Situación | Modelo | Justificación |\n| --- | --- | --- | --- |\n| Startup de reservas | Sin centro de datos, quiere lanzar en un mes | | |\n| Laboratorio clínico | Normativa exige datos de pacientes en infraestructura dedicada; quiere usar análisis en la nube | | |\n| Ministerio | Todas sus cargas deben correr en hardware de uso exclusivo | | |\n| Minorista | Su centro de datos no soporta el tráfico del Black Friday | | |\n\nDespués, comparte tus respuestas con el tutor y pregúntale qué empresa podría además estar en un escenario multinube."
+      },
+      {
+        "key": "tarjetas-costos",
+        "objectives": [
+          "comparar-costos-y-sin-servidor"
+        ],
+        "prompt": "**Tarjetas de memoria y autoexplicación.** Escribe el reverso de cada tarjeta y luego explica en voz alta por qué es cierto:\n\n- CapEx → …\n- OpEx → …\n- ¿Por qué la nube se considera OpEx? → …\n- Pago por uso conviene cuando… → …\n- Una reserva a uno o tres años conviene cuando… → …\n- \"Sin servidor\" significa… (y no significa…) → …\n\nRepasa las tarjetas dentro de dos días y marca las que fallaste."
+      },
+      {
+        "key": "laboratorio-funcion",
+        "objectives": [
+          "comparar-costos-y-sin-servidor"
+        ],
+        "prompt": "**Laboratorio opcional en el portal de Azure.**\n\n> **Aviso de costos:** usa una cuenta gratuita de Azure o un entorno de práctica (*sandbox*) de Microsoft Learn. Al terminar, elimina el grupo de recursos para evitar cargos. No uses la suscripción de producción de tu empresa.\n\n1. En el portal, busca **Aplicación de funciones** (*Function App*) y revisa los planes de hospedaje disponibles. Identifica cuál ofrece facturación sin servidor basada en ejecuciones.\n2. Abre la **Calculadora de precios de Azure** y compara el costo mensual estimado de una máquina virtual pequeña encendida todo el mes con el de una aplicación de funciones con pocas ejecuciones.\n3. Anota qué modelo de precios aplica en cada caso y por qué.\n\nComenta tus conclusiones con el tutor; no necesitas cifras exactas, sino la comparación."
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evalua-responsabilidad",
+        "objectives": [
+          "explicar-nube-y-responsabilidad"
+        ],
+        "prompt": "Una empresa migra su sitio web a la nube y su gerente afirma: \"Ahora la seguridad es problema de Microsoft\". Explica por qué la afirmación es incompleta usando el modelo de responsabilidad compartida.",
+        "privateCriteria": "Una respuesta correcta define la nube como entrega de servicios de TI por internet; aclara que el proveedor siempre responde por centro de datos, red y hosts físicos; señala que el cliente siempre conserva datos, dispositivos y cuentas/identidades; y explica que el resto (SO, aplicaciones, controles de red) depende de si se usa IaaS, PaaS o SaaS. Penaliza afirmar que en SaaS el cliente no tiene ninguna responsabilidad."
+      },
+      {
+        "key": "evalua-modelo-de-nube",
+        "objectives": [
+          "elegir-modelo-de-nube"
+        ],
+        "prompt": "Describe un escenario en el que una nube híbrida sea mejor opción que una nube pública pura y otro en el que una nube privada sea la única opción aceptable. Justifica ambos.",
+        "privateCriteria": "Debe caracterizar la híbrida como nubes pública y privada interconectadas (por ejemplo, datos regulados en privado y picos temporales en público) y la privada como infraestructura de uso exclusivo con control total, con costo de hardware y mantenimiento a cargo de la organización. No debe confundir híbrida con multinube."
+      },
+      {
+        "key": "evalua-costos",
+        "objectives": [
+          "comparar-costos-y-sin-servidor"
+        ],
+        "prompt": "Una empresa tiene tres cargas: un ERP con uso constante todo el año, un entorno de pruebas que se usa sólo en horario laboral y un proceso que se dispara cuando llega un archivo. Propón el modelo de precios para cada una y explica la diferencia entre CapEx y OpEx en este contexto.",
+        "privateCriteria": "Respuesta correcta: ERP con compromiso (reserva o plan de ahorro a 1 o 3 años) por ser estable; pruebas con pago por uso, apagando recursos fuera de horario; proceso por archivo con sin servidor (p. ej., Azure Functions), que cobra por ejecución y escala automáticamente. Debe explicar que comprar servidores es CapEx y que la nube de consumo es OpEx."
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "modelo-responsabilidad-compartida",
+        "requires": "definicion-computacion-en-la-nube"
+      },
+      {
+        "concept": "nube-publica",
+        "requires": "definicion-computacion-en-la-nube"
+      },
+      {
+        "concept": "nube-privada",
+        "requires": "definicion-computacion-en-la-nube"
+      },
+      {
+        "concept": "nube-hibrida",
+        "requires": "nube-publica"
+      },
+      {
+        "concept": "nube-hibrida",
+        "requires": "nube-privada"
+      },
+      {
+        "concept": "modelo-basado-en-consumo",
+        "requires": "definicion-computacion-en-la-nube"
+      },
+      {
+        "concept": "modelos-de-precios",
+        "requires": "modelo-basado-en-consumo"
+      },
+      {
+        "concept": "computacion-sin-servidor",
+        "requires": "modelo-basado-en-consumo"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "iaas-tarea-del-cliente",
+      "type": "singleChoice",
+      "prompt": "Una empresa traslada su aplicación a una máquina virtual de Azure. ¿Cuál de las siguientes tareas sigue siendo responsabilidad de la empresa?",
+      "objectives": [
+        "explicar-nube-y-responsabilidad"
+      ],
+      "concepts": [
+        "modelo-responsabilidad-compartida"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Instalar las actualizaciones del sistema operativo de la máquina virtual",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Reemplazar los discos físicos dañados en los servidores del centro de datos de Azure"
+        },
+        {
+          "key": "c",
+          "text": "Mantener la energía y la refrigeración de las salas de servidores"
+        },
+        {
+          "key": "d",
+          "text": "Controlar el acceso físico a los edificios donde están los hosts"
+        }
+      ]
+    },
+    {
+      "key": "definicion-de-nube",
+      "type": "singleChoice",
+      "prompt": "¿Cuál de las siguientes descripciones define mejor la computación en la nube?",
+      "objectives": [
+        "explicar-nube-y-responsabilidad"
+      ],
+      "concepts": [
+        "definicion-computacion-en-la-nube"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Alojar servidores propios en el centro de datos de un tercero con un contrato anual fijo"
+        },
+        {
+          "key": "b",
+          "text": "La entrega de servicios de TI, como cómputo, almacenamiento y redes, a través de internet",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Software instalado en cada equipo que se sincroniza de vez en cuando con un servidor de la oficina"
+        },
+        {
+          "key": "d",
+          "text": "Una red privada con enlaces dedicados que conecta todas las sucursales de una organización"
+        }
+      ]
+    },
+    {
+      "key": "modelo-uso-exclusivo",
+      "type": "singleChoice",
+      "prompt": "Una agencia de gobierno exige que todas sus cargas de trabajo se ejecuten en infraestructura de uso exclusivo y que su equipo de TI controle por completo el hardware. ¿Qué modelo cumple mejor este requisito?",
+      "objectives": [
+        "elegir-modelo-de-nube"
+      ],
+      "concepts": [
+        "nube-privada"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Nube pública con suscripción dedicada"
+        },
+        {
+          "key": "b",
+          "text": "Multinube con dos proveedores públicos"
+        },
+        {
+          "key": "c",
+          "text": "Nube privada",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Software como servicio (SaaS)"
+        }
+      ]
+    },
+    {
+      "key": "modelo-picos-temporada",
+      "type": "singleChoice",
+      "prompt": "Una tienda en línea mantiene su base de datos de clientes en su propio centro de datos por motivos regulatorios, pero quiere usar recursos de Azure para atender los picos de tráfico de temporada alta. ¿Qué modelo de nube describe esta configuración?",
+      "objectives": [
+        "elegir-modelo-de-nube"
+      ],
+      "concepts": [
+        "nube-hibrida"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Nube privada, porque la base de datos sigue en su centro de datos"
+        },
+        {
+          "key": "b",
+          "text": "Nube pública, porque usa recursos de Azure"
+        },
+        {
+          "key": "c",
+          "text": "Multinube, porque combina dos ubicaciones distintas"
+        },
+        {
+          "key": "d",
+          "text": "Nube híbrida",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "clasificacion-del-gasto",
+      "type": "singleChoice",
+      "prompt": "Una empresa compara comprar servidores nuevos frente a usar máquinas virtuales de Azure con pago por uso. ¿Cómo se clasifica normalmente el gasto en servicios de nube de pago por uso?",
+      "objectives": [
+        "comparar-costos-y-sin-servidor"
+      ],
+      "concepts": [
+        "modelo-basado-en-consumo"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Como gasto de capital (CapEx), porque se registra como un activo físico"
+        },
+        {
+          "key": "b",
+          "text": "Como gasto operativo (OpEx)",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Como inversión en activos fijos que se deprecian en varios años"
+        },
+        {
+          "key": "d",
+          "text": "Como costo fijo que no cambia aunque el uso disminuya"
+        }
+      ]
+    },
+    {
+      "key": "procesar-imagen-por-evento",
+      "type": "singleChoice",
+      "prompt": "Un equipo necesita ejecutar un fragmento de código cada vez que se sube una imagen al almacenamiento, sin administrar servidores y pagando sólo mientras el código se ejecuta. ¿Qué enfoque se ajusta mejor?",
+      "objectives": [
+        "comparar-costos-y-sin-servidor"
+      ],
+      "concepts": [
+        "computacion-sin-servidor"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Una máquina virtual encendida todo el día que revise el almacenamiento cada minuto"
+        },
+        {
+          "key": "b",
+          "text": "Un servidor físico dedicado al procesamiento de imágenes"
+        },
+        {
+          "key": "c",
+          "text": "Computación sin servidor, como Azure Functions",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Una reserva de cómputo a tres años para el procesamiento de imágenes"
+        }
+      ]
+    },
+    {
+      "key": "siempre-del-cliente",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "Según el modelo de responsabilidad compartida, ¿qué elementos son siempre responsabilidad del cliente, sin importar si usa IaaS, PaaS o SaaS? Selecciona tres.",
+      "objectives": [
+        "explicar-nube-y-responsabilidad"
+      ],
+      "concepts": [
+        "modelo-responsabilidad-compartida"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Los datos y la información almacenados en la nube",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "La seguridad física del centro de datos"
+        },
+        {
+          "key": "c",
+          "text": "Las cuentas e identidades de personas y servicios",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Los dispositivos autorizados a conectarse",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "La red física que une los centros de datos"
+        }
+      ]
+    },
+    {
+      "key": "caracteristicas-nube-publica",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Una empresa sin centro de datos propio evalúa la nube pública. ¿Qué dos características corresponden a este modelo? Selecciona dos.",
+      "objectives": [
+        "elegir-modelo-de-nube"
+      ],
+      "concepts": [
+        "nube-publica"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "La organización compra y mantiene el hardware que usa"
+        },
+        {
+          "key": "b",
+          "text": "No requiere gasto de capital para escalar",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Los recursos son de uso exclusivo de una sola organización"
+        },
+        {
+          "key": "d",
+          "text": "Se paga sólo por los recursos que se usan",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "beneficios-consumo",
+      "type": "multipleChoice",
+      "scoringPolicy": "exactMatch",
+      "prompt": "¿Qué beneficios ofrece el modelo basado en consumo de la nube? Selecciona tres.",
+      "objectives": [
+        "comparar-costos-y-sin-servidor"
+      ],
+      "concepts": [
+        "modelo-basado-en-consumo"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "No hay costos iniciales de hardware ni de centro de datos",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Se paga una cuota fija aunque los recursos estén apagados"
+        },
+        {
+          "key": "c",
+          "text": "Se pueden agregar recursos cuando aumenta la demanda",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Se pueden liberar recursos cuando la demanda disminuye",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "El proveedor asume la protección de los datos del cliente"
+        }
+      ]
+    },
+    {
+      "key": "api-trafico-irregular",
+      "type": "multipleChoice",
+      "scoringPolicy": "partialCredit",
+      "prompt": "Una startup evalúa la computación sin servidor para una API con tráfico muy irregular. ¿Qué dos afirmaciones sobre este enfoque son correctas? Selecciona dos.",
+      "objectives": [
+        "comparar-costos-y-sin-servidor"
+      ],
+      "concepts": [
+        "computacion-sin-servidor",
+        "modelos-de-precios"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "El código se ejecuta sin ningún servidor físico de por medio"
+        },
+        {
+          "key": "b",
+          "text": "El proveedor administra los servidores y su escalado",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "El equipo debe aplicar los parches del sistema operativo"
+        },
+        {
+          "key": "d",
+          "text": "El cobro suele basarse en el uso real, sin cargos de cómputo cuando no hay ejecuciones",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "saas-datos-del-proveedor",
+      "type": "trueFalse",
+      "prompt": "En un modelo SaaS, el proveedor de nube es responsable de los datos que los usuarios de la empresa guardan en la aplicación.",
+      "objectives": [
+        "explicar-nube-y-responsabilidad"
+      ],
+      "concepts": [
+        "modelo-responsabilidad-compartida"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "privada-en-tercero",
+      "type": "trueFalse",
+      "prompt": "Una nube privada puede estar alojada en el centro de datos de un tercero, siempre que sus recursos estén dedicados a una sola organización.",
+      "objectives": [
+        "elegir-modelo-de-nube"
+      ],
+      "concepts": [
+        "nube-privada"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "multinube-es-hibrida",
+      "type": "trueFalse",
+      "prompt": "Multinube significa combinar la nube privada de una empresa con una nube pública.",
+      "objectives": [
+        "elegir-modelo-de-nube"
+      ],
+      "concepts": [
+        "nube-hibrida"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "reserva-con-descuento",
+      "type": "trueFalse",
+      "prompt": "Comprometerse a usar un recurso durante uno o tres años suele dar una tarifa con descuento frente al pago por uso.",
+      "objectives": [
+        "comparar-costos-y-sin-servidor"
+      ],
+      "concepts": [
+        "modelos-de-precios"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "sin-servidor-sin-hardware",
+      "type": "trueFalse",
+      "prompt": "La computación sin servidor significa que el código se ejecuta sin servidores físicos en ninguna parte.",
+      "objectives": [
+        "comparar-costos-y-sin-servidor"
+      ],
+      "concepts": [
+        "computacion-sin-servidor"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "explica-responsabilidad-compartida",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras el modelo de responsabilidad compartida y cómo cambia la responsabilidad del cliente entre IaaS, PaaS y SaaS. Incluye un ejemplo de algo que siempre sigue siendo responsabilidad del cliente.",
+      "objectives": [
+        "explicar-nube-y-responsabilidad"
+      ],
+      "concepts": [
+        "definicion-computacion-en-la-nube",
+        "modelo-responsabilidad-compartida"
+      ],
+      "rubric": {
+        "privateGuidance": "Busca que el alumno distinga lo fijo (físico = proveedor; datos, dispositivos e identidades = cliente) de lo variable (SO, aplicaciones, controles de red). Acepta ejemplos distintos si son correctos. No exijas terminología exacta en inglés.",
+        "criteria": [
+          {
+            "key": "reparto-fijo",
+            "description": "Identifica lo que siempre corresponde al proveedor (centro de datos, red y hosts físicos) y lo que siempre corresponde al cliente (datos, dispositivos, cuentas e identidades).",
+            "maxPoints": 3
+          },
+          {
+            "key": "gradiente-servicios",
+            "description": "Explica que la responsabilidad del cliente es máxima en IaaS, intermedia en PaaS y mínima en SaaS, con al menos un elemento que cambia de dueño.",
+            "maxPoints": 3
+          },
+          {
+            "key": "ejemplo",
+            "description": "Aporta un ejemplo concreto y correcto de una responsabilidad que el cliente nunca transfiere.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-cooperativa-modelo",
+      "type": "caseAnalysis",
+      "prompt": "Lee el caso y responde. La Cooperativa Agrícola Los Volcanes opera un centro de datos pequeño en su sede, con servidores que cumplen cinco años. Allí guarda los expedientes de crédito de sus socios, que por normativa local deben permanecer en infraestructura bajo su control. Cada fin de mes, la carga de su portal de consultas se triplica durante tres días y el portal se vuelve lento. La gerencia quiere evitar una nueva compra grande de servidores y está abierta a usar Azure, pero no quiere perder el control de los expedientes. ¿Qué modelo de nube recomiendas, cómo repartirías las cargas y qué ventajas y riesgos ves?",
+      "objectives": [
+        "elegir-modelo-de-nube"
+      ],
+      "concepts": [
+        "nube-publica",
+        "nube-privada",
+        "nube-hibrida"
+      ],
+      "rubric": {
+        "privateGuidance": "Respuesta esperada: nube híbrida. Expedientes en la parte privada (o infraestructura dedicada) y portal de consultas escalando en Azure en los picos. Valora que mencione la conexión entre ambos entornos, la reducción de CapEx y el riesgo de mayor complejidad operativa. Si propone sólo nube pública debe justificar cómo cumple la normativa; si no lo hace, puntaje parcial.",
+        "criteria": [
+          {
+            "key": "recomendacion",
+            "description": "Recomienda un modelo adecuado (híbrida) y lo justifica con los requisitos del caso: datos regulados y picos temporales.",
+            "maxPoints": 3
+          },
+          {
+            "key": "reparto-cargas",
+            "description": "Indica qué cargas quedan en el entorno privado y cuáles en la nube pública.",
+            "maxPoints": 3
+          },
+          {
+            "key": "ventajas-riesgos",
+            "description": "Menciona al menos una ventaja (por ejemplo, evitar la compra de servidores) y un riesgo o costo (por ejemplo, complejidad de administrar dos entornos).",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "plan-de-precios",
+      "type": "practicalExercise",
+      "prompt": "Diseña un plan de precios para una empresa que va a migrar a Azure estas cargas: (1) un sistema de facturación que funciona las 24 horas con uso estable durante los próximos tres años; (2) un entorno de capacitación que se usa sólo dos semanas al trimestre; (3) un proceso que envía una notificación cada vez que se registra un pedido. Para cada carga indica el modelo de precios o de cómputo, por qué, y una acción para no pagar capacidad ociosa. No necesitas cifras.",
+      "objectives": [
+        "comparar-costos-y-sin-servidor"
+      ],
+      "concepts": [
+        "modelo-basado-en-consumo",
+        "modelos-de-precios",
+        "computacion-sin-servidor"
+      ],
+      "rubric": {
+        "privateGuidance": "Esperado: (1) compromiso a largo plazo (reserva o plan de ahorro) por ser estable; (2) pago por uso, eliminando o apagando recursos fuera de las semanas de uso; (3) sin servidor desencadenado por eventos. Valora que relacione todo con OpEx y con evitar capacidad ociosa. No exijas nombres comerciales exactos salvo para el componente sin servidor.",
+        "criteria": [
+          {
+            "key": "asignacion",
+            "description": "Asigna a cada carga un modelo coherente: compromiso para la estable, pago por uso para la temporal y sin servidor para la de eventos.",
+            "maxPoints": 4
+          },
+          {
+            "key": "justificacion",
+            "description": "Justifica cada elección con la estabilidad, duración o naturaleza por eventos de la carga.",
+            "maxPoints": 3
+          },
+          {
+            "key": "capacidad-ociosa",
+            "description": "Propone acciones concretas para evitar pagar capacidad que no se usa y relaciona el plan con el modelo OpEx.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Computación en la nube",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "iaas-tarea-del-cliente",
+        "definicion-de-nube",
+        "modelo-uso-exclusivo",
+        "modelo-picos-temporada",
+        "clasificacion-del-gasto",
+        "procesar-imagen-por-evento",
+        "siempre-del-cliente",
+        "caracteristicas-nube-publica",
+        "beneficios-consumo",
+        "api-trafico-irregular",
+        "saas-datos-del-proveedor",
+        "privada-en-tercero",
+        "multinube-es-hibrida",
+        "reserva-con-descuento",
+        "sin-servidor-sin-hardware"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Computación en la nube",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "iaas-tarea-del-cliente",
+        "siempre-del-cliente",
+        "modelo-uso-exclusivo",
+        "caracteristicas-nube-publica",
+        "privada-en-tercero",
+        "clasificacion-del-gasto",
+        "api-trafico-irregular",
+        "sin-servidor-sin-hardware"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Computación en la nube",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "explica-responsabilidad-compartida",
+        "caso-cooperativa-modelo",
+        "plan-de-precios"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Computación en la nube",
+    "edges": [
+      {
+        "from": "modelo-responsabilidad-compartida",
+        "to": "definicion-computacion-en-la-nube",
+        "relation": "requires"
+      },
+      {
+        "from": "nube-publica",
+        "to": "definicion-computacion-en-la-nube",
+        "relation": "requires"
+      },
+      {
+        "from": "nube-publica",
+        "to": "nube-privada",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "nube-hibrida",
+        "to": "nube-publica",
+        "relation": "requires"
+      },
+      {
+        "from": "nube-hibrida",
+        "to": "nube-privada",
+        "relation": "requires"
+      },
+      {
+        "from": "modelo-basado-en-consumo",
+        "to": "definicion-computacion-en-la-nube",
+        "relation": "requires"
+      },
+      {
+        "from": "modelo-basado-en-consumo",
+        "to": "nube-publica",
+        "relation": "explains"
+      },
+      {
+        "from": "modelos-de-precios",
+        "to": "modelo-basado-en-consumo",
+        "relation": "requires"
+      },
+      {
+        "from": "computacion-sin-servidor",
+        "to": "modelo-basado-en-consumo",
+        "relation": "applies"
+      },
+      {
+        "from": "modelo-responsabilidad-compartida",
+        "to": "computacion-sin-servidor",
+        "relation": "explains"
+      }
+    ]
+  }
+}

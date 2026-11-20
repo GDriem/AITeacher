@@ -1,0 +1,859 @@
+{
+  "slug": "identidad-acceso-seguridad",
+  "name": "Identidad, acceso y seguridad en Azure",
+  "category": "arquitectura-y-servicios",
+  "sortOrder": 7,
+  "profile": "module",
+  "description": "Conoce Microsoft Entra ID y Microsoft Entra Domain Services, los métodos de autenticación (SSO, MFA y sin contraseña), las identidades externas, el acceso condicional de Microsoft Entra y el control de acceso basado en roles de Azure (RBAC). Completa el panorama con el modelo Zero Trust, la estrategia de defensa en profundidad y el papel de Microsoft Defender for Cloud en la postura de seguridad.",
+  "outline": [
+    "Describe directory services in Azure, including Microsoft Entra ID and Microsoft Entra Domain Services",
+    "Describe authentication methods in Azure, including single sign-on (SSO), multifactor authentication (MFA), and passwordless",
+    "Describe external identities in Azure",
+    "Describe Microsoft Entra Conditional Access",
+    "Describe Azure role-based access control (RBAC)",
+    "Describe the concept of Zero Trust",
+    "Describe the purpose of the defense-in-depth model",
+    "Describe the purpose of Microsoft Defender for Cloud"
+  ],
+  "unit": {
+    "title": "Identidad, acceso y seguridad en Azure",
+    "concepts": [
+      {
+        "key": "entra-id",
+        "name": "Microsoft Entra ID"
+      },
+      {
+        "key": "entra-domain-services",
+        "name": "Microsoft Entra Domain Services"
+      },
+      {
+        "key": "metodos-autenticacion",
+        "name": "Métodos de autenticación: SSO, MFA y sin contraseña"
+      },
+      {
+        "key": "identidades-externas",
+        "name": "Identidades externas con Microsoft Entra External ID"
+      },
+      {
+        "key": "acceso-condicional",
+        "name": "Acceso condicional de Microsoft Entra"
+      },
+      {
+        "key": "rbac",
+        "name": "Control de acceso basado en roles de Azure (Azure RBAC)"
+      },
+      {
+        "key": "zero-trust",
+        "name": "Modelo Zero Trust"
+      },
+      {
+        "key": "defensa-en-profundidad",
+        "name": "Defensa en profundidad"
+      },
+      {
+        "key": "defender-for-cloud",
+        "name": "Microsoft Defender for Cloud"
+      }
+    ],
+    "objectives": [
+      {
+        "key": "identidad-y-autenticacion",
+        "description": "Distinguir Microsoft Entra ID de Microsoft Entra Domain Services y elegir el método de autenticación (SSO, MFA o sin contraseña) adecuado para un escenario.",
+        "concepts": [
+          "entra-id",
+          "entra-domain-services",
+          "metodos-autenticacion"
+        ]
+      },
+      {
+        "key": "control-de-acceso",
+        "description": "Elegir entre identidades externas, acceso condicional y Azure RBAC para controlar quién accede, en qué condiciones y con qué permisos en un escenario de empresa, aplicando el principio de privilegio mínimo.",
+        "concepts": [
+          "identidades-externas",
+          "acceso-condicional",
+          "rbac"
+        ]
+      },
+      {
+        "key": "modelos-de-seguridad",
+        "description": "Distinguir el modelo Zero Trust, la estrategia de defensa en profundidad y el propósito de Microsoft Defender for Cloud, y relacionar cada control de seguridad con su principio o capa.",
+        "concepts": [
+          "zero-trust",
+          "defensa-en-profundidad",
+          "defender-for-cloud"
+        ]
+      }
+    ],
+    "readings": [
+      {
+        "key": "servicios-de-directorio",
+        "title": "Microsoft Entra ID y Microsoft Entra Domain Services",
+        "text": "**Microsoft Entra ID** es el servicio de administración de identidades y acceso de Microsoft basado en la nube. Permite que usuarios y aplicaciones inicien sesión y accedan tanto a servicios de Microsoft (Microsoft 365, el portal de Azure) como a aplicaciones SaaS o desarrolladas por la empresa. Si conoces Active Directory local, la idea te resultará familiar: tú controlas las cuentas, pero Microsoft opera el servicio y lo mantiene disponible en todo el mundo.\n\nSus funciones principales son:\n\n- **Autenticación**: verificar la identidad, con restablecimiento de contraseña de autoservicio, MFA, listas de contraseñas prohibidas y bloqueo inteligente.\n- **Inicio de sesión único (SSO)**: una identidad para acceder a muchas aplicaciones.\n- **Administración de aplicaciones**: integración de apps SaaS, Application Proxy y el portal Mis aplicaciones.\n- **Administración de dispositivos**: registro de dispositivos, por ejemplo con Microsoft Intune, para crear políticas basadas en el estado del equipo.\n\n**Conectar el directorio local**\n\nMuchas empresas ya tienen Active Directory Domain Services (AD DS) en sus oficinas. Sin conexión, mantendrían dos conjuntos de identidades. **Microsoft Entra Connect** sincroniza las identidades locales con Microsoft Entra ID, de modo que el usuario tiene una experiencia coherente (SSO, MFA, autoservicio) en recursos locales y en la nube. Además, Microsoft puede detectar inicios de sesión sospechosos, algo que AD local no hace por sí solo.\n\n**Microsoft Entra Domain Services**\n\nAlgunas aplicaciones heredadas no entienden la autenticación moderna y dependen de unión a dominio, directivas de grupo, LDAP o Kerberos/NTLM. **Microsoft Entra Domain Services** ofrece esos servicios de dominio **administrados** sin que despliegues ni mantengas controladores de dominio: Azure crea dos controladores (un *conjunto de réplicas*) en la región elegida y se encarga de su mantenimiento y respaldos.\n\nLa sincronización es **unidireccional**: de Microsoft Entra ID al dominio administrado. Lo que crees directamente en el dominio administrado no vuelve a Entra ID. En un entorno híbrido el flujo es: AD local → Microsoft Entra Connect → Microsoft Entra ID → dominio administrado.\n\n| Necesidad | Servicio |\n| --- | --- |\n| Identidad en la nube, SSO y MFA para apps modernas | Microsoft Entra ID |\n| Sincronizar AD local con la nube | Microsoft Entra Connect |\n| LDAP, Kerberos o unión a dominio sin administrar controladores | Microsoft Entra Domain Services |\n\n**Ejemplo práctico.** Una aseguradora traslada a máquinas virtuales de Azure una aplicación de pólizas de hace quince años que autentica con Kerberos. En lugar de crear y mantener controladores de dominio en VM, habilita Microsoft Entra Domain Services, y los empleados entran con sus credenciales de siempre.\n\n**Para recordar en el examen**\n\n- Microsoft Entra ID: identidad y acceso en la nube.\n- Microsoft Entra Domain Services: dominio administrado para apps heredadas, sin administrar controladores.\n- La sincronización hacia Domain Services va en un solo sentido.\n- Microsoft Entra Connect une el AD local con Microsoft Entra ID.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-identity-access-security/2-directory-services",
+        "objectives": [
+          "identidad-y-autenticacion"
+        ]
+      },
+      {
+        "key": "autenticacion-e-identidades-externas",
+        "title": "Métodos de autenticación e identidades externas",
+        "text": "La **autenticación** comprueba quién eres antes de concederte acceso. Los métodos de Azure buscan equilibrar seguridad y comodidad: una contraseña sola es cómoda pero débil, MFA agrega seguridad y la autenticación sin contraseña logra ambas cosas.\n\n**Inicio de sesión único (SSO)**\n\nCon SSO inicias sesión una vez y accedes a varias aplicaciones de confianza. Hay menos contraseñas que recordar, menos restablecimientos y bloqueos, y es más fácil retirar el acceso cuando alguien cambia de puesto o se va. Ojo: **SSO es tan seguro como el autenticador inicial**; por eso conviene combinarlo con MFA.\n\n**Autenticación multifactor (MFA)**\n\nMFA pide un factor adicional durante el inicio de sesión. Los factores pertenecen a tres categorías:\n\n- **Algo que sabes**: contraseña o pregunta de seguridad.\n- **Algo que tienes**: un teléfono que recibe un código o una notificación.\n- **Algo que eres**: huella, rostro u otro dato biométrico.\n\nDos contraseñas no son MFA: ambas son \"algo que sabes\". Microsoft Entra multifactor authentication es el servicio que ofrece esta capacidad, por ejemplo con una llamada o una notificación en una app móvil.\n\n**Sin contraseña (passwordless)**\n\nElimina la contraseña y la reemplaza por un dispositivo de confianza más un PIN o un dato biométrico. Microsoft Entra ID admite tres opciones:\n\n| Opción | Ideal para |\n| --- | --- |\n| Windows Hello for Business | Personas con su propia PC con Windows |\n| Microsoft Authenticator | Convertir un teléfono iOS o Android en factor de inicio de sesión |\n| Llaves de seguridad FIDO2 | Dispositivo físico (USB, Bluetooth o NFC) resistente al phishing |\n\n**Identidades externas**\n\nUna identidad externa es una persona, dispositivo o servicio fuera de tu inquilino. Con **Microsoft Entra External ID**, socios y proveedores usan sus propias credenciales (cuentas de trabajo o sociales) mientras tú decides a qué acceden:\n\n- **Colaboración B2B**: los externos aparecen en tu directorio, normalmente como **invitados**.\n- **B2B direct connect**: confianza mutua con otro inquilino de Microsoft Entra; hoy se usa en canales compartidos de Teams y esos usuarios no aparecen en tu directorio.\n- **External ID para clientes**: publicar apps para consumidores.\n\nLas **revisiones de acceso** permiten confirmar periódicamente si cada invitado sigue necesitando acceso.\n\n**Ejemplo práctico.** Una constructora invita como invitados B2B a los ingenieros de un despacho externo, que entran con su cuenta corporativa; su personal interno usa Microsoft Authenticator sin contraseña y SSO para todas sus apps.\n\n**Para recordar en el examen**\n\n- SSO: un inicio de sesión, muchas apps. MFA: factores de al menos dos categorías.\n- Opciones sin contraseña: Windows Hello for Business, Authenticator y FIDO2.\n- En B2B, el proveedor de identidad externo autentica y tú autorizas.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-identity-access-security/3-authentication-methods",
+        "objectives": [
+          "identidad-y-autenticacion",
+          "control-de-acceso"
+        ]
+      },
+      {
+        "key": "acceso-condicional-y-rbac",
+        "title": "Acceso condicional y control de acceso basado en roles",
+        "text": "Autenticar no basta: hay que decidir **en qué condiciones** puede entrar cada identidad y **qué** puede hacer después. En Azure, esas dos preguntas las responden el acceso condicional y el control de acceso basado en roles.\n\n**Acceso condicional de Microsoft Entra**\n\nEl acceso condicional reúne **señales** durante el inicio de sesión (quién es el usuario, desde dónde se conecta, qué dispositivo usa, a qué aplicación quiere entrar), toma una **decisión** y la **aplica**: permitir, exigir MFA o bloquear. Funciona como un \"si… entonces…\":\n\n- Si el usuario tiene un rol privilegiado, exigir MFA.\n- Si se conecta desde fuera de las ubicaciones de confianza, exigir MFA.\n- Si el dispositivo no está administrado, bloquear la app sensible.\n- Si la ubicación es inesperada o de alto riesgo, bloquear.\n- Permitir sólo aplicaciones cliente aprobadas para el correo.\n\nAsí, un empleado en su oficina habitual no recibe una solicitud extra, pero sí cuando las señales son inusuales.\n\n**Azure RBAC**\n\nEl **principio de privilegio mínimo** dice que cada quien recibe sólo el acceso necesario para su tarea. Azure RBAC lo vuelve manejable: asignas **roles** (integrados, como Owner, Contributor y Reader, o personalizados) a usuarios, grupos o identidades de servicio sobre un **ámbito**: grupo de administración, suscripción, grupo de recursos o recurso.\n\nLos permisos se **heredan** hacia abajo: Reader en una suscripción permite ver todos sus grupos de recursos y recursos. RBAC usa un modelo **de permiso**: si un rol te da lectura y otro escritura sobre el mismo ámbito, tienes ambas. Se aplica a toda acción que pasa por **Azure Resource Manager** (portal, Cloud Shell, PowerShell, CLI); no controla la seguridad dentro de tu propia aplicación.\n\n| | Acceso condicional | Azure RBAC |\n| --- | --- | --- |\n| Pregunta que responde | ¿En qué condiciones puede iniciar sesión? | ¿Qué puede hacer y sobre qué recurso? |\n| Se basa en | Señales: usuario, ubicación, dispositivo, app, riesgo | Rol más ámbito |\n| Resultado típico | Permitir, exigir MFA o bloquear | Permitir las acciones del rol en el ámbito |\n\n**Ejemplo práctico.** Una fintech asigna al grupo *Desarrollo* el rol Contributor sólo en el grupo de recursos `rg-pruebas`, y al grupo *Auditoría* el rol Reader en la suscripción. Con acceso condicional exige MFA a los administradores y bloquea el portal desde dispositivos no administrados.\n\n**Para recordar en el examen**\n\n- Acceso condicional: señales, decisión y aplicación.\n- RBAC: rol más ámbito, con herencia de arriba hacia abajo.\n- Owner administra todo, incluido el acceso; Contributor administra recursos pero no asigna acceso; Reader sólo lee.\n- RBAC actúa sobre Azure Resource Manager, no sobre los datos internos de tu app.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-identity-access-security/6-role-based-access-control",
+        "objectives": [
+          "control-de-acceso"
+        ]
+      },
+      {
+        "key": "zero-trust-defensa-y-defender",
+        "title": "Zero Trust, defensa en profundidad y Microsoft Defender for Cloud",
+        "text": "Tres ideas organizan la seguridad en Azure: un **modelo de confianza** (Zero Trust), una **estrategia por capas** (defensa en profundidad) y un **servicio** que mide y defiende tu postura (Microsoft Defender for Cloud).\n\n**Zero Trust**\n\nEl modelo tradicional confiaba en todo lo que estaba dentro del perímetro de la red corporativa. Zero Trust invierte esa lógica: **asume que ya hubo una vulneración** y verifica cada solicitud como si viniera de una red no controlada. Sus principios rectores son:\n\n- **Verificar explícitamente**: autenticar y autorizar con todas las señales disponibles.\n- **Usar acceso con privilegios mínimos**: acceso justo a tiempo y justo el necesario (JIT/JEA) y políticas adaptativas según el riesgo.\n- **Asumir la vulneración**: segmentar el acceso, cifrar de extremo a extremo y usar análisis para detectar amenazas.\n\n**Defensa en profundidad**\n\nBusca frenar a un atacante con varias capas, de modo que si una falla, la siguiente sigue protegiendo. Los datos están al centro:\n\n| Capa (de afuera hacia adentro) | Ejemplo de control |\n| --- | --- |\n| Física | Acceso controlado a los centros de datos |\n| Identidad y acceso | SSO, MFA, auditoría de inicios de sesión |\n| Perímetro | Protección contra DDoS, firewalls perimetrales |\n| Red | Segmentación, denegar por defecto |\n| Proceso (cómputo) | Acceso seguro a VM, parches, protección de endpoints |\n| Aplicación | Código sin vulnerabilidades, secretos en Azure Key Vault |\n| Datos | Cifrado en reposo y en tránsito |\n\n**Microsoft Defender for Cloud**\n\nEs un servicio de **administración de la postura de seguridad** y **protección contra amenazas**. Supervisa recursos de Azure, locales (mediante Azure Arc) y de otras nubes como AWS y Google Cloud. Cumple tres funciones:\n\n- **Evaluar continuamente**: detectar vulnerabilidades en VM, registros de contenedores y servidores SQL.\n- **Proteger**: emitir recomendaciones alineadas con el Microsoft cloud security benchmark y calcular una **puntuación segura**.\n- **Defender**: generar alertas con pasos de corrección, correlacionarlas y ofrecer protección avanzada, como el acceso a VM justo a tiempo.\n\n**Ejemplo práctico.** Una empresa de logística descubre que una VM tenía el puerto RDP abierto a internet. Defender for Cloud lo muestra como recomendación y su puntuación segura baja; el equipo aplica acceso justo a tiempo (capas de proceso y red), exige MFA con acceso condicional (verificar explícitamente) y reduce roles RBAC (privilegio mínimo).\n\n**Para recordar en el examen**\n\n- Zero Trust: verificar explícitamente, privilegio mínimo y asumir la vulneración.\n- Defensa en profundidad: siete capas, de la física a los datos.\n- Defender for Cloud: evaluar, proteger y defender; puntuación segura; híbrido y multinube.",
+        "source": "https://learn.microsoft.com/en-us/training/modules/describe-azure-identity-access-security/8-describe-defense-depth",
+        "objectives": [
+          "modelos-de-seguridad"
+        ]
+      }
+    ],
+    "exercises": [
+      {
+        "key": "explica-directorio-y-autenticacion",
+        "prompt": "**Explícale al tutor con tus palabras**\n\nResponde como si hablaras con alguien que nunca ha administrado un directorio:\n\n1. ¿Qué problema resuelve Microsoft Entra ID y en qué se diferencia de Microsoft Entra Domain Services? Da un ejemplo de aplicación que necesitaría cada uno.\n2. ¿Por qué se dice que el SSO \"es tan seguro como el autenticador inicial\"?\n3. Clasifica estos factores en *algo que sabes*, *algo que tienes* o *algo que eres*: PIN, huella, notificación en el teléfono, pregunta de seguridad, llave FIDO2, reconocimiento facial.\n4. ¿Por qué una contraseña más una pregunta de seguridad **no** es MFA?\n\nPide al tutor que te haga una repregunta por cada respuesta que considere incompleta.",
+        "objectives": [
+          "identidad-y-autenticacion"
+        ]
+      },
+      {
+        "key": "escenario-diseno-de-acceso",
+        "prompt": "**Escenario de empresa: diseña el acceso**\n\nCooperativa Los Andes tiene una suscripción con tres grupos de recursos: `rg-produccion`, `rg-pruebas` y `rg-redes`. Debes proponer cómo cumplir estas necesidades con Azure RBAC, acceso condicional o identidades externas:\n\n1. El equipo de desarrollo crea y elimina recursos sólo en `rg-pruebas`.\n2. Auditoría interna debe ver todo sin modificar nada.\n3. Un consultor de una empresa externa necesita revisar la configuración de `rg-redes` durante un mes, con su propia cuenta corporativa.\n4. Los administradores deben usar MFA siempre; nadie debe entrar al portal desde un país donde la cooperativa no opera.\n\nPara cada punto indica el mecanismo, el rol o la política y el ámbito. Luego explica al tutor cómo tu diseño aplica el principio de privilegio mínimo.",
+        "objectives": [
+          "control-de-acceso"
+        ]
+      },
+      {
+        "key": "tarjetas-modelos-de-seguridad",
+        "prompt": "**Tarjetas de memoria y autoexplicación**\n\nCrea tus propias tarjetas con el frente y el reverso indicados. Después, sin mirar el reverso, explica cada una en voz alta o por escrito al tutor:\n\n| Frente | Reverso (complétalo tú) |\n| --- | --- |\n| Los tres principios de Zero Trust | |\n| Las siete capas de defensa en profundidad, de afuera hacia adentro | |\n| Capa donde actúa la protección contra DDoS | |\n| Capa donde guardas secretos en Azure Key Vault | |\n| Las tres funciones de Microsoft Defender for Cloud | |\n| Qué indica la puntuación segura | |\n\nReto final: elige un incidente imaginario (por ejemplo, credenciales filtradas de un empleado) y explica qué capa o principio lo habría frenado.",
+        "objectives": [
+          "modelos-de-seguridad"
+        ]
+      },
+      {
+        "key": "laboratorio-identidad-y-defender",
+        "prompt": "**Laboratorio opcional en el portal de Azure**\n\n> **Aviso de costos:** trabaja con una cuenta gratuita de Azure o un entorno de prueba. No habilites planes mejorados de Microsoft Defender for Cloud ni licencias adicionales, y **elimina los recursos y el usuario de prueba al terminar**.\n\n1. Abre **Microsoft Entra ID** y crea un usuario de prueba. Revisa la sección de métodos de autenticación para ver qué opciones están disponibles.\n2. Crea un grupo de recursos `rg-lab-identidad`. En **Control de acceso (IAM)**, asigna al usuario de prueba el rol Reader sólo en ese grupo de recursos.\n3. Usa la opción **Comprobar acceso** para confirmar qué puede hacer el usuario; compara con lo que puede hacer en la suscripción.\n4. Abre **Microsoft Defender for Cloud** y localiza la puntuación segura y la lista de recomendaciones. Anota a qué capa de defensa en profundidad corresponden dos de ellas.\n5. Elimina la asignación de rol, el grupo de recursos y el usuario de prueba.\n\nComenta con el tutor qué relación viste entre la herencia de RBAC y el ámbito que elegiste.",
+        "objectives": [
+          "control-de-acceso",
+          "modelos-de-seguridad"
+        ]
+      }
+    ],
+    "assessments": [
+      {
+        "key": "evaluacion-identidad-y-autenticacion",
+        "prompt": "Una universidad quiere: (a) que estudiantes y docentes usen una sola cuenta para el correo, el campus virtual y el portal de Azure; (b) migrar a Azure un sistema de notas antiguo que sólo funciona unido a un dominio con Kerberos, sin administrar controladores de dominio; y (c) dejar de usar contraseñas en las PC asignadas al personal administrativo. Indica qué servicio o método usarías en cada caso y justifica tu elección.",
+        "privateCriteria": "Respuesta esperada: (a) Microsoft Entra ID con inicio de sesión único (SSO); valora si recomienda reforzarlo con MFA porque SSO es tan seguro como el autenticador inicial. (b) Microsoft Entra Domain Services, que ofrece unión a dominio, LDAP y Kerberos/NTLM administrados sin desplegar controladores; debe evitar proponer Microsoft Entra ID por sí solo para Kerberos. (c) Windows Hello for Business, ideal para usuarios con su propia PC con Windows; se aceptan también Microsoft Authenticator o llaves FIDO2 si justifica el escenario. Penaliza confundir MFA con autenticación sin contraseña.",
+        "objectives": [
+          "identidad-y-autenticacion"
+        ]
+      },
+      {
+        "key": "evaluacion-control-de-acceso",
+        "prompt": "Una empresa de seguros contrata a una consultora externa para revisar su red en Azure durante tres meses. Además, quiere que su equipo de soporte pueda reiniciar y administrar las máquinas virtuales de un solo grupo de recursos, y que cualquier inicio de sesión desde un dispositivo no administrado exija MFA. Describe qué mecanismos (identidades externas, Azure RBAC y acceso condicional) usarías, con qué roles y en qué ámbitos.",
+        "privateCriteria": "Debe proponer: invitar a la consultora como usuarios invitados mediante colaboración B2B de Microsoft Entra External ID, usando sus propias credenciales, con una revisión de acceso o eliminación al terminar el contrato; asignarles un rol de lectura (por ejemplo, Reader) acotado al ámbito de los recursos de red; asignar al equipo de soporte un rol con permisos de administración (Contributor o un rol específico de VM) sólo en el grupo de recursos indicado, nunca Owner en la suscripción; y una política de acceso condicional cuya señal sea el estado del dispositivo y cuya decisión sea exigir MFA. Valora que mencione privilegio mínimo y herencia de permisos por ámbito.",
+        "objectives": [
+          "control-de-acceso"
+        ]
+      },
+      {
+        "key": "evaluacion-modelos-de-seguridad",
+        "prompt": "Explica en qué se diferencian Zero Trust y defensa en profundidad, y qué papel cumple Microsoft Defender for Cloud. Usa como ejemplo un ataque en el que se roban las credenciales de un empleado y el atacante intenta acceder a una base de datos en Azure.",
+        "privateCriteria": "Debe explicar que Zero Trust es un modelo que no confía por ubicación y se basa en verificar explícitamente, usar privilegios mínimos y asumir la vulneración; que defensa en profundidad organiza controles en capas (física, identidad y acceso, perímetro, red, proceso, aplicación, datos) para que la falla de una no exponga los datos; y que Defender for Cloud evalúa la postura, emite recomendaciones con puntuación segura y genera alertas ante amenazas. En el ejemplo, debe aplicar al menos dos controles: MFA o acceso condicional (verificar explícitamente, capa de identidad), privilegio mínimo en RBAC, segmentación de red, cifrado de datos y alertas de Defender for Cloud. Penaliza presentar Defender for Cloud como un servicio de identidad.",
+        "objectives": [
+          "modelos-de-seguridad"
+        ]
+      }
+    ],
+    "prerequisites": [
+      {
+        "concept": "entra-domain-services",
+        "requires": "entra-id"
+      },
+      {
+        "concept": "metodos-autenticacion",
+        "requires": "entra-id"
+      },
+      {
+        "concept": "identidades-externas",
+        "requires": "entra-id"
+      },
+      {
+        "concept": "acceso-condicional",
+        "requires": "metodos-autenticacion"
+      },
+      {
+        "concept": "rbac",
+        "requires": "entra-id"
+      },
+      {
+        "concept": "zero-trust",
+        "requires": "acceso-condicional"
+      },
+      {
+        "concept": "defender-for-cloud",
+        "requires": "defensa-en-profundidad"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "key": "app-heredada-kerberos",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere trasladar a máquinas virtuales de Azure una aplicación heredada que sólo autentica con Kerberos y LDAP, sin desplegar ni mantener controladores de dominio. ¿Qué servicio debe usar?",
+      "objectives": [
+        "identidad-y-autenticacion"
+      ],
+      "concepts": [
+        "entra-domain-services"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Microsoft Entra Connect"
+        },
+        {
+          "key": "b",
+          "text": "Microsoft Entra External ID"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Entra Domain Services",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Azure RBAC con un rol personalizado de lectura"
+        }
+      ]
+    },
+    {
+      "key": "sin-contrasena-pc-asignada",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere eliminar las contraseñas para su personal administrativo, que trabaja cada uno en su propia PC con Windows. ¿Qué método de autenticación sin contraseña es el más adecuado?",
+      "objectives": [
+        "identidad-y-autenticacion"
+      ],
+      "concepts": [
+        "metodos-autenticacion"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Windows Hello for Business",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Restablecimiento de contraseña de autoservicio"
+        },
+        {
+          "key": "c",
+          "text": "Preguntas de seguridad como único factor"
+        },
+        {
+          "key": "d",
+          "text": "Una cuenta compartida con inicio de sesión único"
+        }
+      ]
+    },
+    {
+      "key": "auditor-privilegio-minimo",
+      "type": "singleChoice",
+      "prompt": "Un auditor debe poder ver todos los recursos de una suscripción, sin modificar nada. ¿Qué asignación sigue el principio de privilegio mínimo?",
+      "objectives": [
+        "control-de-acceso"
+      ],
+      "concepts": [
+        "rbac"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Rol Owner en el grupo de administración que contiene la suscripción"
+        },
+        {
+          "key": "b",
+          "text": "Rol Contributor en la suscripción"
+        },
+        {
+          "key": "c",
+          "text": "Rol Owner en cada grupo de recursos"
+        },
+        {
+          "key": "d",
+          "text": "Rol Reader en la suscripción",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "mfa-fuera-de-red-corporativa",
+      "type": "singleChoice",
+      "prompt": "Una empresa quiere exigir MFA sólo cuando sus empleados inician sesión desde fuera de la red corporativa y bloquear los inicios de sesión desde países donde no opera. ¿Qué característica debe configurar?",
+      "objectives": [
+        "control-de-acceso"
+      ],
+      "concepts": [
+        "acceso-condicional"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Microsoft Entra Domain Services"
+        },
+        {
+          "key": "b",
+          "text": "Acceso condicional de Microsoft Entra",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "Azure RBAC con un rol personalizado"
+        },
+        {
+          "key": "d",
+          "text": "Colaboración B2B de Microsoft Entra External ID"
+        }
+      ]
+    },
+    {
+      "key": "capa-proteccion-ddos",
+      "type": "singleChoice",
+      "prompt": "En el modelo de defensa en profundidad, ¿en qué capa se ubica la protección contra DDoS que filtra ataques a gran escala antes de que afecten la disponibilidad para los usuarios?",
+      "objectives": [
+        "modelos-de-seguridad"
+      ],
+      "concepts": [
+        "defensa-en-profundidad"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Perímetro",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Red"
+        },
+        {
+          "key": "c",
+          "text": "Proceso (cómputo)"
+        },
+        {
+          "key": "d",
+          "text": "Aplicación"
+        }
+      ]
+    },
+    {
+      "key": "postura-seguridad-multinube",
+      "type": "singleChoice",
+      "prompt": "Una empresa tiene servidores en Azure, en su centro de datos local y en AWS. Quiere un solo servicio que evalúe su postura de seguridad, emita recomendaciones con una puntuación segura y genere alertas ante amenazas. ¿Qué servicio debe usar?",
+      "objectives": [
+        "modelos-de-seguridad"
+      ],
+      "concepts": [
+        "defender-for-cloud"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Azure Key Vault"
+        },
+        {
+          "key": "b",
+          "text": "Microsoft Entra Domain Services"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Defender for Cloud",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Acceso condicional de Microsoft Entra"
+        }
+      ]
+    },
+    {
+      "key": "opciones-sin-contrasena",
+      "type": "multipleChoice",
+      "prompt": "Una organización evalúa eliminar las contraseñas. ¿Qué opciones de autenticación sin contraseña admite Microsoft Entra ID? Selecciona tres.",
+      "objectives": [
+        "identidad-y-autenticacion"
+      ],
+      "concepts": [
+        "metodos-autenticacion"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Llaves de seguridad FIDO2",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Preguntas de seguridad"
+        },
+        {
+          "key": "c",
+          "text": "Microsoft Authenticator",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Contraseña de un solo uso enviada por correo electrónico"
+        },
+        {
+          "key": "e",
+          "text": "Windows Hello for Business",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "afirmaciones-identidades-externas",
+      "type": "multipleChoice",
+      "prompt": "Una empresa quiere colaborar con los empleados de un proveedor. ¿Qué afirmaciones sobre las identidades externas en Microsoft Entra son correctas? Selecciona dos.",
+      "objectives": [
+        "control-de-acceso"
+      ],
+      "concepts": [
+        "identidades-externas"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Para invitar a un proveedor, debes crearle una contraseña local en tu inquilino."
+        },
+        {
+          "key": "b",
+          "text": "Con la colaboración B2B, los usuarios externos suelen aparecer en tu directorio como invitados.",
+          "correct": true
+        },
+        {
+          "key": "c",
+          "text": "B2B direct connect crea una cuenta de invitado en tu directorio por cada usuario externo."
+        },
+        {
+          "key": "d",
+          "text": "Los usuarios externos pueden iniciar sesión con sus propias identidades, como cuentas de trabajo o sociales.",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "principios-zero-trust",
+      "type": "multipleChoice",
+      "prompt": "Un equipo de seguridad adopta el modelo Zero Trust. ¿Cuáles son sus principios rectores? Selecciona tres.",
+      "objectives": [
+        "modelos-de-seguridad"
+      ],
+      "concepts": [
+        "zero-trust"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Verificar explícitamente",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "Confiar en los dispositivos conectados a la red corporativa"
+        },
+        {
+          "key": "c",
+          "text": "Usar acceso con privilegios mínimos",
+          "correct": true
+        },
+        {
+          "key": "d",
+          "text": "Asumir la vulneración",
+          "correct": true
+        },
+        {
+          "key": "e",
+          "text": "Concentrar la protección en el perímetro de la red"
+        }
+      ],
+      "scoringPolicy": "exactMatch"
+    },
+    {
+      "key": "afirmaciones-rbac",
+      "type": "multipleChoice",
+      "prompt": "Un administrador diseña las asignaciones de roles de su suscripción. ¿Qué afirmaciones sobre Azure RBAC son correctas? Selecciona dos.",
+      "objectives": [
+        "control-de-acceso"
+      ],
+      "concepts": [
+        "rbac"
+      ],
+      "options": [
+        {
+          "key": "a",
+          "text": "Los permisos asignados en un ámbito primario se heredan en sus ámbitos secundarios.",
+          "correct": true
+        },
+        {
+          "key": "b",
+          "text": "RBAC controla los permisos dentro de los datos de una aplicación desarrollada por la empresa."
+        },
+        {
+          "key": "c",
+          "text": "Los roles sólo pueden asignarse en el ámbito de un recurso individual."
+        },
+        {
+          "key": "d",
+          "text": "Si un rol concede lectura y otro concede escritura sobre el mismo grupo de recursos, se tienen ambos permisos.",
+          "correct": true
+        }
+      ],
+      "scoringPolicy": "partialCredit"
+    },
+    {
+      "key": "domain-services-sincronizacion-unidireccional",
+      "type": "trueFalse",
+      "prompt": "La sincronización hacia Microsoft Entra Domain Services es unidireccional: va de Microsoft Entra ID al dominio administrado, y lo que se crea en el dominio administrado no se sincroniza de vuelta.",
+      "objectives": [
+        "identidad-y-autenticacion"
+      ],
+      "concepts": [
+        "entra-domain-services"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "sso-seguro-por-si-mismo",
+      "type": "trueFalse",
+      "prompt": "El inicio de sesión único (SSO) es seguro por sí mismo, sin importar qué tan fuerte sea el método de autenticación inicial.",
+      "objectives": [
+        "identidad-y-autenticacion"
+      ],
+      "concepts": [
+        "metodos-autenticacion"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "acceso-condicional-sin-mfa",
+      "type": "trueFalse",
+      "prompt": "El acceso condicional de Microsoft Entra sólo puede permitir o bloquear el acceso; no puede exigir un segundo factor de autenticación.",
+      "objectives": [
+        "control-de-acceso"
+      ],
+      "concepts": [
+        "acceso-condicional"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "zero-trust-no-confia-por-ubicacion",
+      "type": "trueFalse",
+      "prompt": "En el modelo Zero Trust, el acceso se concede con base en la autenticación y las señales de riesgo, no por el hecho de que la solicitud provenga de la red interna.",
+      "objectives": [
+        "modelos-de-seguridad"
+      ],
+      "concepts": [
+        "zero-trust"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero",
+          "correct": true
+        },
+        {
+          "key": "falso",
+          "text": "Falso"
+        }
+      ]
+    },
+    {
+      "key": "datos-capa-externa",
+      "type": "trueFalse",
+      "prompt": "En el modelo de defensa en profundidad, los datos se ubican en la capa más externa porque son lo primero que encuentra un atacante.",
+      "objectives": [
+        "modelos-de-seguridad"
+      ],
+      "concepts": [
+        "defensa-en-profundidad"
+      ],
+      "options": [
+        {
+          "key": "verdadero",
+          "text": "Verdadero"
+        },
+        {
+          "key": "falso",
+          "text": "Falso",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "key": "explica-sso-mfa-sin-contrasena",
+      "type": "openResponse",
+      "prompt": "Explica con tus palabras qué es el inicio de sesión único (SSO), qué es la autenticación multifactor (MFA) y qué es la autenticación sin contraseña. Indica qué problema resuelve cada uno, por qué conviene combinar SSO con MFA y menciona las tres categorías de factores de autenticación.",
+      "objectives": [
+        "identidad-y-autenticacion"
+      ],
+      "concepts": [
+        "metodos-autenticacion"
+      ],
+      "rubric": {
+        "privateGuidance": "Busca comprensión, no definiciones copiadas. SSO: un inicio de sesión para varias aplicaciones; reduce contraseñas y facilita retirar accesos, pero es tan seguro como el autenticador inicial. MFA: factores de al menos dos categorías (algo que sabes, algo que tienes, algo que eres). Sin contraseña: reemplaza la contraseña por un dispositivo de confianza más PIN o biometría (Windows Hello for Business, Microsoft Authenticator, FIDO2). No otorgues el criterio de factores si da como ejemplo de MFA dos elementos de la misma categoría.",
+        "criteria": [
+          {
+            "key": "sso",
+            "description": "Define SSO, su beneficio y su dependencia del autenticador inicial.",
+            "maxPoints": 2
+          },
+          {
+            "key": "mfa",
+            "description": "Define MFA y nombra correctamente las tres categorías de factores.",
+            "maxPoints": 2
+          },
+          {
+            "key": "sin-contrasena",
+            "description": "Explica la autenticación sin contraseña y nombra al menos una opción admitida por Microsoft Entra ID.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "caso-clinica-monteverde",
+      "type": "caseAnalysis",
+      "prompt": "Clínica Monteverde migró su sistema de expedientes a Azure. Hace un mes, un atacante obtuvo la contraseña de una recepcionista mediante un correo falso, inició sesión desde otro país y, como la cuenta tenía el rol Owner en toda la suscripción, descargó una copia de la base de datos de pacientes. La red virtual permitía conexiones desde internet a todas las VM, y nadie revisaba alertas ni recomendaciones de seguridad. La dirección pide un plan para que no vuelva a ocurrir. Analiza el caso desde el modelo Zero Trust y la defensa en profundidad, identifica qué falló en cada capa o principio y explica qué aportaría Microsoft Defender for Cloud.",
+      "objectives": [
+        "modelos-de-seguridad"
+      ],
+      "concepts": [
+        "zero-trust",
+        "defensa-en-profundidad",
+        "defender-for-cloud"
+      ],
+      "rubric": {
+        "privateGuidance": "Fallas esperadas: identidad sin MFA ni acceso condicional (incumple verificar explícitamente; capa de identidad y acceso); rol Owner excesivo (incumple privilegio mínimo); red sin segmentación y abierta a internet (capas de perímetro y red; no asume la vulneración); posible falta de cifrado o controles en la capa de datos. Defender for Cloud aportaría evaluación continua, recomendaciones con puntuación segura (por ejemplo, puertos abiertos) y alertas de amenazas con pasos de corrección, además de acceso a VM justo a tiempo. Acepta otras medidas razonables si se vinculan correctamente con una capa o principio.",
+        "criteria": [
+          {
+            "key": "zero-trust",
+            "description": "Relaciona al menos dos fallas con principios de Zero Trust (verificar explícitamente, privilegio mínimo, asumir la vulneración).",
+            "maxPoints": 3
+          },
+          {
+            "key": "capas",
+            "description": "Ubica las fallas y las medidas propuestas en las capas correctas de defensa en profundidad.",
+            "maxPoints": 3
+          },
+          {
+            "key": "defender",
+            "description": "Explica qué aportaría Microsoft Defender for Cloud (postura, recomendaciones, puntuación segura, alertas).",
+            "maxPoints": 2
+          }
+        ]
+      }
+    },
+    {
+      "key": "diseno-acceso-distribuidora-pacifico",
+      "type": "practicalExercise",
+      "prompt": "Ejercicio práctico (no requiere ejecutar nada). Distribuidora Pacífico tiene una suscripción con los grupos de recursos rg-ventas, rg-finanzas y rg-compartido. Diseña: (1) las asignaciones de Azure RBAC para estos grupos de personas: administradores de la plataforma, desarrolladores del equipo de ventas (crean y eliminan recursos sólo en rg-ventas), analistas de finanzas (sólo consultan rg-finanzas) y un auditor externo de una firma contable que usará su propia cuenta; (2) dos políticas de acceso condicional, indicando para cada una la señal, la decisión y a quién aplica. Presenta tu diseño en una tabla con columnas Identidad, Rol o política, Ámbito y Justificación.",
+      "objectives": [
+        "control-de-acceso"
+      ],
+      "concepts": [
+        "rbac",
+        "acceso-condicional",
+        "identidades-externas"
+      ],
+      "rubric": {
+        "privateGuidance": "Diseño de referencia: administradores con Owner (o Contributor más un rol de administración de acceso) en la suscripción, idealmente pocos; desarrolladores con Contributor en rg-ventas; analistas con Reader en rg-finanzas; auditor externo invitado como usuario B2B con Reader en el ámbito necesario y revisión de acceso periódica. Políticas: exigir MFA a administradores; bloquear o exigir MFA desde ubicaciones no confiables o dispositivos no administrados. Penaliza asignar roles en la suscripción cuando basta un grupo de recursos o crear cuentas locales para el auditor.",
+        "criteria": [
+          {
+            "key": "roles-ambitos",
+            "description": "Asigna roles integrados adecuados a cada grupo y en el ámbito más acotado posible (privilegio mínimo).",
+            "maxPoints": 4
+          },
+          {
+            "key": "externo",
+            "description": "Trata al auditor como identidad externa (invitado B2B) con acceso de sólo lectura y control de vigencia.",
+            "maxPoints": 2
+          },
+          {
+            "key": "acceso-condicional",
+            "description": "Define dos políticas coherentes con señal, decisión y destinatarios.",
+            "maxPoints": 2
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "practica",
+      "title": "Práctica libre: Identidad, acceso y seguridad en Azure",
+      "mode": "practice",
+      "timeLimitMinutes": 20,
+      "maxAttempts": 100,
+      "feedback": "afterSubmission",
+      "questions": [
+        "app-heredada-kerberos",
+        "sin-contrasena-pc-asignada",
+        "auditor-privilegio-minimo",
+        "mfa-fuera-de-red-corporativa",
+        "capa-proteccion-ddos",
+        "postura-seguridad-multinube",
+        "opciones-sin-contrasena",
+        "afirmaciones-identidades-externas",
+        "principios-zero-trust",
+        "afirmaciones-rbac",
+        "domain-services-sincronizacion-unidireccional",
+        "sso-seguro-por-si-mismo",
+        "acceso-condicional-sin-mfa",
+        "zero-trust-no-confia-por-ubicacion",
+        "datos-capa-externa"
+      ]
+    },
+    {
+      "key": "quiz",
+      "title": "Quiz cronometrado: Identidad, acceso y seguridad en Azure",
+      "mode": "assessment",
+      "timeLimitMinutes": 10,
+      "maxAttempts": 3,
+      "feedback": "afterSubmission",
+      "questions": [
+        "app-heredada-kerberos",
+        "sso-seguro-por-si-mismo",
+        "opciones-sin-contrasena",
+        "auditor-privilegio-minimo",
+        "mfa-fuera-de-red-corporativa",
+        "afirmaciones-identidades-externas",
+        "principios-zero-trust",
+        "postura-seguridad-multinube"
+      ]
+    },
+    {
+      "key": "evaluacion-abierta",
+      "title": "Evaluación abierta: Identidad, acceso y seguridad en Azure",
+      "mode": "assessment",
+      "timeLimitMinutes": 45,
+      "maxAttempts": 2,
+      "feedback": "afterSubmission",
+      "questions": [
+        "explica-sso-mfa-sin-contrasena",
+        "caso-clinica-monteverde",
+        "diseno-acceso-distribuidora-pacifico"
+      ]
+    }
+  ],
+  "graph": {
+    "title": "Mapa conceptual: Identidad, acceso y seguridad en Azure",
+    "edges": [
+      {
+        "from": "entra-domain-services",
+        "to": "entra-id",
+        "relation": "requires"
+      },
+      {
+        "from": "metodos-autenticacion",
+        "to": "entra-id",
+        "relation": "requires"
+      },
+      {
+        "from": "identidades-externas",
+        "to": "entra-id",
+        "relation": "requires"
+      },
+      {
+        "from": "rbac",
+        "to": "entra-id",
+        "relation": "requires"
+      },
+      {
+        "from": "acceso-condicional",
+        "to": "metodos-autenticacion",
+        "relation": "requires"
+      },
+      {
+        "from": "rbac",
+        "to": "acceso-condicional",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "acceso-condicional",
+        "to": "zero-trust",
+        "relation": "applies"
+      },
+      {
+        "from": "rbac",
+        "to": "zero-trust",
+        "relation": "applies"
+      },
+      {
+        "from": "zero-trust",
+        "to": "defensa-en-profundidad",
+        "relation": "differsFrom"
+      },
+      {
+        "from": "defender-for-cloud",
+        "to": "defensa-en-profundidad",
+        "relation": "applies"
+      },
+      {
+        "from": "entra-id",
+        "to": "entra-domain-services",
+        "relation": "differsFrom"
+      }
+    ]
+  }
+}
