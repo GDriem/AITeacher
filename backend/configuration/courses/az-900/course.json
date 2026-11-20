@@ -1,0 +1,32 @@
+{
+  "course": "az-900",
+  "namespace": "aiteacher-course-az-900-v1",
+  "skillsOutline": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-900",
+  "skillsOutlineDate": "2026-07-20",
+  "officialCourse": "https://learn.microsoft.com/en-us/training/courses/az-900t00",
+  "subject": {
+    "slug": "azure-fundamentals",
+    "name": "Microsoft Azure Fundamentals (AZ-900)",
+    "sortOrder": 10
+  },
+  "categories": [
+    {"slug": "conceptos-de-nube", "name": "Conceptos de nube (25–30 %)", "sortOrder": 1},
+    {"slug": "arquitectura-y-servicios", "name": "Arquitectura y servicios de Azure (35–40 %)", "sortOrder": 2},
+    {"slug": "administracion-y-gobernanza", "name": "Administración y gobernanza de Azure (30–35 %)", "sortOrder": 3},
+    {"slug": "preparacion-examen", "name": "Preparación para el examen", "sortOrder": 4}
+  ],
+  "modules": [
+    "modules/01-computacion-en-la-nube.json",
+    "modules/02-beneficios-de-la-nube.json",
+    "modules/03-tipos-de-servicio.json",
+    "modules/04-arquitectura-de-azure.json",
+    "modules/05-computo-y-redes.json",
+    "modules/06-almacenamiento.json",
+    "modules/07-identidad-acceso-seguridad.json",
+    "modules/08-administracion-de-costos.json",
+    "modules/09-gobernanza-y-cumplimiento.json",
+    "modules/10-administracion-e-implementacion.json",
+    "modules/11-supervision.json",
+    "modules/12-simulacro-examen.json"
+  ]
+}
